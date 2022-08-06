@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "format": "prisma format"
+    "db": "prisma format && prisma generate && prisma db push"
   },
   "dependencies": {
     "@prisma/client": "^4.1.1",

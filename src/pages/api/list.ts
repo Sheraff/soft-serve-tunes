@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { FSWatcher, Stats, watch, WatchEventType } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, basename } from "node:path"
+import { prisma } from "../../server/db/client";
 
 type Library = Map<string, Stats>
 
@@ -15,6 +16,15 @@ const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
 let persistedLibrary: Library
 let watcher: FSWatcher
 export default async function listAllFiles(req: NextApiRequest, res: NextApiResponse) {
+	const a = await prisma.track.create({
+        data: {
+          name: "test",
+          duration: 10,
+        }
+      })
+	console.log(a)
+	const b = await prisma.track.findMany()
+	console.log(b)
 	if (!persistedLibrary) {
 		persistedLibrary = await recursiveReaddir()
 	}

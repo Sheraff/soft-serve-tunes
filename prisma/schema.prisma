@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -33,12 +30,12 @@ model Track {
   artists    TrackArtist[] @relation
   albums     AlbumTrack[]  @relation
   duration   Int
-  popularity Int
+  popularity Int?
   createdAt  DateTime      @default(now())
   file       File?         @relation
-  year       Int
+  year       Int?
   genre      TrackGenre[]  @relation
-  pictureId  String        @unique
+  pictureId  String?       @unique
   picture    Cover?        @relation(fields: [pictureId], references: [id])
 }
 
