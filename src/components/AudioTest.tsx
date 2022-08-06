@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { deserialize } from "superjson"
 import styles from "./AudioTest.module.css"
 
 const store = Symbol()
@@ -12,7 +13,8 @@ export default function AudioTest({ }) {
 		const controller = new AbortController()
 		fetch("/api/list", { signal: controller.signal })
 			.then(res => res.json())
-			.then((list) => {
+			.then((data) => {
+				const list = deserialize(data)
 				console.log(list)
 				setList(list)
 				// if(!controller.signal.aborted) {

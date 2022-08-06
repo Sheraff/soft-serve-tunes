@@ -5,6 +5,7 @@ import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { IPicture, parseFile } from 'music-metadata'
 import { prisma } from "../../server/db/client";
+import { serialize } from "superjson"
 
 if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
 	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
@@ -47,7 +48,7 @@ export default async function listAllFiles(req: NextApiRequest, res: NextApiResp
 		}
 		return a.name.localeCompare(b.name)
 	})
-	res.json(tracks)
+	res.json(serialize(tracks))
 	res.end()
 }
 
