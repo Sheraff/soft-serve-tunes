@@ -1,29 +1,13 @@
-// src/pages/api/examples.ts
 import type { NextApiRequest, NextApiResponse } from "next"
 import { createReadStream } from "node:fs"
-import { stat } from "node:fs/promises"
-import { join } from "node:path"
-
-if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
-  throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER")
-}
-const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
+import getRequestFile from "../../../server/utils/getRequestFile"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const {file} = req.query
-  if (!file) {
-    return res.status(400).json({error: "Missing file path"})
-  }
-  const particles = Array.isArray(file) ? file : [file]
-  const path = join(rootFolder, ...particles)
-
-  let stats
-  try {
-    stats = await stat(path)
-  } catch (error) {
-    return res.status(404).json({error: "File not found"})
-  }
-  console.table(stats)
+  const data = await getRequestFile(file, res)
+  if(!data)
+    return
+  const {stats, path} = data
   
   const range = req.headers.range
   const partials = byteOffsetFromRangeString(range)
@@ -42,8 +26,6 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
     'Content-Length': content_length,
     'Content-Range': content_range
   })
-
-  console.log({file, content_range})
 
   if (range === undefined) {
     return res.end()

@@ -4,8 +4,9 @@ const store = Symbol()
 
 export default function AudioTest({ }) {
 	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
-	const [list, setList] = useState<string[]>([])
 	const [current, setCurrent] = useState<string>("")
+
+	const [list, setList] = useState<string[]>([])
 	useEffect(() => {
 		const controller = new AbortController()
 		fetch("/api/list", { signal: controller.signal })
@@ -20,30 +21,55 @@ export default function AudioTest({ }) {
 	}, [])
 
 	useEffect(() => {
-		if (!audio.current || !current || current === audio.current[store])
+		if (!audio.current || !current || !list?.length)
 			return
-		audio.current[store] = current
-		audio.current.setAttribute("src", `/api/file/${current}`)
-		performance.mark("audio-src")
-		audio.current.onplaying = () => {
-			performance.mark("audio-play")
-			performance.measure("audio-load", "audio-play", "audio-src")
-		}
-		audio.current.onended = () => {
+		const controller = new AbortController()
+		audio.current.addEventListener('ended', () => {
 			const index = list.indexOf(current)
 			const next = list[(index + 1) % list.length] as string
 			setCurrent(next)
-		}
-		audio.current.play()
+		}, {signal: controller.signal})
+		return () => controller.abort()
 	}, [current, list])
+
+	const img = useRef<HTMLImageElement>(null)
+	useEffect(() => {
+		if(!img.current || !current)
+			return
+		const controller = new AbortController()
+		fetch(`/api/metadata/${current}`, { signal: controller.signal })
+			.then(res => res.json())
+			.then(metadata => {
+				if(controller.signal.aborted || !img.current)
+					return
+				const data = metadata?.common?.picture?.[0]?.data.data
+				if (data) {
+					const array = new Uint8Array(data)
+					const blob = new Blob([array.buffer], {type: metadata?.common?.picture?.[0]?.format})
+					const url = URL.createObjectURL(blob)
+					img.current.src = url
+				} else {
+					img.current.src = ""
+				}
+				console.log(metadata)
+			}).catch(() => {})
+		return () => controller.abort()
+	}, [current])
 
 	return (
 		<div>
-			<audio controls ref={audio} playsInline/>
-			<select onChange={(event) => setCurrent(event.target.value)} defaultValue="" value={current}>
+			<div>
+			<audio controls ref={audio} playsInline src={`/api/file/${current}`} autoPlay/>
+			</div>
+			<div>
+			<select onChange={(event) => setCurrent(event.target.value)} value={current}>
 				<option disabled value="">---</option>
 				{list.map((item, index) => <option key={index} value={item}>{item}</option>)}
 			</select>
+			</div>
+			<div>
+				<img ref={img} />
+			</div>
 		</div>
 	)
 }
