@@ -15,7 +15,8 @@ model File {
   id        String   @id @default(cuid())
   path      String
   size      Int
-  ino       Int
+  ino       BigInt
+  duration  Float
   addedAt   DateTime @default(now())
   createdAt DateTime
   updatedAt DateTime
@@ -29,33 +30,34 @@ model Track {
   name       String
   artists    TrackArtist[] @relation
   albums     AlbumTrack[]  @relation
-  duration   Int
   popularity Int?
   createdAt  DateTime      @default(now())
   file       File?         @relation
   year       Int?
-  genre      TrackGenre[]  @relation
-  pictureId  String?       @unique
+  genres     TrackGenre[]  @relation
+  pictureId  String?
   picture    Cover?        @relation(fields: [pictureId], references: [id])
 }
 
 model Cover {
   id     String  @id @default(cuid())
-  data   Bytes
+  data   Bytes   @unique
   tracks Track[] @relation
 }
 
 model TrackArtist {
   id       String @id @default(cuid())
-  trackId  String @unique
-  artistId String @unique
+  trackId  String
+  artistId String
   track    Track  @relation(fields: [trackId], references: [id])
   artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([trackId, artistId])
 }
 
 model Artist {
   id        String        @id @default(cuid())
-  name      String
+  name      String        @unique
   tracks    TrackArtist[] @relation
   createdAt DateTime      @default(now())
   albums    AlbumArtist[] @relation
@@ -64,19 +66,23 @@ model Artist {
 model AlbumTrack {
   id       String @id @default(cuid())
   position Int
-  albumId  String @unique
-  trackId  String @unique
+  albumId  String
+  trackId  String
   album    Album  @relation(fields: [albumId], references: [id])
   track    Track  @relation(fields: [trackId], references: [id])
+
+  @@unique([albumId, trackId])
 }
 
 model AlbumArtist {
   id       String @id @default(cuid())
   position Int
-  albumId  String @unique
-  artistId String @unique
+  albumId  String
+  artistId String
   album    Album  @relation(fields: [albumId], references: [id])
   artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([albumId, artistId])
 }
 
 model Album {
@@ -92,10 +98,12 @@ model Album {
 model TrackGenre {
   id       String @id @default(cuid())
   position Int
-  trackId  String @unique
-  genreId  String @unique
+  trackId  String
+  genreId  String
   track    Track  @relation(fields: [trackId], references: [id])
   genre    Genre  @relation(fields: [genreId], references: [id])
+
+  @@unique([trackId, genreId])
 }
 
 model Genre {
@@ -108,8 +116,10 @@ model Genre {
 
 model GenreJoint {
   id         String @id @default(cuid())
-  supgenreId String @unique
+  supgenreId String
   supgenre   Genre  @relation(fields: [supgenreId], references: [id], name: "supgenre")
-  subgenreId String @unique
+  subgenreId String
   subgenre   Genre  @relation(fields: [subgenreId], references: [id], name: "subgenre")
+
+  @@unique([supgenreId, subgenreId])
 }

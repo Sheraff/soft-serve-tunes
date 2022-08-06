@@ -1,13 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { createReadStream } from "node:fs"
-import getRequestFile from "../../../server/utils/getRequestFile"
+import { prisma } from "../../../server/db/client"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
-  const {file} = req.query
-  const data = await getRequestFile(file, res)
-  if(!data)
-    return
-  const {stats, path} = data
+  const {id} = req.query
+  if (!id || Array.isArray(id)) {
+    return res.status(400).json({ error: "Missing id" })
+  }
+
+  const file = await prisma.file.findUnique({
+    where: { trackId: id },
+    select: { path: true, size: true },
+  })
+  if (!file) {
+    return res.status(404).json({ error: "File not found" })
+  }
   
   const range = req.headers.range
   const partials = byteOffsetFromRangeString(range)
@@ -17,10 +24,10 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   }
   const end = partials[1]
     ? Number(partials[1])
-    : Math.min(stats.size - 1, start + 256*1024 - 1)
+    : Math.min(file.size - 1, start + 512*1024 - 1)
 
   const content_length = (end - start) + 1
-  const content_range = `bytes ${start}-${end}/${stats.size}`;
+  const content_range = `bytes ${start}-${end}/${file.size}`;
   res.writeHead(206, {
     'Content-Type': 'audio/mpeg',
     'Content-Length': content_length,
@@ -31,7 +38,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
     return res.end()
   }
 
-  const readStream = createReadStream(path, {start, end, highWaterMark: 256*1024})
+  const readStream = createReadStream(file.path, {start, end, highWaterMark: 512*1024})
   readStream.pipe(res)
 }
 

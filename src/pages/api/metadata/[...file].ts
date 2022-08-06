@@ -11,7 +11,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
 
   const metadata = await parseFile(path)
   res.json({
-	common: metadata.common,
-	format: metadata.format,
+    common: metadata.common,
+    format: metadata.format,
   })
 }
