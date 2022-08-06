@@ -2,14 +2,99 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model Example {
-    id String @id @default(cuid())
+  id String @id @default(cuid())
+}
+
+model File {
+  id        String   @id @default(cuid())
+  path      String
+  size      Int
+  ino       Int
+  addedAt   DateTime
+  createdAt DateTime
+  updatedAt DateTime
+  birthTime DateTime
+  trackId   String   @unique
+  track     Track    @relation(fields: [trackId], references: [id])
+}
+
+model Track {
+  id         String        @id @default(cuid())
+  name       String
+  artists    TrackArtist[] @relation
+  albums     AlbumTrack[]  @relation
+  duration   Int
+  popularity Int
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  file       File?         @relation
+}
+
+model TrackArtist {
+  id       String @id @default(cuid())
+  trackId  String @unique
+  artistId String @unique
+  track    Track  @relation(fields: [trackId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+}
+
+model Artist {
+  id        String        @id @default(cuid())
+  name      String
+  tracks    TrackArtist[] @relation
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  albums    AlbumArtist[] @relation
+}
+
+model AlbumTrack {
+  id       String @id @default(cuid())
+  position Int
+  albumId  String @unique
+  trackId  String @unique
+  album    Album  @relation(fields: [albumId], references: [id])
+  track    Track  @relation(fields: [trackId], references: [id])
+}
+
+model AlbumArtist {
+  id       String @id @default(cuid())
+  position Int
+  albumId  String @unique
+  artistId String @unique
+  album    Album  @relation(fields: [albumId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+}
+
+model Album {
+  id          String        @id @default(cuid())
+  name        String
+  artists     AlbumArtist[] @relation()
+  tracksCount Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tracks      AlbumTrack[]  @relation
+}
+
+model Genre {
+  id        String       @id @default(cuid())
+  name      String
+  subgenres GenreJoint[] @relation(name: "supgenre")
+  supgenres GenreJoint[] @relation(name: "subgenre")
+}
+
+model GenreJoint {
+  id         String @id @default(cuid())
+  supgenreId String @unique
+  supgenre   Genre  @relation(fields: [supgenreId], references: [id], name: "supgenre")
+  subgenreId String @unique
+  subgenre   Genre  @relation(fields: [subgenreId], references: [id], name: "subgenre")
 }
