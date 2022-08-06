@@ -19,7 +19,7 @@ model File {
   path      String
   size      Int
   ino       Int
-  addedAt   DateTime
+  addedAt   DateTime @default(now())
   createdAt DateTime
   updatedAt DateTime
   birthTime DateTime
@@ -35,8 +35,17 @@ model Track {
   duration   Int
   popularity Int
   createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
   file       File?         @relation
+  year       Int
+  genre      TrackGenre[]  @relation
+  pictureId  String        @unique
+  picture    Cover?        @relation(fields: [pictureId], references: [id])
+}
+
+model Cover {
+  id     String  @id @default(cuid())
+  data   Bytes
+  tracks Track[] @relation
 }
 
 model TrackArtist {
@@ -52,7 +61,6 @@ model Artist {
   name      String
   tracks    TrackArtist[] @relation
   createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
   albums    AlbumArtist[] @relation
 }
 
@@ -80,13 +88,23 @@ model Album {
   artists     AlbumArtist[] @relation()
   tracksCount Int
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
   tracks      AlbumTrack[]  @relation
+  year        Int
+}
+
+model TrackGenre {
+  id       String @id @default(cuid())
+  position Int
+  trackId  String @unique
+  genreId  String @unique
+  track    Track  @relation(fields: [trackId], references: [id])
+  genre    Genre  @relation(fields: [genreId], references: [id])
 }
 
 model Genre {
   id        String       @id @default(cuid())
   name      String
+  tracks    TrackGenre[] @relation
   subgenres GenreJoint[] @relation(name: "supgenre")
   supgenres GenreJoint[] @relation(name: "subgenre")
 }
