@@ -101,6 +101,7 @@ export const listRouter = createRouter()
               path: path,
               size: stats.size,
               ino: stats.ino,
+              container: metadata.format.container,
               duration: metadata.format.duration ?? 0,
               updatedAt: new Date(stats.mtimeMs),
               createdAt: new Date(stats.ctimeMs),

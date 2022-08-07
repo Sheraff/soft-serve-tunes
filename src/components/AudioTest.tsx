@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc";
+import { useQueryClient } from "react-query";
 
 const store = Symbol()
 
@@ -8,20 +9,17 @@ export default function AudioTest({ }) {
 	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
 	const [current, setCurrent] = useState(-1)
 
+	const { data: list, isLoading } = trpc.useQuery(["list.all"])
 
-	// const { mutate } = trpc.useMutation(["list.populate"])
-	// const [enabled, setEnabled] = useState(false)
-	const { data: list, isLoading } = trpc.useQuery(["list.all"], {
-		enabled: true,
-	})
-	// console.log('enabled', enabled)
-	// useEffect(() => {
-	// 	console.log('populate')
-	// 	mutate(undefined, {onSuccess: () => {
-	// 		console.log('success')
-	// 		setEnabled(true)
-	// }})
-	// }, [mutate])
+	const { mutate } = trpc.useMutation(["list.populate"])
+	const client = useQueryClient()
+	useEffect(() => {
+		console.log('populate')
+		mutate(undefined, {onSuccess: () => {
+			console.log('success')
+			client.invalidateQueries(["list.all"])
+		}})
+	}, [mutate, client])
 
 	useEffect(() => {
 		if (!audio.current || current < 0 || !list?.length)

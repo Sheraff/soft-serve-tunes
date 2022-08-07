@@ -16,6 +16,7 @@ model File {
   path      String
   size      Int
   ino       BigInt
+  container String
   duration  Float
   addedAt   DateTime @default(now())
   createdAt DateTime

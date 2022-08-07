@@ -10,7 +10,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
 
   const file = await prisma.file.findUnique({
     where: { trackId: id },
-    select: { path: true, size: true },
+    select: { path: true, size: true, container: true },
   })
   if (!file) {
     return res.status(404).json({ error: "File not found" })
@@ -26,10 +26,11 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
     ? Number(partials[1])
     : Math.min(file.size - 1, start + 512*1024 - 1)
 
+  const content_type = `audio/${file.container}`
   const content_length = (end - start) + 1
-  const content_range = `bytes ${start}-${end}/${file.size}`;
+  const content_range = `bytes ${start}-${end}/${file.size}`
   res.writeHead(206, {
-    'Content-Type': 'audio/mpeg',
+    'Content-Type': content_type,
     'Content-Length': content_length,
     'Content-Range': content_range
   })
