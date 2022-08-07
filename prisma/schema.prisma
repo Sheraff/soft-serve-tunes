@@ -42,6 +42,7 @@ model Track {
   genres     TrackGenre[]  @relation
   pictureId  String?
   picture    Cover?        @relation(fields: [pictureId], references: [id])
+  lastfm     LastFmTrack?  @relation
 
   @@unique([name, artistId, albumId])
 }
@@ -70,17 +71,19 @@ model Artist {
   feats     TrackArtist[] @relation
   createdAt DateTime      @default(now())
   albums    Album[]       @relation
+  lastfm    LastFmArtist? @relation
 }
 
 model Album {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
   artistId    String?
-  artist      Artist?  @relation(fields: [artistId], references: [id])
+  artist      Artist?      @relation(fields: [artistId], references: [id])
   tracksCount Int?
-  createdAt   DateTime @default(now())
-  tracks      Track[]  @relation
+  createdAt   DateTime     @default(now())
+  tracks      Track[]      @relation
   year        Int?
+  lastfm      LastFmAlbum? @relation
 
   @@unique([name, artistId])
 }
@@ -111,4 +114,59 @@ model GenreJoint {
   subgenre   Genre  @relation(fields: [subgenreId], references: [id], name: "subgenre")
 
   @@unique([supgenreId, subgenreId])
+}
+
+model LastFmTrack {
+  id        String        @id @default(cuid())
+  entityId  String        @unique
+  entity    Track         @relation(fields: [entityId], references: [id])
+  url       String        @unique
+  albumId   String?
+  album     LastFmAlbum?  @relation(fields: [albumId], references: [url])
+  artistId  String?
+  artist    LastFmArtist? @relation(fields: [artistId], references: [url])
+  tags      LastFmTag[]
+  duration  Int
+  listeners Int
+  playcount Int
+  mbid      String?
+  name      String
+}
+
+model LastFmAlbum {
+  id          String        @id @default(cuid())
+  entityId    String        @unique
+  entity      Album         @relation(fields: [entityId], references: [id])
+  url         String        @unique
+  tracks      LastFmTrack[]
+  mbid        String?
+  tags        LastFmTag[]
+  image       String?
+  name        String
+  releasedate DateTime?
+  listeners   Int
+  playcount   Int
+}
+
+model LastFmArtist {
+  id        String        @id @default(cuid())
+  entityId  String        @unique
+  entity    Artist        @relation(fields: [entityId], references: [id])
+  url       String        @unique
+  tracks    LastFmTrack[]
+  mbid      String?
+  tags      LastFmTag[]
+  name      String
+  image     String?
+  listeners Int
+  playcount Int
+}
+
+model LastFmTag {
+  id      String         @id @default(cuid())
+  url     String         @unique
+  name    String         @unique
+  tracks  LastFmTrack[]
+  artists LastFmArtist[]
+  albums  LastFmAlbum[]
 }

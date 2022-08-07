@@ -59,17 +59,17 @@ export default function AudioTest({ }) {
 	})
 	console.log(metadata)
 
+	// const imgSrc = ""
 	const imgSrc = useMemo(() => {
 		if (!item) return ""
-		if (item.pictureId) {
-			return `/api/cover/${item.pictureId}`
-		}
-		if (lastfm?.track.album?.image?.length) {
-			const last = lastfm.track.album.image.at(-1) as typeof lastfm.track.album.image[0]
-			const base = last['#text']
+		if (lastfm?.album?.image) {
+			const base = lastfm.album.image
 			const sizeRegex = /\/i\/u\/([^\/]*)\//
 			const src = base.replace(sizeRegex, "/i/u/500x500/")
 			return src
+		}
+		if (item.pictureId) {
+			return `/api/cover/${item.pictureId}`
 		}
 		return ""
 	}, [item, lastfm])
