@@ -16,11 +16,11 @@ const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
 let initialized = false
 let watcher: FSWatcher
 export default async function listAllFiles(req: NextApiRequest, res: NextApiResponse) {
-	// if (!initialized) {
-	// 	console.log('------------ Initializing library ------------')
-	// 	await recursiveReaddirIntoDatabase()
-	// 	initialized = true
-	// }
+	if (!initialized) {
+		console.log('------------ Initializing library ------------')
+		await recursiveReaddirIntoDatabase()
+		initialized = true
+	}
 	if (!watcher) {
 		createWatcher()
 	}
@@ -181,6 +181,7 @@ async function createTrack(path: string, stats: Stats) {
 									},
 									create: {
 										data: metadata.common.picture[0].data,
+										mime: metadata.common.picture[0].format
 									}
 								}
 							}

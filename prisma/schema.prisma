@@ -42,6 +42,7 @@ model Track {
 model Cover {
   id     String  @id @default(cuid())
   data   Bytes   @unique
+  mime   String
   tracks Track[] @relation
 }
 

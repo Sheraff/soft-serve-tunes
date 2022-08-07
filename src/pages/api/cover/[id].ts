@@ -8,11 +8,13 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   }
   const cover = await prisma.cover.findUnique({
     where: { id },
-    select: { data: true },
+    select: { data: true, mime: true },
   })
   if (!cover) {
-	return res.status(404).json({ error: "Cover not found" })
+    return res.status(404).json({ error: "Cover not found" })
   }
-  const {data} = cover
-  return res.status(200).send(data)
+  return res
+    .status(200)
+    .setHeader("Content-Type", cover.mime)
+    .send(cover.data)
 }
