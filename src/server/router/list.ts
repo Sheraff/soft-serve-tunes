@@ -4,12 +4,19 @@ import { Stats } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
+import WebSocket, { WebSocketServer } from 'ws'
 
 
 if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
 	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
 }
 const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
+
+const socketServer = new WebSocketServer({
+  port: 8080,
+  path: '/api/list/populate',
+  host: 'localhost',
+})
 
 export const listRouter = createRouter()
   .query("all", {
@@ -43,14 +50,24 @@ export const listRouter = createRouter()
   })
   .mutation("populate", {
     async resolve({ ctx }) {
+      const onConnection = async (ws: WebSocket.WebSocket) => {
+        await recursiveReaddirIntoDatabase()
+        ws.send('done')
+        socketServer.removeListener('connection', onConnection)
+      }
+      socketServer.addListener('connection', onConnection)
+      setTimeout(() => {
+        socketServer.removeListener('connection', onConnection)
+      }, 30_000)
+
       async function recursiveReaddirIntoDatabase(dirPath: string = '') {
         const dir = join(rootFolder, dirPath)
         const dirFiles = await readdir(dir)
-        for (const file of dirFiles) {
-        // return Promise.allSettled(dirFiles.map(async (file) => {
+        // for (const file of dirFiles) {
+        return Promise.allSettled(dirFiles.map(async (file) => {
           if (file.startsWith('.')) {
-            // return
-            continue
+            return
+            // continue
           }
           const relativePath = join(dirPath, file)
           const filePath = join(rootFolder, relativePath)
@@ -62,11 +79,15 @@ export const listRouter = createRouter()
           } else {
             console.warn(`Unknown file type: ${relativePath}`)
           }
-        // }))
-        }
+        }))
+        // }
       }
       
       async function createTrack(path: string, stats: Stats) {
+        const existing = await ctx.prisma.file.findUnique({where: {ino: stats.ino}})
+        if (existing) {
+          return
+        }
         console.log(`Creating track for ${path}`)
         const metadata = await parseFile(path)
         
@@ -146,7 +167,5 @@ export const listRouter = createRouter()
           console.error(e)
         }
       }
-      
-      await recursiveReaddirIntoDatabase()
     }
   })

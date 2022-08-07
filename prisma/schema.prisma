@@ -15,7 +15,7 @@ model File {
   id        String   @id @default(cuid())
   path      String
   size      Int
-  ino       BigInt
+  ino       BigInt   @unique
   container String
   duration  Float
   addedAt   DateTime @default(now())

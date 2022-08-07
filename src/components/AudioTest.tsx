@@ -14,10 +14,15 @@ export default function AudioTest({ }) {
 	const { mutate } = trpc.useMutation(["list.populate"])
 	const client = useQueryClient()
 	useEffect(() => {
-		console.log('populate')
-		mutate(undefined, {onSuccess: () => {
-			console.log('success')
-			client.invalidateQueries(["list.all"])
+		mutate(undefined, {onSuccess: (data) => {
+			const ws = new WebSocket(`ws://localhost:8080/api/list/populate`)
+			ws.onmessage = (e) => {
+				if (e.data === "done") {
+					console.log("populating library: DONE")
+					client.invalidateQueries(["list.all"])
+					ws.close()
+				}
+			}
 		}})
 	}, [mutate, client])
 
