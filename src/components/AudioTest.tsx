@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
 import { useQueryClient } from "react-query"
@@ -49,16 +49,52 @@ export default function AudioTest({ }) {
 
 	const item = (list && (current in list)) ? list[current] : undefined
 
+	const {data: lastfm} = trpc.useQuery(["lastfm.track", {id: item?.id}], {
+		enabled: !!item?.id,
+	})
+	console.log(lastfm)
+	
+	const {data: metadata} = trpc.useQuery(["metadata.track", {id: item?.id}], {
+		enabled: !!item?.id,
+	})
+	console.log(metadata)
+
+	const imgSrc = useMemo(() => {
+		if (!item) return ""
+		if (item.pictureId) {
+			return `/api/cover/${item.pictureId}`
+		}
+		if (lastfm?.track.album?.image?.length) {
+			const last = lastfm.track.album.image.at(-1) as typeof lastfm.track.album.image[0]
+			const base = last['#text']
+			const sizeRegex = /\/i\/u\/([^\/]*)\//
+			const src = base.replace(sizeRegex, "/i/u/500x500/")
+			return src
+		}
+		return ""
+	}, [item, lastfm])
+
 	return (
 		<div>
 			<div className={styles.progress} style={
 				{'--progress': progress} as React.CSSProperties
 			}/>
 			<div>
-				<audio controls ref={audio} playsInline src={item && `/api/file/${item.id}`} autoPlay/>
+				<audio
+					className={styles.audio}
+					controls
+					ref={audio}
+					playsInline
+					src={item && `/api/file/${item.id}`}
+					autoPlay
+				/>
 			</div>
 			<div>
-				<select onChange={(event) => setCurrent(Number(event.target.value))} value={current}>
+				<select
+					className={styles.select}
+					onChange={(event) => setCurrent(Number(event.target.value))}
+					value={current}
+				>
 					<option disabled value="-1">---</option>
 					{list?.map((item, index) => 
 						<option key={index} value={index}>
@@ -75,7 +111,7 @@ export default function AudioTest({ }) {
 				</select>
 			</div>
 			<div>
-				<img className={styles.img} src={item?.pictureId ? `/api/cover/${item.pictureId}` : undefined} alt=""/>
+				<img className={styles.img} src={imgSrc} alt=""/>
 			</div>
 		</div>
 	)
