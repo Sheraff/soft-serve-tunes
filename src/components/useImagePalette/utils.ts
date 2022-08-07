@@ -107,6 +107,13 @@ export function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 		? difference / (max + min)
 		: difference / (2 - max - min)
 
+	if (difference === 0) {
+		return {
+			h: 0,
+			s: 0,
+			l: luminance,
+		}
+	}
 	/**
 	 * If Red is max, then Hue = (G-B)/(max-min)
 	 * If Green is max, then Hue = 2.0 + (B-R)/(max-min)

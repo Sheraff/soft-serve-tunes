@@ -30,17 +30,18 @@ export default function useImagePalette({
 				: lightMode
 				? 255
 				: averageImageValue(imageData.data)
+			console.log(formatHSL({...hslColors[3], l: 70, s: 40}))
 			if (average > 255 / 2) {
 				setPalette({
 					background: formatHSL(hslColors[3]),
 					gradient: formatHSL(hslColors[2]),
-					foreground: formatHSL({...hslColors[0], l: 30, s: 40}),
+					foreground: formatHSL({...hslColors[0], l: 20, s: 50}),
 				})
 			} else {
 				setPalette({
 					background: formatHSL(hslColors[0]),
 					gradient: formatHSL(hslColors[1]),
-					foreground: formatHSL({...hslColors[3], l: 220, s: 40}),
+					foreground: formatHSL({...hslColors[3], l: 80, s: 50}),
 				})
 			}
 		}, {signal: controller.signal})
