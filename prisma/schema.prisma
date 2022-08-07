@@ -13,7 +13,7 @@ model Example {
 
 model File {
   id        String   @id @default(cuid())
-  path      String
+  path      String   @unique
   size      Int
   ino       BigInt   @unique
   container String
@@ -29,8 +29,12 @@ model File {
 model Track {
   id         String        @id @default(cuid())
   name       String
-  artists    TrackArtist[] @relation
-  albums     AlbumTrack[]  @relation
+  artistId   String?
+  artist     Artist?       @relation(fields: [artistId], references: [id])
+  feats      TrackArtist[] @relation
+  albumId    String?
+  album      Album?        @relation(fields: [albumId], references: [id])
+  position   Int?
   popularity Int?
   createdAt  DateTime      @default(now())
   file       File?         @relation
@@ -38,6 +42,8 @@ model Track {
   genres     TrackGenre[]  @relation
   pictureId  String?
   picture    Cover?        @relation(fields: [pictureId], references: [id])
+
+  @@unique([name, artistId, albumId])
 }
 
 model Cover {
@@ -60,57 +66,38 @@ model TrackArtist {
 model Artist {
   id        String        @id @default(cuid())
   name      String        @unique
-  tracks    TrackArtist[] @relation
+  tracks    Track[]       @relation
+  feats     TrackArtist[] @relation
   createdAt DateTime      @default(now())
-  albums    AlbumArtist[] @relation
-}
-
-model AlbumTrack {
-  id       String @id @default(cuid())
-  position Int
-  albumId  String
-  trackId  String
-  album    Album  @relation(fields: [albumId], references: [id])
-  track    Track  @relation(fields: [trackId], references: [id])
-
-  @@unique([albumId, trackId])
-}
-
-model AlbumArtist {
-  id       String @id @default(cuid())
-  position Int
-  albumId  String
-  artistId String
-  album    Album  @relation(fields: [albumId], references: [id])
-  artist   Artist @relation(fields: [artistId], references: [id])
-
-  @@unique([albumId, artistId])
+  albums    Album[]       @relation
 }
 
 model Album {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  artists     AlbumArtist[] @relation()
-  tracksCount Int
-  createdAt   DateTime      @default(now())
-  tracks      AlbumTrack[]  @relation
-  year        Int
+  artistId    String?
+  artist      Artist?  @relation(fields: [artistId], references: [id])
+  tracksCount Int?
+  createdAt   DateTime @default(now())
+  tracks      Track[]  @relation
+  year        Int?
+
+  @@unique([name, artistId])
 }
 
 model TrackGenre {
-  id       String @id @default(cuid())
-  position Int
-  trackId  String
-  genreId  String
-  track    Track  @relation(fields: [trackId], references: [id])
-  genre    Genre  @relation(fields: [genreId], references: [id])
+  id      String @id @default(cuid())
+  trackId String
+  genreId String
+  track   Track  @relation(fields: [trackId], references: [id])
+  genre   Genre  @relation(fields: [genreId], references: [id])
 
   @@unique([trackId, genreId])
 }
 
 model Genre {
   id        String       @id @default(cuid())
-  name      String
+  name      String       @unique
   tracks    TrackGenre[] @relation
   subgenres GenreJoint[] @relation(name: "supgenre")
   supgenres GenreJoint[] @relation(name: "subgenre")

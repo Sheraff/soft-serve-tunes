@@ -1,11 +1,10 @@
 import { createRouter } from "./context"
-import { z } from "zod"
+// import { z } from "zod"
 import { Stats } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
-import WebSocket, { WebSocketServer } from 'ws'
-import superjson from "superjson"
+import { WebSocketServer } from 'ws'
 
 if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
 	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
@@ -20,15 +19,29 @@ const socketServer = new WebSocketServer({
 socketServer.on('connection', async (ws) => {
   let closed = false
   ws.on('close', () => closed = true)
-  if(latestPopulatingPromise) {
-    await latestPopulatingPromise
+  if (populating.promise) {
+    const interval = setInterval(() => {
+      if (!closed) {
+        ws.send(JSON.stringify({type: 'progress', payload: populating.done / populating.total}))
+      }
+    }, 500)
+    await populating.promise
+    clearInterval(interval)
   }
   if (!closed) {
-    ws.send('done')
+    ws.send(JSON.stringify({type: 'done'}))
     ws.close()
   }
 })
-let latestPopulatingPromise: Promise<null> | null = null
+const populating: {
+  promise: Promise<null> | null
+  total: number
+  done: number
+} = {
+  promise: null,
+  total: 0,
+  done: 0,
+}
 
 export const listRouter = createRouter()
   .query("all", {
@@ -38,23 +51,37 @@ export const listRouter = createRouter()
           name: "asc",
         },
         include: {
-          artists: {
+          artist: {
+            select: { name: true },
+          },
+          album: {
+            select: { name: true },
+          },
+          genres: {
             select: {
-              artist: {
+              genre: {
                 select: { name: true },
-              },
+              }
             }
           }
         }
       })
       tracks.sort((a, b) => {
-        const aArtist = a.artists?.[0]?.artist?.name
-        const bArtist = b.artists?.[0]?.artist?.name
+        const aArtist = a.artist?.name
+        const bArtist = b.artist?.name
         if (aArtist !== bArtist) {
           if(!aArtist) return -1
           if(!bArtist) return 1
           return aArtist.localeCompare(bArtist)
         }
+        const aAlbum = a.album?.name
+        const bAlbum = b.album?.name
+        if (aAlbum !== bAlbum) {
+          if(!aAlbum) return -1
+          if(!bAlbum) return 1
+          return aAlbum.localeCompare(bAlbum)
+        }
+
         return a.name.localeCompare(b.name)
       })
       return tracks
@@ -62,17 +89,21 @@ export const listRouter = createRouter()
   })
   .mutation("populate", {
     async resolve({ ctx }) {
-      if (!latestPopulatingPromise) {
-        latestPopulatingPromise = recursiveReaddirIntoDatabase()
-          .then(() => latestPopulatingPromise = null)
+      if (!populating.promise) {
+        populating.total = 0
+        populating.done = 0
+        populating.promise = recursiveReaddirIntoDatabase()
+          .then(() => populating.promise = null)
       }
 
       async function recursiveReaddirIntoDatabase(dirPath: string = '') {
         const dir = join(rootFolder, dirPath)
         const dirFiles = await readdir(dir)
-        return Promise.allSettled(dirFiles.map(async (file) => {
+        populating.total += dirFiles.length
+        for (const file of dirFiles) {
+          populating.done++
           if (file.startsWith('.')) {
-            return
+            continue
           }
           const relativePath = join(dirPath, file)
           const filePath = join(rootFolder, relativePath)
@@ -84,12 +115,27 @@ export const listRouter = createRouter()
           } else {
             console.warn(`Unknown file type: ${relativePath}`)
           }
-        }))
+        }
+        // return Promise.allSettled(dirFiles.map(async (file) => {
+        //   if (file.startsWith('.')) {
+        //     return
+        //   }
+        //   const relativePath = join(dirPath, file)
+        //   const filePath = join(rootFolder, relativePath)
+        //   const stats = await stat(filePath)
+        //   if (stats.isDirectory()) {
+        //     await recursiveReaddirIntoDatabase(relativePath)
+        //   } else if (stats.isFile()) {
+        //     await createTrack(filePath, stats)
+        //   } else {
+        //     console.warn(`Unknown file type: ${relativePath}`)
+        //   }
+        // }))
       }
       
       async function createTrack(path: string, stats: Stats, retries = 0) {
-        const existing = await ctx.prisma.file.findUnique({where: {ino: stats.ino}})
-        if (existing) {
+        const existingFile = await ctx.prisma.file.findUnique({where: {ino: stats.ino}})
+        if (existingFile) {
           return
         }
         console.log(`Creating track for ${path}`)
@@ -99,78 +145,157 @@ export const listRouter = createRouter()
         const name = metadata.common.title && !uselessNameRegex.test(metadata.common.title)
           ? metadata.common.title
           : basename(path, extname(path))
+
+        const position = metadata.common.track.no ?? undefined
       
         try {
-          const artistStrings = new Set<string>()
-          if (metadata.common.artist) {
-            artistStrings.add(metadata.common.artist)
-          }
-          if (metadata.common.artists) {
-            metadata.common.artists.forEach(artist => artistStrings.add(artist))
-          }
-          const artists = await Promise.all(Array.from(artistStrings).map(async (artist) => {
-            const existing = await ctx.prisma.artist.findUnique({
-              where: { name: artist },
-              select: { id: true },
-            })
-            if (existing) {
-              return existing.id
-            }
-            const created = await ctx.prisma.artist.create({
-              data: { name: artist },
-            })
-            return created.id
-          }))
-          await ctx.prisma.file.create({
+          const track = await ctx.prisma.track.create({
+            include: {
+              feats: {
+                include: {
+                  artist: {
+                    select: { id: true },
+                  },
+                }
+              }
+            },
             data: {
-              path: path,
-              size: stats.size,
-              ino: stats.ino,
-              container: metadata.format.container ?? '*',
-              duration: metadata.format.duration ?? 0,
-              updatedAt: new Date(stats.mtimeMs),
-              createdAt: new Date(stats.ctimeMs),
-              birthTime: new Date(stats.birthtime),
-              // trackId: track.id,
-              track: {
+              name,
+              position,
+              popularity: 0,
+              year: metadata.common.year,
+              file: {
                 create: {
-                  name,
-                  // artists,
-                  // albums,
-                  popularity: 0,
-                  year: metadata.common.year,
-                  // genres,
-                  // pictureId: cover,
-                  picture: metadata.common.picture?.[0]?.data
-                    ? {
-                      connectOrCreate: {
-                        where: {
-                          data: metadata.common.picture[0].data,
-                        },
-                        create: {
-                          data: metadata.common.picture[0].data,
-                          mime: metadata.common.picture[0].format
-                        }
-                      }
-                    }
-                    : undefined,
-                  artists: {
-                    create: artists.map(artist => ({
-                      artistId: artist,
-                    })),
-                  }
+                  path: path,
+                  size: stats.size,
+                  ino: stats.ino,
+                  container: metadata.format.container ?? '*',
+                  duration: metadata.format.duration ?? 0,
+                  updatedAt: new Date(stats.mtimeMs),
+                  createdAt: new Date(stats.ctimeMs),
+                  birthTime: new Date(stats.birthtime),
                 }
               },
-            },
+              ...(metadata.common.picture?.[0]?.data ? {picture: {
+                connectOrCreate: {
+                  where: {
+                    data: metadata.common.picture[0].data,
+                  },
+                  create: {
+                    data: metadata.common.picture[0].data,
+                    mime: metadata.common.picture[0].format
+                  }
+                }
+              }} : {}),
+              ...(metadata.common.artist ? {artist: {
+                connectOrCreate: {
+                  where: {
+                    name: metadata.common.artist,
+                  },
+                  create: {
+                    name: metadata.common.artist,
+                  }
+                }
+              }} : {}),
+              ...(metadata.common.artists?.length ? {feats: {
+                create: metadata.common.artists.map(artist => ({
+                  artist: {
+                    connectOrCreate: {
+                      where: {
+                        name: artist,
+                      },
+                      create: {
+                        name: artist,
+                      }
+                    }
+                  }
+                }))
+              }} : {}),
+              ...(metadata.common.genre?.length ? {genres: {
+                create: metadata.common.genre.map(genre => ({
+                  genre: {
+                    connectOrCreate: {
+                      where: {
+                        name: genre,
+                      },
+                      create: {
+                        name: genre,
+                      }
+                    }
+                  }
+                }))
+              }} : {}),
+            }
           })
-          // console.log(`should have created album ${metadata.common.album}`)
-          // console.log(`should have created genre ${metadata.common.genre}`)
+
+          // update `feats` on secondary artists
+          if (metadata.common.artists?.length) {
+            await Promise.allSettled(track.feats.map(feat => {
+              return ctx.prisma.artist.update({
+                where: {
+                  id: feat.artist.id,
+                },
+                data: {
+                  feats: {
+                    create: {
+                      trackId: track.id,
+                    }
+                  }
+                },
+              })
+            }))
+          }
+
+          // create album now that we have an artistId
+          if(metadata.common.album) {
+            const create = {
+              name: metadata.common.album,
+              artistId: track.artistId,
+              year: metadata.common.year,
+              tracksCount: metadata.common.track.of,
+            }
+            if(track.artistId) {
+              await ctx.prisma.track.update({
+                where: {
+                  id: track.id,
+                },
+                data: {
+                  album: {
+                    connectOrCreate: {
+                      where: {
+                        name_artistId: {
+                          name: metadata.common.album,
+                          artistId: track.artistId
+                        }
+                      },
+                      create
+                    }
+                  }
+                }
+              })
+            } else {
+              await ctx.prisma.track.update({
+                where: {
+                  id: track.id,
+                },
+                data: {
+                  album: {
+                    create
+                  }
+                }
+              })
+            }
+          }
         } catch (e) {
-          if (retries < 3) {
-            await new Promise((resolve) => setTimeout(resolve,10))
-            createTrack(path, stats, retries + 1)
+          const name = basename(path, extname(path))
+          if (retries < 6) {
+            // wait to avoid race: random to stagger siblings, exponential to let the rest of the library go on
+            const delay = 5 * Math.random() + 2**retries
+            console.log(`Retrying in ${delay}ms (${name})`)
+            await new Promise((resolve) => setTimeout(resolve, delay))
+            await createTrack(path, stats, retries + 1)
           } else {
-            console.warn(`Failed to create track ${path}`)
+            console.warn(`Failed to create track ${name}`)
             console.warn(e)
           }
         }

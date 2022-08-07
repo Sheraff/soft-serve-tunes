@@ -8,18 +8,29 @@ const store = Symbol()
 export default function AudioTest({ }) {
 	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
 	const [current, setCurrent] = useState(-1)
+	const [progress, setProgress] = useState(0)
 
 	const { data: list, isLoading } = trpc.useQuery(["list.all"])
 
 	const { mutate } = trpc.useMutation(["list.populate"])
 	const client = useQueryClient()
 	useEffect(() => {
-		mutate(undefined, {onSuccess: (data) => {
+		mutate(undefined, {onSuccess: () => {
 			const ws = new WebSocket(`ws://localhost:8080/api/list/populate`)
+			performance.mark("lib-pop-start")
 			ws.onmessage = (e) => {
-				if (e.data === "done") {
+				const data = JSON.parse(e.data)
+				if (data.type === "done") {
 					console.log("populating library: DONE")
+					performance.mark("lib-pop-end")
+					performance.measure("lib-pop", "lib-pop-start", "lib-pop-end")
 					client.invalidateQueries(["list.all"])
+					console.log(performance.getEntriesByName("lib-pop").at(-1)?.duration)
+					setProgress(1)
+					setCurrent(0)
+				} else if (data.type === "progress") {
+					console.log(`populating library: ${data.payload}%`)
+					setProgress(data.payload)
 				}
 			}
 		}})
@@ -40,17 +51,31 @@ export default function AudioTest({ }) {
 
 	return (
 		<div>
+			<div className={styles.progress} style={
+				{'--progress': progress} as React.CSSProperties
+			}/>
 			<div>
-			<audio controls ref={audio} playsInline src={item && `/api/file/${item.id}`} autoPlay/>
+				<audio controls ref={audio} playsInline src={item && `/api/file/${item.id}`} autoPlay/>
 			</div>
 			<div>
-			<select onChange={(event) => setCurrent(Number(event.target.value))} value={current}>
-				<option disabled value="-1">---</option>
-				{list?.map((item, index) => <option key={index} value={index}>{item.artists?.[0]?.artist?.name} - {item.name}</option>)}
-			</select>
+				<select onChange={(event) => setCurrent(Number(event.target.value))} value={current}>
+					<option disabled value="-1">---</option>
+					{list?.map((item, index) => 
+						<option key={index} value={index}>
+							{item.artist?.name}
+							{' / '}
+							{item.album?.name}
+							{' / '}
+							{item.name}
+							{' ['}
+							{item.genres.map(genre => genre.genre.name).join(', ')}
+							{']'}
+						</option>
+					)}
+				</select>
 			</div>
 			<div>
-				<img className={styles.img} src={item && `/api/cover/${item.pictureId}`} alt=""/>
+				<img className={styles.img} src={item?.pictureId ? `/api/cover/${item.pictureId}` : undefined} alt=""/>
 			</div>
 		</div>
 	)
