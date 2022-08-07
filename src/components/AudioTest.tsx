@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
 import { useQueryClient } from "react-query"
+import useImagePalette from "./useImagePalette"
 
 const store = Symbol()
 
@@ -10,7 +11,11 @@ export default function AudioTest({ }) {
 	const [current, setCurrent] = useState(-1)
 	const [progress, setProgress] = useState(0)
 
-	const { data: list, isLoading } = trpc.useQuery(["list.all"])
+	const { data: list, isLoading } = trpc.useQuery(["list.all"], {
+		onSuccess(list) {
+			setCurrent(Math.random() * list.length | 0)
+		}
+	})
 
 	const { mutate } = trpc.useMutation(["list.populate"])
 	const client = useQueryClient()
@@ -27,7 +32,6 @@ export default function AudioTest({ }) {
 					client.invalidateQueries(["list.all"])
 					console.log(performance.getEntriesByName("lib-pop").at(-1)?.duration)
 					setProgress(1)
-					setCurrent(0)
 				} else if (data.type === "progress") {
 					console.log(`populating library: ${data.payload}%`)
 					setProgress(data.payload)
@@ -74,8 +78,14 @@ export default function AudioTest({ }) {
 		return ""
 	}, [item, lastfm])
 
+	const img = useRef<HTMLImageElement>(null)
+	const palette = useImagePalette({ref: img})
 	return (
-		<div>
+		<div style={{
+			background: `linear-gradient(180deg, ${palette.gradient} 0%, ${palette.background} 100%)`,
+			color: palette.foreground,
+			minHeight: '100%',
+		}}>
 			<div className={styles.progress} style={
 				{'--progress': progress} as React.CSSProperties
 			}/>
@@ -104,15 +114,18 @@ export default function AudioTest({ }) {
 							{' / '}
 							{item.name}
 							{' ['}
-							{item.genres.map(genre => genre.genre.name).join(', ')}
+							{item.genres.map(genre => genre.name).join(', ')}
 							{']'}
 						</option>
 					)}
 				</select>
 			</div>
 			<div>
-				<img className={styles.img} src={imgSrc} alt=""/>
+				<img className={styles.img} src={imgSrc} alt="" ref={img} crossOrigin="anonymous"/>
 			</div>
+			<p>{item?.artist?.name}</p>
+			<p>{item?.album?.name}</p>
+			<p>{item?.name}</p>
 		</div>
 	)
 }

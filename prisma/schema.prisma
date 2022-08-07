@@ -7,10 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Example {
-  id String @id @default(cuid())
-}
-
 model File {
   id        String   @id @default(cuid())
   path      String   @unique
@@ -27,22 +23,22 @@ model File {
 }
 
 model Track {
-  id         String        @id @default(cuid())
+  id         String       @id @default(cuid())
   name       String
   artistId   String?
-  artist     Artist?       @relation(fields: [artistId], references: [id])
-  feats      TrackArtist[] @relation
+  artist     Artist?      @relation(fields: [artistId], references: [id])
+  feats      Artist[]     @relation("Featuring")
   albumId    String?
-  album      Album?        @relation(fields: [albumId], references: [id])
+  album      Album?       @relation(fields: [albumId], references: [id])
   position   Int?
   popularity Int?
-  createdAt  DateTime      @default(now())
-  file       File?         @relation
+  createdAt  DateTime     @default(now())
+  file       File?        @relation
   year       Int?
-  genres     TrackGenre[]  @relation
+  genres     Genre[]      @relation
   pictureId  String?
-  picture    Cover?        @relation(fields: [pictureId], references: [id])
-  lastfm     LastFmTrack?  @relation
+  picture    Cover?       @relation(fields: [pictureId], references: [id])
+  lastfm     LastFmTrack? @relation
 
   @@unique([name, artistId, albumId])
 }
@@ -54,21 +50,11 @@ model Cover {
   tracks Track[] @relation
 }
 
-model TrackArtist {
-  id       String @id @default(cuid())
-  trackId  String
-  artistId String
-  track    Track  @relation(fields: [trackId], references: [id])
-  artist   Artist @relation(fields: [artistId], references: [id])
-
-  @@unique([trackId, artistId])
-}
-
 model Artist {
   id        String        @id @default(cuid())
   name      String        @unique
   tracks    Track[]       @relation
-  feats     TrackArtist[] @relation
+  feats     Track[]       @relation("Featuring")
   createdAt DateTime      @default(now())
   albums    Album[]       @relation
   lastfm    LastFmArtist? @relation
@@ -88,32 +74,12 @@ model Album {
   @@unique([name, artistId])
 }
 
-model TrackGenre {
-  id      String @id @default(cuid())
-  trackId String
-  genreId String
-  track   Track  @relation(fields: [trackId], references: [id])
-  genre   Genre  @relation(fields: [genreId], references: [id])
-
-  @@unique([trackId, genreId])
-}
-
 model Genre {
-  id        String       @id @default(cuid())
-  name      String       @unique
-  tracks    TrackGenre[] @relation
-  subgenres GenreJoint[] @relation(name: "supgenre")
-  supgenres GenreJoint[] @relation(name: "subgenre")
-}
-
-model GenreJoint {
-  id         String @id @default(cuid())
-  supgenreId String
-  supgenre   Genre  @relation(fields: [supgenreId], references: [id], name: "supgenre")
-  subgenreId String
-  subgenre   Genre  @relation(fields: [subgenreId], references: [id], name: "subgenre")
-
-  @@unique([supgenreId, subgenreId])
+  id        String  @id @default(cuid())
+  name      String  @unique
+  tracks    Track[] @relation
+  subgenres Genre[] @relation("LinkedGenre")
+  supgenres Genre[] @relation("LinkedGenre")
 }
 
 model LastFmTrack {

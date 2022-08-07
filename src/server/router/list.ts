@@ -59,9 +59,7 @@ export const listRouter = createRouter()
           },
           genres: {
             select: {
-              genre: {
-                select: { name: true },
-              }
+              name: true,
             }
           }
         }
@@ -152,10 +150,8 @@ export const listRouter = createRouter()
           const track = await ctx.prisma.track.create({
             include: {
               feats: {
-                include: {
-                  artist: {
-                    select: { id: true },
-                  },
+                select: {
+                  id: true,
                 }
               }
             },
@@ -198,30 +194,22 @@ export const listRouter = createRouter()
                 }
               }} : {}),
               ...(metadata.common.artists?.length ? {feats: {
-                create: metadata.common.artists.map(artist => ({
-                  artist: {
-                    connectOrCreate: {
-                      where: {
-                        name: artist,
-                      },
-                      create: {
-                        name: artist,
-                      }
-                    }
+                connectOrCreate: metadata.common.artists.map(artist => ({
+                  where: {
+                    name: artist,
+                  },
+                  create: {
+                    name: artist,
                   }
                 }))
               }} : {}),
               ...(metadata.common.genre?.length ? {genres: {
-                create: metadata.common.genre.map(genre => ({
-                  genre: {
-                    connectOrCreate: {
-                      where: {
-                        name: genre,
-                      },
-                      create: {
-                        name: genre,
-                      }
-                    }
+                connectOrCreate: metadata.common.genre.map(genre => ({
+                  where: {
+                    name: genre,
+                  },
+                  create: {
+                    name: genre,
                   }
                 }))
               }} : {}),
@@ -233,12 +221,12 @@ export const listRouter = createRouter()
             await Promise.allSettled(track.feats.map(feat => {
               return ctx.prisma.artist.update({
                 where: {
-                  id: feat.artist.id,
+                  id: feat.id,
                 },
                 data: {
                   feats: {
-                    create: {
-                      trackId: track.id,
+                    connect: {
+                      id: track.id,
                     }
                   }
                 },
