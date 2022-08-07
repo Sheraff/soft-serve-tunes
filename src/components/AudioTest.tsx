@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import styles from "./AudioTest.module.css"
-import { trpc } from "../utils/trpc";
-import { useQueryClient } from "react-query";
+import { trpc } from "../utils/trpc"
+import { useQueryClient } from "react-query"
 
 const store = Symbol()
 
@@ -20,7 +20,6 @@ export default function AudioTest({ }) {
 				if (e.data === "done") {
 					console.log("populating library: DONE")
 					client.invalidateQueries(["list.all"])
-					ws.close()
 				}
 			}
 		}})

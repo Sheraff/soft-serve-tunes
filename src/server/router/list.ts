@@ -5,7 +5,7 @@ import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
 import WebSocket, { WebSocketServer } from 'ws'
-
+import superjson from "superjson"
 
 if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
 	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
@@ -17,6 +17,18 @@ const socketServer = new WebSocketServer({
   path: '/api/list/populate',
   host: 'localhost',
 })
+socketServer.on('connection', async (ws) => {
+  let closed = false
+  ws.on('close', () => closed = true)
+  if(latestPopulatingPromise) {
+    await latestPopulatingPromise
+  }
+  if (!closed) {
+    ws.send('done')
+    ws.close()
+  }
+})
+let latestPopulatingPromise: Promise<null> | null = null
 
 export const listRouter = createRouter()
   .query("all", {
@@ -50,24 +62,17 @@ export const listRouter = createRouter()
   })
   .mutation("populate", {
     async resolve({ ctx }) {
-      const onConnection = async (ws: WebSocket.WebSocket) => {
-        await recursiveReaddirIntoDatabase()
-        ws.send('done')
-        socketServer.removeListener('connection', onConnection)
+      if (!latestPopulatingPromise) {
+        latestPopulatingPromise = recursiveReaddirIntoDatabase()
+          .then(() => latestPopulatingPromise = null)
       }
-      socketServer.addListener('connection', onConnection)
-      setTimeout(() => {
-        socketServer.removeListener('connection', onConnection)
-      }, 30_000)
 
       async function recursiveReaddirIntoDatabase(dirPath: string = '') {
         const dir = join(rootFolder, dirPath)
         const dirFiles = await readdir(dir)
-        // for (const file of dirFiles) {
         return Promise.allSettled(dirFiles.map(async (file) => {
           if (file.startsWith('.')) {
             return
-            // continue
           }
           const relativePath = join(dirPath, file)
           const filePath = join(rootFolder, relativePath)
@@ -80,10 +85,9 @@ export const listRouter = createRouter()
             console.warn(`Unknown file type: ${relativePath}`)
           }
         }))
-        // }
       }
       
-      async function createTrack(path: string, stats: Stats) {
+      async function createTrack(path: string, stats: Stats, retries = 0) {
         const existing = await ctx.prisma.file.findUnique({where: {ino: stats.ino}})
         if (existing) {
           return
@@ -122,7 +126,7 @@ export const listRouter = createRouter()
               path: path,
               size: stats.size,
               ino: stats.ino,
-              container: metadata.format.container,
+              container: metadata.format.container ?? '*',
               duration: metadata.format.duration ?? 0,
               updatedAt: new Date(stats.mtimeMs),
               createdAt: new Date(stats.ctimeMs),
@@ -159,12 +163,16 @@ export const listRouter = createRouter()
               },
             },
           })
-          console.log(`Added ${path}`)
-          console.log(`should have created artist ${metadata.common.artist} / ${metadata.common.artists}`)
-          console.log(`should have created album ${metadata.common.album}`)
-          console.log(`should have created genre ${metadata.common.genre}`)
+          // console.log(`should have created album ${metadata.common.album}`)
+          // console.log(`should have created genre ${metadata.common.genre}`)
         } catch (e) {
-          console.error(e)
+          if (retries < 3) {
+            await new Promise((resolve) => setTimeout(resolve,10))
+            createTrack(path, stats, retries + 1)
+          } else {
+            console.warn(`Failed to create track ${path}`)
+            console.warn(e)
+          }
         }
       }
     }
