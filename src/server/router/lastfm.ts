@@ -157,7 +157,7 @@ export const lastfmRouter = createRouter()
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmTrackSchema.parse(json)
-        if (lastfm.track) {
+        if (lastfm.track && lastfm.track.url) {
           await ctx.prisma.track.update({
             where: { id: track.id },
             data: {
@@ -194,7 +194,7 @@ export const lastfmRouter = createRouter()
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmArtistSchema.parse(json)
-        if (lastfm.artist) {
+        if (lastfm.artist && lastfm.artist.url) {
           await ctx.prisma.artist.update({
             where: { id: track.artist.id },
             data: {
@@ -232,7 +232,7 @@ export const lastfmRouter = createRouter()
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmAlbumSchema.parse(json)
-        if (lastfm.album) {
+        if (lastfm.album && lastfm.album.url) {
           await ctx.prisma.album.update({
             where: { id: track.album.id },
             data: {

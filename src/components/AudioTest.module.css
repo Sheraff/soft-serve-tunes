@@ -1,6 +1,36 @@
+@property --background-color {
+	syntax: '<color>';
+	inherits: false;
+	initial-value: black;
+}
+
+@property --gradient-color {
+	syntax: '<color>';
+	inherits: false;
+	initial-value: #333;
+}
+
+@property --foreground-color {
+	syntax: '<color>';
+	inherits: false;
+	initial-value: white;
+}
+
+.main {
+	background: linear-gradient(180deg, var(--gradient-color) 0%, var(--background-color) 100%);
+	color: var(--foreground-color);
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1em;
+	transition:
+		--foreground-color 2s ease-in-out,
+		--background-color 2s ease-in-out,
+		--gradient-color 2s ease-in-out;
+}
+
 .audio {
-	width: 100%;
-	max-width: 500px;
 	margin: auto;
 	display: block;
 }
@@ -21,7 +51,22 @@
 
 .img {
 	display: block;
-	width: 100%;
-	max-width: 500px;
-	height: auto;
+	width: 500px;
+	height: 500px;
+	object-fit: cover;
+	border-radius: 10px;
+	opacity: 0.9;
+
+	/* mask-image: */
+		/* linear-gradient(0,        rgba(0,0,0,0) 0% 50%, rgba(0,0,0,1) 50% 90%, rgba(0,0,0,0) 100%), */
+		/* linear-gradient(180deg,   rgba(0,0,0,0) 0% 50%, rgba(0,0,0,1) 50% 90%, rgba(0,0,0,0) 100%) */
+		/* linear-gradient(-90deg,   rgba(0,0,0,0) 0% 95%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%), */
+		/* linear-gradient(90deg,    rgba(0,0,0,0) 0% 95%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%), */
+		/* radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 90%, rgba(0, 0, 0, 0) 100%) */
+		/* ; */
+}
+
+.info {
+	margin-top: auto;
+	text-align: center;
 }

@@ -80,12 +80,13 @@ export default function AudioTest({ }) {
 
 	const img = useRef<HTMLImageElement>(null)
 	const palette = useImagePalette({ref: img})
+
 	return (
-		<div style={{
-			background: `linear-gradient(180deg, ${palette.gradient} 0%, ${palette.background} 100%)`,
-			color: palette.foreground,
-			minHeight: '100%',
-		}}>
+		<div className={styles.main} style={{
+			'--background-color': palette.background,
+			'--gradient-color': palette.gradient,
+			'--foreground-color': palette.foreground,
+		} as React.CSSProperties}>
 			<div className={styles.progress} style={
 				{'--progress': progress} as React.CSSProperties
 			}/>
@@ -123,9 +124,11 @@ export default function AudioTest({ }) {
 			<div>
 				<img className={styles.img} src={imgSrc} alt="" ref={img} crossOrigin="anonymous"/>
 			</div>
-			<p>{item?.artist?.name}</p>
-			<p>{item?.album?.name}</p>
-			<p>{item?.name}</p>
+			<div className={styles.info}>
+				<p>{item?.artist?.name}</p>
+				<p>{item?.album?.name}</p>
+				<p>{item?.name}</p>
+			</div>
 		</div>
 	)
 }
