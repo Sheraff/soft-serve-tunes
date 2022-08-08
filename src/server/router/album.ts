@@ -34,4 +34,39 @@ export const albumRouter = createRouter()
       })
     }
   })
+  .query("cover", {
+    input: z
+      .object({
+        id: z.string(),
+      }),
+    async resolve({ input, ctx }) {
+      return ctx.prisma.album.findUnique({
+        where: { id: input.id },
+        include: {
+          lastfm: {
+            select: {
+              image: true,
+            }
+          },
+          tracks: {
+            take: 1,
+            where: {
+              pictureId: {
+                not: null,
+              },
+            },
+            select: {
+              id: true,
+              pictureId: true,
+            },
+          },
+          artist: {
+            select: {
+              name: true,
+            }
+          }
+        }
+      })
+    }
+  })
 

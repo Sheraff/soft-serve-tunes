@@ -1,4 +1,5 @@
 import { forwardRef, useMemo } from "react"
+import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 import { trpc } from "../../utils/trpc"
 import styles from "./index.module.css"
 
@@ -16,15 +17,8 @@ export default forwardRef(function Cover({
 
 	const imgSrc = useMemo(() => {
 		if (!track || lastfmLoading) return undefined
-		if (lastfm?.album?.image) {
-			const base = lastfm.album.image
-			const sizeRegex = /\/i\/u\/([^\/]*)\//
-			const src = base.replace(sizeRegex, "/i/u/500x500/")
-			return src
-		}
-		if (track.pictureId) {
-			return `/api/cover/${track.pictureId}`
-		}
+		if (lastfm?.album?.image) return lastfmImageToUrl(lastfm.album.image)
+		if (track.pictureId) return `/api/cover/${track.pictureId}`
 		return undefined
 	}, [track, lastfm, lastfmLoading])
 

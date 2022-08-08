@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react"
 import { trpc } from "../../utils/trpc"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
+import AlbumMiniature from "./AlbumMiniature"
 
 const defaultArray = [] as never[]
 
@@ -22,42 +23,41 @@ export default function Search({
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 
-	// console.log('result', result?.length)
-
 	return (
 		<>
 			<input
 				ref={input}
 				type="search"
 				placeholder="Dee Dee Bridgewater Autumn Leaves"
-				// disabled={anyLoading}
-				// onChange={e => setChar(e.target.value?.[0] ?? "")}
 				onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
 			/>
 			<div className={styles.results}>
 				<ul>
 					{tracks.slice(0, 10).map(item => (
 						<li key={item.id}>
-							<button onClick={() => setId(item.id)}>
+							<button
+								className={styles.basic}
+								onClick={() => setId(item.id)}
+							>
 								{`${item.name} - ${item.artist?.name}`}
 							</button>
 						</li>
 					))}
 				</ul>
-				<ul>
-					{albums.slice(0, 10).map(item => (
+				<ul className={styles.miniatures}>
+					{albums.slice(0, 9).map(item => (
 						<li key={item.id}>
-							<button onClick={() => setId(item.id)}>
-								{`${item.name} - ${item.artist?.name}`}
+							<button onClick={() => console.log(item)}>
+								<AlbumMiniature id={item.id} />
 							</button>
 						</li>
 					))}
 				</ul>
-				<ul>
-					{artists.slice(0, 10).map(item => (
+				<ul className={styles.miniatures}>
+					{artists.slice(0, 9).map(item => (
 						<li key={item.id}>
-							<button onClick={() => setId(item.id)}>
-								{`${item.name} (${item._count.albums} albums)`}
+							<button onClick={() => console.log(item)}>
+								<AlbumMiniature id={item.albums[0]?.id} />
 							</button>
 						</li>
 					))}
@@ -65,7 +65,10 @@ export default function Search({
 				<ul>
 					{genres.slice(0, 10).map(item => (
 						<li key={item.id}>
-							<button onClick={() => setId(item.id)}>
+							<button
+								className={styles.basic}
+								onClick={() => console.log(item)}
+							>
 								{`${item.name} (${item._count.tracks} tracks)`}
 							</button>
 						</li>

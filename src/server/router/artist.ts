@@ -25,6 +25,12 @@ export const artistRouter = createRouter()
           name: "asc",
         },
         include: {
+          albums: {
+            take: 1,
+            orderBy: {
+              year: "desc",
+            },
+          },
           _count: {
             select: {
               albums: true,
