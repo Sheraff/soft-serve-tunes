@@ -14,11 +14,11 @@ export default function useImagePalette({
 		ref.current.addEventListener("load", (e) => {
 			const img = e.target as HTMLImageElement
 			const canvas = document.createElement("canvas")
-			canvas.width = img.naturalWidth
-			canvas.height = img.naturalHeight
+			canvas.width = img.naturalWidth / 2
+			canvas.height = img.naturalHeight / 2
 			const ctx = canvas.getContext("2d")
 			if (!ctx) return
-			ctx.drawImage(img, 0, 0)
+			ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 			const rgbArray = buildRgb(imageData.data)
 			const quantColors = quantization(rgbArray, 0, 2)

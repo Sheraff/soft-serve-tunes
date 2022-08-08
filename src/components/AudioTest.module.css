@@ -25,9 +25,9 @@
 	align-items: center;
 	gap: 1em;
 	transition:
-		--foreground-color 2s ease-in-out,
-		--background-color 2s ease-in-out,
-		--gradient-color 2s ease-in-out;
+		--foreground-color 1s linear 250ms,
+		--background-color 1s linear 250ms,
+		--gradient-color 1s linear 250ms;
 }
 
 .audio {
