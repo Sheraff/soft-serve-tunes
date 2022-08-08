@@ -170,13 +170,15 @@ export const lastfmRouter = createRouter()
                   mbid: lastfm.track.mbid,
                   name: lastfm.track.name,
                   tags: {
-                    connectOrCreate: lastfm.track.toptags.tag.map(tag => ({
-                      where: { url: tag.url },
-                      create: {
-                        name: tag.name,
-                        url: tag.url,
-                      }
-                    }))
+                    connectOrCreate: lastfm.track.toptags.tag
+                      .filter(tag => tag.url)
+                      .map(tag => ({
+                        where: { url: tag.url },
+                        create: {
+                          name: tag.name,
+                          url: tag.url,
+                        }
+                      }))
                   },
                 }
               }
