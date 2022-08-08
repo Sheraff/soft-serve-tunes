@@ -1,36 +1,3 @@
-@property --background-color {
-	syntax: '<color>';
-	inherits: false;
-	initial-value: black;
-}
-
-@property --gradient-color {
-	syntax: '<color>';
-	inherits: false;
-	initial-value: #333;
-}
-
-@property --foreground-color {
-	syntax: '<color>';
-	inherits: false;
-	initial-value: white;
-}
-
-.main {
-	background: linear-gradient(180deg, var(--gradient-color) 0%, var(--background-color) 100%);
-	color: var(--foreground-color);
-	min-height: 100%;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 1em;
-	gap: 1em;
-	transition:
-		--foreground-color 1s linear 250ms,
-		--background-color 1s linear 250ms,
-		--gradient-color 1s linear 250ms;
-}
-
 .audio {
 	margin: auto;
 	display: block;
@@ -38,17 +5,4 @@
 
 .select {
 	width: 100%;
-}
-
-.img {
-	display: block;
-	width: 500px;
-	height: 500px;
-	object-fit: cover;
-	border-radius: 10px;
-	opacity: 0.9;
-}
-.img:not([src]),
-.img[src=""] {
-	visibility: hidden;
 }

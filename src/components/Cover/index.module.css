@@ -1,0 +1,12 @@
+.img {
+	display: block;
+	width: 500px;
+	height: 500px;
+	object-fit: cover;
+	border-radius: 10px;
+	opacity: 0.9;
+}
+.img:not([src]),
+.img[src=""] {
+	visibility: hidden;
+}

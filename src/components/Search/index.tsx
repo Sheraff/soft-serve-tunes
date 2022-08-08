@@ -3,6 +3,8 @@ import { trpc } from "../../utils/trpc"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 
+const defaultArray = [] as never[]
+
 export default function Search({
 	setId
 }: {
@@ -15,10 +17,10 @@ export default function Search({
 	const {data: artistsRaw} = trpc.useQuery(["artist.list"], {enabled})
 	const {data: genresRaw} = trpc.useQuery(["genre.list"], {enabled})
 
-	const tracks = useAsyncInputStringDistance(input, tracksRaw || [])
-	const albums = useAsyncInputStringDistance(input, albumsRaw || [])
-	const artists = useAsyncInputStringDistance(input, artistsRaw || [])
-	const genres = useAsyncInputStringDistance(input, genresRaw || [])
+	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray)
+	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray)
+	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
+	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 
 	// console.log('result', result?.length)
 

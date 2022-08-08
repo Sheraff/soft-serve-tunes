@@ -8,6 +8,7 @@ export default function useImagePalette({
 }) {
 	const [palette, setPalette] = useState({})
 	useEffect(() => {
+		console.log('palette start', ref.current)
 		if(!ref.current) return
 		const controller = new AbortController()
 		let ricId: number

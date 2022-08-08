@@ -40,7 +40,7 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		console.log('sending list')
 		worker.current.postMessage({ type: "list", list: dataList })
 		const onInput = () => {
-			if (worker.current) {
+			if (worker.current && inputMemo.value) {
 				console.log('sending input')
 				worker.current.postMessage({ type: "input", input: inputMemo.value })
 			}

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
-import { useQueryClient } from "react-query"
-import useImagePalette from "./useImagePalette"
 import Search from "./Search"
 import Infos from "./Infos"
+import Palette from "./Palette"
+import Cover from "./Cover"
 
 const store = Symbol()
 
@@ -39,29 +39,12 @@ export default function AudioTest({ }) {
 	})
 	console.log(metadata)
 
-	const imgSrc = useMemo(() => {
-		if (!id || lastfmLoading) return undefined
-		if (lastfm?.album?.image) {
-			const base = lastfm.album.image
-			const sizeRegex = /\/i\/u\/([^\/]*)\//
-			const src = base.replace(sizeRegex, "/i/u/500x500/")
-			return src
-		}
-		// if (item.pictureId) {
-		// 	return `/api/cover/${item.pictureId}`
-		// }
-		return undefined
-	}, [id, lastfm, lastfmLoading])
+
 
 	const img = useRef<HTMLImageElement>(null)
-	const palette = useImagePalette({ref: img})
 
 	return (
-		<div className={styles.main} style={{
-			'--background-color': palette.background,
-			'--gradient-color': palette.gradient,
-			'--foreground-color': palette.foreground,
-		} as React.CSSProperties}>
+		<Palette img={img}>
 			<div>
 				<audio
 					className={styles.audio}
@@ -73,10 +56,8 @@ export default function AudioTest({ }) {
 				/>
 			</div>
 			<Search setId={setId} />
-			<div>
-				<img className={styles.img} src={imgSrc} alt="" ref={img} crossOrigin="anonymous"/>
-			</div>
+			<Cover id={id} />
 			<Infos id={id} />
-		</div>
+		</Palette>
 	)
 }
