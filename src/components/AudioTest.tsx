@@ -39,8 +39,6 @@ export default function AudioTest({ }) {
 	})
 	console.log(metadata)
 
-
-
 	const img = useRef<HTMLImageElement>(null)
 
 	return (
@@ -56,7 +54,7 @@ export default function AudioTest({ }) {
 				/>
 			</div>
 			<Search setId={setId} />
-			<Cover id={id} />
+			<Cover id={id} ref={img} />
 			<Infos id={id} />
 		</Palette>
 	)

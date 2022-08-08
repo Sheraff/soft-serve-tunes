@@ -9,6 +9,9 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 	const worker = useRef<Worker | null>(null)
 
 	useEffect(() => {
+		const {current: inputMemo} = inputRef
+		if (!inputMemo) return
+
 		const workerMemo = new Worker("./worker/asyncInput.worker.js", {
 			type: "module"
 		})
@@ -21,8 +24,7 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 				input: string
 			}
 		}) => {
-			console.log('received', inputRef.current?.value, data.input)
-			if (inputRef.current.value === data.input) {
+			if (inputMemo.value === data.input) {
 				setList(data.list)
 			}
 		}
@@ -37,15 +39,14 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		const { current: inputMemo } = inputRef
 		if (!worker.current || !inputMemo) return
 
-		console.log('sending list')
 		worker.current.postMessage({ type: "list", list: dataList })
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
-				console.log('sending input')
 				worker.current.postMessage({ type: "input", input: inputMemo.value })
 			}
 		}
 		onInput()
+
 		inputMemo.addEventListener("input", onInput, { passive: true })
 		return () => {
 			inputMemo.removeEventListener("input", onInput)
