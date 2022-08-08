@@ -1,0 +1,8 @@
+.progress {
+	width: 100%;
+	height: 10px;
+	background: white;
+	transform-origin: left;
+	transform: scaleX(var(--progress, 0));
+	transition: transform 0.5s;
+}

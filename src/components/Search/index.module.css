@@ -1,0 +1,22 @@
+.results {
+	width: 100%;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	white-space: nowrap;
+	gap: 1em;
+}
+
+.results ul {
+	padding: 0;
+}
+
+.results li {
+	list-style: none;
+}
+
+.results button {
+	width: 100%;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	text-align: left;
+}

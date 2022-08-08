@@ -137,7 +137,13 @@ export const listRouter = createRouter()
           return
         }
         console.log(`Creating track for ${path}`)
-        const metadata = await parseFile(path)
+        let metadata
+        try {
+          metadata = await parseFile(path)
+        } catch (error) {
+          console.warn('Parse error, probably not a music file', error)
+          return
+        }
         
         const uselessNameRegex = /^[0-9\s]*(track|piste)[0-9\s]*$/i
         const name = metadata.common.title && !uselessNameRegex.test(metadata.common.title)
