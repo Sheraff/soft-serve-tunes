@@ -47,9 +47,9 @@ export const listRouter = createRouter()
   .query("all", {
     async resolve({ ctx }) {
       const tracks = await ctx.prisma.track.findMany({
-        orderBy: {
-          name: "asc",
-        },
+        // orderBy: {
+        //   name: "asc",
+        // },
         include: {
           artist: {
             select: { name: true },
@@ -64,24 +64,24 @@ export const listRouter = createRouter()
           }
         }
       })
-      tracks.sort((a, b) => {
-        const aArtist = a.artist?.name
-        const bArtist = b.artist?.name
-        if (aArtist !== bArtist) {
-          if(!aArtist) return -1
-          if(!bArtist) return 1
-          return aArtist.localeCompare(bArtist)
-        }
-        const aAlbum = a.album?.name
-        const bAlbum = b.album?.name
-        if (aAlbum !== bAlbum) {
-          if(!aAlbum) return -1
-          if(!bAlbum) return 1
-          return aAlbum.localeCompare(bAlbum)
-        }
+      // tracks.sort((a, b) => {
+      //   const aArtist = a.artist?.name
+      //   const bArtist = b.artist?.name
+      //   if (aArtist !== bArtist) {
+      //     if(!aArtist) return -1
+      //     if(!bArtist) return 1
+      //     return aArtist.localeCompare(bArtist)
+      //   }
+      //   const aAlbum = a.album?.name
+      //   const bAlbum = b.album?.name
+      //   if (aAlbum !== bAlbum) {
+      //     if(!aAlbum) return -1
+      //     if(!bAlbum) return 1
+      //     return aAlbum.localeCompare(bAlbum)
+      //   }
 
-        return a.name.localeCompare(b.name)
-      })
+      //   return a.name.localeCompare(b.name)
+      // })
       return tracks
     }
   })

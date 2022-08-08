@@ -6,12 +6,12 @@ import styles from "./index.module.css"
 export default forwardRef(function Cover({
 	id,
 }: {
-	id: string
+	id: string | undefined,
 }, ref: React.Ref<HTMLImageElement>) {
-	const {data: track} = trpc.useQuery(["track.get", {id}], {
+	const {data: track} = trpc.useQuery(["track.get", {id: id as string}], {
 		enabled: Boolean(id),
 	})
-	const {data: lastfm, isLoading: lastfmLoading} = trpc.useQuery(["lastfm.track", {id}], {
+	const {data: lastfm, isLoading: lastfmLoading} = trpc.useQuery(["lastfm.track", {id: id as string}], {
 		enabled: Boolean(id),
 	})
 

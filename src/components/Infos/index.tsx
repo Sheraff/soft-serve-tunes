@@ -4,9 +4,9 @@ import { trpc } from "../../utils/trpc"
 export default function Infos({
 	id,
 }: {
-	id: string
+	id: string | undefined,
 }) {
-	const {data: item, isLoading: trackLoading} = trpc.useQuery(["track.get", {id}], {
+	const {data: item, isLoading: trackLoading} = trpc.useQuery(["track.get", {id: id as string}], {
 		enabled: Boolean(id),
 	})
 	return (

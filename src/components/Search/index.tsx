@@ -7,9 +7,9 @@ import AlbumMiniature from "./AlbumMiniature"
 const defaultArray = [] as never[]
 
 export default function Search({
-	setId
+	setPlaylist
 }: {
-	setId: Dispatch<SetStateAction<string>>
+	setPlaylist: (type: string, id: string) => void
 }) {
 	const input = useRef<HTMLInputElement>(null)
 	const [enabled, setEnabled] = useState(false)
@@ -37,7 +37,8 @@ export default function Search({
 						<li key={item.id}>
 							<button
 								className={styles.basic}
-								onClick={() => setId(item.id)}
+								onClick={() => setPlaylist("track", item.id)}
+								title={item.name}
 							>
 								{`${item.name} - ${item.artist?.name}`}
 							</button>
@@ -47,7 +48,10 @@ export default function Search({
 				<ul className={styles.miniatures}>
 					{albums.slice(0, 9).map(item => (
 						<li key={item.id}>
-							<button onClick={() => console.log(item)}>
+							<button
+								onClick={() => setPlaylist("album", item.id)}
+								title={item.name}
+							>
 								<AlbumMiniature id={item.id} />
 							</button>
 						</li>
@@ -56,7 +60,10 @@ export default function Search({
 				<ul className={styles.miniatures}>
 					{artists.slice(0, 9).map(item => (
 						<li key={item.id}>
-							<button onClick={() => console.log(item)}>
+							<button
+								onClick={() => setPlaylist("artist", item.id)}
+								title={item.name}
+							>
 								<AlbumMiniature id={item.albums[0]?.id} />
 							</button>
 						</li>
@@ -67,7 +74,8 @@ export default function Search({
 						<li key={item.id}>
 							<button
 								className={styles.basic}
-								onClick={() => console.log(item)}
+								onClick={() => setPlaylist("genre", item.id)}
+								title={item.name}
 							>
 								{`${item.name} (${item._count.tracks} tracks)`}
 							</button>
