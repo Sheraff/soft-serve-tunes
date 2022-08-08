@@ -53,7 +53,7 @@ export default function AudioTest({ }) {
 
 	const item = (list && (current in list)) ? list[current] : undefined
 
-	const {data: lastfm} = trpc.useQuery(["lastfm.track", {id: item?.id}], {
+	const {data: lastfm, isFetching: lastfmLoading} = trpc.useQuery(["lastfm.track", {id: item?.id}], {
 		enabled: !!item?.id,
 	})
 	console.log(lastfm)
@@ -63,9 +63,8 @@ export default function AudioTest({ }) {
 	})
 	console.log(metadata)
 
-	// const imgSrc = ""
 	const imgSrc = useMemo(() => {
-		if (!item) return ""
+		if (!item || lastfmLoading) return undefined
 		if (lastfm?.album?.image) {
 			const base = lastfm.album.image
 			const sizeRegex = /\/i\/u\/([^\/]*)\//
@@ -75,8 +74,8 @@ export default function AudioTest({ }) {
 		if (item.pictureId) {
 			return `/api/cover/${item.pictureId}`
 		}
-		return ""
-	}, [item, lastfm])
+		return undefined
+	}, [item, lastfm, lastfmLoading])
 
 	const img = useRef<HTMLImageElement>(null)
 	const palette = useImagePalette({ref: img})

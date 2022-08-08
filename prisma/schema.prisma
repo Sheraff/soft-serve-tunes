@@ -39,6 +39,8 @@ model Track {
   pictureId  String?
   picture    Cover?       @relation(fields: [pictureId], references: [id])
   lastfm     LastFmTrack? @relation
+  playcount  Int          @default(0)
+  favourite  Boolean      @default(false)
 
   @@unique([name, artistId, albumId])
 }
