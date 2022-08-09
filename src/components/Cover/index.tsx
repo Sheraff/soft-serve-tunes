@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react"
+import { forwardRef, useMemo, useRef } from "react"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 import { trpc } from "../../utils/trpc"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
@@ -16,13 +16,14 @@ export default forwardRef(function Cover({
 		enabled: Boolean(id),
 	})
 
+	const previous = useRef<string | undefined>(undefined)
 	const imgSrc = useMemo(() => {
-		if (!track || lastfmLoading) return undefined
+		if (!track || lastfmLoading) return previous.current
 		if (lastfm?.album?.image) return lastfmImageToUrl(lastfm.album.image)
 		if (track.pictureId) return `/api/cover/${track.pictureId}`
 		return undefined
 	}, [track, lastfm, lastfmLoading])
-
+	// previous.current = imgSrc
 	return (
 		<img
 			className={styles.img}

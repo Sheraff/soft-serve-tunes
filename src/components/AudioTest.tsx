@@ -9,6 +9,7 @@ import { useRouter } from "next/router"
 import useRouteParts from "./RouteContext"
 import { useQueryClient } from "react-query"
 import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
+import PlaylistViz from "./PlaylistViz"
 
 const store = Symbol()
 
@@ -81,6 +82,7 @@ export default function AudioTest({ }) {
 			<Search setPlaylist={setPlaylist} />
 			<Cover id={item?.id} ref={img} />
 			<Infos id={item?.id} />
+			<PlaylistViz />
 		</Palette>
 	)
 }

@@ -6,6 +6,7 @@ type RouteContextType = {
 	name: string,
 	id: string,
 	index: number,
+	setIndex: (index: number) => void,
 }
 
 const RouteContext = createContext<RouteContextType>({
@@ -13,6 +14,7 @@ const RouteContext = createContext<RouteContextType>({
 	name: "",
 	id: "",
 	index: 0,
+	setIndex: () => {},
 })
 
 /**
@@ -22,7 +24,7 @@ const RouteContext = createContext<RouteContextType>({
  * /album/album-name/id/[[index]]
  * /artist/artist-name/id/[[index]]
  */
-function parseParts(parts: string | string[]): RouteContextType {
+function parseParts(parts: string | string[]): Omit<RouteContextType, 'setIndex'> {
 	if (parts.length === 0)
 		return {
 			type: "",
@@ -48,9 +50,17 @@ function parseParts(parts: string | string[]): RouteContextType {
 }
 
 export function RouteParser({children}: {children: React.ReactNode}) {
-	const {query: {parts = []}} = useRouter()
+	const {query: {parts = []}, push} = useRouter()
+	const {type, name, id, index} = parseParts(parts)
+	const setIndex = (index: number) => type && name && id && push(`/${type}/${name}/${id}/${index}`, undefined, {scroll: false, shallow: true})
 	return (
-		<RouteContext.Provider value={parseParts(parts)}>
+		<RouteContext.Provider value={{
+			type,
+			name,
+			id,
+			index,
+			setIndex,
+		}}>
 			{children}
 		</RouteContext.Provider>
 	)

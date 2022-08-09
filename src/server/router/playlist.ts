@@ -1,15 +1,23 @@
 import { createRouter } from "./context"
 import { z } from "zod"
+import { Prisma } from "@prisma/client"
 
-const trackInclude = {
+const trackInclude: Prisma.TrackInclude = {
   artist: {
-    select: { name: true },
+    select: {
+      id: true,
+      name: true,
+    },
   },
   album: {
-    select: { name: true },
+    select: {
+      id: true,
+      name: true,
+    },
   },
   genres: {
     select: {
+      id: true,
       name: true,
     }
   }

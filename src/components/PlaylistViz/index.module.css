@@ -1,0 +1,35 @@
+.main {
+	display: grid;
+	grid-template-rows: auto;
+	grid-template-columns: repeat(var(--count), 1fr);
+	gap: 5px;
+}
+
+.item {
+	font-size: 10px;
+	overflow: hidden;
+	opacity: .7;
+	display: grid;
+}
+
+.item > * {
+	grid-column: 1 / -1;
+	grid-row: 1 / -1;
+}
+
+.current {
+	opacity: 1;
+}
+
+.text {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0.5);
+	height: 100%;
+}
+
+.text p {
+	margin: 0;
+	padding: 0;
+}
