@@ -6,11 +6,9 @@ import { join, basename, extname } from "node:path"
 import { IPicture, parseFile } from 'music-metadata'
 import { prisma } from "../../server/db/client";
 import { serialize } from "superjson"
+import { env } from "../../env/server.mjs"
 
-if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
-	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
-}
-const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
+const rootFolder = env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
 
 
 let initialized = false

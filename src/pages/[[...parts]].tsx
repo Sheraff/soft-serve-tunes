@@ -2,9 +2,9 @@ import classNames from "classnames"
 import type { NextPage } from "next"
 import Head from "next/head"
 import { useEffect, useRef, useState } from "react"
-import { useQueryClient } from "react-query"
 import AudioTest from "../components/AudioTest"
 import { RouteParser } from "../components/RouteContext"
+import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
 import styles from "./index.module.css"
 
@@ -17,7 +17,7 @@ const Home: NextPage = () => {
 	const ws = useRef<WebSocket>()
 	useEffect(() => {
 		if (!ws.current) {
-			ws.current = new WebSocket(`ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+			ws.current = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
 		}
 		const controller = new AbortController()
 		const socket = ws.current

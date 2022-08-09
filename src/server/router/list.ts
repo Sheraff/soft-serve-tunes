@@ -5,15 +5,7 @@ import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
 import { WebSocketServer } from 'ws'
-
-if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
-  throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
-}
-const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
-if (!process.env.NEXT_PUBLIC_WEBSOCKET_PORT) {
-  throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
-}
-const websocketPort = Number(process.env.NEXT_PUBLIC_WEBSOCKET_PORT)
+import { env } from "../../env/server.mjs"
 
 const populating: {
   promise: Promise<null> | null
@@ -28,7 +20,7 @@ const populating: {
 declare global {
   var socketServer: WebSocketServer | null;
 }
-
+const websocketPort = Number(env.NEXT_PUBLIC_WEBSOCKET_PORT)
 if (!globalThis.socketServer || globalThis.socketServer.options.port !== websocketPort) {
   globalThis.socketServer?.close()
   const socketServer = new WebSocketServer({
@@ -64,7 +56,9 @@ if (!globalThis.socketServer || globalThis.socketServer.options.port !== websock
       ws.close()
     }
   })
-  globalThis.socketServer = socketServer
+  if (env.NODE_ENV !== "production") {
+    globalThis.socketServer = socketServer
+  }
 }
 
 export const listRouter = createRouter()
@@ -78,7 +72,7 @@ export const listRouter = createRouter()
       }
 
       async function recursiveReaddirIntoDatabase(dirPath: string = '') {
-        const dir = join(rootFolder, dirPath)
+        const dir = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dirPath)
         const dirFiles = await readdir(dir)
         populating.total += dirFiles.length
         for (const file of dirFiles) {
@@ -87,7 +81,7 @@ export const listRouter = createRouter()
             continue
           }
           const relativePath = join(dirPath, file)
-          const filePath = join(rootFolder, relativePath)
+          const filePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, relativePath)
           const stats = await stat(filePath)
           if (stats.isDirectory()) {
             await recursiveReaddirIntoDatabase(relativePath)
@@ -97,21 +91,6 @@ export const listRouter = createRouter()
             console.warn(`Unknown file type: ${relativePath}`)
           }
         }
-        // return Promise.allSettled(dirFiles.map(async (file) => {
-        //   if (file.startsWith('.')) {
-        //     return
-        //   }
-        //   const relativePath = join(dirPath, file)
-        //   const filePath = join(rootFolder, relativePath)
-        //   const stats = await stat(filePath)
-        //   if (stats.isDirectory()) {
-        //     await recursiveReaddirIntoDatabase(relativePath)
-        //   } else if (stats.isFile()) {
-        //     await createTrack(filePath, stats)
-        //   } else {
-        //     console.warn(`Unknown file type: ${relativePath}`)
-        //   }
-        // }))
       }
       
       async function createTrack(path: string, stats: Stats, retries = 0) {

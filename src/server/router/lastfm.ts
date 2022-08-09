@@ -1,6 +1,7 @@
 import { createRouter } from "./context";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { env } from "../../env/server.mjs";
 
 const lastFmTrackSchema = z
   .object({
@@ -103,9 +104,6 @@ export const lastfmRouter = createRouter()
         force: z.boolean().optional(),
       }),
     async resolve({ input, ctx }) {
-      if(!process.env.LAST_FM_API_KEY) {
-        throw new Error("Missing LAST_FM_API_KEY value in .env")
-      }
       const track = await ctx.prisma.track.findUnique({
         where: { id: input.id },
         select: {
@@ -152,7 +150,7 @@ export const lastfmRouter = createRouter()
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'track.getInfo')
         url.searchParams.set('format', 'json')
-        url.searchParams.set('api_key', process.env.LAST_FM_API_KEY)
+        url.searchParams.set('api_key', env.LAST_FM_API_KEY)
         url.searchParams.set('track', track.name)
         url.searchParams.set('autocorrect', '1')
         url.searchParams.set('artist', track.artist.name)
@@ -191,7 +189,7 @@ export const lastfmRouter = createRouter()
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'artist.getInfo')
         url.searchParams.set('format', 'json')
-        url.searchParams.set('api_key', process.env.LAST_FM_API_KEY)
+        url.searchParams.set('api_key', env.LAST_FM_API_KEY)
         url.searchParams.set('autocorrect', '1')
         url.searchParams.set('artist', track.artist.name)
         const data = await fetch(url)
@@ -227,7 +225,7 @@ export const lastfmRouter = createRouter()
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'album.getInfo')
         url.searchParams.set('format', 'json')
-        url.searchParams.set('api_key', process.env.LAST_FM_API_KEY)
+        url.searchParams.set('api_key', env.LAST_FM_API_KEY)
         url.searchParams.set('autocorrect', '1')
         url.searchParams.set('album', track.album.name)
         url.searchParams.set('artist', track.artist.name)
