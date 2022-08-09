@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
 import Search from "./Search"
 import Infos from "./Infos"
 import Palette from "./Palette"
 import Cover from "./Cover"
+import { useRouter } from "next/router"
+import useRouteParts from "./RouteContext"
 
 const store = Symbol()
 
@@ -13,23 +15,24 @@ type ListType = "track" | "album" | "artist" | "genre"
 export default function AudioTest({ }) {
 	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
 
-	const [listType, setListType] = useState<ListType | "">("")
-	const [id, setId] = useState("")
-	const [index, setIndex] = useState(0)
-	const { data: list } = trpc.useQuery(["playlist.generate", { type: listType, id }], {
-		enabled: Boolean(listType && id),
-		onSuccess: () => setIndex(0),
+	const router = useRouter()
+	const {type, name, id, index} = useRouteParts()
+
+	const { data: list } = trpc.useQuery(["playlist.generate", { type, id }], {
+		enabled: Boolean(type && id)
 	})
 
 	const item = list?.[index]
 	const playNext = useMemo(() => {
 		if(!list?.length) return () => {}
-		return () => setIndex((i) => (i + 1) % list.length)
-	}, [list?.length])
+		const next = (index + 1) % list.length
+		return () => router.push(`/${type}/${name}/${id}/${next}`)
+	}, [list?.length, router, type, name, id, index])
 	const playPrev = useMemo(() => {
 		if(!list?.length) return () => {}
-		return () => setIndex((i) => (i - 1 + list.length) % list.length)
-	}, [list?.length])
+		const prev = (index - 1 + list.length) % list.length
+		return () => router.push(`/${type}/${name}/${id}/${prev}`)
+	}, [list?.length, router, type, name, id, index])
 
 	useEffect(() => {
 		if (!audio.current) return
@@ -46,15 +49,14 @@ export default function AudioTest({ }) {
 	// })
 
 	const img = useRef<HTMLImageElement>(null)
-	const setPlaylist = useCallback((type: ListType, id: string) => {
-		setListType(type)
-		setId(id)
-	}, [])
+	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
+		router.push(`/${type}/${name.replace(/\s/g, '-')}/${id}`)
+	}, [router])
 
 	return (
 		<Palette img={img}>
 			<div className={styles.player}>
-				<button onClick={playPrev} disabled={!list?.length}>⬅︎</button>
+				<button onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
 				<audio
 					className={styles.audio}
 					controls
@@ -63,7 +65,7 @@ export default function AudioTest({ }) {
 					src={item?.id && `/api/file/${item.id}`}
 					autoPlay
 				/>
-				<button onClick={playNext} disabled={!list?.length}>➡︎</button>
+				<button onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
 			</div>
 			<Search setPlaylist={setPlaylist} />
 			<Cover id={item?.id} ref={img} />

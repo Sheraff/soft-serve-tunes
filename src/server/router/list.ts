@@ -7,12 +7,16 @@ import { parseFile } from 'music-metadata'
 import { WebSocketServer } from 'ws'
 
 if (!process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER) {
-	throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
+  throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
 }
 const rootFolder = process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER
+if (!process.env.NEXT_PUBLIC_WEBSOCKET_PORT) {
+  throw new Error("Missing NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER value in .env")
+}
+const websocketPort = Number(process.env.NEXT_PUBLIC_WEBSOCKET_PORT)
 
 const socketServer = new WebSocketServer({
-  port: 8080,
+  port: websocketPort,
   path: '/api/list/populate',
   host: 'localhost',
 })

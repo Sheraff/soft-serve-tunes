@@ -12,9 +12,10 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		const {current: inputMemo} = inputRef
 		if (!inputMemo) return
 
-		const workerMemo = new Worker("./worker/asyncInput.worker.js", {
-			type: "module"
-		})
+		const workerMemo = new Worker(
+			new URL("./worker/asyncInput.worker.js", import.meta.url),
+			{ type: "module" }
+		)
 		worker.current = workerMemo
 		const onMessage = ({
 			data

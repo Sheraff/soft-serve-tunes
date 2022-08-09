@@ -3,6 +3,7 @@ import Head from "next/head"
 import { useEffect, useState } from "react"
 import { useQueryClient } from "react-query"
 import AudioTest from "../components/AudioTest"
+import { RouteParser } from "../components/RouteContext"
 import { trpc } from "../utils/trpc"
 import styles from "./index.module.css"
 
@@ -14,7 +15,7 @@ const Home: NextPage = () => {
 	const client = useQueryClient()
 	useEffect(() => {
 		mutate(undefined, {onSuccess: () => {
-			const ws = new WebSocket(`ws://localhost:8080/api/list/populate`)
+			const ws = new WebSocket(`ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}/api/list/populate`)
 			performance.mark("lib-pop-start")
 			ws.onmessage = (e) => {
 				const data = JSON.parse(e.data)
@@ -41,12 +42,14 @@ const Home: NextPage = () => {
 				<meta name="description" content="self hosted music streaming" />
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
-			<div className={styles.progress} style={
-				{'--progress': progress} as React.CSSProperties
-			}/>
-			{ready && (
-				<AudioTest />
-			)}
+			<RouteParser>
+				<div className={styles.progress} style={
+					{'--progress': progress} as React.CSSProperties
+				}/>
+				{ready && (
+					<AudioTest />
+				)}
+			</RouteParser>
 		</>
 	)
 }

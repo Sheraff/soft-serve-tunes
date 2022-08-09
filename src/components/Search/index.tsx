@@ -9,7 +9,7 @@ const defaultArray = [] as never[]
 export default function Search({
 	setPlaylist
 }: {
-	setPlaylist: (type: string, id: string) => void
+	setPlaylist: (type: string, name: string, id: string) => void
 }) {
 	const input = useRef<HTMLInputElement>(null)
 	const [enabled, setEnabled] = useState(false)
@@ -37,7 +37,7 @@ export default function Search({
 						<li key={item.id}>
 							<button
 								className={styles.basic}
-								onClick={() => setPlaylist("track", item.id)}
+								onClick={() => setPlaylist("track", item.name, item.id)}
 								title={item.name}
 							>
 								{`${item.name} - ${item.artist?.name}`}
@@ -49,7 +49,7 @@ export default function Search({
 					{albums.slice(0, 9).map(item => (
 						<li key={item.id}>
 							<button
-								onClick={() => setPlaylist("album", item.id)}
+								onClick={() => setPlaylist("album", item.name, item.id)}
 								title={item.name}
 							>
 								<AlbumMiniature id={item.id} />
@@ -61,7 +61,7 @@ export default function Search({
 					{artists.slice(0, 9).map(item => (
 						<li key={item.id}>
 							<button
-								onClick={() => setPlaylist("artist", item.id)}
+								onClick={() => setPlaylist("artist", item.name, item.id)}
 								title={item.name}
 							>
 								<AlbumMiniature id={item.albums[0]?.id} />
@@ -74,7 +74,7 @@ export default function Search({
 						<li key={item.id}>
 							<button
 								className={styles.basic}
-								onClick={() => setPlaylist("genre", item.id)}
+								onClick={() => setPlaylist("genre", item.name, item.id)}
 								title={item.name}
 							>
 								{`${item.name} (${item._count.tracks} tracks)`}
