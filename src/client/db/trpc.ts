@@ -60,14 +60,14 @@ export async function storeQueryInIndexedDB<T>(queryKey: any, result: T) {
 	}
 }
 
-export async function retrieveQueryFromIndexedDB<T>(queryKey: any): Promise<T | null> {
+export async function retrieveQueryFromIndexedDB<T>(queryKey: string): Promise<T | null> {
 	const db = await openDB("trpc", 1)
 	const tx = db.transaction("requests")
 	const store = tx.objectStore("requests")
-	const request = store.get(JSON.stringify(queryKey)) as IDBRequest<QueryStorage<T>>
+	const request = store.get(queryKey) as IDBRequest<QueryStorage<T>>
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to retrieve request result ${JSON.stringify(queryKey)} from indexedDB`, request.error?.message)
+			console.error(`failed to retrieve request result ${queryKey} from indexedDB`, request.error?.message)
 			reject(request.error)
 		}
 		request.onsuccess = () => {

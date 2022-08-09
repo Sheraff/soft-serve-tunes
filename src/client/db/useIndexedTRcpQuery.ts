@@ -15,25 +15,29 @@ export default function useIndexedTRcpQuery<
 	//@ts-ignore -- it somehow expects a 2-tuple but some queries don't have an input
 	const queryResponse = trpc.useQuery(pathAndInput, {
 		...options,
-		onSuccess(data, ...rest) {
+		onSuccess(data) {
+			options.onSuccess?.(data)
 			if (options.enabled ?? true) {
 				state.current = 'done'
 				storeQueryInIndexedDB<inferQueryOutput<TRouteKey>>(pathAndInput, data)
 			}
-			options.onSuccess?.(data, ...rest)
 		}
 	})
 	const queryClient = useQueryClient()
+	const lastFetched = useRef<string>()
+	const keyPath = JSON.stringify(pathAndInput)
 	useEffect(() => {
-		if (queryResponse.isFetched || state.current !== 'idle') return
+		if (keyPath === lastFetched.current) return
 		state.current = 'loading'
-		retrieveQueryFromIndexedDB<inferQueryOutput<TRouteKey>>(pathAndInput).then(data => {
-			if (state.current === 'loading') {
-				queryClient.setQueryData(pathAndInput, data)
-				queryClient.invalidateQueries(pathAndInput)
+		lastFetched.current = keyPath
+		retrieveQueryFromIndexedDB<inferQueryOutput<TRouteKey>>(keyPath).then(data => {
+			if (state.current === 'loading' && lastFetched.current === keyPath) {
+				const extracted = JSON.parse(keyPath)
+				queryClient.setQueryData(extracted, data)
+				queryClient.invalidateQueries(extracted)
 			}
 		})
-	}, [queryResponse.isFetched, queryClient, pathAndInput])
+	}, [queryResponse.isFetched, queryClient, keyPath])
 
 	return queryResponse
 }
