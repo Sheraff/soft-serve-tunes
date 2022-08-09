@@ -15,28 +15,6 @@ if (!process.env.NEXT_PUBLIC_WEBSOCKET_PORT) {
 }
 const websocketPort = Number(process.env.NEXT_PUBLIC_WEBSOCKET_PORT)
 
-const socketServer = new WebSocketServer({
-  port: websocketPort,
-  path: '/api/list/populate',
-  host: 'localhost',
-})
-socketServer.on('connection', async (ws) => {
-  let closed = false
-  ws.on('close', () => closed = true)
-  if (populating.promise) {
-    const interval = setInterval(() => {
-      if (!closed) {
-        ws.send(JSON.stringify({type: 'progress', payload: populating.done / populating.total}))
-      }
-    }, 500)
-    await populating.promise
-    clearInterval(interval)
-  }
-  if (!closed) {
-    ws.send(JSON.stringify({type: 'done'}))
-    ws.close()
-  }
-})
 const populating: {
   promise: Promise<null> | null
   total: number
@@ -45,6 +23,48 @@ const populating: {
   promise: null,
   total: 0,
   done: 0,
+}
+
+declare global {
+  var socketServer: WebSocketServer | null;
+}
+
+if (!globalThis.socketServer || globalThis.socketServer.options.port !== websocketPort) {
+  globalThis.socketServer?.close()
+  const socketServer = new WebSocketServer({
+    port: websocketPort,
+  })
+  socketServer.options.port
+  socketServer.on('connection', (ws) => {
+    console.log(`\x1b[35mevent\x1b[0m - WS Connection ++ (${socketServer.clients.size})`);
+    ws.once('close', () => {
+      console.log(`\x1b[35mevent\x1b[0m - WS Connection -- (${socketServer.clients.size})`);
+    });
+  });
+  socketServer.on('error', (error) => {
+    console.log(`\x1b[31merror\x1b[0m - WebSocket Server error: ${error}`);
+  })
+  socketServer.on('listening', () => {
+    console.log(`\x1b[32mready\x1b[0m - WebSocket Server listening on ws://localhost:${websocketPort}`);
+  })
+  socketServer.on('connection', async (ws) => {
+    let closed = false
+    ws.on('close', () => closed = true)
+    if (populating.promise) {
+      const interval = setInterval(() => {
+        if (!closed) {
+          ws.send(JSON.stringify({type: 'progress', payload: populating.done / populating.total}))
+        }
+      }, 500)
+      await populating.promise
+      clearInterval(interval)
+    }
+    if (!closed) {
+      ws.send(JSON.stringify({type: 'done'}))
+      ws.close()
+    }
+  })
+  globalThis.socketServer = socketServer
 }
 
 export const listRouter = createRouter()

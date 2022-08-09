@@ -1,6 +1,6 @@
 import type { NextPage } from "next"
 import Head from "next/head"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "react-query"
 import AudioTest from "../components/AudioTest"
 import { RouteParser } from "../components/RouteContext"
@@ -13,26 +13,30 @@ const Home: NextPage = () => {
 	const [ready, setReady] = useState(false)
 	const { mutate } = trpc.useMutation(["list.populate"])
 	const client = useQueryClient()
+	
+	const ws = useRef<WebSocket>()
 	useEffect(() => {
-		mutate(undefined, {onSuccess: () => {
-			const ws = new WebSocket(`ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}/api/list/populate`)
-			performance.mark("lib-pop-start")
-			ws.onmessage = (e) => {
-				const data = JSON.parse(e.data)
-				if (data.type === "done") {
-					console.log("populating library: DONE")
-					performance.mark("lib-pop-end")
-					performance.measure("lib-pop", "lib-pop-start", "lib-pop-end")
-					client.invalidateQueries(["list.all"])
-					console.log(performance.getEntriesByName("lib-pop").at(-1)?.duration)
-					setProgress(1)
-					setReady(true)
-				} else if (data.type === "progress") {
-					console.log(`populating library: ${data.payload}%`)
-					setProgress(data.payload)
-				}
+		if (!ws.current) {
+			ws.current = new WebSocket(`ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+		}
+		const controller = new AbortController()
+		const socket = ws.current
+		socket.addEventListener("message", (e) => {
+			const data = JSON.parse(e.data)
+			if (data.type === "done") {
+				console.log("populating library: DONE")
+				client.invalidateQueries(["list.all"])
+				setProgress(1)
+				setReady(true)
+				socket.close()
+				ws.current = undefined
+			} else if (data.type === "progress") {
+				console.log(`populating library: ${data.payload}%`)
+				setProgress(data.payload)
 			}
-		}})
+		}, {signal: controller.signal})
+		mutate(undefined)
+		return () => controller.abort()
 	}, [mutate, client])
 
 	return (
