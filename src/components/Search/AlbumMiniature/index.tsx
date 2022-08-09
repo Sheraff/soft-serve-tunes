@@ -1,14 +1,14 @@
 import { useMemo } from "react"
 import lastfmImageToUrl from "../../../utils/lastfmImageToUrl"
-import { trpc } from "../../../utils/trpc"
+import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 
 export default function AlbumMiniature({
 	id,
 }: {
-	id: string,
+	id?: string,
 }) {
-	const {data: album} = trpc.useQuery(["album.cover", {id}], {enabled: Boolean(id)})
+	const {data: album} = useIndexedTRcpQuery(["album.cover", {id: id as string}], {enabled: Boolean(id)})
 
 	const imgSrc = useMemo(() => {
 		if (!album) return undefined

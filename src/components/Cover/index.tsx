@@ -1,6 +1,7 @@
 import { forwardRef, useMemo } from "react"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 import { trpc } from "../../utils/trpc"
+import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 
 export default forwardRef(function Cover({
@@ -8,7 +9,7 @@ export default forwardRef(function Cover({
 }: {
 	id: string | undefined,
 }, ref: React.Ref<HTMLImageElement>) {
-	const {data: track} = trpc.useQuery(["track.get", {id: id as string}], {
+	const {data: track} = useIndexedTRcpQuery(["track.get", {id: id as string}], {
 		enabled: Boolean(id),
 	})
 	const {data: lastfm, isLoading: lastfmLoading} = trpc.useQuery(["lastfm.track", {id: id as string}], {

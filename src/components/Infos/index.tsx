@@ -1,12 +1,12 @@
 import styles from './index.module.css'
-import { trpc } from "../../utils/trpc"
+import useIndexedTRcpQuery from '../../client/db/useIndexedTRcpQuery'
 
 export default function Infos({
 	id,
 }: {
-	id: string | undefined,
+	id?: string,
 }) {
-	const {data: item, isLoading: trackLoading} = trpc.useQuery(["track.get", {id: id as string}], {
+	const {data: item, isLoading: trackLoading} = useIndexedTRcpQuery(["track.get", {id: id as string}], {
 		enabled: Boolean(id),
 	})
 	return (

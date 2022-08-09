@@ -1,22 +1,24 @@
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react"
-import { trpc } from "../../utils/trpc"
+import { useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import AlbumMiniature from "./AlbumMiniature"
+import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
+import { ListType } from "../AudioTest"
 
 const defaultArray = [] as never[]
 
 export default function Search({
 	setPlaylist
 }: {
-	setPlaylist: (type: string, name: string, id: string) => void
+	setPlaylist: (type: ListType, name: string, id: string) => void
 }) {
 	const input = useRef<HTMLInputElement>(null)
 	const [enabled, setEnabled] = useState(false)
-	const {data: tracksRaw} = trpc.useQuery(["track.list"], {enabled})
-	const {data: albumsRaw} = trpc.useQuery(["album.list"], {enabled})
-	const {data: artistsRaw} = trpc.useQuery(["artist.list"], {enabled})
-	const {data: genresRaw} = trpc.useQuery(["genre.list"], {enabled})
+
+	const {data: tracksRaw} = useIndexedTRcpQuery(["track.list"], {enabled})
+	const {data: albumsRaw} = useIndexedTRcpQuery(["album.list"], {enabled})
+	const {data: artistsRaw} = useIndexedTRcpQuery(["artist.list"], {enabled})
+	const {data: genresRaw} = useIndexedTRcpQuery(["genre.list"], {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray)
 	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray)

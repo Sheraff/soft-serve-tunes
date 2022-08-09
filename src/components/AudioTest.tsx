@@ -8,10 +8,11 @@ import Cover from "./Cover"
 import { useRouter } from "next/router"
 import useRouteParts from "./RouteContext"
 import { useQueryClient } from "react-query"
+import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
 
 const store = Symbol()
 
-type ListType = "track" | "album" | "artist" | "genre"
+export type ListType = "track" | "album" | "artist" | "genre"
 
 export default function AudioTest({ }) {
 	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
@@ -19,7 +20,7 @@ export default function AudioTest({ }) {
 	const router = useRouter()
 	const {type, name, id, index} = useRouteParts()
 
-	const { data: list } = trpc.useQuery(["playlist.generate", { type, id }], {
+	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
 		enabled: Boolean(type && id)
 	})
 
