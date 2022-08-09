@@ -1,5 +1,6 @@
 import { createRouter } from "./context";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 const lastFmTrackSchema = z
   .object({
@@ -99,6 +100,7 @@ export const lastfmRouter = createRouter()
     input: z
       .object({
         id: z.string(),
+        force: z.boolean().optional(),
       }),
     async resolve({ input, ctx }) {
       if(!process.env.LAST_FM_API_KEY) {
@@ -146,7 +148,7 @@ export const lastfmRouter = createRouter()
       if (!track.artist) {
         throw new Error("Track has no artist, not enough to get last.fm info")
       }
-      if (!track.lastfm) {
+      if (!track.lastfm || input.force) {
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'track.getInfo')
         url.searchParams.set('format', 'json')
@@ -158,35 +160,34 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmTrackSchema.parse(json)
         if (lastfm.track && lastfm.track.url) {
-          await ctx.prisma.track.update({
-            where: { id: track.id },
-            data: {
-              lastfm: {
-                create: {
-                  url: lastfm.track.url,
-                  duration: lastfm.track.duration,
-                  listeners: lastfm.track.listeners,
-                  playcount: lastfm.track.playcount,
-                  mbid: lastfm.track.mbid,
-                  name: lastfm.track.name,
-                  tags: {
-                    connectOrCreate: lastfm.track.toptags.tag
-                      .filter(tag => tag.url)
-                      .map(tag => ({
-                        where: { url: tag.url },
-                        create: {
-                          name: tag.name,
-                          url: tag.url,
-                        }
-                      }))
-                  },
-                }
-              }
-            }
+          const data: Prisma.LastFmTrackCreateArgs['data'] = {
+            entityId: track.id,
+            url: lastfm.track.url,
+            duration: lastfm.track.duration,
+            listeners: lastfm.track.listeners,
+            playcount: lastfm.track.playcount,
+            mbid: lastfm.track.mbid,
+            name: lastfm.track.name,
+            tags: {
+              connectOrCreate: lastfm.track.toptags.tag
+                .filter(tag => tag.url)
+                .map(tag => ({
+                  where: { url: tag.url },
+                  create: {
+                    name: tag.name,
+                    url: tag.url,
+                  }
+                }))
+            },
+          }
+          await ctx.prisma.lastFmTrack.upsert({
+            where: { entityId: track.id },
+            create: data,
+            update: data,
           })
         }
       }
-      if (!track.artist.lastfm) {
+      if (!track.artist.lastfm || input.force) {
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'artist.getInfo')
         url.searchParams.set('format', 'json')
@@ -197,33 +198,32 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmArtistSchema.parse(json)
         if (lastfm.artist && lastfm.artist.url) {
-          await ctx.prisma.artist.update({
-            where: { id: track.artist.id },
-            data: {
-              lastfm: {
+          const data: Prisma.LastFmArtistCreateArgs['data'] = {
+            entityId: track.artist.id,
+            url: lastfm.artist.url,
+            mbid: lastfm.artist.mbid,
+            name: lastfm.artist.name,
+            listeners: lastfm.artist.stats.listeners,
+            playcount: lastfm.artist.stats.playcount,
+            image: lastfm.artist.image.at(-1)?.["#text"],
+            tags: {
+              connectOrCreate: lastfm.artist.tags.tag.map(tag => ({
+                where: { url: tag.url },
                 create: {
-                  url: lastfm.artist.url,
-                  mbid: lastfm.artist.mbid,
-                  name: lastfm.artist.name,
-                  listeners: lastfm.artist.stats.listeners,
-                  playcount: lastfm.artist.stats.playcount,
-                  image: lastfm.artist.image.at(-1)?.["#text"],
-                  tags: {
-                    connectOrCreate: lastfm.artist.tags.tag.map(tag => ({
-                      where: { url: tag.url },
-                      create: {
-                        name: tag.name,
-                        url: tag.url,
-                      }
-                    }))
-                  }
+                  name: tag.name,
+                  url: tag.url,
                 }
-              }
+              }))
             }
+          }
+          await ctx.prisma.lastFmArtist.upsert({
+            where: { entityId: track.artist.id },
+            create: data,
+            update: data,
           })
         }
       }
-      if (track.album && !track.album.lastfm) {
+      if (track.album && (!track.album.lastfm || input.force)) {
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'album.getInfo')
         url.searchParams.set('format', 'json')
@@ -235,35 +235,34 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmAlbumSchema.parse(json)
         if (lastfm.album && lastfm.album.url) {
-          await ctx.prisma.album.update({
-            where: { id: track.album.id },
-            data: {
-              lastfm: {
-                create: {
-                  url: lastfm.album.url,
-                  mbid: lastfm.album.mbid,
-                  name: lastfm.album.name,
-                  listeners: lastfm.album.listeners,
-                  playcount: lastfm.album.playcount,
-                  image: lastfm.album.image.at(-1)?.["#text"],
-                  ...(lastfm.album.toptags?.tag.length ? {
-                    tags: {
-                      connectOrCreate: lastfm.album.toptags.tag.map(tag => ({
-                        where: { url: tag.url },
-                        create: {
-                          name: tag.name,
-                          url: tag.url,
-                        }
-                      }))
-                    }
-                  }: {}),
-                }
+          const data: Prisma.LastFmAlbumCreateArgs['data'] = {
+            entityId: track.album.id,
+            url: lastfm.album.url,
+            mbid: lastfm.album.mbid,
+            name: lastfm.album.name,
+            listeners: lastfm.album.listeners,
+            playcount: lastfm.album.playcount,
+            image: lastfm.album.image.at(-1)?.["#text"],
+            ...(lastfm.album.toptags?.tag.length ? {
+              tags: {
+                connectOrCreate: lastfm.album.toptags.tag.map(tag => ({
+                  where: { url: tag.url },
+                  create: {
+                    name: tag.name,
+                    url: tag.url,
+                  }
+                }))
               }
-            }
+            }: {}),
+          }
+          await ctx.prisma.lastFmAlbum.upsert({
+            where: { entityId: track.album.id },
+            create: data,
+            update: data,
           })
         }
       }
-      if (!track.lastfm || !track.artist.lastfm || !track.album?.lastfm) {
+      if (!track.lastfm || !track.artist.lastfm || !track.album?.lastfm || input.force) {
         const updatedTrack = await ctx.prisma.track.findUnique({
           where: { id: track.id },
           select: {
@@ -314,7 +313,7 @@ export const lastfmRouter = createRouter()
           })
         }
       }
-      const result = await ctx.prisma.lastFmTrack.findUnique({
+      return await ctx.prisma.lastFmTrack.findUnique({
         where: { entityId: track.id },
         include: {
           album: {
@@ -329,6 +328,5 @@ export const lastfmRouter = createRouter()
           },
         }
       })
-      return result
     },
   })

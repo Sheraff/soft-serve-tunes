@@ -7,6 +7,7 @@ import Palette from "./Palette"
 import Cover from "./Cover"
 import { useRouter } from "next/router"
 import useRouteParts from "./RouteContext"
+import { useQueryClient } from "react-query"
 
 const store = Symbol()
 
@@ -41,8 +42,17 @@ export default function AudioTest({ }) {
 		return () => controller.abort()
 	}, [playNext])
 
-	const {data: lastfm, isFetching: lastfmLoading} = trpc.useQuery(["lastfm.track", {id: item?.id as string}], {
+	const queryClient = useQueryClient()
+	const {data: lastfm, isFetching: lastfmLoading} = trpc.useQuery(["lastfm.track", {
+		id: item?.id as string,
+		force: true,
+	}], {
 		enabled: Boolean(item?.id),
+		onSuccess(lastfm) {
+			if (lastfm?.album?.image) {
+				queryClient.invalidateQueries(["album.cover", {id: lastfm?.album?.entityId}])
+			}
+		}
 	})
 	// const {data: metadata} = trpc.useQuery(["metadata.track", {id: item?.id as string}], {
 	// 	enabled: Boolean(item?.id),
