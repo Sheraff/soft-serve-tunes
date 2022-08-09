@@ -1,3 +1,4 @@
+import classNames from "classnames"
 import type { NextPage } from "next"
 import Head from "next/head"
 import { useEffect, useRef, useState } from "react"
@@ -12,7 +13,6 @@ const Home: NextPage = () => {
 	const [progress, setProgress] = useState(0)
 	const [ready, setReady] = useState(false)
 	const { mutate } = trpc.useMutation(["list.populate"])
-	const client = useQueryClient()
 	
 	const ws = useRef<WebSocket>()
 	useEffect(() => {
@@ -25,7 +25,6 @@ const Home: NextPage = () => {
 			const data = JSON.parse(e.data)
 			if (data.type === "done") {
 				console.log("populating library: DONE")
-				client.invalidateQueries(["list.all"])
 				setProgress(1)
 				setReady(true)
 				socket.close()
@@ -37,7 +36,7 @@ const Home: NextPage = () => {
 		}, {signal: controller.signal})
 		mutate(undefined)
 		return () => controller.abort()
-	}, [mutate, client])
+	}, [mutate])
 
 	return (
 		<>
@@ -47,7 +46,7 @@ const Home: NextPage = () => {
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<RouteParser>
-				<div className={styles.progress} style={
+				<div className={classNames(styles.progress, {[styles.done]: progress === 1})} style={
 					{'--progress': progress} as React.CSSProperties
 				}/>
 				{ready && (

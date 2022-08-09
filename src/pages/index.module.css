@@ -6,3 +6,7 @@
 	transform: scaleX(var(--progress, 0));
 	transition: transform 0.5s;
 }
+
+.done {
+	transform: translateY(-100%);
+}
