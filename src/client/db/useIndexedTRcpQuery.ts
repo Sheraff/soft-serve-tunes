@@ -1,18 +1,24 @@
 import { useEffect, useRef } from "react"
 import { useQueryClient, UseQueryResult } from "react-query"
 import { retrieveQueryFromIndexedDB, storeQueryInIndexedDB } from "./trpc"
-import { inferQueryInput, inferQueryOutput, inferUseTRPCQueryOptions, TQuery, trpc } from "../../utils/trpc"
+import { inferQueryOutput, inferUseTRPCQueryOptions, trpc } from "../../utils/trpc"
+import type { inferHandlerInput } from "@trpc/server"
+import type { AppRouter } from "../../server/router"
+
+type TQuery = keyof AppRouter["_def"]["queries"];
+
+type TPathAndArgs<TRouteKey extends TQuery> = [
+	path: TRouteKey,
+	...args: inferHandlerInput<AppRouter['_def']['queries'][TRouteKey]>
+]
 
 export default function useIndexedTRcpQuery<
 	TRouteKey extends TQuery
 >(
-	pathAndInput: inferQueryInput<TRouteKey> extends (undefined | void | null)
-		? [TRouteKey]
-		: [TRouteKey, inferQueryInput<TRouteKey>],
+	pathAndInput: TPathAndArgs<TRouteKey>,
 	options: inferUseTRPCQueryOptions<TRouteKey> = {}
 ): UseQueryResult<inferQueryOutput<TRouteKey>> {
 	const state = useRef('idle')
-	//@ts-ignore -- it somehow expects a 2-tuple but some queries don't have an input
 	const queryResponse = trpc.useQuery(pathAndInput, {
 		...options,
 		onSuccess(data) {
