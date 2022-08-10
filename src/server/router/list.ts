@@ -4,8 +4,9 @@ import { Stats } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
-import { WebSocketServer } from 'ws'
 import { env } from "../../env/server.mjs"
+import { socketServer } from "../ws"
+import type { WebSocket } from 'ws'
 
 const populating: {
   promise: Promise<null> | null
@@ -17,49 +18,22 @@ const populating: {
   done: 0,
 }
 
-declare global {
-  var socketServer: WebSocketServer | null;
-}
-const websocketPort = Number(env.NEXT_PUBLIC_WEBSOCKET_PORT)
-if (!globalThis.socketServer || globalThis.socketServer.options.port !== websocketPort) {
-  globalThis.socketServer?.close()
-  const socketServer = new WebSocketServer({
-    port: websocketPort,
-  })
-  socketServer.options.port
-  socketServer.on('connection', (ws) => {
-    console.log(`\x1b[35mevent\x1b[0m - WS Connection ++ (${socketServer.clients.size})`);
-    ws.once('close', () => {
-      console.log(`\x1b[35mevent\x1b[0m - WS Connection -- (${socketServer.clients.size})`);
-    });
-  });
-  socketServer.on('error', (error) => {
-    console.log(`\x1b[31merror\x1b[0m - WebSocket Server error: ${error}`);
-  })
-  socketServer.on('listening', () => {
-    console.log(`\x1b[32mready\x1b[0m - WebSocket Server listening on ws://localhost:${websocketPort}`);
-  })
-  socketServer.on('connection', async (ws) => {
-    let closed = false
-    ws.on('close', () => closed = true)
-    if (populating.promise) {
-      const interval = setInterval(() => {
-        if (!closed) {
-          ws.send(JSON.stringify({type: 'progress', payload: populating.done / populating.total}))
-        }
-      }, 500)
-      await populating.promise
-      clearInterval(interval)
-    }
-    if (!closed) {
-      ws.send(JSON.stringify({type: 'done'}))
-      ws.close()
-    }
-  })
-  if (env.NODE_ENV !== "production") {
-    globalThis.socketServer = socketServer
+socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
+  if (populating.promise) {
+    const interval = setInterval(() => {
+      if (socketServer.isAlive(ws)) {
+        ws.send(JSON.stringify({type: 'populate:progress', payload: populating.done / populating.total}))
+      } else {
+        clearInterval(interval)
+      }
+    }, 500)
+    await populating.promise
+    clearInterval(interval)
   }
-}
+  if (socketServer.isAlive(ws)) {
+    ws.send(JSON.stringify({type: 'populate:done'}))
+  }
+})
 
 export const listRouter = createRouter()
   .mutation("populate", {

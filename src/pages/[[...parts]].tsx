@@ -14,27 +14,26 @@ const Home: NextPage = () => {
 	const [ready, setReady] = useState(false)
 	const { mutate } = trpc.useMutation(["list.populate"])
 	
-	const ws = useRef<WebSocket>()
 	useEffect(() => {
-		if (!ws.current) {
-			ws.current = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
-		}
-		const controller = new AbortController()
-		const socket = ws.current
-		socket.addEventListener("message", (e) => {
-			const data = JSON.parse(e.data)
-			if (data.type === "done") {
-				console.log("populating library: DONE")
-				setProgress(1)
-				setReady(true)
-				socket.close()
-				ws.current = undefined
-			} else if (data.type === "progress") {
-				console.log(`populating library: ${data.payload}%`)
-				setProgress(data.payload)
+		mutate(undefined, { onSuccess: () => {
+			const socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+			const controller = new AbortController()
+			socket.onopen = () => {
+				socket.send(JSON.stringify({type: 'populate:subscribe'}))
 			}
-		}, {signal: controller.signal})
-		mutate(undefined)
+			socket.addEventListener("message", (e) => {
+				const data = JSON.parse(e.data)
+				if (data.type === "populate:done") {
+					console.log("populating library: DONE")
+					setProgress(1)
+					setReady(true)
+					socket.close()
+				} else if (data.type === "populate:progress") {
+					console.log(`populating library: ${data.payload}%`)
+					setProgress(data.payload)
+				}
+			}, {signal: controller.signal})
+		} })
 		return () => controller.abort()
 	}, [mutate])
 
