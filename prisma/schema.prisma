@@ -110,6 +110,8 @@ model LastFmAlbum {
   entity      Album         @relation(fields: [entityId], references: [id])
   url         String        @unique
   tracks      LastFmTrack[]
+  artistId    String?
+  artist      LastFmArtist? @relation(fields: [artistId], references: [id])
   mbid        String?
   tags        LastFmTag[]
   image       String?
@@ -125,6 +127,7 @@ model LastFmArtist {
   entity    Artist        @relation(fields: [entityId], references: [id])
   url       String        @unique
   tracks    LastFmTrack[]
+  albums    LastFmAlbum[]
   mbid      String?
   tags      LastFmTag[]
   name      String

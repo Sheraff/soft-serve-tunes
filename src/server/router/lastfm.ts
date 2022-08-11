@@ -146,6 +146,9 @@ export const lastfmRouter = createRouter()
       if (!track.artist) {
         throw new Error("Track has no artist, not enough to get last.fm info")
       }
+      let lastfmTrackId = track.lastfm?.id
+      let lastfmAlbumId = track.album?.lastfm?.id
+      let lastfmArtistId = track.artist.lastfm?.id
       if (!track.lastfm || input.force) {
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
         url.searchParams.set('method', 'track.getInfo')
@@ -160,6 +163,8 @@ export const lastfmRouter = createRouter()
         if (lastfm.track && lastfm.track.url) {
           const data: Prisma.LastFmTrackCreateArgs['data'] = {
             entityId: track.id,
+            ...(lastfmAlbumId ? { albumId: lastfmAlbumId } : {}),
+            ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
             url: lastfm.track.url,
             duration: lastfm.track.duration,
             listeners: lastfm.track.listeners,
@@ -178,11 +183,12 @@ export const lastfmRouter = createRouter()
                 }))
             },
           }
-          await ctx.prisma.lastFmTrack.upsert({
+          const lastfmTrack = await ctx.prisma.lastFmTrack.upsert({
             where: { entityId: track.id },
             create: data,
             update: data,
           })
+          lastfmTrackId = lastfmTrack.id
         }
       }
       if (!track.artist.lastfm || input.force) {
@@ -198,6 +204,8 @@ export const lastfmRouter = createRouter()
         if (lastfm.artist && lastfm.artist.url) {
           const data: Prisma.LastFmArtistCreateArgs['data'] = {
             entityId: track.artist.id,
+            ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
+            ...(lastfmAlbumId ? { albums: { connect: { id: lastfmAlbumId } } } : {}),
             url: lastfm.artist.url,
             mbid: lastfm.artist.mbid,
             name: lastfm.artist.name,
@@ -214,11 +222,12 @@ export const lastfmRouter = createRouter()
               }))
             }
           }
-          await ctx.prisma.lastFmArtist.upsert({
+          const lastfmArtist = await ctx.prisma.lastFmArtist.upsert({
             where: { entityId: track.artist.id },
             create: data,
             update: data,
           })
+          lastfmArtistId = lastfmArtist.id
         }
       }
       if (track.album && (!track.album.lastfm || input.force)) {
@@ -235,6 +244,8 @@ export const lastfmRouter = createRouter()
         if (lastfm.album && lastfm.album.url) {
           const data: Prisma.LastFmAlbumCreateArgs['data'] = {
             entityId: track.album.id,
+            ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
+            ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
             url: lastfm.album.url,
             mbid: lastfm.album.mbid,
             name: lastfm.album.name,

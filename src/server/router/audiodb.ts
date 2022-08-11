@@ -106,7 +106,40 @@ export const audiodbRouter = createRouter()
 				return false
 			}
 			callbacks.set(input.id, [])
-			ctx.prisma.artist.findUnique({ where: { id: input.id } })
+			ctx.prisma.artist.findUnique({
+				where: { id: input.id },
+				select: {
+					id: true,
+					name: true,
+					lastfm: {
+						select: {
+							mbid: true,
+						}
+					},
+					albums: {
+						select: {
+							id: true,
+							name: true,
+							lastfm: {
+								select: {
+									mbid: true,
+								}
+							},
+							tracks: {
+								select: {
+									id: true,
+									name: true,
+									lastfm: {
+										select: {
+											mbid: true,
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+			})
 				.then(async (artist) => {
 					if (!artist) {
 						resolveForId(input.id)
@@ -123,13 +156,19 @@ export const audiodbRouter = createRouter()
 						resolveForId(input.id)
 						return
 					}
-					if (artistsJson.artists.length > 1) {
+					const audiodbArtists = z.object({artists: z.array(audiodbArtistSchema)}).parse(artistsJson)
+					let audiodbArtist
+					if (audiodbArtists.artists.length === 1) {
+						audiodbArtist = audiodbArtists.artists[0]
+					} else if (artist.lastfm?.mbid) {
+						audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid && artist.lastfm?.mbid === a.strMusicBrainzID)
+					}
+					if (!audiodbArtist) {
 						console.log(`Multiple artists found for ${artist.name}`)
 						console.log(artistsJson.artists)
 						resolveForId(input.id)
 						return
 					}
-					const audiodbArtist = audiodbArtistSchema.parse(artistsJson.artists[0])
 					await ctx.prisma.audioDbArtist.create({
 						data: {
 							entityId: input.id,
@@ -144,8 +183,12 @@ export const audiodbRouter = createRouter()
 					const albumsJson = await albumsData.json()
 					const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
 					for (const audiodbAlbum of audiodbAlbums.album) {
+						const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
 						await ctx.prisma.audioDbAlbum.create({
-							data: audiodbAlbum,
+							data: {
+								...(entityAlbum ? {entityId: entityAlbum.id} : {}),
+								...audiodbAlbum,
+							},
 						})
 						await new Promise(resolve => enqueue(resolve))
 						const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
@@ -154,11 +197,15 @@ export const audiodbRouter = createRouter()
 						const tracksData = await fetch(tracksUrl)
 						const tracksJson = await tracksData.json()
 						const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
-						await Promise.all(audiodbTracks.track.map(async (audiodbTrack) => 
-							ctx.prisma.audioDbTrack.create({
-								data: audiodbTrack,
+						await Promise.all(audiodbTracks.track.map(async (audiodbTrack) => {
+							const entityTrack = entityAlbum?.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
+							return ctx.prisma.audioDbTrack.create({
+								data: {
+									...(entityTrack ? {entityId: entityTrack.id} : {}),
+									...audiodbTrack,
+								},
 							})
-						))
+						}))
 					}
 					resolveForId(input.id)
 				})
