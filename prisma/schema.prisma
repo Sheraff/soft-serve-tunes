@@ -93,9 +93,9 @@ model LastFmTrack {
   entity    Track         @relation(fields: [entityId], references: [id])
   url       String        @unique
   albumId   String?
-  album     LastFmAlbum?  @relation(fields: [albumId], references: [url])
+  album     LastFmAlbum?  @relation(fields: [albumId], references: [id])
   artistId  String?
-  artist    LastFmArtist? @relation(fields: [artistId], references: [url])
+  artist    LastFmArtist? @relation(fields: [artistId], references: [id])
   tags      LastFmTag[]
   duration  Int
   listeners Int
