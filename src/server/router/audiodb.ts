@@ -81,8 +81,15 @@ export const audiodbRouter = createRouter()
 					audiodb: {
 						include: {
 							albums: {
+								orderBy: {
+									intYearReleased: "desc"
+								},
 								include: {
-									tracks: true
+									tracks: {
+										orderBy: {
+											intTrackNumber: "asc"
+										}
+									}
 								}
 							}
 						}

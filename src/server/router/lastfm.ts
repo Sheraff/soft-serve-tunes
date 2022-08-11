@@ -189,6 +189,12 @@ export const lastfmRouter = createRouter()
             update: data,
           })
           lastfmTrackId = lastfmTrack.id
+          if (lastfm.track.mbid) {
+            await ctx.prisma.audioDbTrack.updateMany({
+              where: { strMusicBrainzID: lastfm.track.mbid },
+              data: { entityId: track.id },
+            })
+          }
         }
       }
       if (!track.artist.lastfm || input.force) {
@@ -228,6 +234,12 @@ export const lastfmRouter = createRouter()
             update: data,
           })
           lastfmArtistId = lastfmArtist.id
+          if (lastfm.artist.mbid) {
+            await ctx.prisma.audioDbArtist.updateMany({
+              where: { strMusicBrainzID: lastfm.artist.mbid },
+              data: { entityId: track.artist.id },
+            })
+          }
         }
       }
       if (track.album && (!track.album.lastfm || input.force)) {
@@ -269,6 +281,12 @@ export const lastfmRouter = createRouter()
             create: data,
             update: data,
           })
+          if (lastfm.album.mbid) {
+            await ctx.prisma.audioDbAlbum.updateMany({
+              where: { strMusicBrainzID: lastfm.album.mbid },
+              data: { entityId: track.album.id },
+            })
+          }
         }
       }
       if (!track.lastfm || !track.artist.lastfm || !track.album?.lastfm || input.force) {
