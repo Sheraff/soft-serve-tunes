@@ -10,6 +10,7 @@ import useRouteParts from "./RouteContext"
 import { useQueryClient } from "react-query"
 import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
 import PlaylistViz from "./PlaylistViz"
+import Test from "./Test"
 
 const store = Symbol()
 
@@ -83,6 +84,7 @@ export default function AudioTest({ }) {
 			<Cover id={item?.id} ref={img} />
 			<Infos id={item?.id} />
 			<PlaylistViz />
+			<Test artistId={item?.artistId}/>
 		</Palette>
 	)
 }

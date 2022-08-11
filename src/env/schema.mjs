@@ -10,6 +10,7 @@ export const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]),
   LAST_FM_API_KEY: z.string(),
   LAST_FM_SHARED_SECRET: z.string(),
+  AUDIO_DB_API_KEY: z.string(),
 });
 
 /**

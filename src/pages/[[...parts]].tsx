@@ -15,9 +15,9 @@ const Home: NextPage = () => {
 	const { mutate } = trpc.useMutation(["list.populate"])
 	
 	useEffect(() => {
+		const controller = new AbortController()
 		mutate(undefined, { onSuccess: () => {
 			const socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
-			const controller = new AbortController()
 			socket.onopen = () => {
 				socket.send(JSON.stringify({type: 'populate:subscribe'}))
 			}
