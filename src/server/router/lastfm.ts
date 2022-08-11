@@ -161,7 +161,7 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmTrackSchema.parse(json)
         if (lastfm.track && lastfm.track.url) {
-          const data: Prisma.LastFmTrackCreateArgs['data'] = {
+          const data: Prisma.LastFmTrackCreateArgs['data'] & Prisma.LastFmTrackUpdateArgs['data'] = {
             entityId: track.id,
             ...(lastfmAlbumId ? { albumId: lastfmAlbumId } : {}),
             ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
@@ -202,7 +202,7 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmArtistSchema.parse(json)
         if (lastfm.artist && lastfm.artist.url) {
-          const data: Prisma.LastFmArtistCreateArgs['data'] = {
+          const data: Prisma.LastFmArtistCreateArgs['data'] & Prisma.LastFmArtistUpdateArgs['data'] = {
             entityId: track.artist.id,
             ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
             ...(lastfmAlbumId ? { albums: { connect: { id: lastfmAlbumId } } } : {}),
@@ -242,7 +242,7 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmAlbumSchema.parse(json)
         if (lastfm.album && lastfm.album.url) {
-          const data: Prisma.LastFmAlbumCreateArgs['data'] = {
+          const data: Prisma.LastFmAlbumCreateArgs['data'] & Prisma.LastFmAlbumUpdateArgs['data'] = {
             entityId: track.album.id,
             ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
             ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
