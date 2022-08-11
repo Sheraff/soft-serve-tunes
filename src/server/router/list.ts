@@ -41,16 +41,20 @@ export const listRouter = createRouter()
       if (!populating.promise) {
         populating.total = 0
         populating.done = 0
-        populating.promise = recursiveReaddirIntoDatabase()
+        populating.promise = recursiveReaddirListFiles()
+          .then(async (list) => {
+            for (const file of list) {
+              await createTrack(file)
+              populating.done++
+            }
+          })
           .then(() => populating.promise = null)
       }
 
-      async function recursiveReaddirIntoDatabase(dirPath: string = '') {
+      async function recursiveReaddirListFiles(dirPath: string = '', fileList: string[] = []): Promise<string[]> {
         const dir = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dirPath)
         const dirFiles = await readdir(dir)
-        populating.total += dirFiles.length
         for (const file of dirFiles) {
-          populating.done++
           if (file.startsWith('.')) {
             continue
           }
@@ -58,16 +62,19 @@ export const listRouter = createRouter()
           const filePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, relativePath)
           const stats = await stat(filePath)
           if (stats.isDirectory()) {
-            await recursiveReaddirIntoDatabase(relativePath)
+            await recursiveReaddirListFiles(relativePath, fileList)
           } else if (stats.isFile()) {
-            await createTrack(filePath, stats)
+            fileList.push(filePath)
+            populating.total++
           } else {
             console.warn(`Unknown file type: ${relativePath}`)
           }
         }
+        return fileList
       }
-      
-      async function createTrack(path: string, stats: Stats, retries = 0) {
+
+      async function createTrack(path: string, retries = 0) {
+        const stats = await stat(path)
         const existingFile = await ctx.prisma.file.findUnique({where: {ino: stats.ino}})
         if (existingFile) {
           return
