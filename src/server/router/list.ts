@@ -1,12 +1,12 @@
 import { createRouter } from "./context"
-// import { z } from "zod"
-import { Stats } from "node:fs"
 import { readdir, stat } from "node:fs/promises"
 import { join, basename, extname } from "node:path"
 import { parseFile } from 'music-metadata'
 import { env } from "../../env/server.mjs"
 import { socketServer } from "../ws"
 import type { WebSocket } from 'ws'
+import { writeImage } from "../../utils/writeImage"
+import { Prisma } from "@prisma/client"
 
 const populating: {
   promise: Promise<null> | null
@@ -96,6 +96,10 @@ export const listRouter = createRouter()
         const position = metadata.common.track.no ?? undefined
       
         try {
+          const imageData = metadata.common.picture?.[0]?.data
+          const {hash, path: imagePath} = imageData
+            ? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
+            : {hash: '', path: ''}
           const track = await ctx.prisma.track.create({
             include: {
               feats: {
@@ -121,15 +125,14 @@ export const listRouter = createRouter()
                   birthTime: new Date(stats.birthtime),
                 }
               },
-              ...(metadata.common.picture?.[0]?.data ? {picture: {
+              ...(hash && imagePath ? {metaImage: {
                 connectOrCreate: {
-                  where: {
-                    data: metadata.common.picture[0].data,
-                  },
+                  where: { id: hash },
                   create: {
-                    data: metadata.common.picture[0].data,
-                    mime: metadata.common.picture[0].format
-                  }
+                    id: hash,
+                    path: imagePath,
+                    mimetype: metadata.common.picture?.[0]?.format ?? 'image/*',
+                }
                 }
               }} : {}),
               ...(metadata.common.artist ? {artist: {
@@ -185,7 +188,7 @@ export const listRouter = createRouter()
 
           // create album now that we have an artistId
           if(metadata.common.album) {
-            const create = {
+            const create: Prisma.AlbumCreateArgs['data'] = {
               name: metadata.common.album,
               artistId: track.artistId,
               year: metadata.common.year,
@@ -230,7 +233,7 @@ export const listRouter = createRouter()
             const delay = 5 * Math.random() + 2**retries
             console.log(`Retrying in ${delay}ms (${name})`)
             await new Promise((resolve) => setTimeout(resolve, delay))
-            await createTrack(path, stats, retries + 1)
+            await createTrack(path, retries + 1)
           } else {
             console.warn(`Failed to create track ${name}`)
             console.warn(e)

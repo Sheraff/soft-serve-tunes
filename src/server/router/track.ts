@@ -11,7 +11,7 @@ export const trackRouter = createRouter()
       return ctx.prisma.track.findUnique({
         where: { id: input.id },
         include: {
-          picture: {
+          metaImage: {
             select: {
               id: true,
             }
@@ -62,7 +62,7 @@ export const trackRouter = createRouter()
           },
         },
         include: {
-          picture: {
+          metaImage: {
             select: {
               id: true,
             }

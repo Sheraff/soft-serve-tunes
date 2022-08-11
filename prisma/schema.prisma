@@ -23,34 +23,46 @@ model File {
 }
 
 model Track {
-  id         String        @id @default(cuid())
-  name       String
-  artistId   String?
-  artist     Artist?       @relation(fields: [artistId], references: [id])
-  feats      Artist[]      @relation("Featuring")
-  albumId    String?
-  album      Album?        @relation(fields: [albumId], references: [id])
-  position   Int?
-  popularity Int?
-  createdAt  DateTime      @default(now())
-  file       File?         @relation
-  year       Int?
-  genres     Genre[]       @relation
-  pictureId  String?
-  picture    Cover?        @relation(fields: [pictureId], references: [id])
-  lastfm     LastFmTrack?  @relation
-  audiodb    AudioDbTrack? @relation
-  playcount  Int           @default(0)
-  favourite  Boolean       @default(false)
+  id          String        @id @default(cuid())
+  name        String
+  artistId    String?
+  artist      Artist?       @relation(fields: [artistId], references: [id])
+  feats       Artist[]      @relation("Featuring")
+  albumId     String?
+  album       Album?        @relation(fields: [albumId], references: [id])
+  position    Int?
+  popularity  Int?
+  createdAt   DateTime      @default(now())
+  file        File?         @relation
+  year        Int?
+  genres      Genre[]       @relation
+  lastfm      LastFmTrack?  @relation
+  audiodb     AudioDbTrack? @relation
+  playcount   Int           @default(0)
+  favourite   Boolean       @default(false)
+  metaImageId String?       @unique
+  metaImage   Image?        @relation(fields: [metaImageId], references: [id])
 
   @@unique([name, artistId, albumId])
 }
 
-model Cover {
-  id     String  @id @default(cuid())
-  data   Bytes   @unique
-  mime   String
-  tracks Track[] @relation
+model Image {
+  id                     String          @id
+  path                   String          @unique
+  mimetype               String
+  track                  Track[]         @relation
+  lastfmAlbum            LastFmAlbum[]   @relation
+  lastfmArtist           LastFmArtist[]  @relation
+  audiodbTrack           AudioDbTrack[]  @relation
+  audiodbArtistThumb     AudioDbArtist[] @relation(name: "thumb")
+  audiodbArtistLogo      AudioDbArtist[] @relation(name: "logo")
+  audiodbArtistCutout    AudioDbArtist[] @relation(name: "cutout")
+  audiodbArtistClearart  AudioDbArtist[] @relation(name: "clearart")
+  audiodbArtistWideThumb AudioDbArtist[] @relation(name: "wideThumb")
+  audiodbArtistBanner    AudioDbArtist[] @relation(name: "banner")
+  audiodbAlbumThumb      AudioDbAlbum[]  @relation(name: "thumb")
+  audiodbAlbumThumbHq    AudioDbAlbum[]  @relation(name: "thumbHq")
+  audiodbAlbumCdArt      AudioDbAlbum[]  @relation(name: "cdArt")
 }
 
 model Artist {
@@ -114,11 +126,13 @@ model LastFmAlbum {
   artist      LastFmArtist? @relation(fields: [artistId], references: [id])
   mbid        String?
   tags        LastFmTag[]
-  image       String?
   name        String
   releasedate DateTime?
   listeners   Int
   playcount   Int
+  coverUrl    String?
+  coverId     String?       @unique
+  cover       Image?        @relation(fields: [coverId], references: [id])
 }
 
 model LastFmArtist {
@@ -131,9 +145,11 @@ model LastFmArtist {
   mbid      String?
   tags      LastFmTag[]
   name      String
-  image     String?
   listeners Int
   playcount Int
+  coverUrl  String?
+  coverId   String?       @unique
+  cover     Image?        @relation(fields: [coverId], references: [id])
 }
 
 model LastFmTag {
@@ -159,11 +175,23 @@ model AudioDbArtist {
   strBiographyEN   String?
 
   strArtistThumb     String?
+  thumbId            String? @unique
+  thumb              Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
   strArtistLogo      String?
+  logoId             String? @unique
+  logo               Image?  @relation(name: "logo", fields: [logoId], references: [id])
   strArtistCutout    String?
+  cutoutId           String? @unique
+  cutout             Image?  @relation(name: "cutout", fields: [cutoutId], references: [id])
   strArtistClearart  String?
+  clearartId         String? @unique
+  clearart           Image?  @relation(name: "clearart", fields: [clearartId], references: [id])
   strArtistWideThumb String?
+  wideThumbId        String? @unique
+  wideThumb          Image?  @relation(name: "wideThumb", fields: [wideThumbId], references: [id])
   strArtistBanner    String?
+  bannerId           String? @unique
+  banner             Image?  @relation(name: "banner", fields: [bannerId], references: [id])
 
   albums AudioDbAlbum[]
 }
@@ -182,8 +210,14 @@ model AudioDbAlbum {
   intYearReleased  Int?
 
   strAlbumThumb   String?
+  thumbId         String? @unique
+  thumb           Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
   strAlbumThumbHQ String?
+  thumbHqId       String? @unique
+  thumbHq         Image?  @relation(name: "thumbHq", fields: [thumbHqId], references: [id])
   strAlbumCDart   String?
+  cdArtId         String? @unique
+  cdArt           Image?  @relation(name: "cdArt", fields: [cdArtId], references: [id])
 
   strAllMusicID      String?
   strBBCReviewID     String?
@@ -211,8 +245,11 @@ model AudioDbTrack {
 
   intDuration      Int?
   strGenre         String?
-  strTrackThumb    String?
   strMusicVid      String?
   intTrackNumber   Int?
   strMusicBrainzID String?
+
+  strTrackThumb String?
+  thumbId       String? @unique
+  thumb         Image?  @relation(fields: [thumbId], references: [id])
 }

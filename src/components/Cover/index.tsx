@@ -19,8 +19,8 @@ export default forwardRef(function Cover({
 	const previous = useRef<string | undefined>(undefined)
 	const imgSrc = useMemo(() => {
 		if (!track || lastfmLoading) return previous.current
-		if (lastfm?.album?.image) return lastfmImageToUrl(lastfm.album.image)
-		if (track.pictureId) return `/api/cover/${track.pictureId}`
+		if (lastfm?.album?.coverId) return `/api/cover/${lastfm.album.coverId}`
+		if (track.metaImageId) return `/api/cover/${track.metaImageId}`
 		return undefined
 	}, [track, lastfm, lastfmLoading])
 	// previous.current = imgSrc

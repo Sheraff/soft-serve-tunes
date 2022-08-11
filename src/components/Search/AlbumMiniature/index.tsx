@@ -12,8 +12,8 @@ export default function AlbumMiniature({
 
 	const imgSrc = useMemo(() => {
 		if (!album) return undefined
-		if (album.lastfm?.image) return lastfmImageToUrl(album.lastfm?.image, 150)
-		if (album.tracks?.[0]?.pictureId) return `/api/cover/${album.tracks?.[0]?.pictureId}`
+		if (album.lastfm?.coverId) return `/api/cover/${album.lastfm.coverId}`
+		if (album.tracks[0]?.metaImageId) return `/api/cover/${album.tracks[0].metaImageId}`
 		return undefined
 	}, [album])
 

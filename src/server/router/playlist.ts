@@ -1,7 +1,8 @@
 import { createRouter } from "./context"
+import type { Prisma } from "@prisma/client";
 import { z } from "zod"
 
-const trackInclude = {
+const trackInclude: Prisma.TrackFindManyArgs['include'] = {
   artist: {
     select: {
       id: true,

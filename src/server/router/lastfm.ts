@@ -1,7 +1,9 @@
-import { createRouter } from "./context";
-import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { env } from "../../env/server.mjs";
+import { createRouter } from "./context"
+import { z } from "zod"
+import { Prisma } from "@prisma/client"
+import { env } from "../../env/server.mjs"
+import { fetchAndWriteImage } from "../../utils/writeImage"
+import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 
 const lastFmTrackSchema = z
   .object({
@@ -208,30 +210,66 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmArtistSchema.parse(json)
         if (lastfm.artist && lastfm.artist.url) {
-          const data: Prisma.LastFmArtistCreateArgs['data'] & Prisma.LastFmArtistUpdateArgs['data'] = {
-            entityId: track.artist.id,
-            ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
-            ...(lastfmAlbumId ? { albums: { connect: { id: lastfmAlbumId } } } : {}),
-            url: lastfm.artist.url,
-            mbid: lastfm.artist.mbid,
-            name: lastfm.artist.name,
-            listeners: lastfm.artist.stats.listeners,
-            playcount: lastfm.artist.stats.playcount,
-            image: lastfm.artist.image.at(-1)?.["#text"],
-            tags: {
-              connectOrCreate: lastfm.artist.tags.tag.map(tag => ({
-                where: { url: tag.url },
-                create: {
-                  name: tag.name,
-                  url: tag.url,
-                }
-              }))
-            }
+          let coverId 
+          const image = lastfm.artist.image.at(-1)?.["#text"]
+          if(image) {
+            const {hash, path, mimetype} = await fetchAndWriteImage(lastfmImageToUrl(image))
+            const {id} = await ctx.prisma.image.upsert({
+              where: { id: hash },
+              update: {},
+              create: {
+                id: hash as string,
+                path,
+                mimetype,
+              }
+            })
+            coverId = id
           }
           const lastfmArtist = await ctx.prisma.lastFmArtist.upsert({
             where: { entityId: track.artist.id },
-            create: data,
-            update: data,
+            create: {
+              entityId: track.artist.id,
+              ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
+              ...(lastfmAlbumId ? { albums: { connect: { id: lastfmAlbumId } } } : {}),
+              url: lastfm.artist.url,
+              mbid: lastfm.artist.mbid,
+              name: lastfm.artist.name,
+              listeners: lastfm.artist.stats.listeners,
+              playcount: lastfm.artist.stats.playcount,
+              tags: {
+                connectOrCreate: lastfm.artist.tags.tag.map(tag => ({
+                  where: { url: tag.url },
+                  create: {
+                    name: tag.name,
+                    url: tag.url,
+                  }
+                }))
+              },
+              coverUrl: image,
+              coverId,
+            },
+            update: {
+              ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
+              ...(lastfmAlbumId ? { albums: { connect: { id: lastfmAlbumId } } } : {}),
+              url: lastfm.artist.url,
+              mbid: lastfm.artist.mbid,
+              name: lastfm.artist.name,
+              listeners: lastfm.artist.stats.listeners,
+              playcount: lastfm.artist.stats.playcount,
+              tags: {
+                connectOrCreate: lastfm.artist.tags.tag.map(tag => ({
+                  where: { url: tag.url },
+                  create: {
+                    name: tag.name,
+                    url: tag.url,
+                  }
+                }))
+              },
+              coverUrl: image,
+              ...(coverId ? {cover: {
+                connect: { id: coverId },
+              }} : {}),
+            },
           })
           lastfmArtistId = lastfmArtist.id
           if (lastfm.artist.mbid) {
@@ -254,32 +292,70 @@ export const lastfmRouter = createRouter()
         const json = await data.json()
         const lastfm = lastFmAlbumSchema.parse(json)
         if (lastfm.album && lastfm.album.url) {
-          const data: Prisma.LastFmAlbumCreateArgs['data'] & Prisma.LastFmAlbumUpdateArgs['data'] = {
-            entityId: track.album.id,
-            ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
-            ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
-            url: lastfm.album.url,
-            mbid: lastfm.album.mbid,
-            name: lastfm.album.name,
-            listeners: lastfm.album.listeners,
-            playcount: lastfm.album.playcount,
-            image: lastfm.album.image.at(-1)?.["#text"],
-            ...(lastfm.album.toptags?.tag.length ? {
-              tags: {
-                connectOrCreate: lastfm.album.toptags.tag.map(tag => ({
-                  where: { url: tag.url },
-                  create: {
-                    name: tag.name,
-                    url: tag.url,
-                  }
-                }))
+          let coverId
+          const image = lastfm.album.image.at(-1)?.["#text"]
+          if(image) {
+            const {hash, path, mimetype} = await fetchAndWriteImage(lastfmImageToUrl(image))
+            const {id} = await ctx.prisma.image.upsert({
+              where: { id: hash },
+              update: {},
+              create: {
+                id: hash as string,
+                path,
+                mimetype,
               }
-            }: {}),
+            })
+            coverId = id
           }
           await ctx.prisma.lastFmAlbum.upsert({
             where: { entityId: track.album.id },
-            create: data,
-            update: data,
+            create: {
+              entityId: track.album.id,
+              ...(lastfmArtistId ? { artistId: lastfmArtistId } : {}),
+              ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
+              url: lastfm.album.url,
+              mbid: lastfm.album.mbid,
+              name: lastfm.album.name,
+              listeners: lastfm.album.listeners,
+              playcount: lastfm.album.playcount,
+              ...(lastfm.album.toptags?.tag.length ? {
+                tags: {
+                  connectOrCreate: lastfm.album.toptags.tag.map(tag => ({
+                    where: { url: tag.url },
+                    create: {
+                      name: tag.name,
+                      url: tag.url,
+                    }
+                  }))
+                }
+              }: {}),
+              coverUrl: image,
+              coverId,
+            },
+            update: {
+              ...(lastfmArtistId ? { artist: {connect: { id: lastfmArtistId } } } : {}),
+              ...(lastfmTrackId ? { tracks: { connect: { id: lastfmTrackId } } } : {}),
+              url: lastfm.album.url,
+              mbid: lastfm.album.mbid,
+              name: lastfm.album.name,
+              listeners: lastfm.album.listeners,
+              playcount: lastfm.album.playcount,
+              ...(lastfm.album.toptags?.tag.length ? {
+                tags: {
+                  connectOrCreate: lastfm.album.toptags.tag.map(tag => ({
+                    where: { url: tag.url },
+                    create: {
+                      name: tag.name,
+                      url: tag.url,
+                    }
+                  }))
+                }
+              }: {}),
+              coverUrl: image,
+              ...(coverId ? {cover: {
+                connect: { id: coverId },
+              }} : {}),
+            },
           })
           if (lastfm.album.mbid) {
             await ctx.prisma.audioDbAlbum.updateMany({

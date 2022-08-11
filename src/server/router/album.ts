@@ -45,19 +45,19 @@ export const albumRouter = createRouter()
         include: {
           lastfm: {
             select: {
-              image: true,
+              coverId: true,
             }
           },
           tracks: {
             take: 1,
             where: {
-              pictureId: {
+              metaImageId: {
                 not: null,
               },
             },
             select: {
               id: true,
-              pictureId: true,
+              metaImageId: true,
             },
           },
           artist: {
