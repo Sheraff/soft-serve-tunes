@@ -40,7 +40,7 @@ model Track {
   audiodb     AudioDbTrack? @relation
   playcount   Int           @default(0)
   favourite   Boolean       @default(false)
-  metaImageId String?       @unique
+  metaImageId String?
   metaImage   Image?        @relation(fields: [metaImageId], references: [id])
 
   @@unique([name, artistId, albumId])
@@ -131,7 +131,7 @@ model LastFmAlbum {
   listeners   Int
   playcount   Int
   coverUrl    String?
-  coverId     String?       @unique
+  coverId     String?
   cover       Image?        @relation(fields: [coverId], references: [id])
 }
 
@@ -148,7 +148,7 @@ model LastFmArtist {
   listeners Int
   playcount Int
   coverUrl  String?
-  coverId   String?       @unique
+  coverId   String?
   cover     Image?        @relation(fields: [coverId], references: [id])
 }
 
@@ -175,22 +175,22 @@ model AudioDbArtist {
   strBiographyEN   String?
 
   strArtistThumb     String?
-  thumbId            String? @unique
+  thumbId            String?
   thumb              Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
   strArtistLogo      String?
-  logoId             String? @unique
+  logoId             String?
   logo               Image?  @relation(name: "logo", fields: [logoId], references: [id])
   strArtistCutout    String?
-  cutoutId           String? @unique
+  cutoutId           String?
   cutout             Image?  @relation(name: "cutout", fields: [cutoutId], references: [id])
   strArtistClearart  String?
-  clearartId         String? @unique
+  clearartId         String?
   clearart           Image?  @relation(name: "clearart", fields: [clearartId], references: [id])
   strArtistWideThumb String?
-  wideThumbId        String? @unique
+  wideThumbId        String?
   wideThumb          Image?  @relation(name: "wideThumb", fields: [wideThumbId], references: [id])
   strArtistBanner    String?
-  bannerId           String? @unique
+  bannerId           String?
   banner             Image?  @relation(name: "banner", fields: [bannerId], references: [id])
 
   albums AudioDbAlbum[]
@@ -210,13 +210,13 @@ model AudioDbAlbum {
   intYearReleased  Int?
 
   strAlbumThumb   String?
-  thumbId         String? @unique
+  thumbId         String?
   thumb           Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
   strAlbumThumbHQ String?
-  thumbHqId       String? @unique
+  thumbHqId       String?
   thumbHq         Image?  @relation(name: "thumbHq", fields: [thumbHqId], references: [id])
   strAlbumCDart   String?
-  cdArtId         String? @unique
+  cdArtId         String?
   cdArt           Image?  @relation(name: "cdArt", fields: [cdArtId], references: [id])
 
   strAllMusicID      String?
@@ -250,6 +250,6 @@ model AudioDbTrack {
   strMusicBrainzID String?
 
   strTrackThumb String?
-  thumbId       String? @unique
+  thumbId       String?
   thumb         Image?  @relation(fields: [thumbId], references: [id])
 }

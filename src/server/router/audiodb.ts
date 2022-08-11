@@ -3,10 +3,11 @@ import { env } from "../../env/server.mjs"
 import { socketServer } from "../ws"
 import type { WebSocket } from 'ws'
 import { z } from "zod"
+import { fetchAndWriteImage } from "../../utils/writeImage"
 
 const callbacks = new Map<string, Array<() => void>>()
 
-socketServer.registerActor('audiodb:subscribe', async (ws: WebSocket, {id}) => {
+socketServer.registerActor('audiodb:subscribe', async (ws: WebSocket, {id}: {id: string}) => {
 	const existing = callbacks.get(id)
 	if (!existing) {
 		console.error(`Start the long-running process for ${id} by first calling \`trpc.useMutation("audiodb.fetch").mutate({id})\` and subscribing if the response tell you to.`)
@@ -177,10 +178,18 @@ export const audiodbRouter = createRouter()
 						resolveForId(input.id)
 						return
 					}
+					
+					const imageIds = await keysAndInputToImageIds(audiodbArtist, ['strArtistThumb', 'strArtistLogo', 'strArtistCutout', 'strArtistClearart', 'strArtistWideThumb', 'strArtistBanner'])
 					await ctx.prisma.audioDbArtist.create({
 						data: {
 							entityId: input.id,
 							...audiodbArtist,
+							thumbId: imageIds.strArtistThumb,
+							logoId: imageIds.strArtistLogo,
+							cutoutId: imageIds.strArtistCutout,
+							clearartId: imageIds.strArtistClearart,
+							wideThumbId: imageIds.strArtistWideThumb,
+							bannerId: imageIds.strArtistBanner,
 						},
 					})
 					await new Promise(resolve => enqueue(() => resolve(undefined)))
@@ -192,10 +201,14 @@ export const audiodbRouter = createRouter()
 					const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
 					for (const audiodbAlbum of audiodbAlbums.album) {
 						const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
+						const imageIds = await keysAndInputToImageIds(audiodbAlbum, ['strAlbumThumb','strAlbumThumbHQ','strAlbumCDart'])
 						await ctx.prisma.audioDbAlbum.create({
 							data: {
 								...(entityAlbum ? {entityId: entityAlbum.id} : {}),
 								...audiodbAlbum,
+								thumbId: imageIds.strAlbumThumb,
+								thumbHqId: imageIds.strAlbumThumbHQ,
+								cdArtId: imageIds.strAlbumCDart,
 							},
 						})
 						await new Promise(resolve => enqueue(() => resolve(undefined)))
@@ -211,10 +224,12 @@ export const audiodbRouter = createRouter()
 							if (!entityAlbum && !oneAlbumConnection && entityTrack?.albumId) {
 								oneAlbumConnection = entityTrack.albumId
 							}
+							const imageIds = await keysAndInputToImageIds(audiodbTrack, ['strTrackThumb'])
 							return ctx.prisma.audioDbTrack.create({
 								data: {
 									...(entityTrack ? {entityId: entityTrack.id} : {}),
 									...audiodbTrack,
+									thumbId: imageIds.strTrackThumb,
 								},
 							})
 						}))
@@ -230,6 +245,34 @@ export const audiodbRouter = createRouter()
 					resolveForId(input.id)
 				})
 			return false
+
+			async function keysAndInputToImageIds<
+				K extends readonly (keyof I)[],
+				J extends K[keyof K] & string,
+				I extends {[key in J]?: string | number | null | undefined} & {[key: string]: any},
+				R extends {[key in keyof Pick<I, J>]: string}
+			>(input: I, keys: K): Promise<R> {
+				const imageIds = await Promise.allSettled(keys.map(async (key) => {
+					const url = input[key]
+					if (url) {
+						const {hash, path, mimetype} = await fetchAndWriteImage(url as string)
+						const {id} = await ctx.prisma.image.upsert({
+						where: { id: hash },
+						update: {},
+						create: {
+							id: hash as string,
+							path,
+							mimetype,
+						}
+						})
+						return [key, id] as const
+					}
+				}))
+				const fulfilled = imageIds.filter((result) => result.status === 'fulfilled') as PromiseFulfilledResult<[J, string] | undefined>[]
+				const values = fulfilled.map(({value}) => value)
+				const content = values.filter(Boolean) as [J, string][]
+				return Object.fromEntries(content) as R
+			}
 		}
 	})
 
