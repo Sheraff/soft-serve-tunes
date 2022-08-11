@@ -48,6 +48,13 @@ export const albumRouter = createRouter()
               coverId: true,
             }
           },
+          audiodb: {
+            select: {
+              cdArtId: true,
+              thumbId: true,
+              thumbHqId: true,
+            }
+          },
           tracks: {
             take: 1,
             where: {
@@ -63,6 +70,16 @@ export const albumRouter = createRouter()
           artist: {
             select: {
               name: true,
+              audiodb: {
+                select: {
+                  bannerId: true,
+                  clearartId: true,
+                  cutoutId: true,
+                  logoId: true,
+                  thumbId: true,
+                  wideThumbId: true,
+                }
+              }
             }
           }
         }

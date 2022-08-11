@@ -20,6 +20,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   res
     .status(200)
     .setHeader("Content-Type", cover.mimetype)
+    .setHeader("cache-control", "public, max-age=31536000")
   return createReadStream(filePath)
     .pipe(res)
 }

@@ -1,5 +1,4 @@
 import { useMemo } from "react"
-import lastfmImageToUrl from "../../../utils/lastfmImageToUrl"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 
@@ -12,8 +11,12 @@ export default function AlbumMiniature({
 
 	const imgSrc = useMemo(() => {
 		if (!album) return undefined
-		if (album.lastfm?.coverId) return `/api/cover/${album.lastfm.coverId}`
-		if (album.tracks[0]?.metaImageId) return `/api/cover/${album.tracks[0].metaImageId}`
+		if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
+		if (album.artist?.audiodb?.thumbId) return album.artist.audiodb?.thumbId
+		// if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
+		// if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
+		if (album.lastfm?.coverId) return album.lastfm.coverId
+		if (album.tracks[0]?.metaImageId) return album.tracks[0].metaImageId
 		return undefined
 	}, [album])
 
@@ -26,7 +29,7 @@ export default function AlbumMiniature({
 
 	return (
 		<img
-			src={imgSrc}
+			src={imgSrc ? `/api/cover/${imgSrc}` : ""}
 			alt=""
 			className={styles.img}
 			crossOrigin="anonymous"

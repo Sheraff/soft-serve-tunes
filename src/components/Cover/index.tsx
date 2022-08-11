@@ -15,14 +15,23 @@ export default forwardRef(function Cover({
 	const {data: lastfm, isLoading: lastfmLoading} = trpc.useQuery(["lastfm.track", {id: id as string}], {
 		enabled: Boolean(id),
 	})
+	const {data: audiodb, isLoading: audiodbLoading} = trpc.useQuery(["audiodb.get.artist", {id: track?.artistId as string}], {
+		enabled: Boolean(track?.artistId),
+	})
+	const {data: audiodbT, isLoading: audiodbTLoading} = trpc.useQuery(["audiodb.get.track", {id: id as string}], {
+		enabled: Boolean(id),
+	})
 
 	const previous = useRef<string | undefined>(undefined)
 	const imgSrc = useMemo(() => {
-		if (!track || lastfmLoading) return previous.current
+		if (!track || lastfmLoading || audiodbLoading || audiodbTLoading) return previous.current
+		if (audiodbT?.audiodb?.thumbId) return `/api/cover/${audiodbT.audiodb.thumbId}`
 		if (lastfm?.album?.coverId) return `/api/cover/${lastfm.album.coverId}`
 		if (track.metaImageId) return `/api/cover/${track.metaImageId}`
+		if (audiodb?.audiodb?.thumbId) return `/api/cover/${audiodb.audiodb?.thumbId}`
+		// if (audiodb?.audiodb?.cutoutId) return `/api/cover/${audiodb.audiodb?.cutoutId}`
 		return undefined
-	}, [track, lastfm, lastfmLoading])
+	}, [track, lastfm, audiodb, audiodbT, lastfmLoading, audiodbLoading, audiodbTLoading])
 	// previous.current = imgSrc
 	return (
 		<img
