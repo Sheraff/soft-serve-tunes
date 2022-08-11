@@ -57,6 +57,7 @@ export default function AudioTest({ }) {
 			}
 		}
 	})
+	console.log(lastfm)
 	// const {data: metadata} = trpc.useQuery(["metadata.track", {id: item?.id as string}], {
 	// 	enabled: Boolean(item?.id),
 	// })
