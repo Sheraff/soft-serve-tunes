@@ -48,9 +48,9 @@ const Home: NextPage = () => {
 				<div className={classNames(styles.progress, {[styles.done]: progress === 1})} style={
 					{'--progress': progress} as React.CSSProperties
 				}/>
-				{/* {ready && ( */}
+				{ready && (
 					<AudioTest />
-				{/* )} */}
+				)}
 			</RouteParser>
 		</>
 	)

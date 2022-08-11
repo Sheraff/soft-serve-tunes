@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react"
+import { memo, useEffect, useState } from "react"
 import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
 
-export default function Test({artistId}: {artistId: string}) {
+export default memo(function Test({artistId}: {artistId: string}) {
 	const { mutate } = trpc.useMutation(["audiodb.fetch"])
 
 	const [enabled, setEnabled] = useState("")
@@ -40,4 +40,4 @@ export default function Test({artistId}: {artistId: string}) {
 		return () => controller.abort()
 	}, [mutate, artistId])
 	return null
-}
+})
