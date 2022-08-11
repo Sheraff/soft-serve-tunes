@@ -125,15 +125,15 @@ export const audiodbRouter = createRouter()
 									mbid: true,
 								}
 							},
-							tracks: {
+						}
+					},
+					tracks: {
+						select: {
+							id: true,
+							name: true,
+							lastfm: {
 								select: {
-									id: true,
-									name: true,
-									lastfm: {
-										select: {
-											mbid: true,
-										}
-									}
+									mbid: true,
 								}
 							}
 						}
@@ -145,7 +145,7 @@ export const audiodbRouter = createRouter()
 						resolveForId(input.id)
 						return
 					}
-					await new Promise(resolve => enqueue(resolve))
+					await new Promise(resolve => enqueue(() => resolve(undefined)))
 					const artistsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/search.php`, 'https://theaudiodb.com')
 					artistsUrl.searchParams.set('s', artist.name)
 					console.log(`fetching ${artistsUrl.toString()}`)
@@ -175,7 +175,7 @@ export const audiodbRouter = createRouter()
 							...audiodbArtist,
 						},
 					})
-					await new Promise(resolve => enqueue(resolve))
+					await new Promise(resolve => enqueue(() => resolve(undefined)))
 					const albumsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/album.php`, 'https://theaudiodb.com')
 					albumsUrl.searchParams.set('i', audiodbArtist.idArtist.toString())
 					console.log(`fetching ${albumsUrl.toString()}`)
@@ -190,7 +190,7 @@ export const audiodbRouter = createRouter()
 								...audiodbAlbum,
 							},
 						})
-						await new Promise(resolve => enqueue(resolve))
+						await new Promise(resolve => enqueue(() => resolve(undefined)))
 						const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
 						tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
 						console.log(`fetching ${tracksUrl.toString()}`)
@@ -198,7 +198,7 @@ export const audiodbRouter = createRouter()
 						const tracksJson = await tracksData.json()
 						const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
 						await Promise.all(audiodbTracks.track.map(async (audiodbTrack) => {
-							const entityTrack = entityAlbum?.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
+							const entityTrack = artist.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
 							return ctx.prisma.audioDbTrack.create({
 								data: {
 									...(entityTrack ? {entityId: entityTrack.id} : {}),
