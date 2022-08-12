@@ -3,9 +3,10 @@ import { socketServer } from "../persistent/ws"
 import type { WebSocket } from 'ws'
 import createTrack from "../db/createTrack"
 import listFilesFromDir from "../db/listFilesFromDir"
+import { env } from "../../env/server.mjs"
 
 const populating: {
-  promise: Promise<null> | null
+  promise: Promise<null | void> | null
   total: number
   done: number
 } = {
@@ -14,11 +15,24 @@ const populating: {
   done: 0,
 }
 
+declare global {
+  var persisted: {populated: boolean} | null;
+}
+
+const persisted = globalThis.persisted || {populated: false}
+
+if (env.NODE_ENV !== "production") {
+	globalThis.persisted = persisted
+}
+
 socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
   if (populating.promise) {
     const interval = setInterval(() => {
       if (socketServer.isAlive(ws)) {
-        ws.send(JSON.stringify({type: 'populate:progress', payload: populating.done / populating.total}))
+        const progress = populating.total
+          ? populating.done / populating.total
+          : 0
+        ws.send(JSON.stringify({type: 'populate:progress', payload: progress}))
       } else {
         clearInterval(interval)
       }
@@ -33,7 +47,10 @@ socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
 
 export const listRouter = createRouter()
   .mutation("populate", {
-    async resolve({ ctx }) {
+    async resolve() {
+      if (persisted.populated) {
+        return false
+      }
       if (!populating.promise) {
         populating.total = 0
         populating.done = 0
@@ -45,7 +62,12 @@ export const listRouter = createRouter()
               populating.done++
             }
           })
-          .then(() => populating.promise = null)
+          .then(() => {
+            populating.promise = null
+            persisted.populated = true
+          })
       }
+      return true
     }
   })
+

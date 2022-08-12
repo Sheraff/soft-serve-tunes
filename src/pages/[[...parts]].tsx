@@ -18,7 +18,12 @@ const Home: NextPage = () => {
 	useEffect(() => {
 		const controller = new AbortController()
 		let socket: WebSocket | null = null
-		mutate(undefined, { onSuccess: () => {
+		mutate(undefined, { onSuccess: (shouldSubscribe) => {
+			if (!shouldSubscribe) {
+				setProgress(1)
+				setReady(true)
+				return
+			}
 			socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
 			socket.onopen = () => {
 				socket?.send(JSON.stringify({type: 'populate:subscribe'}))
