@@ -1,6 +1,6 @@
 import { createRouter } from "./context"
 import { env } from "../../env/server.mjs"
-import { socketServer } from "../ws"
+import { socketServer } from "../persistent/ws"
 import type { WebSocket } from 'ws'
 import { z } from "zod"
 import { fetchAndWriteImage } from "../../utils/writeImage"

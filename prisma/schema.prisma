@@ -102,7 +102,7 @@ model Genre {
 model LastFmTrack {
   id        String        @id @default(cuid())
   entityId  String        @unique
-  entity    Track         @relation(fields: [entityId], references: [id])
+  entity    Track         @relation(fields: [entityId], references: [id], onDelete: Cascade)
   url       String        @unique
   albumId   String?
   album     LastFmAlbum?  @relation(fields: [albumId], references: [id])
@@ -247,7 +247,7 @@ model AudioDbTrack {
   strGenre         String?
   strMusicVid      String?
   intTrackNumber   Int?
-  strMusicBrainzID String?
+  strMusicBrainzID String? // should be unique in theory, but wrong metadata on some track can cause issues
 
   strTrackThumb String?
   thumbId       String?

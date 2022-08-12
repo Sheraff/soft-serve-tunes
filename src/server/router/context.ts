@@ -2,6 +2,8 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import { prisma } from "../db/client";
+import { fileWatcher } from "../persistent/watcher";
+import { socketServer } from "../persistent/ws";
 
 export const createContext = (opts?: trpcNext.CreateNextContextOptions) => {
   const req = opts?.req;
@@ -11,6 +13,8 @@ export const createContext = (opts?: trpcNext.CreateNextContextOptions) => {
     req,
     res,
     prisma,
+    fileWatcher,
+    socketServer,
   };
 };
 
