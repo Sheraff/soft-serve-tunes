@@ -4,11 +4,13 @@ import { env } from "../../env/server.mjs"
 import { prisma } from "../db/client"
 import createTrack from "../db/createTrack"
 import listFilesFromDir from "../db/listFilesFromDir"
+import { socketServer } from "./ws"
 
 type MapValueType<A> = A extends Map<any, infer V> ? V : never;
 
 class MyWatcher {
 	static DELAY = 2_000
+	static CLEANUP_DELAY = 1_000
 
 	watcher?: FSWatcher
 	rootFolder: string
@@ -154,11 +156,15 @@ class MyWatcher {
 	}
 
 	resolveQueue: MapValueType<typeof this.pending>[] = []
+	cleanupTimeoutId: NodeJS.Timeout | null = null
 	async enqueueResolve(ino: string) {
 		const entry = this.pending.get(ino)
 		if (!entry) {
 			console.log(`\x1b[31merror\x1b[0m - FSWatcher could not find ${ino} file in pending list`)
 			return
+		}
+		if (this.cleanupTimeoutId) {
+			clearTimeout(this.cleanupTimeoutId)
 		}
 		clearTimeout(entry.timeout)
 		this.pending.delete(ino)
@@ -170,6 +176,7 @@ class MyWatcher {
 				this.resolveQueue.shift()
 			}
 		}
+		this.cleanupTimeoutId = setTimeout(() => this.cleanup(), MyWatcher.CLEANUP_DELAY)
 	}
 
 	async resolve(entry: MapValueType<typeof this.pending>) {
@@ -191,16 +198,83 @@ class MyWatcher {
 			if (file) {
 				const track = await prisma.track.delete({
 					where: { id: file.trackId },
-					select: { name: true },
+					select: { name: true, id: true },
 				})
 				console.log(`\x1b[35mevent\x1b[0m - file removed from ${removed}, with associated track ${track.name}`)
+				socketServer.send('watcher:remove', { track })
 			} else {
 				console.log(`\x1b[31merror\x1b[0m - database File entry not found for ${removed} when trying to remove it`)
 			}
 		} else if (added) {
 			await createTrack(added)
+			socketServer.send('watcher:add')
 		} else {
 			console.log(`\x1b[31merror\x1b[0m - FSWatcher could not resolve pending for ${ino} file`)
+		}
+	}
+
+	async cleanup() {
+		this.cleanupTimeoutId = null
+		const albums = await prisma.album.findMany({
+			select: {
+				id: true,
+				name: true,
+				_count: {
+					select: {
+						tracks: true,
+					},
+				},
+			},
+		})
+		const orphanedAlbums = albums.filter(album => album._count.tracks === 0)
+		for (const album of orphanedAlbums) {
+			console.log(`\x1b[35mevent\x1b[0m - remove album ${album.name} because it wasn't linked to any tracks anymore`)
+			await prisma.album.delete({
+				where: { id: album.id },
+			})
+			socketServer.send('watcher:remove', { album })
+		}
+		const artists = await prisma.artist.findMany({
+			select: {
+				id: true,
+				name: true,
+				_count: {
+					select: {
+						tracks: true,
+						albums: true,
+						feats: true,
+					},
+				},
+			},
+		})
+		const orphanedArtists = artists.filter(artist => artist._count.tracks === 0 && artist._count.albums === 0 && artist._count.feats === 0)
+		for (const artist of orphanedArtists) {
+			console.log(`\x1b[35mevent\x1b[0m - remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
+			await prisma.artist.delete({
+				where: { id: artist.id },
+			})
+			socketServer.send('watcher:remove', { artist })
+		}
+		const genres = await prisma.genre.findMany({
+			select: {
+				id: true,
+				name: true,
+				_count: {
+					select: {
+						tracks: true,
+						subgenres: true,
+						supgenres: true,
+					},
+				},
+			},
+		})
+		const orphanedGenres = genres.filter(genre => genre._count.tracks === 0 && genre._count.subgenres === 0 && genre._count.supgenres === 0)
+		for (const genre of orphanedGenres) {
+			console.log(`\x1b[35mevent\x1b[0m - remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
+			await prisma.genre.delete({
+				where: { id: genre.id },
+			})
+			socketServer.send('watcher:remove', { genre })
 		}
 	}
 }

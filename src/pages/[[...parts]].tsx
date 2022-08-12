@@ -1,9 +1,10 @@
 import classNames from "classnames"
 import type { NextPage } from "next"
 import Head from "next/head"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import AudioTest from "../components/AudioTest"
 import { RouteParser } from "../components/RouteContext"
+import WatcherSocket from "../components/WatcherSocket"
 import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
 import styles from "./index.module.css"
@@ -16,10 +17,11 @@ const Home: NextPage = () => {
 	
 	useEffect(() => {
 		const controller = new AbortController()
+		let socket: WebSocket | null = null
 		mutate(undefined, { onSuccess: () => {
-			const socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+			socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
 			socket.onopen = () => {
-				socket.send(JSON.stringify({type: 'populate:subscribe'}))
+				socket?.send(JSON.stringify({type: 'populate:subscribe'}))
 			}
 			socket.addEventListener("message", (e) => {
 				const data = JSON.parse(e.data)
@@ -27,14 +29,17 @@ const Home: NextPage = () => {
 					console.log("populating library: DONE")
 					setProgress(1)
 					setReady(true)
-					socket.close()
+					socket?.close()
 				} else if (data.type === "populate:progress") {
 					console.log(`populating library: ${data.payload}%`)
 					setProgress(data.payload)
 				}
 			}, {signal: controller.signal})
 		} })
-		return () => controller.abort()
+		return () => {
+			controller.abort()
+			socket?.close()
+		}
 	}, [mutate])
 
 	return (
@@ -49,7 +54,10 @@ const Home: NextPage = () => {
 					{'--progress': progress} as React.CSSProperties
 				}/>
 				{ready && (
-					<AudioTest />
+					<>
+						<AudioTest />
+						<WatcherSocket />
+					</>
 				)}
 			</RouteParser>
 		</>

@@ -13,6 +13,12 @@ class MyWebSocketServer extends WebSocketServer {
 		this.actors.set(name, actor)
 	}
 
+	send(type: string, payload?: unknown) {
+		this.clients.forEach((ws) => {
+			ws.send(JSON.stringify({type, payload}))
+		})
+	}
+
 	constructor(options: ServerOptions) {
 		super(options)
 		this.on('connection', (ws) => {
@@ -21,9 +27,9 @@ class MyWebSocketServer extends WebSocketServer {
 			ws.on('pong', () => this.alive.set(ws, true))
 
 			// logs
-			console.log(`\x1b[35mevent\x1b[0m - WebSocket Connection ++ (${socketServer.clients.size})`)
+			console.log(`\x1b[35mevent\x1b[0m - WebSocket Connection ++ (${this.clients.size})`)
 			ws.once('close', () => {
-				console.log(`\x1b[35mevent\x1b[0m - WebSocket Connection -- (${socketServer.clients.size})`)
+				console.log(`\x1b[35mevent\x1b[0m - WebSocket Connection -- (${this.clients.size})`)
 			})
 
 			// messages
