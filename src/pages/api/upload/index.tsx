@@ -120,10 +120,10 @@ function directoryFromOriginal(original: string) {
 }
 
 function directoryFromRandom() {
-	const timestamp = Date.now()
-	const random = Math.round(Math.random() * 1_000)
-	const string = Number(`${timestamp}${random}`).toString(36) as (string & {0: string, 1: string, 2: string})
-	return join(string[0], string[1], string[2], string)
+	const stablePrefix = Number([...Math.round(Date.now() / 10_000).toString()].reverse().join('')).toString(36)
+	const variableSuffix = Math.round(Math.random() * 36_000_000).toString(36)
+	const string = `${stablePrefix}${variableSuffix}` as (string & {0: string, 1: string, 2: string})
+	return join('__soft-served', string[0], string[1], string[2], string)
 }
 
 function getFileName(metadata: IAudioMetadata, original: string) {
