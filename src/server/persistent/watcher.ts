@@ -1,48 +1,53 @@
-import { FSWatcher, stat, watch, WatchEventType } from "node:fs"
-import { join, sep } from "node:path"
+import { stat, Stats } from "node:fs"
+import { dirname, relative } from "node:path"
 import { env } from "../../env/server.mjs"
 import { prisma } from "../db/client"
 import createTrack from "../db/createTrack"
-import listFilesFromDir from "../db/listFilesFromDir"
 import { socketServer } from "./ws"
+import chokidar from "chokidar"
 
 type MapValueType<A> = A extends Map<any, infer V> ? V : never;
 
 class MyWatcher {
-	static DELAY = 2_000
+	static DELAY = 2_100
 	static CLEANUP_DELAY = 1_000
 
-	watcher?: FSWatcher
+	watcher?: chokidar.FSWatcher
 	rootFolder: string
-	watching: boolean = false
 
 	constructor(rootFolder: string) {
 		this.rootFolder = rootFolder
-		this.onChange = this.onChange.bind(this)
+		this.onAdd = this.onAdd.bind(this)
+		this.onUnlink = this.onUnlink.bind(this)
 		this.onError = this.onError.bind(this)
-		this.onClose = this.onClose.bind(this)
-		this.init(rootFolder)
+		this.init()
 	}
 
-	init(rootFolder: string) {
-		if (this.watching) {
-			return
+	async init() {
+		if (this.watcher) {
+			console.log(`\x1b[36mwait \x1b[0m - restarting FSWatcher...`)
+			await this.watcher.close()
+		} else {
+			console.log(`\x1b[36mwait \x1b[0m - initializing FSWatcher...`)
 		}
-		this.watcher = watch(rootFolder, { recursive: true, persistent: true })
-		this.watcher.on('change', this.onChange)
-		this.watcher.on('error', this.onError)
-		this.watcher.once('close', this.onClose)
-		this.watching = true
-		console.log(`\x1b[32mready\x1b[0m - FSWatcher is watching ${rootFolder}`)
-	}
 
-	onClose() {
-		this.watching = false
-		this.watcher?.off('change', this.onChange)
-		this.watcher?.off('error', this.onError)
-		this.watcher?.close()
-		this.init(this.rootFolder)
-		console.log('\x1b[36minfo \x1b[0m - FSWatcher closed for some reason, restarting...')
+		this.watcher = chokidar.watch(this.rootFolder, {
+			ignored: /(^|[\/\\])\../, // ignore dot files
+			persistent: true,
+			atomic: true,
+			ignoreInitial: true,
+			awaitWriteFinish: {
+				stabilityThreshold: MyWatcher.DELAY - 100,
+			},
+		})
+		this.watcher.on('add', this.onAdd)
+		this.watcher.on('unlink', this.onUnlink)
+		this.watcher.on('error', this.onError)
+
+		return new Promise((resolve) => {
+			this.watcher?.once('ready', resolve)
+			console.log(`\x1b[32mready\x1b[0m - FSWatcher is watching ${this.rootFolder}`)
+		})
 	}
 
 	onError(error: Error) {
@@ -56,103 +61,52 @@ class MyWatcher {
 		ino: string,
 	}> = new Map()
 
-	onChange(event: WatchEventType, filename: string) {
-		const parts = filename.split(sep)
-		if (parts.some((part) => part.startsWith('.'))) {
+	async onAdd(path: string, stats?: Stats) {
+		if(!stats) {
+			stat(path, (error, stats) => {
+				if(error) {
+					console.log(`\x1b[31merror\x1b[0m - could not access file for stats as it was being added ${path}`)
+					return
+				}
+				this.onAdd(path, stats)
+			})
 			return
 		}
-		if (event === 'rename') {
-			const fullPath = asFullPath(filename)
-			stat(fullPath, async (error, stats) => {
-				if (error && error.code === 'ENOENT') {
-					// technically, while this query is running, the entry could be modified by this.resolve, but it's unlikely
-					const file = await prisma.file.findUnique({
-						where: { path: fullPath },
-						select: { ino: true },
-					})
-					if (!file) {
-						const files = await prisma.file.findMany({
-							where: { path: { startsWith: fullPath } },
-							select: { ino: true, path: true },
-						})
-						if (files.length === 0) {
-							console.log(`\x1b[31merror\x1b[0m - ${fullPath} removed, but not found in database`)
-							return
-						}
-						for (const file of files) {
-							const ino = String(file.ino)
-							const entry = this.pending.get(ino)
-							if (!entry) {
-								this.pending.set(ino, {
-									removed: asFullPath(file.path),
-									timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
-									ino,
-								})
-							} else {
-								entry.removed = asFullPath(file.path)
-							}
-						}
-						return
-					}
-					const ino = String(file.ino)
-					const entry = this.pending.get(ino)
-					if (!entry) {
-						this.pending.set(ino, {
-							removed: fullPath,
-							timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
-							ino,
-						})
-					} else {
-						entry.removed = fullPath
-					}
-					return
-				} else if (error) {
-					console.error(error)
-					return
-				}
-				if (stats.isDirectory()) {
-					listFilesFromDir(filename).then((files) => {
-						for (const file of files) {
-							stat(file, (error, stats) => {
-								if(error) {
-									console.log(`\x1b[31merror\x1b[0m - ${file} could not be accessed for stats while adding ${fullPath}`)
-									return
-								}
-								const ino = String(stats.ino)
-								const entry = this.pending.get(ino)
-								if (!entry) {
-									this.pending.set(ino, {
-										added: file,
-										timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
-										ino,
-									})
-								} else {
-									entry.added = file
-									this.enqueueResolve(ino)
-								}
-							})
-						}
-					})
-					return
-				}
-				const ino = String(stats.ino)
-				const entry = this.pending.get(ino)
-				if (!entry) {
-					this.pending.set(ino, {
-						added: fullPath,
-						timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
-						ino,
-					})
-				} else {
-					entry.added = fullPath
-					this.enqueueResolve(ino)
-				}
-			})
-		} else if (event === 'change') {
-			console.warn(`${filename} changed, but we don't know what to do with it`)
-		} else {
-			console.warn(`${filename} ${event} but we don't know what to do with it`)
+		const ino = String(stats.ino)
+		const entry = this.pending.get(ino)
+		if (entry) {
+			entry.added = path
+			this.enqueueResolve(ino)
+			return
 		}
+		this.pending.set(ino, {
+			added: path,
+			timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
+			ino,
+		})
+	}
+
+	async onUnlink(path: string) {
+		// technically, while this query is running, the entry could be modified by this.resolve, but it's unlikely
+		const file = await prisma.file.findUnique({
+			where: { path },
+			select: { ino: true },
+		})
+		if (!file) {
+			console.log(`\x1b[31merror\x1b[0m - ${path} removed, but not found in database`)
+			return
+		}
+		const ino = String(file.ino)
+		const entry = this.pending.get(ino)
+		if (entry) {
+			entry.removed = path
+			return
+		}
+		this.pending.set(ino, {
+			removed: path,
+			timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
+			ino,
+		})
 	}
 
 	resolveQueue: MapValueType<typeof this.pending>[] = []
@@ -187,8 +141,7 @@ class MyWatcher {
 				where: { ino: dbIno },
 				data: { path: added },
 			})
-			console.log(`\x1b[35mevent\x1b[0m - file move from ${removed}`)
-			console.log(`\x1b[35mevent\x1b[0m - file move to ${added}`)
+			console.log(`\x1b[35mevent\x1b[0m - file move ${added} (from ${dirname(relative(dirname(added), removed))})`)
 		} else if (removed) {
 			const dbIno = BigInt(ino)
 			const file = await prisma.file.delete({
@@ -277,10 +230,6 @@ class MyWatcher {
 			socketServer.send('watcher:remove', { genre })
 		}
 	}
-}
-
-function asFullPath(path: string) {
-	return join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 }
 
 declare global {

@@ -36,7 +36,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	const position = metadata.common.track.no ?? undefined
 
 	try {
-		console.log(`\x1b[36minfo \x1b[0m - adding new track from file ${name}`)
+		console.log(`\x1b[36minfo \x1b[0m - adding new track from file ${relativePath}`)
 		const imageData = metadata.common.picture?.[0]?.data
 		const { hash, path: imagePath } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])

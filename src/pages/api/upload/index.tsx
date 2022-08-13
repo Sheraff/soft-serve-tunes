@@ -5,6 +5,7 @@ import { mkdir, rename, unlink } from "fs/promises"
 import { basename, dirname, extname, join, sep } from "path"
 import sanitize from "sanitize-filename"
 import { env } from "../../../env/server.mjs"
+import { fileWatcher } from "../../../server/persistent/watcher"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const form = new formidable.IncomingForm({
@@ -25,6 +26,9 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	}
 	const uploads = Array.isArray(files['file[]']) ? files['file[]'] : [files['file[]']]
 	const names = Array.isArray(fields['name']) ? fields['name'] : [fields['name']]
+
+	// make sure watcher is awake
+	await fileWatcher.init()
 
 	for (let i = 0; i < uploads.length; i++) {
 		const upload = uploads[i]
@@ -60,8 +64,8 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			await rename(upload.filepath, proposed)
 		} catch {
 			console.log(`\x1b[31merror\x1b[0m - failed to upload ${name}`)
+			unlink(upload.filepath)
 		}
-		unlink(upload.filepath)
 	}
 
 	return res.status(201).end()
