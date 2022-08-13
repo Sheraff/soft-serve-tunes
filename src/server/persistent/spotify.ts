@@ -9,14 +9,30 @@ const imageSchema = z.object({
 })
 
 const artistSchema = z.object({
-	href: z.string(),
 	id: z.string(),
 	name: z.string(),
 	type: z.literal("artist"),
-	uri: z.string(),
 	images: z.array(imageSchema).optional(),
 	popularity: z.number().optional(),
 	genres: z.array(z.string()).optional(),
+})
+
+const audioFeaturesSchema = z.object({
+	danceability: z.number(),
+	energy: z.number(),
+	key: z.number(),
+	loudness: z.number(),
+	mode: z.number(),
+	speechiness: z.number(),
+	acousticness: z.number(),
+	instrumentalness: z.number(),
+	liveness: z.number(),
+	valence: z.number(),
+	tempo: z.number(),
+	type: z.literal("audio_features"),
+	id: z.string(),
+	duration: z.number(),
+	time_signature: z.number(),
 })
 
 const baseTrackSchema = z.object({
@@ -24,30 +40,21 @@ const baseTrackSchema = z.object({
 	disc_number: z.number(),
 	duration_ms: z.number(),
 	explicit: z.boolean(),
-	external_urls: z.object({
-		isrc: z.string().optional(),
-	}),
-	href: z.string(),
 	id: z.string(),
 	name: z.string(),
 	popularity: z.number(),
-	preview_url: z.string(),
 	track_number: z.number(),
 	type: z.literal("track"),
-	uri: z.string(),
 })
 
 const albumSchema = z.object({
 	album_type: z.string(),
 	artists: z.array(artistSchema),
-	href: z.string(),
 	id: z.string(),
 	images: z.array(imageSchema),
 	name: z.string(),
 	release_date: z.string().transform(v => new Date(v)),
-	release_date_precision: z.string(),
 	type: z.literal("album"),
-	uri: z.string(),
 	popularity: z.number().optional(),
 	total_tracks: z.number().optional(),
 	tracks: z.object({
@@ -74,6 +81,20 @@ const trackSearchSchema = z.object({ // /search?type=track
 	}) 
 })
 
+const artistSearchSchema = z.object({ // /search?type=artist
+	artists: z.object({
+		items: z.array(artistSchema),
+		total: z.number(),
+	}) 
+})
+
+const albumSearchSchema = z.object({ // /search?type=album
+	albums: z.object({
+		items: z.array(albumSchema),
+		total: z.number(),
+	}) 
+})
+
 const albumsListSchema = z.object({ // /artists/{id}/albums
 	items: z.array(albumSchema),
 	total: z.number(),
@@ -82,38 +103,50 @@ const albumsListSchema = z.object({ // /artists/{id}/albums
 const responseSchema = z.union([
 	notFoundSchema,
 	trackSearchSchema, // /search?type=track
+	artistSearchSchema, // /search?type=artist
+	albumSearchSchema, // /search?type=album
 	albumsListSchema, // /artists/{id}/albums
 	z.discriminatedUnion("type", [
 		artistSchema, // /artists/{id}
 		albumSchema, // /albums/{id}
 		trackSchema, // /tracks/{id}
+		audioFeaturesSchema, // /audio-features/{id}
 	])
 ])
 
 type SpotifyApiUrl = 
-	`search?type=track&q=${string}`
+	`search?${string}type=track${string}`
+	| `search?${string}type=artist${string}`
+	| `search?${string}type=album${string}`
 	| `artists/${string}/albums`
 	| `artists/${string}`
 	| `albums/${string}`
 	| `tracks/${string}`
+	| `audio-features/${string}`
 
 type SpotifyApiSuccessResponse<URL extends SpotifyApiUrl> =
-	URL extends `search?type=track&q=${string}` ? typeof trackSearchSchema['_type']
+	URL extends `search?${string}type=track${string}` ? typeof trackSearchSchema['_type']
+	: URL extends `search?${string}type=artist${string}` ? typeof artistSearchSchema['_type']
+	: URL extends `search?${string}type=album${string}` ? typeof albumSearchSchema['_type']
 	: URL extends `artists/${string}/albums` ? typeof albumsListSchema['_type']
 	: URL extends `artists/${string}` ? typeof artistSchema['_type']
 	: URL extends `albums/${string}` ? typeof albumSchema['_type']
 	: URL extends `tracks/${string}` ? typeof trackSchema['_type']
+	: URL extends `audio-features/${string}` ? typeof audioFeaturesSchema['_type']
 	: never
 
 type SpotifyApiResponse<URL extends SpotifyApiUrl> = SpotifyApiSuccessResponse<URL> | typeof notFoundSchema['_type']
 
 function getSchema(url: SpotifyApiUrl) {
 	switch (true) {
-		case url.startsWith('search?type=track&q='): return trackSearchSchema
+		case url.startsWith('tracks/'): return trackSchema
+		case url.startsWith('audio-features/'): return audioFeaturesSchema
+		case url.startsWith('albums/'): return albumSchema
 		case url.startsWith('artists/') && url.endsWith('/albums'): return albumsListSchema
 		case url.startsWith('artists/'): return artistSchema
-		case url.startsWith('albums/'): return albumSchema
-		case url.startsWith('tracks/'): return trackSchema
+		case url.startsWith('search?') && url.includes('type=track'): return trackSearchSchema
+		case url.startsWith('search?') && url.includes('type=artist'): return artistSearchSchema
+		case url.startsWith('search?') && url.includes('type=album'): return albumSearchSchema
 	}
 }
 
