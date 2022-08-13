@@ -1,5 +1,6 @@
 import { env } from "../../env/server.mjs"
 import { z } from "zod"
+import Queue from "../../utils/Queue"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -66,6 +67,7 @@ const responseSchema = z.union([
 
 class Spotify {
 	static RATE_LIMIT = 300
+	static STORAGE_LIMIT = 50
 
 	accessToken: string | null = null
 
@@ -78,12 +80,15 @@ class Spotify {
 		method: 'POST',
 	}
 
-	available: Promise<void>
+	queue: Queue
+
+	pastRequests: string[] = []
+	pastResponses: Map<string, typeof responseSchema['_type']> = new Map()
 
 	constructor() {
 		this.authOptions.body = new URLSearchParams()
 		this.authOptions.body.append('grant_type', 'client_credentials')
-		this.available = Promise.resolve()
+		this.queue = new Queue(Spotify.RATE_LIMIT)
 	}
 
 	async refreshToken(retries = 0) {
@@ -109,18 +114,35 @@ class Spotify {
 	}
 
 	async fetch(url: string) {
-		await this.available
+		const cached = this.pastResponses.get(url)
+		if (cached) {
+			return cached
+		}
+		await this.queue.next()
 		await this.refreshToken()
 		const request = fetch(`https://api.spotify.com/v1/${url}`, {
 			headers: {
 				'Authorization': `Bearer ${this.accessToken}`,
 				'Accept': 'application/json',
 			}
+		}).then(async response => {
+			const json = await response.json()
+			const data = responseSchema.parse(json)
+			if (!('error' in data)) {
+				this.storeResponse(url, data)
+			}
+			return data
 		})
-			.then(response => response.json())
-			.then(data => responseSchema.parse(data))
-		this.available = new Promise(resolve => setTimeout(resolve, Spotify.RATE_LIMIT))
 		return request
+	}
+
+	storeResponse(url: string, response: typeof responseSchema['_type']) {
+		this.pastRequests.push(url)
+		this.pastResponses.set(url, response)
+		if (this.pastRequests.length > Spotify.STORAGE_LIMIT) {
+			const key = this.pastRequests.shift() as string
+			this.pastResponses.delete(key)
+		}
 	}
 }
 
