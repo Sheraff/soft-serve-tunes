@@ -37,6 +37,10 @@ export default function WatcherSocket() {
 					queryClient.invalidateQueries(["genre.get", {id: data.payload.genre.id}])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'genre', id: data.payload.genre.id }])
 				}
+			} else if (data.type === "global:message") {
+				console[data.payload?.level || 'log'](data.payload.message)
+			} else if (data.type === "upload:progress"){
+				console.log("upload progress", data.payload)
 			}
 		}, {signal: controller.signal})
 		return () => {

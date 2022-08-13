@@ -37,7 +37,7 @@ export async function fetchAndWriteImage(url?: string) {
 			const response = await fetch(url)
 			const mimetype = response.headers.get('content-type') ?? 'image/*'
 			const buffer = await response.arrayBuffer()
-			const extension = extname(url)
+			const extension = extname(url) || undefined
 			const result = await writeImage(Buffer.from(buffer), extension)
 			return {
 				mimetype,

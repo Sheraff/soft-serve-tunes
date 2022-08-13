@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client"
 import { env } from "../../env/server.mjs"
 import { fetchAndWriteImage } from "../../utils/writeImage"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
+import sanitizeString from "../../utils/sanitizeString"
 
 const lastFmTrackSchema = z
   .object({
@@ -159,9 +160,9 @@ export const lastfmRouter = createRouter()
         url.searchParams.set('method', 'track.getInfo')
         url.searchParams.set('format', 'json')
         url.searchParams.set('api_key', env.LAST_FM_API_KEY)
-        url.searchParams.set('track', track.name)
+        url.searchParams.set('track', sanitizeString(track.name))
         url.searchParams.set('autocorrect', '1')
-        url.searchParams.set('artist', track.artist.name)
+        url.searchParams.set('artist', sanitizeString(track.artist.name))
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmTrackSchema.parse(json)
@@ -208,7 +209,7 @@ export const lastfmRouter = createRouter()
         url.searchParams.set('format', 'json')
         url.searchParams.set('api_key', env.LAST_FM_API_KEY)
         url.searchParams.set('autocorrect', '1')
-        url.searchParams.set('artist', track.artist.name)
+        url.searchParams.set('artist', sanitizeString(track.artist.name))
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmArtistSchema.parse(json)
@@ -289,8 +290,8 @@ export const lastfmRouter = createRouter()
         url.searchParams.set('format', 'json')
         url.searchParams.set('api_key', env.LAST_FM_API_KEY)
         url.searchParams.set('autocorrect', '1')
-        url.searchParams.set('album', track.album.name)
-        url.searchParams.set('artist', track.artist.name)
+        url.searchParams.set('album', sanitizeString(track.album.name))
+        url.searchParams.set('artist', sanitizeString(track.artist.name))
         const data = await fetch(url)
         const json = await data.json()
         const lastfm = lastFmAlbumSchema.parse(json)

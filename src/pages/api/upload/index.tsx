@@ -1,12 +1,15 @@
 import { IAudioMetadata, parseFile } from "music-metadata"
 import type { NextApiRequest, NextApiResponse } from "next"
 import formidable, { Fields, Files } from "formidable"
-import { mkdir, rename, unlink } from "fs/promises"
+import { mkdir, rename, stat, unlink } from "fs/promises"
 import { basename, dirname, extname, join, sep } from "path"
 import sanitize from "sanitize-filename"
 import { env } from "../../../env/server.mjs"
 import { fileWatcher } from "../../../server/persistent/watcher"
 import { spotify } from "../../../server/persistent/spotify"
+import sanitizeString from "../../../utils/sanitizeString"
+import pathToSearch from "../../../utils/pathToSearch"
+import { socketServer } from "../../../server/persistent/ws"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const form = new formidable.IncomingForm({
@@ -27,11 +30,13 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	}
 	const uploads = Array.isArray(files['file[]']) ? files['file[]'] : [files['file[]']]
 	const names = Array.isArray(fields['name']) ? fields['name'] : [fields['name']]
+	socketServer.send('upload:progress', 0)
 
 	// make sure watcher is awake
 	await fileWatcher.init()
 
 	for (let i = 0; i < uploads.length; i++) {
+		socketServer.send('upload:progress', (i+1) / (uploads.length + 1))
 		const upload = uploads[i]
 		const name = names[i]
 		if (!upload || !name) {
@@ -40,8 +45,9 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		console.log(`\x1b[35mevent\x1b[0m - uploading ${name}`)
 		const metadata = await parseFile(upload.filepath)
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
-			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify`)
-			const response = await spotify.fetch(`search?type=track&q=${metadata.common.title || basename(name)}`)
+			const search = sanitizeString(metadata.common.title || pathToSearch(name))
+			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify: ${search}`)
+			const response = await spotify.fetch(`search?type=track&q=${search}`)
 			if ('tracks' in response) {
 				const bestEffort = response.tracks.items[0]
 				if (bestEffort) {
@@ -58,32 +64,28 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		const filename = getFileName(metadata, name)
 		if (metaDirname) {
 			const proposed = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, metaDirname, filename)
-			try {
-				await mkdir(dirname(proposed), {recursive: true})
-				await rename(upload.filepath, proposed)
+			const success = await moveTempFile(upload.filepath, proposed)
+			if (success) {
 				continue
-			} catch {}
+			}
 		}
 		const originalDirname = await directoryFromOriginal(name)
 		if (originalDirname && originalDirname !== sep) {
 			const proposed = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, originalDirname, filename)
-			try {
-				await mkdir(dirname(proposed), {recursive: true})
-				await rename(upload.filepath, proposed)
+			const success = await moveTempFile(upload.filepath, proposed)
+			if (success) {
 				continue
-			} catch {}
+			}
 		}
 		const randomDirname = await directoryFromRandom()
 		const proposed = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, randomDirname, filename)
-		try {
-			await mkdir(dirname(proposed), {recursive: true})
-			await rename(upload.filepath, proposed)
-		} catch {
+		const success = await moveTempFile(upload.filepath, proposed)
+		if (!success) {
 			console.log(`\x1b[31merror\x1b[0m - failed to upload ${name}`)
 			unlink(upload.filepath)
 		}
 	}
-
+	socketServer.send('upload:progress', 1)
 	return res.status(201).end()
 }
 
@@ -91,6 +93,18 @@ export const config = {
 	api: {
 		bodyParser: false
 	}
+}
+
+async function moveTempFile(origin: string, destination: string) {
+	try {
+		await stat(destination)
+		console.log(`\x1b[33mretry\x1b[0m - ${destination} already exists`)
+		return false
+	} catch {}
+	await mkdir(dirname(destination), {recursive: true})
+	await rename(origin, destination)
+	console.log(`\x1b[32m201  \x1b[0m > uploaded ${destination}`)
+	return true
 }
 
 function directoryFromMetadata(metadata: IAudioMetadata) {

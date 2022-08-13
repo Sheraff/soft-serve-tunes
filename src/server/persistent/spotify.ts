@@ -4,6 +4,8 @@ import Queue from "../../utils/Queue"
 import { prisma } from "../db/client"
 import { fetchAndWriteImage } from "../../utils/writeImage"
 import { sep } from "path"
+import sanitizeString from "../../utils/sanitizeString"
+import pathToSearch from "../../utils/pathToSearch"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -280,21 +282,23 @@ export async function findTrack(trackDbId: string) {
 		}
 	})
 	if (!track || !track.name) {
-		console.log('spotify: not enough information to find track, tho we could maybe search by album + track number')
+		console.log(`\x1b[33m409  \x1b[0m - spotify: not enough information to find track, need better strategy`)
+		console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 		return
 	}
 	const spotifyTrack = track && track.spotify ? track.spotify : null
 	if (spotifyTrack && spotifyTrack.album && spotifyTrack.artist && spotifyTrack.tempo) {
-		console.log('spotify: already got everything')
+		console.log('\x1b[36m204  \x1b[0m - spotify: already got everything')
 		return
 	}
 	const artistName = track.artist?.name
 	const albumName = track.album?.name
 	const fuzzySearch = !spotifyTrack && !artistName && !albumName && track.file?.path
-		? track.file.path.split(sep)
+		? sanitizeString(pathToSearch(track.file.path))
 		: null
 	if (!spotifyTrack && !artistName && !albumName && !fuzzySearch) {
-		console.log('spotify: not enough information to find track, tho we could maybe search by album + track number')
+		console.log(`\x1b[33m409  \x1b[0m - spotify: not enough information to find track, need better strategy`)
+		console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 		return
 	}
 	let artistObject = spotifyTrack?.artist
@@ -303,28 +307,30 @@ export async function findTrack(trackDbId: string) {
 	let spotifyTrackId = spotifyTrack?.id
 	trackCreate: if (!spotifyTrack) {
 		const search = fuzzySearch
-			|| `track:${track.name}${artistName ? ` artist:${artistName}` : ''}${albumName ? ` album:${albumName}` : ''}`
+			|| `track:${sanitizeString(track.name)}${artistName ? ` artist:${sanitizeString(artistName)}` : ''}${albumName ? ` album:${sanitizeString(albumName)}` : ''}`
+		console.log(`\x1b[36mfetch\x1b[0m - spotify${fuzzySearch ? ' fuzzy' : ''} search: ${search}`)
 		const trackData = await spotify.fetch(`search?type=track&q=${search}`)
 		if ('error' in trackData) {
-			console.log('spotify: could not find track')
+			console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
 			break trackCreate
 		}
 		let candidate = trackData.tracks.items[0]
 		if (!candidate) {
 			if (artistName && albumName && typeof track.position !== 'undefined') {
-				const search = `artist:${artistName} album:${albumName}`
+				const search = `artist:${sanitizeString(artistName)} album:${sanitizeString(albumName)}`
+				console.log(`\x1b[36mfetch\x1b[0m - spotify fallback search: #${track.position} of ${search}`)
 				const albumData = await spotify.fetch(`search?type=track&q=${search}`)
 				if ('error' in albumData) {
-					console.log('spotify: could not find track')
+					console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
 					break trackCreate
 				}
 				candidate = albumData.tracks.items.find(item => item.track_number === track.position)
 				if (!candidate) {
-					console.log('spotify: could not find track')
+					console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
 					break trackCreate
 				}
 			} else {
-				console.log('spotify: could not find track')
+				console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
 				break trackCreate
 			}
 		}

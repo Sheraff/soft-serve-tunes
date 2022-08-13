@@ -4,13 +4,21 @@ import { socketServer } from "../persistent/ws"
 import type { WebSocket } from 'ws'
 import { z } from "zod"
 import { fetchAndWriteImage } from "../../utils/writeImage"
+import Queue from "../../utils/Queue"
+import sanitizeString from "../../utils/sanitizeString"
 
 const callbacks = new Map<string, Array<() => void>>()
 
 socketServer.registerActor('audiodb:subscribe', async (ws: WebSocket, {id}: {id: string}) => {
 	const existing = callbacks.get(id)
 	if (!existing) {
-		console.error(`Start the long-running process for ${id} by first calling \`trpc.useMutation("audiodb.fetch").mutate({id})\` and subscribing if the response tell you to.`)
+		ws.send(JSON.stringify({
+			type: 'global:message',
+			payload: {
+				level: 'warn',
+				message: `Start the long-running process for ${id} by first calling \`trpc.useMutation("audiodb.fetch").mutate({id})\` and subscribing if the response tell you to.`
+			}
+		}))
 		return
 	}
 	existing.push(() => {
@@ -19,6 +27,8 @@ socketServer.registerActor('audiodb:subscribe', async (ws: WebSocket, {id}: {id:
 		}
 	})
 })
+
+const queue = new Queue(2000)
 
 const audiodbArtistSchema = z.object({
 	idArtist: z.string().transform(Number),
@@ -180,14 +190,14 @@ export const audiodbRouter = createRouter()
 						resolveForId(input.id)
 						return
 					}
-					await new Promise(resolve => enqueue(() => resolve(undefined)))
+					await queue.next()
 					const artistsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/search.php`, 'https://theaudiodb.com')
-					artistsUrl.searchParams.set('s', artist.name)
-					console.log(`fetching ${artistsUrl.toString()}`)
+					artistsUrl.searchParams.set('s', sanitizeString(artist.name))
+					console.log(`\x1b[36mfetch\x1b[0m - audiodb search: ${artist.name}`)
 					const artistsData = await fetch(artistsUrl)
 					const artistsJson = await artistsData.json()
 					if (!artistsJson.artists || artistsJson.artists.length === 0) {
-						console.log(`No artist found for ${artist.name}`)
+						console.log(`\x1b[33m404  \x1b[0m - audiodb: No artist found for ${artist.name}`)
 						resolveForId(input.id)
 						return
 					}
@@ -199,8 +209,8 @@ export const audiodbRouter = createRouter()
 						audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid && artist.lastfm?.mbid === a.strMusicBrainzID)
 					}
 					if (!audiodbArtist) {
-						console.log(`Multiple artists found for ${artist.name}`)
-						console.log(artistsJson.artists)
+						console.log(`\x1b[33m409  \x1b[0m - audiodb: Multiple artists found for ${artist.name}`)
+						console.log(audiodbArtists.artists.map(a => a.strArtist).join(', '))
 						resolveForId(input.id)
 						return
 					}
@@ -218,10 +228,10 @@ export const audiodbRouter = createRouter()
 							bannerId: imageIds.strArtistBanner,
 						},
 					})
-					await new Promise(resolve => enqueue(() => resolve(undefined)))
+					await queue.next()
 					const albumsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/album.php`, 'https://theaudiodb.com')
 					albumsUrl.searchParams.set('i', audiodbArtist.idArtist.toString())
-					console.log(`fetching ${albumsUrl.toString()}`)
+					console.log(`\x1b[36mfetch\x1b[0m - audiodb albums: ${audiodbArtist.strArtist}`)
 					const albumsData = await fetch(albumsUrl)
 					const albumsJson = await albumsData.json()
 					const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
@@ -237,10 +247,10 @@ export const audiodbRouter = createRouter()
 								cdArtId: imageIds.strAlbumCDart,
 							},
 						})
-						await new Promise(resolve => enqueue(() => resolve(undefined)))
+						await queue.next()
 						const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
 						tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
-						console.log(`fetching ${tracksUrl.toString()}`)
+						console.log(`\x1b[36mfetch\x1b[0m - audiodb tracks: ${audiodbAlbum.strAlbum}`)
 						const tracksData = await fetch(tracksUrl)
 						const tracksJson = await tracksData.json()
 						const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
@@ -312,24 +322,3 @@ function resolveForId(id: string) {
 	}
 	callbacks.delete(id)
 }
-
-const queue = new Set<() => void>()
-
-async function processQueue() {
-	for (const callback of queue) {
-		callback()
-		await new Promise(resolve => setTimeout(resolve, 2000))
-		queue.delete(callback)
-	}
-	if (queue.size > 0) {
-		processQueue()
-	}
-}
-
-function enqueue(callback: () => void) {
-	queue.add(callback)
-	if (queue.size === 1) {
-		processQueue()
-	}
-}
-
