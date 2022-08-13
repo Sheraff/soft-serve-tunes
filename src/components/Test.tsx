@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react"
 import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
 
-export default memo(function Test({artistId}: {artistId: string}) {
+export default memo(function Test({artistId}: {artistId?: string | null}) {
 	const { mutate } = trpc.useMutation(["audiodb.fetch"])
 
 	const [enabled, setEnabled] = useState("")

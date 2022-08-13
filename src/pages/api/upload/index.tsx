@@ -41,7 +41,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		const metadata = await parseFile(upload.filepath)
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
 			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify`)
-			const response = await spotify.fetch(`search?q=${metadata.common.title || basename(name)}&type=track`)
+			const response = await spotify.fetch(`search?type=track&q=${metadata.common.title || basename(name)}`)
 			if ('tracks' in response) {
 				const bestEffort = response.tracks.items[0]
 				if (bestEffort) {
