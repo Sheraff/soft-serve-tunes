@@ -1,4 +1,3 @@
-import { parseFile } from "music-metadata"
 import type { NextApiRequest, NextApiResponse } from "next"
 import { createReadStream } from "node:fs"
 import { prisma } from "../../../server/db/client"

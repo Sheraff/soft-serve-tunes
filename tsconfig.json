@@ -14,7 +14,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "plugins": [
+      { "name": "typescript-plugin-css-modules" }
+    ]
   },
   "include": [
     "next-env.d.ts",

@@ -3,6 +3,7 @@ import type { NextPage } from "next"
 import Head from "next/head"
 import { useEffect, useState } from "react"
 import AudioTest from "../components/AudioTest"
+import DropTarget from "../components/DropTarget"
 import { RouteParser } from "../components/RouteContext"
 import WatcherSocket from "../components/WatcherSocket"
 import { env } from "../env/client.mjs"
@@ -62,6 +63,7 @@ const Home: NextPage = () => {
 					<>
 						<AudioTest />
 						<WatcherSocket />
+						<DropTarget />
 					</>
 				)}
 			</RouteParser>

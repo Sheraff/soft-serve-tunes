@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises"
 import { basename, extname, relative } from "node:path"
 import { parseFile } from 'music-metadata'
 import { writeImage } from "../../utils/writeImage"
-import type { Prisma } from "@prisma/client"
+import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "../db/client"
 import { env } from "../../env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
@@ -13,11 +13,11 @@ type PrismaError = PrismaClientRustPanicError
 	| PrismaClientInitializationError
 	| PrismaClientUnknownRequestError
 
-export default async function createTrack(path: string, retries = 0) {
+export default async function createTrack(path: string, retries = 0): Promise<true | false | Track> {
 	const stats = await stat(path)
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
 	if (existingFile) {
-		return
+		return true
 	}
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 	let metadata
@@ -25,7 +25,7 @@ export default async function createTrack(path: string, retries = 0) {
 		metadata = await parseFile(path)
 	} catch (error) {
 		console.log(`\x1b[31merror\x1b[0m - could not parse ${relativePath}, probably not a music file`)
-		return
+		return false
 	}
 
 	const uselessNameRegex = /^[0-9\s]*(track|piste)[0-9\s]*$/i
@@ -176,6 +176,7 @@ export default async function createTrack(path: string, retries = 0) {
 			}
 		}
 		console.log(`\x1b[35mevent\x1b[0m - added ${relativePath}`)
+		return track
 	} catch (e) {
 		const error = e as PrismaError
 		const RETRIES = 6
@@ -184,10 +185,11 @@ export default async function createTrack(path: string, retries = 0) {
 			const delay = 5 * Math.random() + 2 ** retries
 			console.log(`\x1b[36mwait \x1b[0m - database is busy, retry #${retries + 1} in ${Math.round(delay)}ms for ${relativePath}`)
 			await new Promise((resolve) => setTimeout(resolve, delay))
-			await createTrack(path, retries + 1)
+			return createTrack(path, retries + 1)
 		} else {
 			console.log(`\x1b[31merror\x1b[0m - failed to add ${relativePath} after ${retries} retries`)
 			console.warn(error)
+			return false
 		}
 	}
 }
