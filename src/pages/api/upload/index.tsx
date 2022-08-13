@@ -6,6 +6,7 @@ import { basename, dirname, extname, join, sep } from "path"
 import sanitize from "sanitize-filename"
 import { env } from "../../../env/server.mjs"
 import { fileWatcher } from "../../../server/persistent/watcher"
+import { spotify } from "../../../server/persistent/spotify"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const form = new formidable.IncomingForm({
@@ -38,6 +39,21 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		}
 		console.log(`\x1b[35mevent\x1b[0m - uploading ${name}`)
 		const metadata = await parseFile(upload.filepath)
+		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
+			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify`)
+			const response = await spotify.fetch(`search?q=${metadata.common.title || basename(name)}&type=track`)
+			if ('tracks' in response) {
+				const bestEffort = response.tracks.items[0]
+				if (bestEffort) {
+					metadata.common.title ||= bestEffort.name
+					metadata.common.album ||= bestEffort.album.name
+					if (bestEffort.artists[0]?.name) {
+						metadata.common.artist ||= bestEffort.artists[0].name
+					}
+					metadata.common.track.no ||= bestEffort.track_number
+				}
+			}
+		}
 		const metaDirname = await directoryFromMetadata(metadata)
 		const filename = getFileName(metadata, name)
 		if (metaDirname) {
@@ -101,6 +117,9 @@ function getFileName(metadata: IAudioMetadata, original: string) {
 	if (title && typeof no === 'number') {
 		const numberString = String(no).padStart(2, '0')
 		return `${numberString} ${title}.${dumbExtensionGuessing(metadata, original)}`
+	}
+	if (title) {
+		return `${title}.${dumbExtensionGuessing(metadata, original)}`
 	}
 	return basename(original)
 }
