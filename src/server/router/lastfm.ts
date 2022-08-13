@@ -90,10 +90,13 @@ const lastFmAlbumSchema = z
         })),
       }).optional(),
       tracks: z.object({
-        track: z.array(z.object({
-          name: z.string(),
-          url: z.string(),
-        }))
+        track: z.union([
+          z.array(z.object({
+            name: z.string(),
+            url: z.string(),
+          })),
+          z.object({})
+        ]),
       }).optional(),
     }).optional(),
   })
