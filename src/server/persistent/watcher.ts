@@ -1,10 +1,11 @@
 import { stat, Stats } from "node:fs"
-import { dirname, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import { env } from "../../env/server.mjs"
 import { prisma } from "../db/client"
 import createTrack from "../db/createTrack"
 import { socketServer } from "./ws"
 import chokidar from "chokidar"
+import { unlink } from "node:fs/promises"
 
 type MapValueType<A> = A extends Map<any, infer V> ? V : never;
 
@@ -130,6 +131,9 @@ class MyWatcher {
 				this.resolveQueue.shift()
 			}
 		}
+		if (this.cleanupTimeoutId) {
+			clearTimeout(this.cleanupTimeoutId)
+		}
 		this.cleanupTimeoutId = setTimeout(() => this.cleanup(), MyWatcher.CLEANUP_DELAY)
 	}
 
@@ -168,66 +172,112 @@ class MyWatcher {
 
 	async cleanup() {
 		this.cleanupTimeoutId = null
-		const albums = await prisma.album.findMany({
+		const orphanedAlbums = await prisma.album.findMany({
+			where: {
+				tracks: { none: {} },
+			},
 			select: {
 				id: true,
 				name: true,
-				_count: {
-					select: {
-						tracks: true,
-					},
-				},
 			},
 		})
-		const orphanedAlbums = albums.filter(album => album._count.tracks === 0)
+		await prisma.album.deleteMany({
+			where: {
+				id: {
+					in: orphanedAlbums.map(album => album.id),
+				},
+			}
+		})
 		for (const album of orphanedAlbums) {
 			console.log(`\x1b[35mevent\x1b[0m - remove album ${album.name} because it wasn't linked to any tracks anymore`)
-			await prisma.album.delete({
-				where: { id: album.id },
-			})
 			socketServer.send('watcher:remove', { album })
 		}
-		const artists = await prisma.artist.findMany({
+		const orphanedArtists = await prisma.artist.findMany({
+			where: {
+				tracks: { none: {} },
+				albums: { none: {} },
+				feats: { none: {} },
+			},
 			select: {
 				id: true,
 				name: true,
-				_count: {
-					select: {
-						tracks: true,
-						albums: true,
-						feats: true,
-					},
-				},
 			},
 		})
-		const orphanedArtists = artists.filter(artist => artist._count.tracks === 0 && artist._count.albums === 0 && artist._count.feats === 0)
+		await prisma.artist.deleteMany({
+			where: {
+				id: {
+					in: orphanedArtists.map(artist => artist.id),
+				},
+			}
+		})
 		for (const artist of orphanedArtists) {
 			console.log(`\x1b[35mevent\x1b[0m - remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
-			await prisma.artist.delete({
-				where: { id: artist.id },
-			})
 			socketServer.send('watcher:remove', { artist })
 		}
-		const genres = await prisma.genre.findMany({
+		const orphanedGenres = await prisma.genre.findMany({
+			where: {
+				tracks: { none: {} },
+				subgenres: { none: {} },
+				supgenres: { none: {} },
+				spotifyArtists: { none: {} },
+			},
 			select: {
 				id: true,
 				name: true,
-				_count: {
-					select: {
-						tracks: true,
-						subgenres: true,
-						supgenres: true,
-					},
-				},
-			},
+			}
 		})
-		const orphanedGenres = genres.filter(genre => genre._count.tracks === 0 && genre._count.subgenres === 0 && genre._count.supgenres === 0)
+		await prisma.genre.deleteMany({
+			where: {
+				id: {
+					in: orphanedGenres.map(genre => genre.id),
+				},
+			}
+		})
 		for (const genre of orphanedGenres) {
 			console.log(`\x1b[35mevent\x1b[0m - remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
-			await prisma.genre.delete({
-				where: { id: genre.id },
-			})
 			socketServer.send('watcher:remove', { genre })
+		}
+		const orphanedImages = await prisma.image.findMany({
+			where: {
+				track: { none: {} },
+				lastfmAlbum: { none: {} },
+				lastfmArtist: { none: {} },
+				audiodbTrack: { none: {} },
+				audiodbArtistThumb: { none: {} },
+				audiodbArtistLogo: { none: {} },
+				audiodbArtistCutout: { none: {} },
+				audiodbArtistClearart: { none: {} },
+				audiodbArtistWideThumb: { none: {} },
+				audiodbArtistBanner: { none: {} },
+				audiodbAlbumThumb: { none: {} },
+				audiodbAlbumThumbHq: { none: {} },
+				audiodbAlbumCdArt: { none: {} },
+				spotifyArtist: { none: {} },
+				spotifyAlbum: { none: {} },
+			},
+			select: {
+				path: true,
+				id: true,
+			}
+		})
+		let removeCount = 0
+		let failCount = 0
+		for (const image of orphanedImages) {
+			try {
+				await unlink(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path))
+				await prisma.image.delete({
+					where: { id: image.id },
+				})
+				removeCount++
+			} catch {
+				failCount++
+			}
+		}
+		if (removeCount > 0) {
+			console.log(`\x1b[35mevent\x1b[0m - removed ${removeCount} images that weren't linked to anything anymore`)
+		}
+		if (failCount > 0) {
+			console.log(`\x1b[31merror\x1b[0m - failed to remove ${failCount} images that aren't linked to anything anymore`)
 		}
 	}
 }
