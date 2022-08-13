@@ -1,6 +1,9 @@
 import { env } from "../../env/server.mjs"
 import { z } from "zod"
 import Queue from "../../utils/Queue"
+import { prisma } from "../db/client"
+import { fetchAndWriteImage } from "../../utils/writeImage"
+import { sep } from "path"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -31,7 +34,6 @@ const audioFeaturesSchema = z.object({
 	tempo: z.number(),
 	type: z.literal("audio_features"),
 	id: z.string(),
-	duration: z.number(),
 	time_signature: z.number(),
 })
 
@@ -42,7 +44,7 @@ const baseTrackSchema = z.object({
 	explicit: z.boolean(),
 	id: z.string(),
 	name: z.string(),
-	popularity: z.number(),
+	popularity: z.number().optional(),
 	track_number: z.number(),
 	type: z.literal("track"),
 })
@@ -100,20 +102,6 @@ const albumsListSchema = z.object({ // /artists/{id}/albums
 	total: z.number(),
 })
 
-const responseSchema = z.union([
-	notFoundSchema,
-	trackSearchSchema, // /search?type=track
-	artistSearchSchema, // /search?type=artist
-	albumSearchSchema, // /search?type=album
-	albumsListSchema, // /artists/{id}/albums
-	z.discriminatedUnion("type", [
-		artistSchema, // /artists/{id}
-		albumSchema, // /albums/{id}
-		trackSchema, // /tracks/{id}
-		audioFeaturesSchema, // /audio-features/{id}
-	])
-])
-
 type SpotifyApiUrl = 
 	`search?${string}type=track${string}`
 	| `search?${string}type=artist${string}`
@@ -151,7 +139,7 @@ function getSchema(url: SpotifyApiUrl) {
 }
 
 class Spotify {
-	static RATE_LIMIT = 300
+	static RATE_LIMIT = 200
 	static STORAGE_LIMIT = 50
 
 	#accessToken: string | null = null
@@ -196,7 +184,7 @@ class Spotify {
 	}
 
 	#pastRequests: SpotifyApiUrl[] = []
-	#pastResponses: Map<SpotifyApiUrl, typeof responseSchema['_type']> = new Map()
+	#pastResponses: Map<SpotifyApiUrl, SpotifyApiSuccessResponse<SpotifyApiUrl>> = new Map()
 
 	async fetch<URL extends SpotifyApiUrl>(url: URL): Promise<SpotifyApiResponse<URL>> {
 		const cached = this.#pastResponses.get(url) as (SpotifyApiSuccessResponse<URL> | undefined)
@@ -235,6 +223,431 @@ class Spotify {
 			const key = this.#pastRequests.shift() as SpotifyApiUrl
 			this.#pastResponses.delete(key)
 		}
+	}
+}
+
+export async function findTrack(trackDbId: string) {
+	const track = await prisma.track.findUnique({
+		where: { id: trackDbId },
+		select: {
+			id: true,
+			name: true,
+			position: true,
+			artist: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			album: {
+				select: {
+					id: true,
+					name: true,
+				}
+			},
+			file: {
+				select: {
+					path: true,
+				}
+			},
+			spotify: {
+				select: {
+					id: true,
+					tempo: true,
+					album: {
+						select: {
+							id: true,
+							imageId: true,
+							albumId: true,
+							name: true,
+							artist: {
+								select: {
+									id: true,
+								}
+							}
+						}
+					},
+					artist: {
+						select: {
+							id: true,
+							imageId: true,
+							artistId: true,
+							name: true,
+						}
+					}
+				}
+			}
+		}
+	})
+	if (!track || !track.name) {
+		console.log('spotify: not enough information to find track, tho we could maybe search by album + track number')
+		return
+	}
+	const spotifyTrack = track && track.spotify ? track.spotify : null
+	if (spotifyTrack && spotifyTrack.album && spotifyTrack.artist && spotifyTrack.tempo) {
+		console.log('spotify: already got everything')
+		return
+	}
+	const artistName = track.artist?.name
+	const albumName = track.album?.name
+	const fuzzySearch = !spotifyTrack && !artistName && !albumName && track.file?.path
+		? track.file.path.split(sep)
+		: null
+	if (!spotifyTrack && !artistName && !albumName && !fuzzySearch) {
+		console.log('spotify: not enough information to find track, tho we could maybe search by album + track number')
+		return
+	}
+	let artistObject = spotifyTrack?.artist
+	let albumObject = spotifyTrack?.album
+	let albumImageData
+	let spotifyTrackId = spotifyTrack?.id
+	trackCreate: if (!spotifyTrack) {
+		const search = fuzzySearch
+			|| `track:${track.name}${artistName ? ` artist:${artistName}` : ''}${albumName ? ` album:${albumName}` : ''}`
+		const trackData = await spotify.fetch(`search?type=track&q=${search}`)
+		if ('error' in trackData) {
+			console.log('spotify: could not find track')
+			break trackCreate
+		}
+		let candidate = trackData.tracks.items[0]
+		if (!candidate) {
+			if (artistName && albumName && typeof track.position !== 'undefined') {
+				const search = `artist:${artistName} album:${albumName}`
+				const albumData = await spotify.fetch(`search?type=track&q=${search}`)
+				if ('error' in albumData) {
+					console.log('spotify: could not find track')
+					break trackCreate
+				}
+				candidate = albumData.tracks.items.find(item => item.track_number === track.position)
+				if (!candidate) {
+					console.log('spotify: could not find track')
+					break trackCreate
+				}
+			} else {
+				console.log('spotify: could not find track')
+				break trackCreate
+			}
+		}
+		const [candidateArtist, ...featuring] = candidate.artists
+		const albumFeat = candidateArtist
+			? candidate.album.artists.filter(a => a.id !== candidateArtist.id)
+			: []
+		const newTrack = await prisma.spotifyTrack.create({
+			select: {
+				id: true,
+				artist: {
+					select: {
+						id: true,
+						imageId: true,
+						artistId: true,
+						name: true,
+					}
+				},
+				album: {
+					select: {
+						id: true,
+						imageId: true,
+						albumId: true,
+						name: true,
+						artist: {
+							select: {
+								id: true,
+							}
+						}
+					}
+				}
+			},
+			data: {
+				track: {
+					connect: {
+						id: track.id,
+					}
+				},
+				id: candidate.id,
+				name: candidate.name,
+				popularity: candidate.popularity,
+				durationMs: candidate.duration_ms,
+				explicit: candidate.explicit,
+				trackNumber: candidate.track_number,
+				discNumber: candidate.disc_number,
+				...(candidateArtist ? { artist: {
+					connectOrCreate: {
+						where: {
+							id: candidateArtist.id
+						},
+						create: {
+							id: candidateArtist.id,
+							name: candidateArtist.name,
+						},
+					}
+				}} : {}),
+				...(featuring.length ? {
+					feats: {
+						connectOrCreate: featuring.map(artist => ({
+							where: {
+								id: artist.id,
+							},
+							create: {
+								id: artist.id,
+								name: artist.name,
+							}
+						}))
+					}
+				} : {}),
+				album: {
+					connectOrCreate: {
+						where: {
+							id: candidate.album.id
+						},
+						create: {
+							id: candidate.album.id,
+							name: candidate.album.name,
+							albumType: candidate.album.album_type,
+							releaseDate: candidate.album.release_date,
+							totalTracks: candidate.album.total_tracks,
+							...(candidateArtist ? { artist: {
+								connectOrCreate: {
+									where: {
+										id: candidateArtist.id
+									},
+									create: {
+										id: candidateArtist.id,
+										name: candidateArtist.name,
+									},
+								}
+							}} : {}),
+							...(albumFeat.length ? {
+								feats: {
+									connectOrCreate: albumFeat.map(artist => ({
+										where: {
+											id: artist.id,
+										},
+										create: {
+											id: artist.id,
+											name: artist.name,
+										}
+									}))
+								}
+							} : {}),
+						}
+					}
+				}
+			}
+		})
+		if (track.artist?.id && newTrack.artist?.id) {
+			await prisma.spotifyArtist.update({
+				where: {
+					id: newTrack.artist.id,
+					artistId: undefined,
+				},
+				data: {
+					artist: {
+						connect: {
+							id: track.artist.id,
+						}
+					}
+				}
+			})
+		}
+		if (track.album?.id && newTrack.album?.id) {
+			await prisma.spotifyAlbum.update({
+				where: {
+					id: newTrack.album.id,
+					albumId: undefined,
+				},
+				data: {
+					album: {
+						connect: {
+							id: track.album.id,
+						}
+					}
+				}
+			})
+		}
+		artistObject = newTrack.artist
+		albumObject = newTrack.album
+		albumImageData = candidate.album.images
+		spotifyTrackId = newTrack.id
+	}
+	albumFill: if (albumObject && !albumObject.imageId) {
+		if (!albumImageData) {
+			const albumData = await spotify.fetch(`albums/${albumObject.id}`)
+			if ('error' in albumData) {
+				break albumFill
+			}
+			albumImageData = albumData.images
+		}
+		const image = albumImageData.sort((a, b) => b.height - a.height)[0]
+		if (!image) {
+			break albumFill
+		}
+		const {hash, path, mimetype} = await fetchAndWriteImage(image.url)
+		await prisma.spotifyAlbum.update({
+			where: {
+				id: albumObject.id
+			},
+			data: {
+				image: {
+					connectOrCreate: {
+						where: {
+							id: hash
+						},
+						create: {
+							id: hash,
+							path,
+							mimetype,
+						}
+					}
+				}
+			}
+		})
+	}
+	artistFill: if (artistObject && !artistObject.imageId) {
+		const artistData = await spotify.fetch(`artists/${artistObject.id}`)
+		if ('error' in artistData) {
+			break artistFill
+		}
+		const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
+		if (image) {
+			const {hash, path, mimetype} = await fetchAndWriteImage(image.url)
+			await prisma.spotifyArtist.update({
+				where: {
+					id: artistObject.id
+				},
+				data: {
+					image: {
+						connectOrCreate: {
+							where: {
+								id: hash
+							},
+							create: {
+								id: hash,
+								path,
+								mimetype,
+							}
+						}
+					},
+					popularity: artistData.popularity,
+					...(artistData.genres?.length ? {
+						genres: {
+							connectOrCreate: artistData.genres.map(genre => ({
+								where: {
+									name: genre,
+								},
+								create: {
+									name: genre,
+								}
+							}))
+						}
+					} : {}),
+				}
+			})
+		} else {
+			await prisma.spotifyArtist.update({
+				where: {
+					id: artistObject.id
+				},
+				data: {
+					popularity: artistData.popularity,
+					...(artistData.genres?.length ? {
+						genres: {
+							connectOrCreate: artistData.genres.map(genre => ({
+								where: {
+									name: genre,
+								},
+								create: {
+									name: genre,
+								}
+							}))
+						}
+					} : {}),
+				}
+			})
+		}
+	}
+	featuresFill: if (!spotifyTrack?.tempo && spotifyTrackId) {
+		const featuresData = await spotify.fetch(`audio-features/${spotifyTrackId}`)
+		if ('error' in featuresData) {
+			break featuresFill
+		}
+		await prisma.spotifyTrack.update({
+			where: {
+				id: spotifyTrackId
+			},
+			data: {
+				danceability: featuresData.danceability,
+				energy: featuresData.energy,
+				key: featuresData.key,
+				loudness: featuresData.loudness,
+				mode: featuresData.mode,
+				speechiness: featuresData.speechiness,
+				acousticness: featuresData.acousticness,
+				instrumentalness: featuresData.instrumentalness,
+				liveness: featuresData.liveness,
+				valence: featuresData.valence,
+				tempo: featuresData.tempo,
+				timeSignature: featuresData.time_signature,
+			}
+		})
+	}
+	artistConnect: if (artistObject && !artistObject.artistId) {
+		const singleChoice = await prisma.artist.findMany({
+			where: {
+				name: artistObject.name,
+				spotify: undefined,
+			},
+			take: 2,
+			select: {
+				id: true,
+			},
+		})
+		const result = singleChoice[0]
+		if (!result || singleChoice.length !== 1) {
+			break artistConnect
+		}
+		await prisma.artist.update({
+			where: {
+				id: result.id
+			},
+			data: {
+				spotify: {
+					connect: {
+						id: artistObject.id,
+					}
+				}
+			}
+		})
+	}
+	albumConnect: if (albumObject && !albumObject.albumId && artistObject?.name) {
+		const singleChoice = await prisma.album.findMany({
+			where: {
+				name: albumObject.name,
+				spotify: null,
+				artist: {
+					name: artistObject.name,
+				}
+			},
+			take: 2,
+			select: {
+				id: true,
+			},
+		})
+		const result = singleChoice[0]
+		if (!result || singleChoice.length !== 1) {
+			break albumConnect
+		}
+		await prisma.spotifyAlbum.update({
+			where: {
+				id: albumObject.id
+			},
+			data: {
+				album: {
+					connect: {
+						id: result.id,
+					}
+				}
+			}
+		})
 	}
 }
 

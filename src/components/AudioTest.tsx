@@ -62,6 +62,13 @@ export default function AudioTest({ }) {
 	// 	enabled: Boolean(item?.id),
 	// })
 
+	const {data: spotify} = trpc.useQuery(["spotify.track", {
+		id: item?.id as string,
+	}], {
+		enabled: Boolean(item?.id),
+	})
+	console.log(spotify)
+
 	const img = useRef<HTMLImageElement>(null)
 	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
 		router.push(`/${type}/${name.replace(/\s/g, '-')}/${id}`)

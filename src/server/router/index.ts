@@ -10,6 +10,7 @@ import { artistRouter } from "./artist"
 import { genreRouter } from "./genre"
 import { playlistRouter } from "./playlist"
 import { audiodbRouter } from "./audiodb"
+import { spotifyRouter } from "./spotify"
 
 export const appRouter = createRouter()
   .transformer(superjson)
@@ -22,6 +23,7 @@ export const appRouter = createRouter()
   .merge("genre.", genreRouter)
   .merge("playlist.", playlistRouter)
   .merge("audiodb.", audiodbRouter)
+  .merge("spotify.", spotifyRouter)
 
 // export type definition of API
 export type AppRouter = typeof appRouter

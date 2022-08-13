@@ -42,6 +42,7 @@ model Track {
   favourite   Boolean       @default(false)
   metaImageId String?
   metaImage   Image?        @relation(fields: [metaImageId], references: [id])
+  spotify     SpotifyTrack? @relation
 
   @@unique([name, artistId, albumId])
 }
@@ -63,6 +64,8 @@ model Image {
   audiodbAlbumThumb      AudioDbAlbum[]  @relation(name: "thumb")
   audiodbAlbumThumbHq    AudioDbAlbum[]  @relation(name: "thumbHq")
   audiodbAlbumCdArt      AudioDbAlbum[]  @relation(name: "cdArt")
+  spotifyArtist          SpotifyArtist[] @relation
+  spotifyAlbum           SpotifyAlbum[]  @relation
 }
 
 model Artist {
@@ -74,6 +77,7 @@ model Artist {
   albums    Album[]        @relation
   lastfm    LastFmArtist?  @relation
   audiodb   AudioDbArtist? @relation
+  spotify   SpotifyArtist? @relation
 }
 
 model Album {
@@ -87,16 +91,18 @@ model Album {
   year        Int?
   lastfm      LastFmAlbum?  @relation
   audiodb     AudioDbAlbum? @relation
+  spotify     SpotifyAlbum? @relation
 
   @@unique([name, artistId])
 }
 
 model Genre {
-  id        String  @id @default(cuid())
-  name      String  @unique
-  tracks    Track[] @relation
-  subgenres Genre[] @relation("LinkedGenre")
-  supgenres Genre[] @relation("LinkedGenre")
+  id             String          @id @default(cuid())
+  name           String          @unique
+  tracks         Track[]         @relation
+  spotifyArtists SpotifyArtist[] @relation
+  subgenres      Genre[]         @relation("LinkedGenre")
+  supgenres      Genre[]         @relation("LinkedGenre")
 }
 
 model LastFmTrack {
@@ -252,4 +258,69 @@ model AudioDbTrack {
   strTrackThumb String?
   thumbId       String?
   thumb         Image?  @relation(fields: [thumbId], references: [id])
+}
+
+model SpotifyArtist {
+  id         String         @id
+  name       String
+  imageId    String?
+  image      Image?         @relation(fields: [imageId], references: [id])
+  popularity Int?
+  genres     Genre[]        @relation
+  albums     SpotifyAlbum[] @relation
+  tracks     SpotifyTrack[] @relation
+  feats      SpotifyTrack[] @relation("Featuring")
+  albumFeats SpotifyAlbum[] @relation("AlbumFeaturing")
+
+  artistId String? @unique
+  artist   Artist? @relation(fields: [artistId], references: [id])
+}
+
+model SpotifyAlbum {
+  id          String          @id
+  name        String
+  albumType   String
+  artistId    String?
+  artist      SpotifyArtist?  @relation(fields: [artistId], references: [id])
+  feats       SpotifyArtist[] @relation("AlbumFeaturing")
+  imageId     String?
+  image       Image?          @relation(fields: [imageId], references: [id])
+  releaseDate DateTime?
+  popularity  Int?
+  totalTracks Int?
+  tracks      SpotifyTrack[]  @relation
+
+  albumId String? @unique
+  album   Album?  @relation(fields: [albumId], references: [id])
+}
+
+model SpotifyTrack {
+  id          String          @id
+  name        String
+  artistId    String?
+  artist      SpotifyArtist?  @relation(fields: [artistId], references: [id])
+  feats       SpotifyArtist[] @relation("Featuring")
+  albumId     String
+  album       SpotifyAlbum?   @relation(fields: [albumId], references: [id])
+  popularity  Int?
+  durationMs  Int?
+  explicit    Boolean?
+  trackNumber Int?
+  discNumber  Int?
+
+  danceability     Float?
+  energy           Float?
+  key              Int?
+  loudness         Float?
+  mode             Int?
+  speechiness      Float?
+  acousticness     Float?
+  instrumentalness Float?
+  liveness         Float?
+  valence          Float?
+  tempo            Float?
+  timeSignature    Int?
+
+  trackId String? @unique
+  track   Track?  @relation(fields: [trackId], references: [id])
 }
