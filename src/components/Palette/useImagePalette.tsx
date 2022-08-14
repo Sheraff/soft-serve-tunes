@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { buildRgb, quantization, convertRGBtoHSL, averageImageValue, formatHSL } from './utils'
+import { buildRgb, quantization, convertRGBtoHSL, averageImageValue, formatHSL, complementaryHSL } from './utils'
 
 export default function useImagePalette({
 	ref
 }: {
 	ref: React.RefObject<HTMLImageElement>
 }) {
-	const [palette, setPalette] = useState({})
+	const [palette, setPalette] = useState<React.CSSProperties>({})
 	useEffect(() => {
 		if(!ref.current) return
 		const controller = new AbortController()
@@ -27,26 +27,29 @@ export default function useImagePalette({
 					const rgbArray = buildRgb(imageData.data)
 					const quantColors = quantization(rgbArray, 0, 2)
 					const hslColors = quantColors.map(convertRGBtoHSL)
-					const darkMode = matchMedia("(prefers-color-scheme: dark)").matches
-					const lightMode = matchMedia("(prefers-color-scheme: light)").matches
-					const average = darkMode 
-						? 0
-						: lightMode
-						? 255
-						: averageImageValue(imageData.data)
-					console.log(formatHSL({...hslColors[3], l: 70, s: 40}))
+					const average = averageImageValue(imageData.data)
 					if (average > 255 / 2) {
 						setPalette({
-							background: formatHSL(hslColors[3]),
-							gradient: formatHSL(hslColors[2]),
-							foreground: formatHSL({...hslColors[0], l: 20, s: 50}),
-						})
+							'--palette-bg-main': formatHSL(hslColors[3]),
+							'--palette-bg-gradient': formatHSL(hslColors[2]),
+							'--palette-secondary': formatHSL({...hslColors[1], l: 20, s: 50}),
+							'--palette-primary': formatHSL({...hslColors[0], l: 20, s: 50}),
+							'--complementary-bg-main': complementaryHSL(hslColors[3]),
+							'--complementary-bg-gradient': complementaryHSL(hslColors[2]),
+							'--complementary-secondary': complementaryHSL({...hslColors[1], l: 20, s: 50}),
+							'--complementary-primary': complementaryHSL({...hslColors[0], l: 20, s: 50}),
+						} as React.CSSProperties)
 					} else {
 						setPalette({
-							background: formatHSL(hslColors[0]),
-							gradient: formatHSL(hslColors[1]),
-							foreground: formatHSL({...hslColors[3], l: 80, s: 50}),
-						})
+							'--palette-bg-main': formatHSL(hslColors[0]),
+							'--palette-bg-gradient': formatHSL(hslColors[1]),
+							'--palette-secondary': formatHSL({...hslColors[2], l: 80, s: 50}),
+							'--palette-primary': formatHSL({...hslColors[3], l: 80, s: 50}),
+							'--complementary-bg-main': complementaryHSL(hslColors[0]),
+							'--complementary-bg-gradient': complementaryHSL(hslColors[1]),
+							'--complementary-secondary': complementaryHSL({...hslColors[2], l: 80, s: 50}),
+							'--complementary-primary': complementaryHSL({...hslColors[3], l: 80, s: 50}),
+						} as React.CSSProperties)
 					}
 				})
 			})

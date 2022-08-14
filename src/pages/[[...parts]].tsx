@@ -56,9 +56,14 @@ const Home: NextPage = () => {
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<RouteParser>
-				<div className={classNames(styles.progress, {[styles.done]: progress === 1})} style={
-					{'--progress': progress} as React.CSSProperties
-				}/>
+				<div
+					className={classNames(styles.progress, {
+						[styles.done]: progress === 1,
+					})}
+					style={{
+						'--progress': progress
+					} as React.CSSProperties}
+				/>
 				{ready && (
 					<>
 						<AudioTest />

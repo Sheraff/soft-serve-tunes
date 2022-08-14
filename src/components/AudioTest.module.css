@@ -1,3 +1,9 @@
+.container {
+	background: linear-gradient(180deg, var(--palette-bg-gradient) 0%, var(--palette-bg-main) 100%);
+	color: var(--palette-primary);
+	height: 100vh;
+}
+
 .player {
 	display: flex;
 	justify-content: center;

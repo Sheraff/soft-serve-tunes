@@ -75,24 +75,27 @@ export default function AudioTest({ }) {
 	}, [router])
 
 	return (
-		<Palette img={img}>
-			<div className={styles.player}>
-				<button onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
-				<audio
-					className={styles.audio}
-					controls
-					ref={audio}
-					playsInline
-					src={item?.id && `/api/file/${item.id}`}
-					autoPlay
-				/>
-				<button onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
+		<>
+			<div className={styles.container}>
+				<div className={styles.player}>
+					<button onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
+					<audio
+						className={styles.audio}
+						controls
+						ref={audio}
+						playsInline
+						src={item?.id && `/api/file/${item.id}`}
+						autoPlay
+					/>
+					<button onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
+				</div>
+				<Search setPlaylist={setPlaylist} />
+				<Cover id={item?.id} ref={img} />
+				<Infos id={item?.id} />
+				<PlaylistViz />
+				<Palette img={img} />
 			</div>
-			<Search setPlaylist={setPlaylist} />
-			<Cover id={item?.id} ref={img} />
-			<Infos id={item?.id} />
-			<PlaylistViz />
 			<Test artistId={item?.artistId}/>
-		</Palette>
+		</>
 	)
 }

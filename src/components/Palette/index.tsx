@@ -1,25 +1,41 @@
-import { ReactNode, RefObject } from "react"
+import type { RefObject } from "react"
 import useImagePalette from "./useImagePalette"
-import styles from "./index.module.css"
+import Head from "next/head"
+
+const defaultValues = {
+	'--palette-bg-main': 'hsl(330, 75%, 3%)',
+	'--palette-bg-gradient': 'hsl(330, 70%, 13%)',
+	'--palette-secondary': 'hsl(330, 84%, 60%)',
+	'--palette-primary': 'hsl(330, 77%, 73%)',
+	'--complementary-bg-main': 'hsl(131, 75%, 3%)',
+	'--complementary-bg-gradient': 'hsl(131, 70%, 13%)',
+	'--complementary-secondary': 'hsl(131, 84%, 60%)',
+	'--complementary-primary': 'hsl(131, 77%, 73%)',
+}
 
 export default function Palette({
-	children,
 	img,
 }: {
-	children: ReactNode
 	img: RefObject<HTMLImageElement>
 }) {
 	const palette = useImagePalette({ref: img})
 	return (
-		<div
-			className={styles.main}
-			style={{
-				'--background-color': palette.background,
-				'--gradient-color': palette.gradient,
-				'--foreground-color': palette.foreground,
-			} as React.CSSProperties}
-		>
-			{children}
-		</div>
+		<Head>
+			<style key="palette-definition">
+				{Object.keys(palette).map((key) => `\n@property ${key} {
+					syntax: '<color>';
+					inherits: true;
+					initial-value: ${(defaultValues)[key as keyof typeof defaultValues]};
+				}`).join('\n')}
+				{`body {\n`}
+				{`transition: ${Object.keys(palette).map((key) => `${key} 500ms linear 100ms`).join(',\n\t')};\n`}
+				{`}\n`}
+			</style>
+			<style key="palette-values">
+				{`body {\n`}
+				{Object.entries(palette).map(([key, value]) => `${key}: ${value};`).join("\n")}
+				{`}\n`}
+			</style>
+		</Head>
 	)
 }

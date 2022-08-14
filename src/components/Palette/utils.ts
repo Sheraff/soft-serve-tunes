@@ -144,6 +144,11 @@ export function averageImageValue(imageData: ImageData['data']): number {
 	return imageData.reduce((prev, curr, i) => prev + (i%4 === 3 ? 0 : curr), 0) / imageData.length * 3
 }
 
-export function formatHSL(hsl: HSLPixel): string {
-	return `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+export function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
+	return `hsl(${h}, ${s}%, ${l}%)`
+}
+
+export function complementaryHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
+	const oppositeH = (h + 180) % 360
+	return `hsl(${oppositeH}, ${s}%, ${l}%)`
 }
