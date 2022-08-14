@@ -1,17 +1,21 @@
-import { useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import AlbumMiniature from "./AlbumMiniature"
-import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { ListType } from "../AudioTest"
+import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
+import { ListType } from "../../AudioTest"
+import useRouteParts from "../../RouteContext"
 
 const defaultArray = [] as never[]
 
 export default function Search({
-	setPlaylist
+	open,
+	onClose,
 }: {
-	setPlaylist: (type: ListType, name: string, id: string) => void
+	open: boolean
+	onClose: () => void
 }) {
+	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
@@ -25,15 +29,50 @@ export default function Search({
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 
+	const {setRoute} = useRouteParts()
+	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
+		setRoute({type, name, id})
+		onClose()
+	}, [setRoute, onClose])
+
+	// handle focus because it toggles the virtual keyboard
+	useEffect(() => {
+		if (!input.current || !head.current) {
+			return
+		}
+		if (!open && document.activeElement === input.current) {
+			input.current.blur()
+			return
+		}
+		if (!open) {
+			return
+		}
+		const controller = new AbortController()
+		head.current.addEventListener("transitionend", () => {
+			if (input.current) {
+				input.current.focus()
+			}
+		}, {once: true, signal: controller.signal})
+		head.current.addEventListener("submit", (e) => {
+			e.preventDefault()
+			if (input.current) {
+				input.current.blur()
+			}
+		}, {signal: controller.signal})
+		return () => controller.abort()
+	}, [open])
+
 	return (
-		<div>
-			<input
-				ref={input}
-				type="search"
-				placeholder="Dee Dee Bridgewater Autumn Leaves"
-				onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
-			/>
-			<div className={styles.results}>
+		<>
+			<form ref={head} className={styles.head} data-open={open}>
+				<input
+					ref={input}
+					type="search"
+					placeholder="Dee Dee Bridgewater Autumn Leaves"
+					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
+				/>
+			</form>
+			<div className={styles.results} data-open={open}>
 				{Boolean(tracks.length) && (
 					<ul>
 						{tracks.slice(0, 10).map(item => (
@@ -93,6 +132,6 @@ export default function Search({
 					</ul>
 				)}
 			</div>
-		</div>
+		</>
 	)
 }

@@ -1,10 +1,9 @@
 .main {
-	position: sticky;
-	bottom: 0;
+	grid-area: foot;
 	z-index: 1;
 	column-gap: 1em;
 	background: var(--palette-bg-main);
-	width: 100%;
+	width: 100vw;
 	padding:
 		.5em
 		max(.5em, env(safe-area-inset-right))

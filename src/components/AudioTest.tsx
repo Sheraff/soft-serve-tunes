@@ -1,22 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useRef } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
-import Search from "./Search"
 import Infos from "./Infos"
 import Palette from "./Palette"
 import Cover from "./Cover"
-import { useRouter } from "next/router"
 import useRouteParts from "./RouteContext"
 import { useQueryClient } from "react-query"
 import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
 import PlaylistViz from "./PlaylistViz"
 import Test from "./Test"
 import Player from "./Player"
+import Header from "./Header"
 
 export type ListType = "track" | "album" | "artist" | "genre"
 
 export default function AudioTest({ }) {
-	const {type, id, index, setRoute} = useRouteParts()
+	const {type, id, index} = useRouteParts()
 
 	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
 		enabled: Boolean(type && id)
@@ -49,14 +48,12 @@ export default function AudioTest({ }) {
 	console.log(spotify)
 
 	const img = useRef<HTMLImageElement>(null)
-	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
-		setRoute({type, name, id})
-	}, [setRoute])
+
 
 	return (
 		<>
 			<div className={styles.container}>
-				<Search setPlaylist={setPlaylist} />
+				<Header/>
 				<div className={styles.content}>
 					<Cover id={item?.id} ref={img} />
 					<Infos id={item?.id} />

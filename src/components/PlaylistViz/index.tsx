@@ -3,7 +3,7 @@ import { useRouter } from "next/router"
 import { CSSProperties, useMemo } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import useRouteParts from "../RouteContext"
-import AlbumMiniature from "../Search/AlbumMiniature"
+import AlbumMiniature from "../Header/Search/AlbumMiniature"
 import styles from "./index.module.css"
 
 const DISPLAY_COUNT = 15

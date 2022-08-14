@@ -3,10 +3,20 @@
 	color: var(--palette-primary);
 	height: 100%;
 	display: grid;
-	grid-template-rows: auto 1fr auto;
+	grid-template-rows:
+		auto
+		1fr
+		auto;
+	grid-template-areas:
+		"head"
+		"body"
+		"foot";
+	width: 100vw;
+	overflow: hidden;
 }
 
 .content {
+	grid-area: body;
 	overflow: hidden scroll;
 }
 

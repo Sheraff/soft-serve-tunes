@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
+import useIndexedTRcpQuery from "../../../../client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 
 export default function AlbumMiniature({

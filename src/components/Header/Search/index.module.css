@@ -1,0 +1,79 @@
+.head {
+	grid-area: head;
+	transition: transform 350ms, opacity 350ms;
+	transform: translateX(calc(100vw - 20px - max(.5em, env(safe-area-inset-right)) - max(.5em, env(safe-area-inset-left))));
+	pointer-events: none;
+	opacity: 0;
+}
+.head input {
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding:
+		max(.5em, env(safe-area-inset-top))
+		max(.5em, env(safe-area-inset-right))
+		.5em
+		calc(max(.5em, env(safe-area-inset-left)) + 20px + 8px);
+}
+.head[data-open="true"] {
+	transform: translateX(0);
+	pointer-events: auto;
+	opacity: 1;
+}
+
+.results {
+	grid-area: 2 / 1 / 4 / 2;
+	z-index: 2;
+	transition: transform 350ms, opacity 350ms;
+	transform: translateX(calc(100vw - 20px - max(.5em, env(safe-area-inset-right)) - max(.5em, env(safe-area-inset-left))));
+	pointer-events: none;
+	opacity: 0;
+	background: var(--palette-bg-main);
+
+	overflow: hidden scroll;
+	width: 100vw;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	white-space: nowrap;
+	gap: 1em;
+}
+.results[data-open="true"] {
+	transform: translateX(0);
+	pointer-events: auto;
+	opacity: 1;
+}
+
+.results ul {
+	padding: 0;
+	margin: 0;
+}
+.results li {
+	list-style: none;
+}
+.results button {
+	cursor: pointer;
+}
+
+.basic {
+	width: 100%;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	text-align: left;
+}
+
+.miniatures {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	grid-auto-rows: 1fr;
+	gap: 4px;
+}
+.miniatures li {
+	display: flex;
+}
+.miniatures button {
+	border: 0;
+	background: none;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+}

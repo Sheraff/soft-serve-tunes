@@ -1,0 +1,24 @@
+.head {
+	grid-area: head;
+	display: flex;
+	justify-content: flex-end;
+	padding:
+		max(.5em, env(safe-area-inset-top))
+		max(.5em, env(safe-area-inset-right))
+		.5em
+		max(.5em, env(safe-area-inset-left));
+	background: var(--palette-bg-main);
+	box-shadow: 0 0 .5em var(--palette-bg-main);
+	color: var(--palette-primary);
+}
+
+.toggle {
+	transition: transform 350ms;
+	height: 20px;
+	width: 20px;
+	z-index: 1;
+}
+
+.toggle[data-open="true"] {
+	transform: translateX(calc(100% - 100vw + max(.5em, env(safe-area-inset-right)) + max(.5em, env(safe-area-inset-left))));
+}
