@@ -18,7 +18,7 @@
 		"time  ..... duration"
 		"prev  play  next";
 	grid-template-columns: auto 1fr auto;
-	color: var(--complementary-secondary);
+	color: var(--palette-contrast);
 }
 
 .progress {

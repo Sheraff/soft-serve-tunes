@@ -7,6 +7,7 @@ const defaultValues = {
 	'--palette-bg-gradient': 'hsl(330, 70%, 13%)',
 	'--palette-secondary': 'hsl(330, 84%, 60%)',
 	'--palette-primary': 'hsl(330, 77%, 73%)',
+	'--palette-contrast': '#000',
 	'--complementary-bg-main': 'hsl(131, 75%, 3%)',
 	'--complementary-bg-gradient': 'hsl(131, 70%, 13%)',
 	'--complementary-secondary': 'hsl(131, 84%, 60%)',
@@ -20,6 +21,7 @@ export default function Palette({
 }) {
 	const palette = useImagePalette({ref: img})
 	return (
+		<>
 		<Head>
 			<style key="palette-definition">
 				{Object.keys(palette).map((key) => `\n@property ${key} {
@@ -37,5 +39,21 @@ export default function Palette({
 				{`}\n`}
 			</style>
 		</Head>
+		<div style={{
+			display: 'flex',
+			position: "fixed",
+			top: 0,
+			left: 0,
+			width: "100%",
+		}}>
+			{Object.entries(palette).map(([key, value]) => (
+				<div key={key} style={{
+					height: "50px",
+					flex: 1,
+					backgroundColor: `var(${key})`,
+				}} />
+			))}
+		</div>
+		</>
 	)
 }

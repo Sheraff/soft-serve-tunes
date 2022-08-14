@@ -24,12 +24,57 @@ export function buildRgb (imageData: ImageData['data']) {
 	return rgbValues
 }
 
+export function test(values: RGBPixel[]) {
+	const colors = values.reduce((prev, curr) => {
+		prev[curr.r + ',' + curr.g + ',' + curr.b] = (prev[curr.r + ',' + curr.g + ',' + curr.b] || 0) + 1
+		return prev
+	} , {} as {[key: string]: number})
+	const sorted = Object.entries(colors).sort((a, b) => b[1] - a[1])
+	const aggregateSimilar = sorted.reduce((prev, [string, count]) => {
+		const [r, g, b] = string.split(',').map(Number) as [number, number, number]
+		const rgb = {r, g, b} as RGBPixel
+		const color = convertRGBtoHSL(rgb)
+		if (prev.length === 0) {
+			prev.push([color, count])
+			return prev
+		}
+		const same = prev.find(([c]) => !hslColorsAreSignificantlyDifferent(c, color))
+		if (!same) {
+			prev.push([color, count])
+		} else {
+			same[1] += count
+		}
+		return prev
+	}, [] as [HSLPixel, number][])
+	return aggregateSimilar
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, 4)
+		.map(([color, count]) => color)
+}
+
+function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) {
+	const lDiff = Math.abs(color1.l - color2.l)
+	if (lDiff < 10 && (color1.l > 90 || color2.l > 90 || color1.l < 10 || color2.l < 10)) {
+		return false
+	}
+	const sDiff = Math.abs(color1.s - color2.s)
+	if (sDiff < 10 && (color1.s < 10 || color2.s < 10)) {
+		return false
+	}
+	const hDiff = Math.abs(color1.h - color2.h)
+	if ((sDiff + lDiff) < 500 / hDiff) {
+		return false
+	}
+	const diff = hDiff / 360 + sDiff / 100 + lDiff / 100
+	return diff > 0.3
+}
+
 function findBiggestColorRange(values: RGBPixel[]): keyof RGBPixel {
 	const first = values[0]
 	if (!first) {
 		throw new Error('No values provided')
 	}
-	const keys = ['r', 'g', 'b'] as ['r', 'g', 'b']
+	const keys = ['r', 'g', 'b'] as const
 	const mins = Object.fromEntries(keys.map(key => [key, Number.MAX_VALUE]))
 	const maxs = Object.fromEntries(keys.map(key => [key, Number.MIN_VALUE]))
 	
@@ -149,6 +194,6 @@ export function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:num
 }
 
 export function complementaryHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
-	const oppositeH = (h + 180) % 360
+	const oppositeH = (h + 120) % 360
 	return `hsl(${oppositeH}, ${s}%, ${l}%)`
 }

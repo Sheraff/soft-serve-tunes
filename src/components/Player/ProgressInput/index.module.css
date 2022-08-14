@@ -77,7 +77,7 @@
 .thumb::before {
 	height: calc(var(--thumb-size) * 1.75);
 	width: calc(var(--thumb-size) * 1.75);
-	opacity: .25;
+	opacity: .5;
 	transition: transform 150ms;
 }
 .thumb::after {
