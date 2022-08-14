@@ -1,7 +1,8 @@
 .img {
 	display: block;
-	width: 500px;
-	height: 500px;
+	width: 100%;
+	max-width: 500px;
+	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	border-radius: 10px;
 	opacity: 0.9;

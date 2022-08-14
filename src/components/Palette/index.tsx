@@ -25,7 +25,7 @@ export default function Palette({
 					initial-value: ${(defaultValues)[key as keyof typeof defaultValues]};
 				}`).join('\n')}
 				{`body {\n`}
-				{`transition: ${Object.keys(palette).map((key) => `${key} 500ms linear 100ms`).join(',\n\t')};\n`}
+				{`transition: ${Object.keys(palette).map((key) => `${key} 400ms`).join(',\n\t')};\n`}
 				{`}\n`}
 			</style>
 			<style key="palette-values">
@@ -34,7 +34,7 @@ export default function Palette({
 				{`}\n`}
 			</style>
 		</Head>
-		<div style={{
+		{/* <div style={{
 			display: 'flex',
 			position: "fixed",
 			top: 0,
@@ -48,7 +48,7 @@ export default function Palette({
 					backgroundColor: `var(${key})`,
 				}} />
 			))}
-		</div>
+		</div> */}
 		</>
 	)
 }

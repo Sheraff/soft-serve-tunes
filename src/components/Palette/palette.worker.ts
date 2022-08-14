@@ -25,7 +25,7 @@ function contrastRatio(lum1: number, lum2: number) {
 	return ratio
 }
 
-export function buildRgb (imageData: ImageData['data']) {
+function buildRgb (imageData: ImageData['data']) {
 	const rgbValues = [] as RGBPixel[]
 	for (let i = 0; i < imageData.length - 3; i += 4) {
 		const rgb = {
@@ -39,7 +39,7 @@ export function buildRgb (imageData: ImageData['data']) {
 	return rgbValues
 }
 
-export function extractPalette(values: RGBPixel[]) {
+function extractPalette(values: RGBPixel[]) {
 	const colorCount = values.reduce((prev, curr) => {
 		prev[curr.r + ',' + curr.g + ',' + curr.b] = (prev[curr.r + ',' + curr.g + ',' + curr.b] || 0) + 1
 		return prev
@@ -69,6 +69,7 @@ export function extractPalette(values: RGBPixel[]) {
 		.slice(0, 4)
 		.map(([color]) => color)
 
+	// TODO: will be an issue if `mainColors.length < 4`
 	const byContrast = sortByIncreasingContrastRatio(mainColors)
 
 	const lumSumAndCount = aggregateSimilar.reduce(([sum, total], [color, count]) => ([
@@ -162,6 +163,19 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	}
 }
 
-export function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
+function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
 	return `hsl(${h}, ${s}%, ${l}%)`
 }
+
+onmessage = (e) => {
+	const data = e.data as {
+		imageData: ImageData,
+	}
+	const {imageData} = data
+	const rgbArray = buildRgb(imageData.data)
+	const main = extractPalette(rgbArray)
+	const palette = main.map(formatHSL)
+	postMessage({palette})
+}
+
+export {} // for the compiler
