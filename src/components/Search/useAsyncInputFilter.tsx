@@ -44,6 +44,8 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
 				worker.current.postMessage({ type: "input", input: inputMemo.value })
+			} else if (!inputMemo.value) {
+				setList([])
 			}
 		}
 		onInput()

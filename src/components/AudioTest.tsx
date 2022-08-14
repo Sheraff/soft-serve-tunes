@@ -57,12 +57,14 @@ export default function AudioTest({ }) {
 		<>
 			<div className={styles.container}>
 				<Search setPlaylist={setPlaylist} />
-				<Cover id={item?.id} ref={img} />
-				<Infos id={item?.id} />
-				<PlaylistViz />
-				<Palette img={img} />
+				<div className={styles.content}>
+					<Cover id={item?.id} ref={img} />
+					<Infos id={item?.id} />
+					<PlaylistViz />
+				</div>
 				<Player />
 			</div>
+			<Palette img={img} />
 			<Test artistId={item?.artistId}/>
 		</>
 	)
