@@ -8,8 +8,8 @@ class MyWebSocketServer extends WebSocketServer {
 		return this.alive.get(ws) === true
 	}
 
-	actors: Map<string, (ws: WebSocket, payload: unknown) => void> = new Map()
-	registerActor(name: string, actor: (ws: WebSocket, payload: unknown) => void) {
+	actors: Map<string, (ws: WebSocket, payload: any) => void> = new Map()
+	registerActor<T>(name: string, actor: (ws: WebSocket, payload: T) => void) {
 		this.actors.set(name, actor)
 	}
 

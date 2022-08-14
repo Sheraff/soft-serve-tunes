@@ -2,7 +2,10 @@ import { createRouter } from "./context"
 import type { Prisma } from "@prisma/client";
 import { z } from "zod"
 
-const trackInclude: Prisma.TrackFindManyArgs['include'] = {
+// TODO: find a way to type this
+// if i explicitly type it with : Prisma.TrackFindManyArgs['include']
+// (to get autocompletion while editing `trackInclude`) then tRPC fails to infer the type
+const trackInclude = {
   artist: {
     select: {
       id: true,
