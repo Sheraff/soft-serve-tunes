@@ -48,7 +48,7 @@
 	display: block;
 	height: 100%;
 	width: calc((100% - var(--thumb-size)) * var(--progress) + var(--thumb-size) / 2);
-	background-color: var(--complementary-secondary);
+	background-color: var(--palette-secondary);
 	transition: transform 150ms;
 }
 
@@ -71,7 +71,7 @@
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	background-color: var(--complementary-primary);
+	background-color: var(--palette-primary);
 	border-radius: 50%;
 }
 .thumb::before {

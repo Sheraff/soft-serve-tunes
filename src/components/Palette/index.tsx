@@ -3,15 +3,10 @@ import useImagePalette from "./useImagePalette"
 import Head from "next/head"
 
 const defaultValues = {
-	'--palette-bg-main': 'hsl(330, 75%, 3%)',
-	'--palette-bg-gradient': 'hsl(330, 70%, 13%)',
-	'--palette-secondary': 'hsl(330, 84%, 60%)',
-	'--palette-primary': 'hsl(330, 77%, 73%)',
-	'--palette-contrast': '#000',
-	'--complementary-bg-main': 'hsl(131, 75%, 3%)',
-	'--complementary-bg-gradient': 'hsl(131, 70%, 13%)',
-	'--complementary-secondary': 'hsl(131, 84%, 60%)',
-	'--complementary-primary': 'hsl(131, 77%, 73%)',
+	'--palette-bg-main': '#000',
+	'--palette-bg-gradient': '#333',
+	'--palette-secondary': '#ccc',
+	'--palette-primary': '#fff',
 }
 
 export default function Palette({

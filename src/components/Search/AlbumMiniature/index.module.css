@@ -4,7 +4,7 @@
 	aspect-ratio: 1;
 	object-fit: cover;
 	border-radius: 4px;
-	background-color: var(--foreground-color);
+	background-color: var(--palette-bg-gradient);
 	font-size: .5em;
 	text-align: center;
 	align-items: center;

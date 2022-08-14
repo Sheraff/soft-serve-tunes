@@ -8,6 +8,21 @@ type HSLPixel = {
 	h: number
 	s: number
 	l: number
+	lum: number
+}
+
+function sortByIncreasingContrastRatio([ref, ...colors]: [HSLPixel, ...HSLPixel[]]) {
+	colors.sort((a, b) => {
+		const contrastRatioA = contrastRatio(ref.lum, a.lum)
+		const contrastRatioB = contrastRatio(ref.lum, b.lum)
+		return contrastRatioB - contrastRatioA
+	})
+	return [ref, ...colors]
+}
+
+function contrastRatio(lum1: number, lum2: number) {
+	const ratio = (lum1 + 0.05) / (lum2 + 0.05)
+	return ratio
 }
 
 export function buildRgb (imageData: ImageData['data']) {
@@ -24,13 +39,15 @@ export function buildRgb (imageData: ImageData['data']) {
 	return rgbValues
 }
 
-export function test(values: RGBPixel[]) {
-	const colors = values.reduce((prev, curr) => {
+export function extractPalette(values: RGBPixel[]) {
+	const colorCount = values.reduce((prev, curr) => {
 		prev[curr.r + ',' + curr.g + ',' + curr.b] = (prev[curr.r + ',' + curr.g + ',' + curr.b] || 0) + 1
 		return prev
 	} , {} as {[key: string]: number})
-	const sorted = Object.entries(colors).sort((a, b) => b[1] - a[1])
-	const aggregateSimilar = sorted.reduce((prev, [string, count]) => {
+
+	const byPrevalence = Object.entries(colorCount).sort((a, b) => b[1] - a[1])
+
+	const aggregateSimilar = byPrevalence.reduce((prev, [string, count]) => {
 		const [r, g, b] = string.split(',').map(Number) as [number, number, number]
 		const rgb = {r, g, b} as RGBPixel
 		const color = convertRGBtoHSL(rgb)
@@ -46,10 +63,24 @@ export function test(values: RGBPixel[]) {
 		}
 		return prev
 	}, [] as [HSLPixel, number][])
-	return aggregateSimilar
+
+	const mainColors = aggregateSimilar
 		.sort((a, b) => b[1] - a[1])
 		.slice(0, 4)
-		.map(([color, count]) => color)
+		.map(([color]) => color)
+
+	const byContrast = sortByIncreasingContrastRatio(mainColors)
+
+	const lumSumAndCount = aggregateSimilar.reduce(([sum, total], [color, count]) => ([
+		sum + color.lum * count,
+		total + count
+	]), [0, 0] as [number, number])
+	const avgLum = lumSumAndCount[0] / lumSumAndCount[1]
+	if(avgLum > 0.7) {
+		byContrast.reverse()
+	}
+
+	return byContrast
 }
 
 function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) {
@@ -61,7 +92,11 @@ function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) 
 	if (sDiff < 10 && (color1.s < 10 || color2.s < 10)) {
 		return false
 	}
-	const hDiff = Math.abs(color1.h - color2.h)
+	const hDiff = Math.min(
+		Math.abs(color1.h - color2.h),
+		Math.abs(color1.h + 360 - color2.h),
+		Math.abs(color1.h - 360 - color2.h)
+	)
 	if ((sDiff + lDiff) < 500 / hDiff) {
 		return false
 	}
@@ -69,73 +104,11 @@ function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) 
 	return diff > 0.3
 }
 
-function findBiggestColorRange(values: RGBPixel[]): keyof RGBPixel {
-	const first = values[0]
-	if (!first) {
-		throw new Error('No values provided')
-	}
-	const keys = ['r', 'g', 'b'] as const
-	const mins = Object.fromEntries(keys.map(key => [key, Number.MAX_VALUE]))
-	const maxs = Object.fromEntries(keys.map(key => [key, Number.MIN_VALUE]))
-	
-
-	values.forEach((value) => {
-		keys.forEach((key) => {
-			mins[key] = Math.min(mins[key] as number, value[key] as number)
-			maxs[key] = Math.max(maxs[key] as number, value[key] as number)
-		})
-	})
-
-	const ranges = keys.map((key) => (maxs[key] as number) - (mins[key] as number))
-
-	// determine which color has the biggest difference
-	const max = Math.max(...ranges)
-	const maxIndex = ranges.indexOf(max)
-	return keys[maxIndex] as keyof RGBPixel
+function channelLuminance(value: number) {
+	return value <= .03928 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4);
 }
 
-function averageColor(values: RGBPixel[]): RGBPixel {
-	const color = values.reduce(
-		(prev, curr) => {
-			prev.r += curr.r
-			prev.g += curr.g
-			prev.b += curr.b
-
-			return prev;
-		},
-		{
-			r: 0,
-			g: 0,
-			b: 0,
-		}
-	)
-
-	color.r = Math.round(color.r / values.length)
-	color.g = Math.round(color.g / values.length)
-	color.b = Math.round(color.b / values.length)
-
-	return color
-}
-
-export function quantization (rgbValues: RGBPixel[], depth: number, MAX_DEPTH = 4): RGBPixel[] {
-	// Base case
-	if (depth === MAX_DEPTH || rgbValues.length === 0) {
-		return [averageColor(rgbValues)]
-	}
-
-	const componentToSortBy = findBiggestColorRange(rgbValues)
-	rgbValues.sort((p1, p2) => {
-		return p1[componentToSortBy] - p2[componentToSortBy]
-	})
-
-	const mid = rgbValues.length / 2
-	return [
-		...quantization(rgbValues.slice(0, mid), depth + 1, MAX_DEPTH),
-		...quantization(rgbValues.slice(mid + 1), depth + 1, MAX_DEPTH),
-	]
-}
-
-export function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
+function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	// first change range from 0-255 to 0 - 1
 	let r = pixel.r / 255
 	let g = pixel.g / 255
@@ -146,17 +119,20 @@ export function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 
 	const difference = max - min
 
-	const luminance = (max + min) / 2
+	const lightness = (max + min) / 2
 
-	const saturation = luminance <= 0.5
+	const saturation = lightness <= 0.5
 		? difference / (max + min)
 		: difference / (2 - max - min)
+
+	const luminance = .2126 * channelLuminance(r) + .7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
 
 	if (difference === 0) {
 		return {
 			h: 0,
 			s: 0,
-			l: luminance,
+			l: lightness,
+			lum: luminance,
 		}
 	}
 	/**
@@ -181,19 +157,11 @@ export function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	return {
 		h: hue,
 		s: saturation * 100,
-		l: luminance * 100,
+		l: lightness * 100,
+		lum: luminance,
 	}
-}
-
-export function averageImageValue(imageData: ImageData['data']): number {
-	return imageData.reduce((prev, curr, i) => prev + (i%4 === 3 ? 0 : curr), 0) / imageData.length * 3
 }
 
 export function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
 	return `hsl(${h}, ${s}%, ${l}%)`
-}
-
-export function complementaryHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
-	const oppositeH = (h + 120) % 360
-	return `hsl(${oppositeH}, ${s}%, ${l}%)`
 }

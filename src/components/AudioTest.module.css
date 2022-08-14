@@ -1,5 +1,5 @@
 .container {
-	background: linear-gradient(180deg, var(--palette-bg-gradient) -50%, var(--palette-bg-main) 25%);
+	background: linear-gradient(180deg, var(--palette-bg-gradient) -25%, var(--palette-bg-main) 75%);
 	color: var(--palette-primary);
 	height: 100vh;
 	overflow: hidden scroll;
