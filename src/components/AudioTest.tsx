@@ -16,8 +16,7 @@ import Player from "./Player"
 export type ListType = "track" | "album" | "artist" | "genre"
 
 export default function AudioTest({ }) {
-	const router = useRouter()
-	const {type, name, id, index} = useRouteParts()
+	const {type, id, index, setRoute} = useRouteParts()
 
 	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
 		enabled: Boolean(type && id)
@@ -51,8 +50,8 @@ export default function AudioTest({ }) {
 
 	const img = useRef<HTMLImageElement>(null)
 	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
-		router.push(`/${type}/${name.replace(/\s/g, '-')}/${id}`)
-	}, [router])
+		setRoute({type, name, id})
+	}, [setRoute])
 
 	return (
 		<>

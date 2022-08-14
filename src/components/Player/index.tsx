@@ -9,7 +9,7 @@ import ProgressInput from "./ProgressInput"
 export default function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 
-	const {type, name, id, index, setIndex} = useRouteParts()
+	const {type, id, index, setIndex} = useRouteParts()
 	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
 		enabled: Boolean(type && id)
 	})
