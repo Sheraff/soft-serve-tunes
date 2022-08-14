@@ -52,7 +52,13 @@ function parseParts(parts: string | string[]): Omit<RouteContextType, 'setIndex'
 export function RouteParser({children}: {children: React.ReactNode}) {
 	const {query: {parts = []}, push} = useRouter()
 	const {type, name, id, index} = parseParts(parts)
-	const setIndex = (index: number) => type && name && id && push(`/${type}/${name}/${id}/${index}`, undefined, {scroll: false, shallow: true})
+	const setIndex = (arg: number | ((prev: number) => number)) => {
+		if(!(type && name && id)) return
+		const next = typeof arg === "function"
+			? arg(index)
+			: index
+		push(`/${type}/${name}/${id}/${next}`, undefined, {scroll: false, shallow: true})
+	}
 	return (
 		<RouteContext.Provider value={{
 			type,

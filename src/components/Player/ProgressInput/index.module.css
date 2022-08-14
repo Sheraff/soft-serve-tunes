@@ -1,0 +1,105 @@
+.main {
+	position: relative;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	
+	--thumb-size: 16px;
+	--track-height: 8px;
+}
+
+.main input {
+	display: block;
+	width: 100%;
+	appearance: none;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	height: 100%;
+	cursor: pointer;
+}
+
+.progress {
+	display: block;
+	width: 100%;
+	height: var(--track-height);
+	pointer-events: none;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	left: 0;
+	overflow: hidden;
+	border-radius: calc(var(--track-height) / 2);
+}
+
+.progress::before,
+.progress::after {
+	content: '';
+	display: block;
+	height: 100%;
+	position: absolute;
+}
+.progress::before {
+	width: 100%;
+	background-color: var(--palette-bg-gradient);
+}
+.progress::after {
+	content: '';
+	display: block;
+	height: 100%;
+	width: calc((100% - var(--thumb-size)) * var(--progress) + var(--thumb-size) / 2);
+	background-color: var(--complementary-secondary);
+	transition: transform 150ms;
+}
+
+.thumb {
+	display: block;
+	width: var(--thumb-size);
+	height: var(--thumb-size);
+	position: absolute;
+	top: 50%;
+	left: calc((100% - var(--thumb-size)) * var(--progress));
+	pointer-events: none;
+	transform: translateY(-50%);
+	transition: opacity 300ms, transform 300ms;
+}
+.thumb::before,
+.thumb::after {
+	content: '';
+	display: block;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-color: var(--complementary-primary);
+	border-radius: 50%;
+}
+.thumb::before {
+	height: calc(var(--thumb-size) * 1.75);
+	width: calc(var(--thumb-size) * 1.75);
+	opacity: .25;
+	transition: transform 150ms;
+}
+.thumb::after {
+	height: var(--thumb-size);
+	width: var(--thumb-size);
+	transition: opacity 300ms, transform 150ms;
+}
+
+.main:not(.disabled) input:hover ~ .thumb::before {
+	transform: translate(-50%, -50%) scale(1.3);
+}
+.main:not(.disabled) input:focus ~ .progress::after {
+	transform: scaleY(1.25);
+}
+
+.user:not(.disabled) .thumb::after {
+	/* transform: translate(-50%, -50%) scale(1.4); */
+}
+
+.disabled {
+	pointer-events: none;
+}
+.disabled .thumb::before {
+	transform: translate(-50%, -50%) scale(0);
+}

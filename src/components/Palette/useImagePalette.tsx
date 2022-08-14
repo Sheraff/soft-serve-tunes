@@ -36,8 +36,8 @@ export default function useImagePalette({
 							'--palette-primary': formatHSL({...hslColors[0], l: 20, s: 50}),
 							'--complementary-bg-main': complementaryHSL(hslColors[3]),
 							'--complementary-bg-gradient': complementaryHSL(hslColors[2]),
-							'--complementary-secondary': complementaryHSL({...hslColors[1], l: 20, s: 50}),
-							'--complementary-primary': complementaryHSL({...hslColors[0], l: 20, s: 50}),
+							'--complementary-secondary': complementaryHSL({...hslColors[1], l: 30, s: 60}),
+							'--complementary-primary': complementaryHSL({...hslColors[0], l: 30, s: 60}),
 						} as React.CSSProperties)
 					} else {
 						setPalette({
@@ -47,8 +47,8 @@ export default function useImagePalette({
 							'--palette-primary': formatHSL({...hslColors[3], l: 80, s: 50}),
 							'--complementary-bg-main': complementaryHSL(hslColors[0]),
 							'--complementary-bg-gradient': complementaryHSL(hslColors[1]),
-							'--complementary-secondary': complementaryHSL({...hslColors[2], l: 80, s: 50}),
-							'--complementary-primary': complementaryHSL({...hslColors[3], l: 80, s: 50}),
+							'--complementary-secondary': complementaryHSL({...hslColors[2], l: 70, s: 60}),
+							'--complementary-primary': complementaryHSL({...hslColors[3], l: 70, s: 60}),
 						} as React.CSSProperties)
 					}
 				})

@@ -11,14 +11,11 @@ import { useQueryClient } from "react-query"
 import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
 import PlaylistViz from "./PlaylistViz"
 import Test from "./Test"
-
-const store = Symbol()
+import Player from "./Player"
 
 export type ListType = "track" | "album" | "artist" | "genre"
 
 export default function AudioTest({ }) {
-	const audio = useRef<HTMLAudioElement & {[store]: string}>(null)
-
 	const router = useRouter()
 	const {type, name, id, index} = useRouteParts()
 
@@ -27,23 +24,6 @@ export default function AudioTest({ }) {
 	})
 
 	const item = list?.[index]
-	const playNext = useMemo(() => {
-		if(!list?.length) return () => {}
-		const next = (index + 1) % list.length
-		return () => router.push(`/${type}/${name}/${id}/${next}`)
-	}, [list?.length, router, type, name, id, index])
-	const playPrev = useMemo(() => {
-		if(!list?.length) return () => {}
-		const prev = (index - 1 + list.length) % list.length
-		return () => router.push(`/${type}/${name}/${id}/${prev}`)
-	}, [list?.length, router, type, name, id, index])
-
-	useEffect(() => {
-		if (!audio.current) return
-		const controller = new AbortController()
-		audio.current.addEventListener('ended', playNext, {signal: controller.signal})
-		return () => controller.abort()
-	}, [playNext])
 
 	const queryClient = useQueryClient()
 	const {data: lastfm, isFetching: lastfmLoading} = trpc.useQuery(["lastfm.track", {
@@ -77,23 +57,12 @@ export default function AudioTest({ }) {
 	return (
 		<>
 			<div className={styles.container}>
-				<div className={styles.player}>
-					<button onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
-					<audio
-						className={styles.audio}
-						controls
-						ref={audio}
-						playsInline
-						src={item?.id && `/api/file/${item.id}`}
-						autoPlay
-					/>
-					<button onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
-				</div>
 				<Search setPlaylist={setPlaylist} />
 				<Cover id={item?.id} ref={img} />
 				<Infos id={item?.id} />
 				<PlaylistViz />
 				<Palette img={img} />
+				<Player />
 			</div>
 			<Test artistId={item?.artistId}/>
 		</>

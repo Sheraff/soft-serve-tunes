@@ -1,0 +1,50 @@
+.main {
+	position: sticky;
+	bottom: 0;
+	z-index: 1;
+	column-gap: 1em;
+	background: var(--palette-bg-main);
+	width: 100%;
+	padding:
+		.5em
+		max(.5em, env(safe-area-inset-right))
+		max(.5em, env(safe-area-inset-bottom))
+		max(.5em, env(safe-area-inset-left));
+	box-shadow: 0 0 .5em var(--palette-bg-gradient);
+
+	display: grid;
+	grid-template-areas:
+		"track track track"
+		"time  ..... duration"
+		"prev  play  next";
+	grid-template-columns: auto 1fr auto;
+	color: var(--complementary-secondary);
+}
+
+.progress {
+	grid-area: track;
+}
+
+.time {
+	grid-area: time;
+	text-align: left;
+	font-variant: tabular-nums;
+	font-size: .8em;
+}
+
+.duration {
+	grid-area: duration;
+	text-align: right;
+	font-variant: tabular-nums;
+	font-size: .8em;
+}
+
+.prev {
+	grid-area: prev;
+}
+.play {
+	grid-area: play;
+}
+.next {
+	grid-area: next;
+}
