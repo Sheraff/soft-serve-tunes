@@ -46,6 +46,8 @@ function ArtistItem({
 
 	const isEmpty = !imgSrc
 	const isCutout = data?.audiodb?.cutoutId
+	const albumCount = data?._count?.albums ?? 0
+	const trackCount = data?._count?.tracks ?? 0
 
 	const {setRoute} = useRouteParts()
 
@@ -64,9 +66,11 @@ function ArtistItem({
 						/>
 					</div>
 				)}
-				<span className={classNames(styles.span, {[styles.empty]: isEmpty})}>
-					{artist.name}
-				</span>
+				<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
+					<span className={styles.name}>{artist.name}</span>
+					{albumCount > 1 && <span>{albumCount} albums</span>}
+					{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
+				</p>
 			</button>
 		</li>
 	)

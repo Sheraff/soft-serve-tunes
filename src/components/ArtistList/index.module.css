@@ -4,6 +4,9 @@
 	overflow: scroll hidden;
 	scroll-snap-type: x mandatory;
 }
+.wrapper::-webkit-scrollbar {
+	display: none;
+}
 
 .main {
 	display: grid;
@@ -20,7 +23,7 @@
 	scroll-snap-align: center;
 }
 .item:nth-child(3n + 2) {
-	transform: translateX(50%);
+	transform: translateX(calc(50% + 4px));
 }
 
 .button {
@@ -28,7 +31,7 @@
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
+	justify-content: flex-start;
 	gap: 4px;
 }
 
@@ -44,28 +47,38 @@
 	inset: 0;
 	width: 100%;
 	height: 100%;
-	object-fit: contain;
-	object-position: bottom;
+	object-fit: cover;
 }
 .cutout {
 	border-radius: 0;
 }
+.cutout img {
+	object-fit: contain;
+	object-position: bottom;
+}
 
 .span {
-	display: block;
+	display: flex;
 	font-size: 8px;
-	margin: auto;
-	width: 80%;
+	margin: 0 auto;
+	width: 100%;
 	text-align: center;
+	flex-direction: column;
 }
 .empty {
 	width: 100%;
 	height: calc((100vw - 4 * 8px) / 3);
 	border-radius: 50%;
 	padding: 10%;
-	border: 1px solid currentColor;
+	border: 1px solid var(--palette-bg-gradient);
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	margin-top: 0;
+}
+.name {
+	font-size: 10px;
+}
+.name:not(:last-child) {
+	margin-bottom: 2px;
 }
