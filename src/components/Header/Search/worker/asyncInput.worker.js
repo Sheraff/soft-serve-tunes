@@ -127,7 +127,7 @@ function handleInput({ input }) {
     }
     return a.levenshtein - b.levenshtein;
   });
-  postMessage({ input, list: list.slice(0, 100) });
+  postMessage({ input, list: list.slice(0, 50) });
 }
 
 onmessage = function ({ data }) {

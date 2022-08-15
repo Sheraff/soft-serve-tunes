@@ -68,6 +68,17 @@ export const artistRouter = createRouter()
         orderBy: {
           name: "asc",
         },
+        where: {
+          OR: [{
+            tracks: {
+              some: {}
+            },
+          }, {
+            albums: {
+              some: {}
+            }
+          }],
+        },
         include: {
           albums: {
             take: 1,

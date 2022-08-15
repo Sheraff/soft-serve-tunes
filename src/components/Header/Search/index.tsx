@@ -6,6 +6,7 @@ import { ListType } from "../../AudioTest"
 import { useRouteParts } from "../../RouteContext"
 import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
+import GenreList from "../../GenreList"
 
 const defaultArray = [] as never[]
 let defaultValue: string = ""
@@ -112,19 +113,7 @@ export default function Search({open}: {open: boolean}) {
 				{Boolean(genres.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Genres</h2>
-						<ul>
-							{genres.slice(0, 10).map(item => (
-								<li key={item.id}>
-									<button
-										className={styles.basic}
-										onClick={() => setPlaylist("genre", item.name, item.id)}
-										title={item.name}
-									>
-										{`${item.name} (${item._count.tracks} tracks)`}
-									</button>
-								</li>
-							))}
-						</ul>
+						<GenreList genres={genres.slice(0, 21)} />
 					</div>
 				)}
 				{Boolean(tracks.length) && (

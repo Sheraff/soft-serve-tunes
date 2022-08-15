@@ -23,6 +23,11 @@ export const albumRouter = createRouter()
         orderBy: {
           name: "asc",
         },
+        where: {
+          tracks: {
+            some: {}
+          }
+        },
         include: {
           artist: {
             select: {
