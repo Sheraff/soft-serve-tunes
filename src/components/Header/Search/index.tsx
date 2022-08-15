@@ -5,6 +5,7 @@ import AlbumMiniature from "./AlbumMiniature"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
 import { ListType } from "../../AudioTest"
 import { useRouteParts } from "../../RouteContext"
+import ArtistList from "../../ArtistList"
 
 const defaultArray = [] as never[]
 let defaultValue: string = ""
@@ -97,18 +98,7 @@ export default function Search({open}: {open: boolean}) {
 				htmlFor={id}
 			>
 				{Boolean(artists.length) && (
-					<ul className={styles.miniatures}>
-						{artists.slice(0, 9).map(item => (
-							<li key={item.id}>
-								<button
-									onClick={() => setPlaylist("artist", item.name, item.id)}
-									title={item.name}
-								>
-									<AlbumMiniature id={item.albums[0]?.id} />
-								</button>
-							</li>
-						))}
-					</ul>
+					<ArtistList artists={artists.slice(0, 21)} />
 				)}
 				{Boolean(albums.length) && (
 					<ul className={styles.miniatures}>

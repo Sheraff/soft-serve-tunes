@@ -1,0 +1,23 @@
+.wrapper {
+	width: 100%;
+	height: min-content;
+	overflow: scroll;
+}
+
+.main {
+	display: grid;
+	grid-template-rows: 1fr 1fr 1fr;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
+	gap: 8px;
+}
+
+.item {
+	display: block;
+	width: 100px;
+	height: 100px;
+	box-shadow: inset 0 0 0 1px limegreen;
+}
+.item:nth-child(3n + 2) {
+	transform: translateX(50%);
+}

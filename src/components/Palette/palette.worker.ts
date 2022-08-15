@@ -170,12 +170,13 @@ function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = 
 onmessage = (e) => {
 	const data = e.data as {
 		imageData: ImageData,
+		src: string,
 	}
-	const {imageData} = data
+	const {imageData, src} = data
 	const rgbArray = buildRgb(imageData.data)
 	const main = extractPalette(rgbArray)
 	const palette = main.map(formatHSL)
-	postMessage({palette})
+	postMessage({palette, src})
 }
 
 export {} // for the compiler
