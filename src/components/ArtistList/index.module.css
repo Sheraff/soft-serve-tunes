@@ -10,10 +10,10 @@
 
 .main {
 	display: grid;
-	grid-template-rows: 1fr 1fr 1fr;
+	grid-template-rows: auto auto auto;
 	grid-auto-flow: column;
 	grid-auto-columns: 1fr;
-	gap: 8px;
+	column-gap: 8px;
 	padding: 0 calc((100vw - 4 * 8px) / 6 + 8px) 0 8px;
 	width: fit-content;
 }
@@ -60,7 +60,6 @@
 .span {
 	display: flex;
 	font-size: 8px;
-	margin: 0 auto;
 	width: 100%;
 	text-align: center;
 	flex-direction: column;
@@ -76,9 +75,20 @@
 	align-items: center;
 	margin-top: 0;
 }
+
 .name {
 	font-size: 10px;
+	overflow: hidden;
+	text-overflow: clip;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 }
 .name:not(:last-child) {
 	margin-bottom: 2px;
+}
+.empty .name {
+	-webkit-line-clamp: 4;
+	line-clamp: 4;
 }
