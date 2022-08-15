@@ -22,8 +22,8 @@ export default function Search({open}: {open: boolean}) {
 	const {data: artistsRaw} = useIndexedTRcpQuery(["artist.list"], {enabled})
 	const {data: genresRaw} = useIndexedTRcpQuery(["genre.list"], {enabled})
 
-	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray)
-	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray)
+	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
+	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 

@@ -2,7 +2,8 @@ import { useRef, useState, useEffect, RefObject } from "react"
 
 export default function useAsyncInputStringDistance<T extends {name: string}>(
 	inputRef: RefObject<HTMLInputElement>,
-	dataList: T[]
+	dataList: T[],
+	keys: string[] = ["name"],
 ): T[] {
 	const [list, setList] = useState(dataList)
 
@@ -40,7 +41,7 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		const { current: inputMemo } = inputRef
 		if (!worker.current || !inputMemo) return
 
-		worker.current.postMessage({ type: "list", list: dataList })
+		worker.current.postMessage({ type: "list", list: dataList, keys })
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
 				worker.current.postMessage({ type: "input", input: inputMemo.value })
@@ -54,7 +55,7 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		return () => {
 			inputMemo.removeEventListener("input", onInput)
 		}
-	}, [dataList, inputRef])
+	}, [dataList, inputRef, ...keys])
 
 	return list
 }
