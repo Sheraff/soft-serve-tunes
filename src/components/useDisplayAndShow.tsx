@@ -27,9 +27,9 @@ export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElem
 				setShow(true)
 			})
 		})
-		// return () => {
-		// 	cancelAnimationFrame(rafId)
-		// }
+		return () => {
+			cancelAnimationFrame(rafId)
+		}
 	}, [display])
 
 	// display after show

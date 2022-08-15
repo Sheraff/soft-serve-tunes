@@ -45,6 +45,11 @@
 	cursor: pointer;
 }
 
+.sectionTitle {
+	margin-bottom: 8px;
+	padding: 0 8px;
+}
+
 .basic {
 	width: 100%;
 	text-overflow: ellipsis;

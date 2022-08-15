@@ -98,51 +98,63 @@ export default function Search({open}: {open: boolean}) {
 				htmlFor={id}
 			>
 				{Boolean(artists.length) && (
-					<ArtistList artists={artists.slice(0, 21)} />
+					<div>
+						<h2 className={styles.sectionTitle}>Artists</h2>
+						<ArtistList artists={artists} />
+					</div>
 				)}
 				{Boolean(albums.length) && (
-					<ul className={styles.miniatures}>
-						{albums.slice(0, 9).map(item => (
-							<li key={item.id}>
-								<button
-									onClick={() => setPlaylist("album", item.name, item.id)}
-									title={`${item.name} - ${item.artist?.name}`}
-								>
-									<AlbumMiniature id={item.id} />
-								</button>
-							</li>
-						))}
-					</ul>
+					<div>
+						<h2 className={styles.sectionTitle}>Albums</h2>
+						<ul className={styles.miniatures}>
+							{albums.slice(0, 9).map(item => (
+								<li key={item.id}>
+									<button
+										onClick={() => setPlaylist("album", item.name, item.id)}
+										title={`${item.name} - ${item.artist?.name}`}
+									>
+										<AlbumMiniature id={item.id} />
+									</button>
+								</li>
+							))}
+						</ul>
+					</div>
 				)}
 				{Boolean(genres.length) && (
-					<ul>
-						{genres.slice(0, 10).map(item => (
-							<li key={item.id}>
-								<button
-									className={styles.basic}
-									onClick={() => setPlaylist("genre", item.name, item.id)}
-									title={item.name}
-								>
-									{`${item.name} (${item._count.tracks} tracks)`}
-								</button>
-							</li>
-						))}
-					</ul>
+					<div>
+						<h2 className={styles.sectionTitle}>Genres</h2>
+						<ul>
+							{genres.slice(0, 10).map(item => (
+								<li key={item.id}>
+									<button
+										className={styles.basic}
+										onClick={() => setPlaylist("genre", item.name, item.id)}
+										title={item.name}
+									>
+										{`${item.name} (${item._count.tracks} tracks)`}
+									</button>
+								</li>
+							))}
+						</ul>
+					</div>
 				)}
 				{Boolean(tracks.length) && (
-					<ul>
-						{tracks.slice(0, 10).map(item => (
-							<li key={item.id}>
-								<button
-									className={styles.basic}
-									onClick={() => setPlaylist("track", item.name, item.id)}
-									title={item.name}
-								>
-									{`${item.name} - ${item.artist?.name}`}
-								</button>
-							</li>
-						))}
-					</ul>
+					<div>
+						<h2 className={styles.sectionTitle}>Tracks</h2>
+						<ul>
+							{tracks.slice(0, 10).map(item => (
+								<li key={item.id}>
+									<button
+										className={styles.basic}
+										onClick={() => setPlaylist("track", item.name, item.id)}
+										title={item.name}
+									>
+										{`${item.name} - ${item.artist?.name}`}
+									</button>
+								</li>
+							))}
+						</ul>
+					</div>
 				)}
 			</output>
 		</>
