@@ -1,6 +1,6 @@
 import { ForwardedRef, forwardRef, memo } from "react"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import useRouteParts from "../../RouteContext"
+import { useRouteParts } from "../../RouteContext"
 
 const Audio = forwardRef(function Audio(_, ref: ForwardedRef<HTMLAudioElement>) {
 	const {type, id, index} = useRouteParts()

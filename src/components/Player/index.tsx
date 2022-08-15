@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import Audio from "./Audio"
-import useRouteParts from "../RouteContext"
+import { useRouteParts } from "../RouteContext"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"

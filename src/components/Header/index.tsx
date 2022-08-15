@@ -1,24 +1,27 @@
 import Search from "./Search"
 import styles from "./index.module.css"
-import { useState } from "react"
+import { useRouteParts } from "../RouteContext"
+import { useRouter } from "next/router"
 
 export default function Header() {
-	const [pane, setPane] = useState(0)
+	const {pane, setPane} = useRouteParts()
+	// const router = useRouter()
+	const onToggle = (pane: "" | "search") => {
+		setPane(pane)
+		// router.push(`#hello`)
+	}
 	return (
 		<>
 			<div className={styles.head}>
 				<button
 					className={styles.toggle}
-					data-open={pane === 1}
-					onClick={() => setPane(pane => pane === 1 ? 0 : 1)}
+					data-open={pane === "search"}
+					onClick={() => onToggle(pane === "search" ? "" : "search")}
 				>
 					🔎
 				</button>
 			</div>
-			<Search
-				open={pane === 1}
-				onClose={() => setPane(0)}
-			/>
+			<Search />
 		</>
 	)
 }

@@ -1,9 +1,12 @@
 import { useRouter } from "next/router"
-import { createContext, useContext } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import sanitizeString from "../../utils/sanitizeString"
 
-type RouteType = "track" | "album" | "artist" | "genre"
+const routeTypes = ["track", "album", "artist", "genre"] as const
+type RouteType = typeof routeTypes[number]
+const paneTypes = ["search", "playlist", ""] as const
+type PaneType = typeof paneTypes[number]
 
 type RouteDefinition = {
 	type: RouteType | "",
@@ -13,8 +16,10 @@ type RouteDefinition = {
 }
 
 type RouteContextType = RouteDefinition & {
-	setIndex: (index: number) => void,
-	setRoute: (route: RouteDefinition) => void,
+	pane: PaneType,
+	setIndex: (index: number | ((prev: number) => number)) => void,
+	setRoute: (route: RouteDefinition, pane?: PaneType) => void,
+	setPane: (pane: PaneType) => void,
 }
 
 const RouteContext = createContext<RouteContextType>({
@@ -22,9 +27,12 @@ const RouteContext = createContext<RouteContextType>({
 	name: "",
 	id: "",
 	index: 0,
+	pane: "",
 	setIndex: () => {},
 	setRoute: () => {},
+	setPane: () => {},
 })
+
 
 /**
  * Acceptable formats:
@@ -45,7 +53,8 @@ function parseParts(parts: string | string[]): RouteDefinition {
 	if (
 		!Array.isArray(parts)
 		|| !parts[0] || !parts[1] || !parts[2]
-		|| !["track", "album", "artist", "genre"].includes(parts[0])
+		// @ts-expect-error -- this *is* the type check...
+		|| !routeTypes.includes(parts[0])
 	) {
 		throw new Error("Invalid route")
 	}
@@ -58,14 +67,35 @@ function parseParts(parts: string | string[]): RouteDefinition {
 	}
 }
 
-export function RouteParser({children}: {children: React.ReactNode}) {
-	const {query: {parts = []}, push} = useRouter()
-	const {type, name, id, index = 0} = parseParts(parts)
-	const setRoute = ({type, name = '', id, index = 0}: RouteDefinition) => {
-		if(!(type && id)) return
-		push(`/${type}/${sanitizedName(name) || '-'}/${id}/${index}`, undefined, {scroll: false, shallow: true})
+function parseHash(url?: string): PaneType {
+	const hash = url?.split("#")?.[1]
+	if (!hash) {
+		return ""
 	}
-	const setIndex = (arg: number | ((prev: number) => number)) => {
+	// @ts-expect-error -- this *is* the type check...
+	if (!paneTypes.includes(hash)) {
+		throw new Error("Invalid hash")
+	}
+	return hash as PaneType
+}
+
+export function RouteParser({children}: {children: React.ReactNode}) {
+	const {query: {parts = []}, push, events} = useRouter()
+	const {type, name, id, index = 0} = parseParts(parts)
+	const [pane, setPaneState] = useState<PaneType>("")
+	useEffect(() => {
+		setPaneState(parseHash(window?.location.hash))
+	}, [])
+
+	const setRoute: RouteContextType['setRoute'] = ({type, name = '', id, index = 0}, pane) => {
+		const hash = pane ? `#${pane}` : ""
+		if(!(type && id)) {
+			push(hash)
+		} else {
+			push(`/${type}/${sanitizedName(name) || '-'}/${id}/${index}${hash}`, undefined, {scroll: false, shallow: true})
+		}
+	}
+	const setIndex: RouteContextType['setIndex'] = (arg) => {
 		const next = typeof arg === "function"
 			? arg(index)
 			: index
@@ -78,21 +108,38 @@ export function RouteParser({children}: {children: React.ReactNode}) {
 			setRoute({type, name: sanitizedName(item.name), id, index})
 		}
 	})
+
+	const setPane: RouteContextType['setPane'] = (pane) => {
+		setRoute({type, name, id, index}, pane)
+	}
+
+	useEffect(() => {
+		const hashChange = (url: string) => setPaneState(() => parseHash(url))
+		events.on("hashChangeStart", hashChange)
+		events.on("routeChangeStart", hashChange)
+		return () => {
+			events.off("hashChangeStart", hashChange)
+			events.off("routeChangeStart", hashChange)
+		}
+	}, [events])
+	
 	return (
 		<RouteContext.Provider value={{
 			type,
 			name,
 			id,
 			index: index ?? 0,
+			pane,
 			setIndex,
 			setRoute,
+			setPane,
 		}}>
 			{children}
 		</RouteContext.Provider>
 	)
 }
 
-export default function useRouteParts() {
+export function useRouteParts() {
 	return useContext(RouteContext)
 }
 

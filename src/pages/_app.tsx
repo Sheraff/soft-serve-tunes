@@ -37,6 +37,7 @@ export default withTRPC<AppRouter>({
             cacheTime: Infinity,
             retry: 1,
             refetchOnWindowFocus: false,
+            refetchOnMount: false,
           },
         },
       },

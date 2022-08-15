@@ -1,8 +1,7 @@
 import classNames from "classnames"
-import { useRouter } from "next/router"
 import { CSSProperties, useMemo } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import useRouteParts from "../RouteContext"
+import { useRouteParts } from "../RouteContext"
 import AlbumMiniature from "../Header/Search/AlbumMiniature"
 import styles from "./index.module.css"
 

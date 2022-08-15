@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import AlbumMiniature from "./AlbumMiniature"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
 import { ListType } from "../../AudioTest"
-import useRouteParts from "../../RouteContext"
+import { useRouteParts } from "../../RouteContext"
 
 const defaultArray = [] as never[]
 
-export default function Search({
-	open,
-	onClose,
-}: {
-	open: boolean
-	onClose: () => void
-}) {
+export default function Search() {
+	const {pane, setRoute} = useRouteParts()
+	const open = pane === "search"
+
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
+	const results = useRef<HTMLOutputElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
 	const {data: tracksRaw} = useIndexedTRcpQuery(["track.list"], {enabled})
@@ -29,15 +27,13 @@ export default function Search({
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 
-	const {setRoute} = useRouteParts()
 	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
-		setRoute({type, name, id})
-		onClose()
-	}, [setRoute, onClose])
+		setRoute({type, name, id}, "")
+	}, [setRoute])
 
 	// handle focus because it toggles the virtual keyboard
 	useEffect(() => {
-		if (!input.current || !head.current) {
+		if (!input.current || !head.current || !results.current) {
 			return
 		}
 		if (!open && document.activeElement === input.current) {
@@ -59,12 +55,32 @@ export default function Search({
 				input.current.blur()
 			}
 		}, {signal: controller.signal})
+		input.current.addEventListener('focus', () => {
+			results.current?.scroll({
+				top: 0,
+				behavior: 'smooth',
+			})
+		}, {signal: controller.signal, passive: true})
+		let lastScroll = 0
+		results.current.addEventListener('scroll', () => {
+			const scroll = results.current?.scrollTop || 0
+			if (scroll > lastScroll) {
+				input.current?.blur()
+			}
+			lastScroll = scroll
+		}, {signal: controller.signal, passive: true})
 		return () => controller.abort()
 	}, [open])
 
+	const id = useId()
 	return (
 		<>
-			<form ref={head} className={styles.head} data-open={open}>
+			<form
+				ref={head}
+				className={styles.head}
+				data-open={open}
+				id={id}
+			>
 				<input
 					ref={input}
 					type="search"
@@ -72,7 +88,12 @@ export default function Search({
 					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
 				/>
 			</form>
-			<div className={styles.results} data-open={open}>
+			<output
+				ref={results}
+				className={styles.results}
+				data-open={open}
+				htmlFor={id}
+			>
 				{Boolean(tracks.length) && (
 					<ul>
 						{tracks.slice(0, 10).map(item => (
@@ -131,7 +152,7 @@ export default function Search({
 						))}
 					</ul>
 				)}
-			</div>
+			</output>
 		</>
 	)
 }
