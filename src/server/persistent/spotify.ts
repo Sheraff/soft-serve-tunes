@@ -316,7 +316,7 @@ export async function findTrack(trackDbId: string) {
 		}
 		let candidate = trackData.tracks.items[0]
 		if (!candidate) {
-			if (artistName && albumName && typeof track.position !== 'undefined') {
+			if (artistName && albumName && typeof track.position === 'number') {
 				const search = `artist:${sanitizeString(artistName)} album:${sanitizeString(albumName)}`
 				console.log(`\x1b[36mfetch\x1b[0m - spotify fallback search: #${track.position} of ${search}`)
 				const albumData = await spotify.fetch(`search?type=track&q=${search}`)
