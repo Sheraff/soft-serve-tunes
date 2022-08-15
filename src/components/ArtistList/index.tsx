@@ -7,23 +7,20 @@ import styles from "./index.module.css"
 
 function ArtistItem({
 	artist,
-	defaultEnabled,
+	enableSiblings,
 }: {
 	artist: Artist
-	defaultEnabled: boolean
+	enableSiblings?: () => void
 }) {
-	const item = useRef<HTMLLIElement>(null)
-	const [enabled, setEnabled] = useState(defaultEnabled)
-	const {data} = useIndexedTRcpQuery(["artist.miniature", {id: artist.id}], {
-		enabled,
-	})
+	const item = useRef<HTMLButtonElement>(null)
+	const {data} = useIndexedTRcpQuery(["artist.miniature", {id: artist.id}])
 	
 	useEffect(() => {
-		if (enabled || !item.current) return
+		if (!enableSiblings || !item.current) return
 
 		const observer = new IntersectionObserver(([entry]) => {
 			if (entry?.isIntersecting) {
-				setEnabled(true)
+				enableSiblings()
 			}
 		}, {
 			rootMargin: "0px 100px 0px 0px",
@@ -31,7 +28,7 @@ function ArtistItem({
 		observer.observe(item.current)
 
 		return () => observer.disconnect()
-	}, [enabled])
+	}, [enableSiblings])
 
 	let imgSrc = ""
 	if (data?.audiodb?.cutoutId) {
@@ -52,27 +49,26 @@ function ArtistItem({
 	const {setRoute} = useRouteParts()
 
 	return (
-		<li className={styles.item} ref={item}>
-			<button
-				className={styles.button}
-				type="button"
-				onClick={() => setRoute({type: "artist", id: artist.id, name: artist.name})}
-			>
-				{!isEmpty && (
-					<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
-						<img
-							src={imgSrc ? `/api/cover/${imgSrc}` : ""}
-							alt=""
-						/>
-					</div>
-				)}
-				<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
-					<span className={styles.name}>{artist.name}</span>
-					{albumCount > 1 && <span>{albumCount} albums</span>}
-					{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
-				</p>
-			</button>
-		</li>
+		<button
+			ref={enableSiblings ? item : undefined}
+			className={styles.button}
+			type="button"
+			onClick={() => setRoute({type: "artist", id: artist.id, name: artist.name})}
+		>
+			{!isEmpty && (
+				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
+					<img
+						src={imgSrc ? `/api/cover/${imgSrc}` : ""}
+						alt=""
+					/>
+				</div>
+			)}
+			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
+				<span className={styles.name}>{artist.name}</span>
+				{albumCount > 1 && <span>{albumCount} albums</span>}
+				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
+			</p>
+		</button>
 	)
 }
 
@@ -81,15 +77,19 @@ export default function ArtistList({
 }: {
 	artists: Artist[]
 }) {
+	const [enableUpTo, setEnableUpTo] = useState(9)
 	return (
 		<div className={styles.wrapper}>
 			<ul className={styles.main}>
 				{artists.map((artist, i) => (
-					<ArtistItem
-						key={artist.id}
-						artist={artist}
-						defaultEnabled={i < 9}
-					/>
+					<li className={styles.item} key={artist.id}>
+						{i <= enableUpTo && (
+							<ArtistItem
+								artist={artist}
+								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 9) : undefined}
+							/>
+						)}
+					</li>
 				))}
 			</ul>
 		</div>
