@@ -34,7 +34,7 @@ export const albumRouter = createRouter()
       })
     }
   })
-  .query("cover", {
+  .query("miniature", {
     input: z
       .object({
         id: z.string(),
@@ -42,7 +42,13 @@ export const albumRouter = createRouter()
     async resolve({ input, ctx }) {
       return ctx.prisma.album.findUnique({
         where: { id: input.id },
-        include: {
+        select: {
+          name: true,
+          _count: {
+            select: {
+              tracks: true,
+            },
+          },
           lastfm: {
             select: {
               coverId: true,
@@ -50,36 +56,30 @@ export const albumRouter = createRouter()
           },
           audiodb: {
             select: {
-              cdArtId: true,
               thumbId: true,
               thumbHqId: true,
             }
           },
-          tracks: {
-            take: 1,
-            where: {
-              metaImageId: {
-                not: null,
-              },
-            },
+          spotify: {
             select: {
-              id: true,
-              metaImageId: true,
-            },
+              name: true,
+              imageId: true,
+            }
           },
           artist: {
             select: {
               name: true,
-              audiodb: {
-                select: {
-                  bannerId: true,
-                  clearartId: true,
-                  cutoutId: true,
-                  logoId: true,
-                  thumbId: true,
-                  wideThumbId: true,
-                }
+            }
+          },
+          tracks: {
+            where: {
+              metaImageId: {
+                not: null,
               }
+            },
+            take: 1,
+            select: {
+              metaImageId: true,
             }
           }
         }

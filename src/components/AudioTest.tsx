@@ -31,7 +31,7 @@ export default function AudioTest({ }) {
 		enabled: Boolean(item?.id),
 		onSuccess(lastfm) {
 			if (lastfm?.album?.coverId) {
-				queryClient.invalidateQueries(["album.cover", {id: lastfm?.album?.entityId}])
+				queryClient.invalidateQueries(["album.miniature", {id: lastfm?.album?.entityId}])
 			}
 		}
 	})

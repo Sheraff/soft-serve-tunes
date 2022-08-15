@@ -7,14 +7,13 @@ export default function AlbumMiniature({
 }: {
 	id?: string,
 }) {
-	const {data: album} = useIndexedTRcpQuery(["album.cover", {id: id as string}], {enabled: Boolean(id)})
+	const {data: album} = useIndexedTRcpQuery(["album.miniature", {id: id as string}], {enabled: Boolean(id)})
 
 	const imgSrc = useMemo(() => {
 		if (!album) return undefined
-		if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
-		if (album.artist?.audiodb?.thumbId) return album.artist.audiodb?.thumbId
-		// if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
-		// if (album.artist?.audiodb?.cutoutId) return album.artist.audiodb?.cutoutId
+		if (album.spotify?.imageId) return album.spotify.imageId
+		if (album.audiodb?.thumbHqId) return album.audiodb.thumbHqId
+		if (album.audiodb?.thumbId) return album.audiodb.thumbId
 		if (album.lastfm?.coverId) return album.lastfm.coverId
 		if (album.tracks[0]?.metaImageId) return album.tracks[0].metaImageId
 		return undefined

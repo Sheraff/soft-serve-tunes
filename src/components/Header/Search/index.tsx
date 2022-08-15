@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
-import AlbumMiniature from "./AlbumMiniature"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
 import { ListType } from "../../AudioTest"
 import { useRouteParts } from "../../RouteContext"
 import ArtistList from "../../ArtistList"
+import AlbumList from "../../AlbumList"
 
 const defaultArray = [] as never[]
 let defaultValue: string = ""
@@ -106,18 +106,7 @@ export default function Search({open}: {open: boolean}) {
 				{Boolean(albums.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Albums</h2>
-						<ul className={styles.miniatures}>
-							{albums.slice(0, 9).map(item => (
-								<li key={item.id}>
-									<button
-										onClick={() => setPlaylist("album", item.name, item.id)}
-										title={`${item.name} - ${item.artist?.name}`}
-									>
-										<AlbumMiniature id={item.id} />
-									</button>
-								</li>
-							))}
-						</ul>
+						<AlbumList albums={albums.slice(0, 21)} />
 					</div>
 				)}
 				{Boolean(genres.length) && (
