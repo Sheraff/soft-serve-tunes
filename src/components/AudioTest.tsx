@@ -11,6 +11,7 @@ import PlaylistViz from "./PlaylistViz"
 import Test from "./Test"
 import Player from "./Player"
 import Header from "./Header"
+import Notification from "./Notification"
 
 export type ListType = "track" | "album" | "artist" | "genre"
 
@@ -60,6 +61,7 @@ export default function AudioTest({ }) {
 				<Player />
 			</div>
 			<Palette img={img} />
+			<Notification />
 			<Test artistId={item?.artistId}/>
 		</>
 	)
