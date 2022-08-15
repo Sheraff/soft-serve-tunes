@@ -71,6 +71,7 @@ class MyWebSocketServer extends WebSocketServer {
 }
 
 declare global {
+	// eslint-disable-next-line no-var
 	var socketServer: MyWebSocketServer | null;
 }
 

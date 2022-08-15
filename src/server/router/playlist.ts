@@ -17,12 +17,6 @@ const trackInclude = {
       id: true,
       name: true,
     },
-  },
-  genres: {
-    select: {
-      id: true,
-      name: true,
-    }
   }
 }
 

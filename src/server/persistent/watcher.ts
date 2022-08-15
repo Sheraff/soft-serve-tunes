@@ -283,6 +283,7 @@ class MyWatcher {
 }
 
 declare global {
+	// eslint-disable-next-line no-var
 	var fileWatcher: MyWatcher | null;
 }
 

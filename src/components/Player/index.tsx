@@ -13,7 +13,7 @@ export default function Player() {
 	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
 		enabled: Boolean(type && id)
 	})
-	const item = list?.[index]
+	const item = index === undefined ? undefined : list?.[index]
 	
 	const playNext = useMemo(() => {
 		if(!list?.length) return () => {}
@@ -48,8 +48,10 @@ export default function Player() {
 		if (!audio.current) return
 		if (playing) {
 			audio.current.pause()
+			setAutoPlay(false)
 		} else {
 			audio.current.play()
+			setAutoPlay(true)
 		}
 	}
 
@@ -63,7 +65,12 @@ export default function Player() {
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<div className={styles.duration}>{displayTotalTime}</div>
-			<button className={styles.play} onClick={togglePlay}>{playing ? 'pause' : 'play'}</button>
+			<div className={styles.info}>
+				{item?.name}
+				{item?.album?.name ? ` - ${item?.album.name}` : ''}
+				{item?.artist?.name ? ` - ${item?.artist.name}` : ''}
+			</div>
+			<button className={styles.play} onClick={togglePlay}>{loading ? 'loading' : playing ? 'pause' : 'play'}</button>
 			<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
 			<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
 			<Audio ref={audio}/>

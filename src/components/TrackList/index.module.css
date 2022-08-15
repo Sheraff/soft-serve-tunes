@@ -26,6 +26,9 @@
 	background-color: var(--palette-secondary);
 	flex-shrink: 0;
 }
+.current {
+	box-shadow: 0 0 5px var(--palette-secondary);
+}
 
 .img {
 	position: relative;

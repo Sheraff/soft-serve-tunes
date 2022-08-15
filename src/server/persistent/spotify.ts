@@ -658,6 +658,7 @@ export async function findTrack(trackDbId: string) {
 }
 
 declare global {
+	// eslint-disable-next-line no-var
 	var spotify: Spotify | null;
 }
 

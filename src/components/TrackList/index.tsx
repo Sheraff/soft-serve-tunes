@@ -8,9 +8,13 @@ import styles from "./index.module.css"
 function TrackItem({
 	track,
 	enableSiblings,
+	current,
+	onClick,
 }: {
 	track: Track
 	enableSiblings?: () => void
+	current?: boolean
+	onClick?: (id:string, name:string) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
@@ -52,9 +56,15 @@ function TrackItem({
 	return (
 		<button
 			ref={enableSiblings ? item : undefined}
-			className={classNames(styles.button, {[styles.empty]: isEmpty})}
+			className={classNames(styles.button, {
+				[styles.empty]: isEmpty,
+				[styles.current]: current,
+			})}
 			type="button"
-			onClick={() => setRoute({type: "track", id: track.id, name: track.name})}
+			onClick={() => {
+				if (onClick) onClick(track.id, track.name)
+				else setRoute({type: "track", id: track.id, name: track.name})
+			}}
 		>
 			{!isEmpty && (
 				<div className={styles.img}>
@@ -74,9 +84,13 @@ function TrackItem({
 }
 
 export default function TrackList({
-	tracks
+	tracks,
+	current,
+	onClick,
 }: {
 	tracks: Track[]
+	current?: string
+	onClick: Parameters<typeof TrackItem>[0]["onClick"]
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
@@ -87,6 +101,8 @@ export default function TrackList({
 						<TrackItem
 							track={track}
 							enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+							current={current === track.id}
+							onClick={onClick}
 						/>
 					)}
 				</li>

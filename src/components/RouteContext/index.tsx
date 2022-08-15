@@ -97,7 +97,7 @@ export function RouteParser({children}: {children: React.ReactNode}) {
 	const setIndex: RouteContextType['setIndex'] = (arg) => {
 		const next = typeof arg === "function"
 			? arg(index)
-			: index
+			: arg
 		setRoute({type, name, id, index: next}, pane)
 	}
 	useIndexedTRcpQuery([`${type as RouteType}.get`, { id }], {

@@ -1,21 +1,23 @@
 .main {
+	font-size: 12px;
 	grid-area: foot;
 	z-index: 1;
 	column-gap: 1em;
+	row-gap: 8px;
 	background: var(--palette-bg-main);
 	width: 100vw;
 	padding:
-		.5em
-		max(.5em, env(safe-area-inset-right))
-		max(.5em, env(safe-area-inset-bottom))
-		max(.5em, env(safe-area-inset-left));
-	box-shadow: 0 0 .5em var(--palette-bg-gradient);
+		10px
+		max(10px, env(safe-area-inset-right))
+		max(10px, env(safe-area-inset-bottom))
+		max(10px, env(safe-area-inset-left));
+	box-shadow: 0 0 10px var(--palette-bg-gradient);
 
 	display: grid;
 	grid-template-areas:
-		"track track track"
-		"time  ..... duration"
-		"prev  play  next";
+		"time track duration"
+		"info info  info"
+		"prev play  next";
 	grid-template-columns: auto 1fr auto;
 	color: var(--palette-primary);
 }
@@ -28,14 +30,16 @@
 	grid-area: time;
 	text-align: left;
 	font-variant: tabular-nums;
-	font-size: .8em;
 }
 
 .duration {
 	grid-area: duration;
 	text-align: right;
 	font-variant: tabular-nums;
-	font-size: .8em;
+}
+
+.info {
+	grid-area: info;
 }
 
 .prev {
