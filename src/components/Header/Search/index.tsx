@@ -96,16 +96,15 @@ export default function Search({open}: {open: boolean}) {
 				data-open={open}
 				htmlFor={id}
 			>
-				{Boolean(tracks.length) && (
-					<ul>
-						{tracks.slice(0, 10).map(item => (
+				{Boolean(artists.length) && (
+					<ul className={styles.miniatures}>
+						{artists.slice(0, 9).map(item => (
 							<li key={item.id}>
 								<button
-									className={styles.basic}
-									onClick={() => setPlaylist("track", item.name, item.id)}
+									onClick={() => setPlaylist("artist", item.name, item.id)}
 									title={item.name}
 								>
-									{`${item.name} - ${item.artist?.name}`}
+									<AlbumMiniature id={item.albums[0]?.id} />
 								</button>
 							</li>
 						))}
@@ -117,23 +116,9 @@ export default function Search({open}: {open: boolean}) {
 							<li key={item.id}>
 								<button
 									onClick={() => setPlaylist("album", item.name, item.id)}
-									title={item.name}
+									title={`${item.name} - ${item.artist?.name}`}
 								>
 									<AlbumMiniature id={item.id} />
-								</button>
-							</li>
-						))}
-					</ul>
-				)}
-				{Boolean(artists.length) && (
-					<ul className={styles.miniatures}>
-						{artists.slice(0, 9).map(item => (
-							<li key={item.id}>
-								<button
-									onClick={() => setPlaylist("artist", item.name, item.id)}
-									title={item.name}
-								>
-									<AlbumMiniature id={item.albums[0]?.id} />
 								</button>
 							</li>
 						))}
@@ -149,6 +134,21 @@ export default function Search({open}: {open: boolean}) {
 									title={item.name}
 								>
 									{`${item.name} (${item._count.tracks} tracks)`}
+								</button>
+							</li>
+						))}
+					</ul>
+				)}
+				{Boolean(tracks.length) && (
+					<ul>
+						{tracks.slice(0, 10).map(item => (
+							<li key={item.id}>
+								<button
+									className={styles.basic}
+									onClick={() => setPlaylist("track", item.name, item.id)}
+									title={item.name}
+								>
+									{`${item.name} - ${item.artist?.name}`}
 								</button>
 							</li>
 						))}
