@@ -7,10 +7,10 @@ import { ListType } from "../../AudioTest"
 import { useRouteParts } from "../../RouteContext"
 
 const defaultArray = [] as never[]
+let defaultValue: string = ""
 
-export default function Search() {
-	const {pane, setRoute} = useRouteParts()
-	const open = pane === "search"
+export default function Search({open}: {open: boolean}) {
+	const {setRoute} = useRouteParts()
 
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
@@ -86,6 +86,8 @@ export default function Search() {
 					type="search"
 					placeholder="Dee Dee Bridgewater Autumn Leaves"
 					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
+					onChange={() => defaultValue = input.current?.value || ""}
+					defaultValue={defaultValue}
 				/>
 			</form>
 			<output

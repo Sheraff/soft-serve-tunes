@@ -24,10 +24,9 @@
 .results {
 	grid-area: 2 / 1 / 4 / 2;
 	z-index: 2;
-	transition: transform 350ms, opacity 350ms;
-	transform: translateX(calc(100vw - 20px - max(.5em, env(safe-area-inset-right)) - max(.5em, env(safe-area-inset-left))));
+	transition: transform 350ms;
+	transform: translateX(100vw);
 	pointer-events: none;
-	opacity: 0;
 	background: var(--palette-bg-main);
 
 	overflow: hidden scroll;
@@ -40,7 +39,6 @@
 .results[data-open="true"] {
 	transform: translateX(0);
 	pointer-events: auto;
-	opacity: 1;
 }
 
 .results ul {

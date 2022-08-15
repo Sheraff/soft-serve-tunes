@@ -1,27 +1,30 @@
 import Search from "./Search"
 import styles from "./index.module.css"
 import { useRouteParts } from "../RouteContext"
-import { useRouter } from "next/router"
+import useDisplayAndShow from "../useDisplayAndShow"
+import { useRef } from "react"
 
 export default function Header() {
 	const {pane, setPane} = useRouteParts()
-	// const router = useRouter()
-	const onToggle = (pane: "" | "search") => {
-		setPane(pane)
-		// router.push(`#hello`)
-	}
+
+	const toggle = useRef<HTMLButtonElement>(null)
+	const {display, show} = useDisplayAndShow(pane === "search", toggle)
+
 	return (
 		<>
 			<div className={styles.head}>
 				<button
+					ref={toggle}
 					className={styles.toggle}
-					data-open={pane === "search"}
-					onClick={() => onToggle(pane === "search" ? "" : "search")}
+					data-open={show}
+					onClick={() => setPane(pane === "search" ? "" : "search")}
 				>
 					🔎
 				</button>
 			</div>
-			<Search />
+			{display && (
+				<Search open={show} />
+			)}
 		</>
 	)
 }
