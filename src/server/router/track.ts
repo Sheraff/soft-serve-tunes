@@ -49,6 +49,81 @@ export const trackRouter = createRouter()
       })
     }
   })
+  .query("miniature", {
+    input: z
+      .object({
+        id: z.string(),
+      }),
+    async resolve({ input, ctx }) {
+      return ctx.prisma.track.findUnique({
+        where: { id: input.id },
+        select: {
+          name: true,
+          metaImageId: true,
+          album: {
+            select: {
+              name: true,
+            }
+          },
+          artist: {
+            select: {
+              name: true,
+            }
+          },
+          audiodb: {
+            select: {
+              strTrack: true,
+              thumbId: true,
+              album: {
+                select: {
+                  strAlbum: true,
+                  thumbId: true,
+                  thumbHqId: true,
+                  artist: {
+                    select: {
+                      strArtist: true,
+                    }
+                  }
+                }
+              },
+            }
+          },
+          spotify: {
+            select: {
+              name: true,
+              album: {
+                select: {
+                  name: true,
+                  imageId: true,
+                }
+              },
+              artist: {
+                select: {
+                  name: true,
+                }
+              }
+            }
+          },
+          lastfm: {
+            select: {
+              name: true,
+              artist: {
+                select: {
+                  name: true,
+                }
+              },
+              album: {
+                select: {
+                  name: true,
+                  coverId: true,
+                }
+              }
+            }
+          },
+        }
+      })
+    }
+  })
   .query("startsWith", {
     input: z
       .object({

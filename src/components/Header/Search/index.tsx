@@ -7,6 +7,7 @@ import { useRouteParts } from "../../RouteContext"
 import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
 import GenreList from "../../GenreList"
+import TrackList from "../../TrackList"
 
 const defaultArray = [] as never[]
 let defaultValue: string = ""
@@ -107,7 +108,7 @@ export default function Search({open}: {open: boolean}) {
 				{Boolean(albums.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Albums</h2>
-						<AlbumList albums={albums.slice(0, 21)} />
+						<AlbumList albums={albums.slice(0, 28)} />
 					</div>
 				)}
 				{Boolean(genres.length) && (
@@ -119,19 +120,7 @@ export default function Search({open}: {open: boolean}) {
 				{Boolean(tracks.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Tracks</h2>
-						<ul>
-							{tracks.slice(0, 10).map(item => (
-								<li key={item.id}>
-									<button
-										className={styles.basic}
-										onClick={() => setPlaylist("track", item.name, item.id)}
-										title={item.name}
-									>
-										{`${item.name} - ${item.artist?.name}`}
-									</button>
-								</li>
-							))}
-						</ul>
+						<TrackList tracks={tracks.slice(0, 50)} />
 					</div>
 				)}
 			</output>
