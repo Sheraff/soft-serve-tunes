@@ -99,7 +99,7 @@ export function RouteParser({children}: {children: React.ReactNode}) {
 		const next = typeof arg === "function"
 			? arg(index)
 			: index
-		setRoute({type, name, id, index: next})
+		setRoute({type, name, id, index: next}, pane)
 	}
 	useIndexedTRcpQuery([`${type as RouteType}.get`, { id }], {
 		enabled: Boolean(type && id && name === '-'),
