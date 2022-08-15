@@ -100,7 +100,7 @@ export default function Search({open}: {open: boolean}) {
 				{Boolean(artists.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Artists</h2>
-						<ArtistList artists={artists} />
+						<ArtistList artists={artists.slice(0, 21)} />
 					</div>
 				)}
 				{Boolean(albums.length) && (

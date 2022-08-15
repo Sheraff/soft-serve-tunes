@@ -77,7 +77,7 @@ export default function ArtistList({
 }: {
 	artists: Artist[]
 }) {
-	const [enableUpTo, setEnableUpTo] = useState(9)
+	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
 		<div className={styles.wrapper}>
 			<ul className={styles.main}>
@@ -86,7 +86,7 @@ export default function ArtistList({
 						{i <= enableUpTo && (
 							<ArtistItem
 								artist={artist}
-								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 9) : undefined}
+								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 							/>
 						)}
 					</li>
