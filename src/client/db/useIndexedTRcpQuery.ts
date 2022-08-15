@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient, UseQueryResult } from "react-query"
 import { retrieveQueryFromIndexedDB, storeQueryInIndexedDB } from "./trpc"
 import { inferQueryOutput, inferUseTRPCQueryOptions, trpc } from "../../utils/trpc"
@@ -18,32 +18,53 @@ export default function useIndexedTRcpQuery<
 	pathAndInput: TPathAndArgs<TRouteKey>,
 	options: inferUseTRPCQueryOptions<TRouteKey> = {}
 ): UseQueryResult<inferQueryOutput<TRouteKey>> {
-	const state = useRef('idle')
+	const queryClient = useQueryClient()
+
+	const [defaultEnabled, setDefaultEnabled] = useState(() => {
+		const queryState = queryClient.getQueryState<TPathAndArgs<TRouteKey>>(pathAndInput)
+		return queryState?.status === 'success' ? options.enabled : false
+	})
+	const isFromIndexed = useRef(false)
+	const noModeIndexed = useRef(false)
+
+	const refetch = useRef<UseQueryResult<inferQueryOutput<TRouteKey>>['refetch']>(null)
 	const queryResponse = trpc.useQuery(pathAndInput, {
 		...options,
+		enabled: defaultEnabled,
 		onSuccess(data) {
 			options.onSuccess?.(data)
-			if (options.enabled ?? true) {
-				state.current = 'done'
-				storeQueryInIndexedDB<inferQueryOutput<TRouteKey>>(pathAndInput, data)
+			if (!isFromIndexed.current) {
+				requestIdleCallback(() => {
+					storeQueryInIndexedDB<inferQueryOutput<TRouteKey>>(pathAndInput, data)
+				})
+			} else if (!data) {
+				refetch.current()
+			} else {
+				requestIdleCallback(() => {
+					// TODO: only if network is good
+					refetch.current()
+				})
 			}
+			isFromIndexed.current = false
 		}
 	})
-	const queryClient = useQueryClient()
-	const lastFetched = useRef<string>()
+	refetch.current = queryResponse.refetch
+
 	const keyPath = JSON.stringify(pathAndInput)
 	useEffect(() => {
-		if (keyPath === lastFetched.current) return
-		state.current = 'loading'
-		lastFetched.current = keyPath
-		retrieveQueryFromIndexedDB<inferQueryOutput<TRouteKey>>(keyPath).then(data => {
-			if (state.current === 'loading' && lastFetched.current === keyPath) {
-				const extracted = JSON.parse(keyPath)
-				queryClient.setQueryData(extracted, data)
-				queryClient.invalidateQueries(extracted)
+		if (options.enabled === false || noModeIndexed.current) return
+		const extracted = JSON.parse(keyPath) as TPathAndArgs<TRouteKey>
+		queryClient.fetchQuery<TPathAndArgs<TRouteKey>>(extracted, async () => {
+			noModeIndexed.current = true
+			const data = await retrieveQueryFromIndexedDB<inferQueryOutput<TRouteKey>>(keyPath)
+			isFromIndexed.current = true
+			if (data) {
+				return data
+			} else {
+				setDefaultEnabled(true)
 			}
 		})
-	}, [queryResponse.isFetched, queryClient, keyPath])
+	}, [queryResponse.isFetched, queryClient, keyPath, options.enabled])
 
 	return queryResponse
 }
