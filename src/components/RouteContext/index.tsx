@@ -49,7 +49,6 @@ function parseParts(parts: string | string[]): RouteDefinition {
 			id: "",
 			index: 0,
 		}
-	console.log(parts)
 	if (
 		!Array.isArray(parts)
 		|| !parts[0] || !parts[1] || !parts[2]

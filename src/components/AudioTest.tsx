@@ -24,7 +24,7 @@ export default function AudioTest({ }) {
 	const item = list?.[index]
 
 	const queryClient = useQueryClient()
-	const {data: lastfm, isFetching: lastfmLoading} = trpc.useQuery(["lastfm.track", {
+	const {data: lastfm} = trpc.useQuery(["lastfm.track", {
 		id: item?.id as string,
 		force: true,
 	}], {
@@ -35,7 +35,6 @@ export default function AudioTest({ }) {
 			}
 		}
 	})
-	console.log(lastfm)
 	// const {data: metadata} = trpc.useQuery(["metadata.track", {id: item?.id as string}], {
 	// 	enabled: Boolean(item?.id),
 	// })
@@ -45,7 +44,6 @@ export default function AudioTest({ }) {
 	}], {
 		enabled: Boolean(item?.id),
 	})
-	console.log(spotify)
 
 	const img = useRef<HTMLImageElement>(null)
 

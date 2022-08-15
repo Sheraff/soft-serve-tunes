@@ -5,7 +5,6 @@ export default function DropTarget() {
 	const ref = useRef<HTMLDivElement>(null)
 	useEffect(() => {
 		const controller = new AbortController()
-		ref.current?.setAttribute('ondrop', 'console.log')
 		document.body.addEventListener("dragover", e => {
 			ref.current?.classList.add(styles.hover)
 			e.preventDefault()
@@ -14,14 +13,12 @@ export default function DropTarget() {
 			ref.current?.classList.remove(styles.hover)
 		}, { signal: controller.signal })
 		ref.current?.addEventListener("drop", async (event) => {
-			console.log(event)
 			event.preventDefault()
 			ref.current?.classList.remove(styles.hover)
 
 			const itemList = event.dataTransfer?.items
 			if (!itemList) return
 			const fileEntries = await getAllFileEntries(itemList)
-			console.log(fileEntries)
 			const formData = new FormData()
 			for (const fileEntry of fileEntries) {
 				const file = await fileFromFileEntry(fileEntry)
