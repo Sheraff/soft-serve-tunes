@@ -136,6 +136,10 @@ Here are some resources that we commonly refer to:
 
 ## Deploy to raspberry
 
+### update raspbian 
+need an arm64 OS, as prisma doesn't work on 32bits systems
+https://www.raspberrypi.com/software/
+
 ### access rpi
 freebox > box settings > ports > 
 - 22 > 22
@@ -164,25 +168,11 @@ freebox > box settings > ports >
 - `apt-get install apache2`
 - freebox ports should be set to their default value (443 > 443, 80 > 80)
 - install cert-bot by let's encrypt (https://certbot.eff.org/instructions?ws=apache&os=debianbuster)
-- in /etc/apache2/sited-enabled, create a new .conf file with something like this each port (careful with other .conf files, some of which were created / written to by certbot)
-```
-<VirtualHost *:80>
-   ProxyPreserveHost On
-   ProxyRequests Off
-   ServerName rpi.florianpellet.com
+- in /etc/apache2/sited-enabled, edit the .conf files (see example below) so that
+  - all HTTP traffic is redirected to HTTPS
+  - incoming 443 and outgoing 3000 go to the correct destination
+  - HTTP upgrade requests go to the correct scheme http>ws and ws>http
 
-   # handle WS related requests
-   RewriteEngine On
-   RewriteCond %{HTTP:Upgrade} =websocket [NC]
-   RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
-   RewriteCond %{HTTP:Upgrade} !=websocket [NC]
-   RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
-
-   # incoming traffic goes to node server / outgoing traffic from node is allowed through
-   ProxyPass / http://localhost:3000/
-   ProxyPassReverse / http://localhost:3000/
-</VirtualHost>
-```
 - make sure apache version is >= 2.4 (`apache2 -v`)
 - enable some apache modules
 ```
@@ -194,40 +184,6 @@ systemctl restart apache2
 
 
 ## example .conf files
-### /etc/apache2/sites-enabled/soft-serve-tunes.conf
-```
-<VirtualHost *:80>
-  ProxyPreserveHost On
-  ProxyRequests Off
-  ServerName rpi.florianpellet.com
-
-  RewriteEngine On
-  RewriteCond %{HTTP:Upgrade} =websocket [NC]
-  RewriteRule /(.*)           ws://localhost:3001/$1 [P,L] # port for websocket
-  RewriteCond %{HTTP:Upgrade} !=websocket [NC]
-  RewriteRule /(.*)           http://localhost:3000/$1 [P,L] # port for http
-
-  ProxyPass / http://localhost:3000/
-  ProxyPassReverse / http://localhost:3000/
-</VirtualHost>
-
-<IfModule mod_ssl.c>
-   <VirtualHost *:443>
-      ProxyPreserveHost On
-      ProxyRequests Off   
-      ServerName rpi.florianpellet.com
-
-      RewriteEngine On
-      RewriteCond %{HTTP:Upgrade} =websocket [NC]
-      RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
-      RewriteCond %{HTTP:Upgrade} !=websocket [NC]
-      RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
-
-      ProxyPass / http://localhost:3000/
-      ProxyPassReverse / http://localhost:3000/
-   </VirtualHost>
-</IfModule>
-```
 ### /etc/apache2/sites-enabled/000-default.conf
 ```
 <VirtualHost *:80>
