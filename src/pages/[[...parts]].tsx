@@ -1,18 +1,17 @@
-import classNames from "classnames"
 import type { NextPage } from "next"
 import Head from "next/head"
 import { useEffect, useState } from "react"
 import AudioTest from "../components/AudioTest"
 import DropTarget from "../components/DropTarget"
+import { ProgressBarSingleton, useProgressBar } from "../components/ProgressBar"
 import { RouteParser } from "../components/RouteContext"
 import WatcherSocket from "../components/WatcherSocket"
 import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
-import styles from "./index.module.css"
 
 
 const Home: NextPage = () => {
-	const [progress, setProgress] = useState(0)
+	const setProgress = useProgressBar()
 	const [ready, setReady] = useState(false)
 	const { mutate } = trpc.useMutation(["list.populate"])
 	
@@ -46,7 +45,7 @@ const Home: NextPage = () => {
 			controller.abort()
 			socket?.close()
 		}
-	}, [mutate])
+	}, [mutate, setProgress])
 
 	return (
 		<>
@@ -56,14 +55,7 @@ const Home: NextPage = () => {
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<RouteParser>
-				<div
-					className={classNames(styles.progress, {
-						[styles.done]: progress === 1,
-					})}
-					style={{
-						'--progress': progress
-					} as React.CSSProperties}
-				/>
+				<ProgressBarSingleton />
 				{ready && (
 					<>
 						<AudioTest />

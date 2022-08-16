@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { env } from "../../env/client.mjs"
+import { useProgressBar } from "../ProgressBar"
 import styles from "./index.module.css"
 
 export default function DropTarget() {
@@ -47,6 +48,23 @@ export default function DropTarget() {
 		}, { signal: controller.signal })
 		return () => controller.abort()
 	}, [])
+
+	const setProgress = useProgressBar()
+	useEffect(() => {
+		const controller = new AbortController()
+		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
+		socket.addEventListener("message", (e) => {
+			const data = JSON.parse(e.data)
+			if (data.type === "upload:progress"){
+				setProgress(data.payload)
+			}
+		}, {signal: controller.signal})
+		return () => {
+			controller.abort()
+			socket.close()
+		}
+	}, [setProgress])
+
 	return (
 		<div ref={ref} className={styles.main}>
 		</div>
