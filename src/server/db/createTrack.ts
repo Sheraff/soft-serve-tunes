@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises"
+import { access, stat } from "node:fs/promises"
 import { basename, extname, relative } from "node:path"
 import { IAudioMetadata, parseFile } from 'music-metadata'
 import { writeImage } from "../../utils/writeImage"
@@ -6,6 +6,7 @@ import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "../db/client"
 import { env } from "../../env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
+import { constants } from "node:fs"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -15,13 +16,26 @@ type PrismaError = PrismaClientRustPanicError
 
 export default async function createTrack(path: string, retries = 0): Promise<true | false | Track> {
 	const stats = await stat(path)
+	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
 	if (existingFile) {
-		// TODO: check if the file is in the correct location, otherwise it might be the same but was moved while server was down
-		// and we won't be able to serve it since File.path is used and hasn't been updated
+		if (path === existingFile.path) {
+			return true
+		}
+		try {
+			await access(existingFile.path, constants.F_OK)
+			console.log(`\x1b[36mwarn \x1b[0m - trying to create a duplicate file, request ignored, keeping ${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path)}`)
+			return false // true or false? is this success file exists or failure track wasn't created?
+		} catch {
+			console.log(`\x1b[36minfo \x1b[0m - track already exists but file was missing, linking ${relativePath}`)
+			await prisma.file.update({
+				where: { ino: stats.ino },
+				data: { path },
+			})
+			console.log(`\x1b[35mevent\x1b[0m - linked to existing track ${relativePath}`)
+		}
 		return true
 	}
-	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 	let _metadata: IAudioMetadata | undefined
 	try {
 		_metadata = await parseFile(path)

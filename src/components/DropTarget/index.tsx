@@ -30,6 +30,8 @@ export default function DropTarget() {
 				payloadSize += file.size
 				formData.append("file[]", file)
 				formData.append("name[]", fileEntry.fullPath)
+				// TODO: some files have `/` in their name
+				console.log(fileEntry.fullPath)
 				formData.append("index[]", String(i))
 				formData.append("of[]", String(fileEntries.length))
 				formData.append("wakeup[]", isFirst ? "wakeup" : "")
