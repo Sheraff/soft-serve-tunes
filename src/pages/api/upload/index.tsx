@@ -136,11 +136,13 @@ function directoryFromRandom() {
 function getFileName(metadata: IAudioMetadata, original: string) {
 	const { title, track: {no} } = metadata.common
 	if (title && typeof no === 'number') {
+		const sanitizedTitle = sanitize(title)
 		const numberString = String(no).padStart(2, '0')
-		return `${numberString} ${title}.${dumbExtensionGuessing(metadata, original)}`
+		return `${numberString} ${sanitizedTitle}.${dumbExtensionGuessing(metadata, original)}`
 	}
 	if (title) {
-		return `${title}.${dumbExtensionGuessing(metadata, original)}`
+		const sanitizedTitle = sanitize(title)
+		return `${sanitizedTitle}.${dumbExtensionGuessing(metadata, original)}`
 	}
 	return basename(original)
 }
