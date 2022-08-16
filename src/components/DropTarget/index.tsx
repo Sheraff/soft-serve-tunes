@@ -32,7 +32,7 @@ export default function DropTarget() {
 				formData.append("file[]", file)
 				formData.append("name[]", fileEntry.fullPath)
 				formData.append("index[]", String(i))
-				formData.append("of[]", String(fileEntries.length))
+				formData.append("of[]", String(fileEntries.length - 1))
 				formData.append("wakeup[]", isFirst ? "wakeup" : "")
 				isFirst = false
 				if (payloadSize > env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE * 1_048_576) {
