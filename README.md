@@ -182,6 +182,13 @@ a2enmod proxy_wstunnel
 systemctl restart apache2
 ```
 
+### http2
+```
+cp /etc/apache2/mods-available/http2.load /etc/apache2/mods-enabled/http2.load
+cp /etc/apache2/mods-available/http2.conf /etc/apache2/mods-enabled/http2.conf
+systemctl restart apache2
+```
+
 
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
