@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises"
 import { basename, extname, relative } from "node:path"
-import { parseFile } from 'music-metadata'
+import { IAudioMetadata, parseFile } from 'music-metadata'
 import { writeImage } from "../../utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "../db/client"
@@ -20,14 +20,17 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		return true
 	}
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
-	let metadata
+	let _metadata: IAudioMetadata | undefined
 	try {
-		metadata = await parseFile(path)
-	} catch (error) {
+		_metadata = await parseFile(path)
+		if (!_metadata) {
+			throw new Error("No metadata")
+		}
+	} catch {
 		console.log(`\x1b[31merror\x1b[0m - could not parse ${relativePath}, probably not a music file`)
 		return false
 	}
-
+	const metadata = _metadata as IAudioMetadata
 	const uselessNameRegex = /^[0-9\s]*(track|piste)[0-9\s]*$/i
 	const name = metadata.common.title && !uselessNameRegex.test(metadata.common.title)
 		? metadata.common.title
@@ -41,6 +44,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const { hash, path: imagePath } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
 			: { hash: '', path: '' }
+		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist)
 		const track = await prisma.track.create({
 			include: {
 				feats: {
@@ -90,9 +94,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						}
 					}
 				} : {}),
-				...(metadata.common.artists?.length ? {
+				...(feats?.length ? {
 					feats: {
-						connectOrCreate: metadata.common.artists.map(artist => ({
+						connectOrCreate: feats.map(artist => ({
 							where: {
 								name: artist,
 							},
