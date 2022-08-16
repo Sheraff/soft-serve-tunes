@@ -13,7 +13,7 @@ export const serverSchema = z.object({
   SPOTIFY_CLIENT_ID: z.string(),
   SPOTIFY_CLIENT_SECRET: z.string(),
   ACCOUST_ID_API_KEY: z.string(),
-  WEBSOCKET_SERVER_PORT: z.string(),
+  WEBSOCKET_SERVER_PORT: z.string().transform(Number),
 });
 
 /**
@@ -24,6 +24,7 @@ export const serverSchema = z.object({
 export const clientSchema = z.object({
   NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER: z.string(),
   NEXT_PUBLIC_WEBSOCKET_URL: z.string(),
+  NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
 });
 
 /**
@@ -35,4 +36,5 @@ export const clientSchema = z.object({
 export const clientEnv = {
   NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER: process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER,
   NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
+  NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
 };

@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "../"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"audiodb",
+			"autocorrect",
+			"Brainz",
+			"Clearart",
+			"Discogs",
+			"fulltrack",
+			"isrc",
+			"Itunes",
+			"lastfm",
+			"mbid",
+			"playcount",
+			"prisma",
+			"releasedate",
+			"streamable",
+			"superjson",
+			"toptags",
+			"trpc"
+		],
+	}
+}

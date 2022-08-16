@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { env } from "../../env/client.mjs"
 import styles from "./index.module.css"
 
 export default function DropTarget() {
@@ -34,7 +35,7 @@ export default function DropTarget() {
 				formData.append("of[]", String(fileEntries.length))
 				formData.append("wakeup[]", isFirst ? "wakeup" : "")
 				isFirst = false
-				if (payloadSize > 50_000_000) { // chunk upload into multiple requests of ~50MB each
+				if (payloadSize > env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE * 1_048_576) {
 					await fetch('/api/upload', {method: "POST", body: formData})
 					formData = new FormData()
 					payloadSize = 0

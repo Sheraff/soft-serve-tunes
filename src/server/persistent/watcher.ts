@@ -7,11 +7,11 @@ import { socketServer } from "./ws"
 import chokidar from "chokidar"
 import { unlink } from "node:fs/promises"
 
-type MapValueType<A> = A extends Map<any, infer V> ? V : never;
+type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 
 class MyWatcher {
 	static DELAY = 2_100
-	static CLEANUP_DELAY = 1_000
+	static CLEANUP_DELAY = 45_000
 
 	watcher?: chokidar.FSWatcher
 	rootFolder: string
