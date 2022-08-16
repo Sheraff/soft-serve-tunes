@@ -129,3 +129,143 @@ You can also dockerize this stack and deploy a container.
 Here are some resources that we commonly refer to:
 
 - [Protecting routes with Next-Auth.js](https://next-auth.js.org/configuration/nextjs#unstable_getserversession)
+
+
+
+------
+
+## Deploy to raspberry
+
+### access rpi
+freebox > box settings > ports > 
+- 22 > 22
+- if terminal isn't happy because it's a new unknown source `ssh-keygen -R [host]`
+
+### app
+install node, upgrade to 18
+git clone the project
+install `npm i`
+configure .env music folder
+build (put pi on a fan, it's gonna heat up) `npm run build`
+`rm prisma/db.sqlite`
+`npm run db`
+`npm start`
+
+### ports
+freebox > static local IP for server
+configure DynDNS w/ OVH + freebox
+freebox > box settings > ports > 
+- 443 > 3000 (https)
+- 80 > 3000 (http)
+- 3001 > 3001 (ws) ??useless??
+- site should be accessible over HTTP
+
+### ssl certificates
+- `apt-get install apache2`
+- freebox ports should be set to their default value (443 > 443, 80 > 80)
+- install cert-bot by let's encrypt (https://certbot.eff.org/instructions?ws=apache&os=debianbuster)
+- in /etc/apache2/sited-enabled, create a new .conf file with something like this each port (careful with other .conf files, some of which were created / written to by certbot)
+```
+<VirtualHost *:80>
+   ProxyPreserveHost On
+   ProxyRequests Off
+   ServerName rpi.florianpellet.com
+
+   # handle WS related requests
+   RewriteEngine On
+   RewriteCond %{HTTP:Upgrade} =websocket [NC]
+   RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
+   RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+   RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
+
+   # incoming traffic goes to node server / outgoing traffic from node is allowed through
+   ProxyPass / http://localhost:3000/
+   ProxyPassReverse / http://localhost:3000/
+</VirtualHost>
+```
+- make sure apache version is >= 2.4 (`apache2 -v`)
+- enable some apache modules
+```
+a2enmod proxy
+a2enmod proxy_http
+a2enmod proxy_wstunnel
+systemctl restart apache2
+```
+
+
+## example .conf files
+### /etc/apache2/sites-enabled/soft-serve-tunes.conf
+```
+<VirtualHost *:80>
+  ProxyPreserveHost On
+  ProxyRequests Off
+  ServerName rpi.florianpellet.com
+
+  RewriteEngine On
+  RewriteCond %{HTTP:Upgrade} =websocket [NC]
+  RewriteRule /(.*)           ws://localhost:3001/$1 [P,L] # port for websocket
+  RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+  RewriteRule /(.*)           http://localhost:3000/$1 [P,L] # port for http
+
+  ProxyPass / http://localhost:3000/
+  ProxyPassReverse / http://localhost:3000/
+</VirtualHost>
+
+<IfModule mod_ssl.c>
+   <VirtualHost *:443>
+      ProxyPreserveHost On
+      ProxyRequests Off   
+      ServerName rpi.florianpellet.com
+
+      RewriteEngine On
+      RewriteCond %{HTTP:Upgrade} =websocket [NC]
+      RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
+      RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+      RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
+
+      ProxyPass / http://localhost:3000/
+      ProxyPassReverse / http://localhost:3000/
+   </VirtualHost>
+</IfModule>
+```
+### /etc/apache2/sites-enabled/000-default.conf
+```
+<VirtualHost *:80>
+   ErrorLog ${APACHE_LOG_DIR}/error.log
+   CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+   # added by certbot
+   RewriteEngine on
+   RewriteCond %{SERVER_NAME} =rpi.florianpellet.com
+   RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+</VirtualHost>
+```
+
+### /etc/apache2/sites-enabled/000-default-le-ssl.conf (created by certbot)
+```
+<IfModule mod_ssl.c>
+   <VirtualHost *:443>
+
+      ProxyPreserveHost On
+      ProxyRequests Off
+      ServerName rpi.florianpellet.com
+
+      RewriteEngine On
+      RewriteCond %{HTTP:Upgrade} =websocket [NC]
+      RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
+      RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+      RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
+
+      ProxyPass / http://localhost:3000/
+      ProxyPassReverse / http://localhost:3000/
+
+      ErrorLog ${APACHE_LOG_DIR}/error.log
+      CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+      # certbot
+      ServerName rpi.florianpellet.com
+      SSLCertificateFile /etc/letsencrypt/live/rpi.florianpellet.com/fullchain.pem
+      SSLCertificateKeyFile /etc/letsencrypt/live/rpi.florianpellet.com/privkey.pem
+      Include /etc/letsencrypt/options-ssl-apache.conf
+   </VirtualHost>
+</IfModule>
