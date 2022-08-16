@@ -6,7 +6,7 @@ export default function WatcherSocket() {
 	const queryClient = useQueryClient()
 	useEffect(() => {
 		const controller = new AbortController()
-		const socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
 		socket.addEventListener("message", (e) => {
 			const data = JSON.parse(e.data)
 			if (data.type === "watcher:add") {

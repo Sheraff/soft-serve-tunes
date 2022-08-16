@@ -18,7 +18,7 @@ export default memo(function Test({artistId}: {artistId?: string | null}) {
 				setEnabled(artistId)
 				return
 			}
-			const socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+			const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
 			socket.onopen = () => {
 				socket.send(JSON.stringify({type: 'audiodb:subscribe', payload: {id: artistId}}))
 			}

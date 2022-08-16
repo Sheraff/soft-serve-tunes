@@ -77,7 +77,7 @@ declare global {
 
 export const socketServer = globalThis.socketServer
 	|| new MyWebSocketServer({
-		port: env.NEXT_PUBLIC_WEBSOCKET_PORT,
+		port: Number(env.WEBSOCKET_SERVER_PORT),
 	})
 
 if (env.NODE_ENV !== "production") {

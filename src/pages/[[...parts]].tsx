@@ -25,7 +25,7 @@ const Home: NextPage = () => {
 				setReady(true)
 				return
 			}
-			socket = new WebSocket(`ws://${window.location.hostname}:${env.NEXT_PUBLIC_WEBSOCKET_PORT}`)
+			socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
 			socket.onopen = () => {
 				socket?.send(JSON.stringify({type: 'populate:subscribe'}))
 			}
