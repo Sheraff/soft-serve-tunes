@@ -39,8 +39,6 @@ export default function WatcherSocket() {
 				}
 			} else if (data.type === "global:message") {
 				console[data.payload?.level || 'log'](data.payload.message)
-			} else if (data.type === "upload:progress"){
-				console.log("upload progress", data.payload)
 			}
 		}, {signal: controller.signal})
 		return () => {

@@ -5,6 +5,7 @@ import styles from "./index.module.css"
 
 export default function DropTarget() {
 	const ref = useRef<HTMLDivElement>(null)
+	const setProgress = useProgressBar()
 	useEffect(() => {
 		const controller = new AbortController()
 		document.body.addEventListener("dragover", e => {
@@ -24,51 +25,86 @@ export default function DropTarget() {
 			let formData = new FormData()
 			let payloadSize = 0
 			let isFirst = true
-			for (let i = 0; i < fileEntries.length; i++) {
-				const fileEntry = fileEntries[i] as FileSystemFileEntry
-				const file = await fileFromFileEntry(fileEntry)
-				if (!file) continue
-				if (file.name.startsWith('.')) continue
-				payloadSize += file.size
-				formData.append("file[]", file)
-				formData.append("name[]", fileEntry.fullPath)
-				formData.append("index[]", String(i))
-				formData.append("of[]", String(fileEntries.length - 1))
-				formData.append("wakeup[]", isFirst ? "wakeup" : "")
-				isFirst = false
-				if (payloadSize > env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE * 1_048_576) {
-					await fetch('/api/upload', {method: "POST", body: formData})
-					formData = new FormData()
-					payloadSize = 0
+			let lastBatchStartIndex = 0
+			try {
+				for (let i = 0; i < fileEntries.length; i++) {
+					const fileEntry = fileEntries[i] as FileSystemFileEntry
+					const file = await fileFromFileEntry(fileEntry)
+					if (file && !file.name.startsWith('.')) {
+						payloadSize += file.size
+						formData.append("file[]", file)
+						formData.append("name[]", fileEntry.fullPath)
+						formData.append("index[]", String(i))
+						formData.append("of[]", String(fileEntries.length - 1))
+						formData.append("wakeup[]", isFirst ? "wakeup" : "")
+						isFirst = false
+					}
+					if (
+						i === fileEntries.length - 1
+						|| (
+							payloadSize > env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE * 1_048_576
+							&& payloadSize > 0
+						)
+					) {
+						const base = lastBatchStartIndex / fileEntries.length
+						const end = (i + 1) / fileEntries.length
+						await upload(formData, (progress) => {
+							setProgress(base + (end - base) * progress)
+						})
+						formData = new FormData()
+						payloadSize = 0
+						lastBatchStartIndex = i
+					}
 				}
-			}
-			if (payloadSize > 0) {
-				await fetch('/api/upload', {method: "POST", body: formData})
-			}
+			} catch {}
+			setProgress(1)
 		}, { signal: controller.signal })
 		return () => controller.abort()
-	}, [])
-
-	const setProgress = useProgressBar()
-	useEffect(() => {
-		const controller = new AbortController()
-		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
-		socket.addEventListener("message", (e) => {
-			const data = JSON.parse(e.data)
-			if (data.type === "upload:progress"){
-				setProgress(data.payload)
-			}
-		}, {signal: controller.signal})
-		return () => {
-			controller.abort()
-			socket.close()
-		}
 	}, [setProgress])
+
+	// useEffect(() => {
+	// 	const controller = new AbortController()
+	// 	const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
+	// 	socket.addEventListener("message", (e) => {
+	// 		const data = JSON.parse(e.data)
+	// 		if (data.type === "upload:progress"){
+	// 			setProgress(data.payload)
+	// 		}
+	// 	}, {signal: controller.signal})
+	// 	return () => {
+	// 		controller.abort()
+	// 		socket.close()
+	// 	}
+	// }, [setProgress])
 
 	return (
 		<div ref={ref} className={styles.main}>
 		</div>
 	)
+}
+
+function upload(formData: FormData, onProgress: (progress: number) => void) {
+	const request = new XMLHttpRequest()
+
+	request.upload.addEventListener('progress', (e) => {
+		if (e.lengthComputable) {
+			const progress = e.loaded / e.total
+			onProgress(progress)
+		} else {
+			console.log('progress event not computable', e)
+		}
+	})
+	const promise = new Promise<void>((resolve, reject) => {
+		const controller = new AbortController()
+		request.addEventListener('load', () => { controller.abort(), resolve() }, {signal: controller.signal})
+		request.addEventListener('error', () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener('abort', () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener('timeout', () => { controller.abort(), reject() }, {signal: controller.signal})
+	})
+	request.open('POST', '/api/upload')
+	request.timeout = 3 * 60_000
+	request.send(formData)
+	return promise
 }
 
 function fileFromFileEntry(fileEntry: FileSystemFileEntry) {
