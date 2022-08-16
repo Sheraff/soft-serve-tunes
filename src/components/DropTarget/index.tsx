@@ -19,17 +19,30 @@ export default function DropTarget() {
 			const itemList = event.dataTransfer?.items
 			if (!itemList) return
 			const fileEntries = await getAllFileEntries(itemList)
-			const formData = new FormData()
-			for (const fileEntry of fileEntries) {
+			let formData = new FormData()
+			let payloadSize = 0
+			let isFirst = true
+			for (let i = 0; i < fileEntries.length; i++) {
+				const fileEntry = fileEntries[i] as FileSystemFileEntry
 				const file = await fileFromFileEntry(fileEntry)
 				if (!file) continue
 				if (file.name.startsWith('.')) continue
+				payloadSize += file.size
 				formData.append("file[]", file)
 				formData.append("name[]", fileEntry.fullPath)
+				formData.append("index[]", String(i))
+				formData.append("of[]", String(fileEntries.length))
+				formData.append("wakeup[]", isFirst ? "wakeup" : "")
+				isFirst = false
+				if (payloadSize > 50_000_000) { // chunk upload into multiple requests of ~50MB each
+					await fetch('/api/upload', {method: "POST", body: formData})
+					formData = new FormData()
+					payloadSize = 0
+				}
 			}
-
-			await fetch('/api/upload', {method: "POST", body: formData})
-
+			if (payloadSize > 0) {
+				await fetch('/api/upload', {method: "POST", body: formData})
+			}
 		}, { signal: controller.signal })
 		return () => controller.abort()
 	}, [])

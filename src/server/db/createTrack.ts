@@ -17,6 +17,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	const stats = await stat(path)
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
 	if (existingFile) {
+		// TODO: check if the file is in the correct location, otherwise it might be the same but was moved while server was down
+		// and we won't be able to serve it since File.path is used and hasn't been updated
 		return true
 	}
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)

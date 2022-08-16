@@ -30,13 +30,18 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	}
 	const uploads = Array.isArray(files['file[]']) ? files['file[]'] : [files['file[]']]
 	const names = Array.isArray(fields['name']) ? fields['name'] : [fields['name']]
-	socketServer.send('upload:progress', 0)
+	const indexes = (Array.isArray(fields['index']) ? fields['index'] : [fields['index']]).map(Number)
+	const of = (Array.isArray(fields['of']) ? fields['of'] : [fields['of']]).map(Number)
+	const wakeUpSignal = Array.isArray(fields['wakeup']) ? fields['wakeup'][0] : fields['wakeup']
+	socketServer.send('upload:progress', getProgress(0, indexes, of))
 
 	// make sure watcher is awake
-	await fileWatcher.init()
+	if (wakeUpSignal) {
+		await fileWatcher.init()
+	}
 
 	for (let i = 0; i < uploads.length; i++) {
-		socketServer.send('upload:progress', (i+1) / (uploads.length + 1))
+		socketServer.send('upload:progress', getProgress(i, indexes, of))
 		const upload = uploads[i]
 		const name = names[i]
 		if (!upload || !name) {
@@ -85,7 +90,9 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			unlink(upload.filepath)
 		}
 	}
-	socketServer.send('upload:progress', 1)
+	if (indexes.at(-1) === of.at(-1)) {
+		socketServer.send('upload:progress', 1)
+	}
 	return res.status(201).end()
 }
 
@@ -153,4 +160,10 @@ function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 			return 'wav'
 	}
 	return extname(original)
+}
+
+function getProgress(i: number, indexes: number[], of: number[]) {
+	const start = indexes[i] ?? 0
+	const total = of[i] || 1
+	return start / total
 }
