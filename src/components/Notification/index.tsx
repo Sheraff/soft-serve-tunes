@@ -15,23 +15,24 @@ export default function Notification() {
 		enabled: Boolean(item),
 	})
 
-	let imgSrc = ""
-	if (data?.spotify?.album?.imageId) {
-		imgSrc = data.spotify.album?.imageId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.audiodb?.album.thumbHqId) {
-		imgSrc = data.audiodb.album.thumbHqId
-	} else if (data?.audiodb?.album.thumbId) {
-		imgSrc = data.audiodb.album.thumbId
-	} else if (data?.lastfm?.album?.coverId) {
-		imgSrc = data.lastfm.album.coverId
-	} else if (data?.metaImageId) {
-		imgSrc = data.metaImageId
-	}
-
 	useEffect(() => {
 		if (!data) return
+
+		let imgSrc = ""
+		if (data?.spotify?.album?.imageId) {
+			imgSrc = data.spotify.album?.imageId
+		} else if (data?.audiodb?.thumbId) {
+			imgSrc = data.audiodb.thumbId
+		} else if (data?.audiodb?.album.thumbHqId) {
+			imgSrc = data.audiodb.album.thumbHqId
+		} else if (data?.audiodb?.album.thumbId) {
+			imgSrc = data.audiodb.album.thumbId
+		} else if (data?.lastfm?.album?.coverId) {
+			imgSrc = data.lastfm.album.coverId
+		} else if (data?.metaImageId) {
+			imgSrc = data.metaImageId
+		}
+
 		navigator.mediaSession.metadata = new MediaMetadata({
 			title: data.name,
 			artist: data.artist?.name,
@@ -40,7 +41,7 @@ export default function Notification() {
 				{ src: `/api/cover/${imgSrc}` },
 			]} : {}),
 		})
-	}, [data, imgSrc])
+	}, [data])
 
 	useEffect(() => {
 		if(!list) return

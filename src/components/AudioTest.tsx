@@ -33,6 +33,7 @@ export default function AudioTest({ }) {
 		onSuccess(lastfm) {
 			if (lastfm?.album?.coverId) {
 				queryClient.invalidateQueries(["album.miniature", {id: lastfm?.album?.entityId}])
+				queryClient.invalidateQueries(["track.miniature", {id: lastfm.entityId}])
 			}
 		}
 	})
@@ -44,6 +45,11 @@ export default function AudioTest({ }) {
 		id: item?.id as string,
 	}], {
 		enabled: Boolean(item?.id),
+		onSuccess(spotify) {
+			if (spotify?.album?.imageId && spotify.trackId) {
+				queryClient.invalidateQueries(["track.miniature", {id: spotify.trackId}])
+			}
+		}
 	})
 
 	const img = useRef<HTMLImageElement>(null)
