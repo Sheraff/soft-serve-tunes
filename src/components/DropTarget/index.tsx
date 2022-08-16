@@ -53,7 +53,7 @@ export default function DropTarget() {
 						})
 						formData = new FormData()
 						payloadSize = 0
-						lastBatchStartIndex = i
+						lastBatchStartIndex = i + 1
 					}
 				}
 			} catch {}
