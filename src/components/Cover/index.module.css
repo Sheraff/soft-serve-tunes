@@ -4,8 +4,6 @@
 	max-width: 500px;
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
-	border-radius: 10px;
-	opacity: 0.9;
 }
 .img:not([src]),
 .img[src=""] {
