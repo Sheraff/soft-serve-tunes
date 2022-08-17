@@ -11,19 +11,19 @@ type HSLPixel = {
 	lum: number
 }
 
-function sortByIncreasingContrastRatio([ref, ...colors]: [HSLPixel, ...HSLPixel[]]) {
-	colors.sort((a, b) => {
-		const contrastRatioA = contrastRatio(ref.lum, a.lum)
-		const contrastRatioB = contrastRatio(ref.lum, b.lum)
-		return contrastRatioB - contrastRatioA
-	})
-	return [ref, ...colors]
-}
+// function sortByIncreasingContrastRatio([ref, ...colors]: [HSLPixel, ...HSLPixel[]]) {
+// 	colors.sort((a, b) => {
+// 		const contrastRatioA = contrastRatio(ref.lum, a.lum)
+// 		const contrastRatioB = contrastRatio(ref.lum, b.lum)
+// 		return contrastRatioA - contrastRatioB
+// 	})
+// 	return [ref, ...colors]
+// }
 
-function contrastRatio(lum1: number, lum2: number) {
-	const ratio = (lum1 + 0.05) / (lum2 + 0.05)
-	return ratio
-}
+// function contrastRatio(lum1: number, lum2: number) {
+// 	const ratio = (lum1 + 0.05) / (lum2 + 0.05)
+// 	return ratio
+// }
 
 function buildRgb (imageData: ImageData['data']) {
 	const rgbValues = [] as RGBPixel[]
@@ -37,6 +37,45 @@ function buildRgb (imageData: ImageData['data']) {
 		rgbValues.push(rgb)
 	}
 	return rgbValues
+}
+
+function sortByIncreasingLightnessDifference([ref, ...colors]: [HSLPixel, HSLPixel, HSLPixel, HSLPixel]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+	colors.sort((a, b) => {
+		const contrastRatioA = Math.abs(a.l - ref.l)
+		const contrastRatioB = Math.abs(b.l - ref.l)
+		return contrastRatioA - contrastRatioB
+	})
+	return [ref, ...colors]
+}
+
+function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+	const [a, b, c] = colors
+	if (!a) {
+		const other = first.l > 50
+			? {h: 0, s: 0, l: 0, lum: 0}
+			: {h: 0, s: 0, l: 100, lum: 1}
+		return [first, first, other, other]
+	}
+	if (!b) {
+		return [first, first, a, a]
+	}
+	if (!c) {
+		return [first, a, b, b]
+	}
+	return [first, a, b, c]
+}
+
+function sortSecondariesByColorIntensity([first, a, b, last]: [HSLPixel, HSLPixel, HSLPixel, HSLPixel]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+	const aSaturation = a.s / 100
+	const bSaturation = b.s / 100
+	const aColorIntensity = 1 - Math.abs(a.l - 50) / 50
+	const bColorIntensity = 1 - Math.abs(b.l - 50) / 50
+	const aScore = aSaturation * aColorIntensity
+	const bScore = bSaturation * bColorIntensity
+	if (aScore * 0.7 > bScore) {
+		return [first, b, a, last]
+	}
+	return [first, a, b, last]
 }
 
 function extractPalette(values: RGBPixel[]) {
@@ -67,21 +106,25 @@ function extractPalette(values: RGBPixel[]) {
 	const mainColors = aggregateSimilar
 		.sort((a, b) => b[1] - a[1])
 		.slice(0, 4)
-		.map(([color]) => color)
+		.map(([color]) => color) as [HSLPixel, ...HSLPixel[]]
 
-	// TODO: will be an issue if `mainColors.length < 4`
-	const byContrast = sortByIncreasingContrastRatio(mainColors)
+	const fourColors = minimumFourColors(mainColors)
+	const firstLastContrast = sortByIncreasingLightnessDifference(fourColors)
+	const secondaryIsColorful = sortSecondariesByColorIntensity(firstLastContrast)
 
 	const lumSumAndCount = aggregateSimilar.reduce(([sum, total], [color, count]) => ([
 		sum + color.lum * count,
 		total + count
-	]), [0, 0] as [number, number])
+	]), [0, 0] as [number, number]) as [number, number]
 	const avgLum = lumSumAndCount[0] / lumSumAndCount[1]
-	if(avgLum > 0.7) {
-		byContrast.reverse()
+	if(
+		(avgLum > 0.7 && secondaryIsColorful[0].lum < .5)
+		|| (avgLum < 0.3 && secondaryIsColorful[0].lum > .5)
+	) {
+		secondaryIsColorful.reverse()
 	}
 
-	return byContrast
+	return secondaryIsColorful
 }
 
 function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) {
@@ -111,9 +154,9 @@ function channelLuminance(value: number) {
 
 function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	// first change range from 0-255 to 0 - 1
-	let r = pixel.r / 255
-	let g = pixel.g / 255
-	let b = pixel.b / 255
+	const r = pixel.r / 255
+	const g = pixel.g / 255
+	const b = pixel.b / 255
 
 	const max = Math.max(r, g, b)
 	const min = Math.min(r, g, b)
@@ -122,17 +165,13 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 
 	const lightness = (max + min) / 2
 
-	const saturation = lightness <= 0.5
-		? difference / (max + min)
-		: difference / (2 - max - min)
-
 	const luminance = .2126 * channelLuminance(r) + .7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
 
 	if (difference === 0) {
 		return {
 			h: 0,
 			s: 0,
-			l: lightness,
+			l: lightness * 100,
 			lum: luminance,
 		}
 	}
@@ -154,6 +193,10 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	if (hue < 0) {
 		hue = hue + 360
 	}
+
+	const saturation = lightness <= 0.5
+		? difference / (max + min)
+		: difference / (2 - max - min)
 
 	return {
 		h: hue,

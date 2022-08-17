@@ -16,7 +16,7 @@
 	gap: 4px;
 	border-radius: 4px;
 	padding: 4px;
-	background-color: var(--palette-bg-gradient);
+	background-color: var(--palette-primary);
 }
 
 .span {
@@ -29,6 +29,7 @@
 	text-align: center;
 	flex-direction: column;
 	padding: 4px;
+	color: var(--palette-bg-main);
 }
 .name {
 	font-size: 10px;

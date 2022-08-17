@@ -57,7 +57,7 @@
 	text-align: center;
 	flex-direction: column;
 	padding: 4px;
-	color: var(--palette-bg-gradient);
+	color: var(--palette-bg-main);
 }
 .span::before {
 	content: '';
@@ -69,7 +69,7 @@
 	background-color: var(--palette-primary);
 	z-index: -1;
 	mask-image: linear-gradient(to top, black 50%, transparent);
-	opacity: .8;
+	opacity: .9;
 }
 .empty {
 	width: 100%;
@@ -79,6 +79,7 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	color: var(--palette-bg-main);
 }
 .empty::before {
 	content: none;

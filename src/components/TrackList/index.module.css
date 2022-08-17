@@ -16,7 +16,7 @@
 	border-radius: 4px;
 	padding-right: 4px;
 	overflow: hidden;
-	background-color: var(--palette-bg-gradient);
+	background-color: var(--palette-primary);
 }
 .empty::before {
 	content: "";
@@ -55,6 +55,7 @@
 	gap: 2px;
 	text-align: left;
 	flex-direction: column;
+	color: var(--palette-bg-main);
 }
 .name {
 	font-size: 12px;

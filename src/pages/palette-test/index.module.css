@@ -1,0 +1,35 @@
+.root {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.item {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	grid-template-areas: 
+		"1 2 3 4"
+		"i i i i";
+}
+
+.item div {
+	background-color: var(--color);
+	padding-bottom: 100%;
+}
+
+.item img {
+	grid-area: i;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+}
+
+.item span {
+	grid-area: i;
+	font-size: 0.8em;
+	background-color: var(--bg);
+	color: var(--color);
+	height: 100px;
+	width: 100px;
+	place-self: end;
+	border: 10px solid var(--border);
+}

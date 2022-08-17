@@ -64,12 +64,12 @@ export default function useImagePalette({
 				return
 			}
 			const canvas = document.createElement("canvas")
-			canvas.width = img.naturalWidth / 2
-			canvas.height = img.naturalHeight / 2
+			canvas.width = Math.min(img.naturalWidth / 2, 300)
+			canvas.height = Math.min(img.naturalHeight / 2, 300)
 			const ctx = canvas.getContext("2d")
 			if (!ctx || canvas.height === 0 || canvas.width === 0) return
-			ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+			ctx.drawImage(img, 0, 0, canvas.width, canvas.height, )
+			const imageData = ctx.getImageData(canvas.width * .05, canvas.height * .05, canvas.width * .9, canvas.height * .9)
 			worker.postMessage({ imageData, src: img.src }, [imageData.data.buffer])
 		}, {signal: controller.signal, passive: true})
 		
