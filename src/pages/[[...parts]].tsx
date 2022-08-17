@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import AudioTest from "../components/AudioTest"
 import DropTarget from "../components/DropTarget"
 import { ProgressBarSingleton, useProgressBar } from "../components/ProgressBar"
-import { RouteParser } from "../components/RouteContext"
+import { AppState } from "../components/AppContext"
 import WatcherSocket from "../components/WatcherSocket"
 import { env } from "../env/client.mjs"
 import { trpc } from "../utils/trpc"
@@ -54,7 +54,7 @@ const Home: NextPage = () => {
 				<meta name="description" content="self hosted music streaming" />
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
-			<RouteParser>
+			<AppState>
 				<ProgressBarSingleton />
 				{ready && (
 					<>
@@ -63,7 +63,7 @@ const Home: NextPage = () => {
 						<DropTarget />
 					</>
 				)}
-			</RouteParser>
+			</AppState>
 		</>
 	)
 }

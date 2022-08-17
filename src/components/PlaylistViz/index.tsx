@@ -1,34 +1,39 @@
-import classNames from "classnames"
-import { CSSProperties, useMemo } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useRouteParts } from "../RouteContext"
-import AlbumMiniature from "../Header/Search/AlbumMiniature"
-import styles from "./index.module.css"
+import { useAppState } from "../AppContext"
 import TrackList from "../TrackList"
 
 function rotateList<T>(list: T[], index: number) {
 	const _index = (index + list.length) % list.length
 	const newList = [...list]
-	const end = newList.splice(index)
+	const end = newList.splice(_index)
 	newList.unshift(...end)
 	return newList
 }
 
 export default function PlaylistViz() {
-	const {type, id, index, setIndex} = useRouteParts()
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
-		enabled: Boolean(type && id)
+	const {playlist, setAppState} = useAppState()
+	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
+		type: playlist?.type as string,
+		id: playlist?.id as string,
+	}], {
+		enabled: Boolean(playlist?.type && playlist?.id)
 	})
 
-	const current = list?.[index]?.id
-
-	if (!list) return null
+	if (!list || !playlist) return null
+	
+	const current = list[playlist.index]?.id
 
 	return (
 		<TrackList
-			tracks={rotateList(list, index - 1)}
+			tracks={rotateList(list, playlist.index - 1)}
 			current={current}
-			onClick={(id) => setIndex(list.findIndex((item) => item.id === id))}
+			onClick={(id) => setAppState({
+				playlist: {
+					type: playlist.type,
+					id: playlist.id,
+					index: list.findIndex((item) => item.id === id)
+				}
+			})}
 		/>
 	)
 }

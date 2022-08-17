@@ -2,7 +2,7 @@ import type { Album } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 function AlbumItem({
@@ -46,14 +46,14 @@ function AlbumItem({
 	const isEmpty = !imgSrc
 	const trackCount = data?._count?.tracks ?? 0
 
-	const {setRoute} = useRouteParts()
+	const {setAppState} = useAppState()
 
 	return (
 		<button
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => setRoute({type: "album", id: album.id, name: album.name})}
+			onClick={() => setAppState({playlist: {type: "album", id: album.id, index: 0}, view: {type: "home"}})}
 		>
 			{!isEmpty && (
 				<img

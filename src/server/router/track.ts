@@ -55,7 +55,7 @@ export const trackRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      return ctx.prisma.track.findUnique({
+      const track = await ctx.prisma.track.findUnique({
         where: { id: input.id },
         select: {
           name: true,
@@ -122,6 +122,22 @@ export const trackRouter = createRouter()
           },
         }
       })
+      if (!track) return null
+      let coverSrc = null
+      if (track.spotify?.album?.imageId) {
+        coverSrc = track.spotify.album?.imageId
+      } else if (track.audiodb?.thumbId) {
+        coverSrc = track.audiodb.thumbId
+      } else if (track.audiodb?.album.thumbHqId) {
+        coverSrc = track.audiodb.album.thumbHqId
+      } else if (track.audiodb?.album.thumbId) {
+        coverSrc = track.audiodb.album.thumbId
+      } else if (track.lastfm?.album?.coverId) {
+        coverSrc = track.lastfm.album.coverId
+      } else if (track.metaImageId) {
+        coverSrc = track.metaImageId
+      }
+      return {...track, coverSrc}
     }
   })
   .query("startsWith", {

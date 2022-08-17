@@ -2,7 +2,7 @@ import type { Track } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 function TrackItem({
@@ -34,24 +34,9 @@ function TrackItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	let imgSrc = ""
-	if (data?.spotify?.album?.imageId) {
-		imgSrc = data.spotify.album?.imageId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.audiodb?.album.thumbHqId) {
-		imgSrc = data.audiodb.album.thumbHqId
-	} else if (data?.audiodb?.album.thumbId) {
-		imgSrc = data.audiodb.album.thumbId
-	} else if (data?.lastfm?.album?.coverId) {
-		imgSrc = data.lastfm.album.coverId
-	} else if (data?.metaImageId) {
-		imgSrc = data.metaImageId
-	}
+	const isEmpty = !data?.coverSrc
 
-	const isEmpty = !imgSrc
-
-	const {setRoute} = useRouteParts()
+	const {setAppState} = useAppState()
 
 	return (
 		<button
@@ -63,13 +48,13 @@ function TrackItem({
 			type="button"
 			onClick={() => {
 				if (onClick) onClick(track.id, track.name)
-				else setRoute({type: "track", id: track.id, name: track.name})
+				else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
 			}}
 		>
 			{!isEmpty && (
 				<div className={styles.img}>
 					<img
-						src={imgSrc ? `/api/cover/${imgSrc}` : ""}
+						src={`/api/cover/${data.coverSrc}`}
 						alt=""
 					/>
 				</div>
@@ -90,7 +75,7 @@ export default function TrackList({
 }: {
 	tracks: Track[]
 	current?: string
-	onClick: Parameters<typeof TrackItem>[0]["onClick"]
+	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (

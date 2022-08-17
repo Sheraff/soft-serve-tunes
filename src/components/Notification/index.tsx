@@ -1,44 +1,34 @@
 import { useEffect } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 
 export default function Notification() {
-	const {type, id, index, setIndex} = useRouteParts()
+	const {playlist, setAppState} = useAppState()
 
-	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
-		enabled: Boolean(type && id)
+	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
+		type: playlist?.type as string,
+		id: playlist?.id as string,
+	}], {
+		enabled: Boolean(playlist?.type && playlist?.id)
 	})
+	
+	const item = !list || !playlist ? undefined : list[playlist.index]
 
-	const item = list?.[index]
-
-	const { data } = useIndexedTRcpQuery(["track.miniature", { id: item?.id }], {
-		enabled: Boolean(item),
+	const { data } = useIndexedTRcpQuery(["track.miniature", {
+		id: item?.id as string
+	}], {
+		enabled: Boolean(item?.id),
 	})
 
 	useEffect(() => {
 		if (!data) return
 
-		let imgSrc = ""
-		if (data?.spotify?.album?.imageId) {
-			imgSrc = data.spotify.album?.imageId
-		} else if (data?.audiodb?.thumbId) {
-			imgSrc = data.audiodb.thumbId
-		} else if (data?.audiodb?.album.thumbHqId) {
-			imgSrc = data.audiodb.album.thumbHqId
-		} else if (data?.audiodb?.album.thumbId) {
-			imgSrc = data.audiodb.album.thumbId
-		} else if (data?.lastfm?.album?.coverId) {
-			imgSrc = data.lastfm.album.coverId
-		} else if (data?.metaImageId) {
-			imgSrc = data.metaImageId
-		}
-
 		navigator.mediaSession.metadata = new MediaMetadata({
 			title: data.name,
 			artist: data.artist?.name,
 			album: data.album?.name,
-			...(imgSrc ? {artwork: [
-				{ src: `/api/cover/${imgSrc}` },
+			...(data.coverSrc ? {artwork: [
+				{ src: `/api/cover/${data.coverSrc}` },
 			]} : {}),
 		})
 	}, [data])
@@ -46,12 +36,20 @@ export default function Notification() {
 	useEffect(() => {
 		if(!list) return
 		navigator.mediaSession.setActionHandler('previoustrack', () => {
-			setIndex((index) => (index - 1 + list.length) % list.length)
+			setAppState(({playlist}) => ({
+				playlist: {
+					index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
+				}
+			}))
 		})
 		navigator.mediaSession.setActionHandler('nexttrack', () => {
-			setIndex((index) => (index + 1) % list.length)
+			setAppState(({playlist}) => ({
+				playlist: {
+					index: playlist?.index === undefined ? undefined : (playlist.index + 1) % list.length,
+				}
+			}))
 		})
-	}, [setIndex, list])
+	}, [setAppState, list])
 
 	return null
 }

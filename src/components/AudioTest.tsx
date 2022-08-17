@@ -4,7 +4,7 @@ import { trpc } from "../utils/trpc"
 import Infos from "./Infos"
 import Palette from "./Palette"
 import Cover from "./Cover"
-import { useRouteParts } from "./RouteContext"
+import { useAppState } from "./AppContext"
 import { useQueryClient } from "react-query"
 import useIndexedTRcpQuery from "../client/db/useIndexedTRcpQuery"
 import PlaylistViz from "./PlaylistViz"
@@ -16,13 +16,16 @@ import Notification from "./Notification"
 export type ListType = "track" | "album" | "artist" | "genre"
 
 export default function AudioTest({ }) {
-	const {type, id, index} = useRouteParts()
+	const {playlist} = useAppState()
 
-	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
-		enabled: Boolean(type && id)
+	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
+		type: playlist?.type as string,
+		id: playlist?.id as string,
+	}], {
+		enabled: Boolean(playlist?.type && playlist?.id)
 	})
-
-	const item = list?.[index]
+	
+	const item = !list || !playlist ? undefined : list[playlist.index]
 
 	const queryClient = useQueryClient()
 	const {data: lastfm} = trpc.useQuery(["lastfm.track", {
@@ -60,7 +63,7 @@ export default function AudioTest({ }) {
 			<div className={styles.container}>
 				<Header/>
 				<div className={styles.content}>
-					<Cover id={item?.id} ref={img} />
+					<Cover ref={img} />
 					<Infos id={item?.id} />
 					<PlaylistViz />
 				</div>

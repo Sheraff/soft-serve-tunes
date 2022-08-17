@@ -16,7 +16,6 @@ export default function Palette({
 }) {
 	const palette = useImagePalette({ref: img})
 	return (
-		<>
 		<Head>
 			<style key="palette-definition">
 				{Object.keys(palette).map((key) => `\n@property ${key} {
@@ -34,21 +33,5 @@ export default function Palette({
 				{`}\n`}
 			</style>
 		</Head>
-		{/* <div style={{
-			display: 'flex',
-			position: "fixed",
-			top: 0,
-			left: 0,
-			width: "100%",
-		}}>
-			{Object.entries(palette).map(([key, value]) => (
-				<div key={key} style={{
-					height: "50px",
-					flex: 1,
-					backgroundColor: `var(${key})`,
-				}} />
-			))}
-		</div> */}
-		</>
 	)
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import Audio from "./Audio"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"
@@ -9,21 +9,33 @@ import ProgressInput from "./ProgressInput"
 export default function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 
-	const {type, id, index, setIndex} = useRouteParts()
-	const { data: list } = useIndexedTRcpQuery(["playlist.generate", { type, id }], {
-		enabled: Boolean(type && id)
+	const {playlist, setAppState} = useAppState()
+	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
+		type: playlist?.type as string,
+		id: playlist?.id as string,
+	}], {
+		enabled: Boolean(playlist?.type && playlist?.id)
 	})
-	const item = index === undefined ? undefined : list?.[index]
+	
+	const item = (!list || !playlist) ? undefined : list[playlist.index]
 	
 	const playNext = useMemo(() => {
 		if(!list?.length) return () => {}
-		return () => setIndex((index: number) => (index + 1) % list.length)
-	}, [list?.length, setIndex])
+		return () => setAppState(({playlist}) => ({
+			playlist: {
+				index: playlist?.index === undefined ? undefined : (playlist.index + 1) % list.length,
+			}
+		}))
+	}, [list?.length, setAppState])
 	
 	const playPrev = useMemo(() => {
 		if(!list?.length) return () => {}
-		return () => setIndex((index: number) => (index - 1 + list.length) % list.length)
-	}, [list?.length, setIndex])
+		return () => setAppState(({playlist}) => ({
+			playlist: {
+				index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
+			}
+		}))
+	}, [list?.length, setAppState])
 
 	const [autoPlay, setAutoPlay] = useState(true)
 	useEffect(() => {

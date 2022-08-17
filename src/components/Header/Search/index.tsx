@@ -1,19 +1,16 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import { ListType } from "../../AudioTest"
-import { useRouteParts } from "../../RouteContext"
 import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
 import GenreList from "../../GenreList"
 import TrackList from "../../TrackList"
 
 const defaultArray = [] as never[]
-let defaultValue: string = ""
+let defaultValue = ""
 
 export default function Search({open}: {open: boolean}) {
-	const {setRoute} = useRouteParts()
 
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
@@ -29,10 +26,6 @@ export default function Search({open}: {open: boolean}) {
 	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
-
-	const setPlaylist = useCallback((type: ListType, name: string, id: string) => {
-		setRoute({type, name, id}, "")
-	}, [setRoute])
 
 	// handle focus because it toggles the virtual keyboard
 	useEffect(() => {

@@ -1,6 +1,6 @@
 import type { UseQueryResult } from "react-query"
 import type { inferQueryOutput } from "../../utils/trpc"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 export default function GenreList({
@@ -8,7 +8,7 @@ export default function GenreList({
 }: {
 	genres: UseQueryResult<inferQueryOutput<"genre.list">>["data"]
 }) {
-	const {setRoute} = useRouteParts()
+	const {setAppState} = useAppState()
 	return (
 		<ul className={styles.main}>
 			{genres?.map(genre => (
@@ -16,7 +16,7 @@ export default function GenreList({
 					<button
 						className={styles.button}
 						type="button"
-						onClick={() => setRoute({type: "genre", id: genre.id, name: genre.name})}
+						onClick={() => setAppState({playlist: {type: "genre", id: genre.id, index: 0}})}
 					>
 						<p className={styles.span}>
 							<span className={styles.name}>{genre.name}</span>

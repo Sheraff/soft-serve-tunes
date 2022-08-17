@@ -2,7 +2,7 @@ import type { Artist } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useRouteParts } from "../RouteContext"
+import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 function ArtistItem({
@@ -46,14 +46,14 @@ function ArtistItem({
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
 
-	const {setRoute} = useRouteParts()
+	const {setAppState} = useAppState()
 
 	return (
 		<button
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => setRoute({type: "artist", id: artist.id, name: artist.name})}
+			onClick={() => setAppState({playlist: {type: "artist", id: artist.id, index: 0}, view: {type: "home"}})}
 		>
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
