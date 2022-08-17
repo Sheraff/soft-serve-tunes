@@ -17,6 +17,7 @@
 	height: 20px;
 	width: 20px;
 	z-index: 1;
+	font-size: 20px;
 }
 
 .toggle[data-open="true"] {

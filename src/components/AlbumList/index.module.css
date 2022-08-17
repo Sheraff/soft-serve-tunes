@@ -16,7 +16,7 @@
 	grid-auto-flow: column;
 	grid-auto-columns: 1fr;
 	gap: 8px;
-	padding: 0 calc((100vw - 3 * 8px) / 4 - 10px + 8px) 0 8px;
+	padding: 0 8px;
 	width: fit-content;
 }
 .item {

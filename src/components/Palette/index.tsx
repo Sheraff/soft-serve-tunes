@@ -14,7 +14,7 @@ export default function Palette({
 }: {
 	img: RefObject<HTMLImageElement>
 }) {
-	const palette = useImagePalette({ref: img})
+	const palette = useImagePalette({ref: img, defaultValues})
 	return (
 		<Head>
 			<style key="palette-definition">

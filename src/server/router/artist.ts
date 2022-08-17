@@ -11,9 +11,40 @@ export const artistRouter = createRouter()
       return ctx.prisma.artist.findUnique({
         where: { id: input.id },
         include: {
+          _count: {
+            select: {
+              albums: true,
+              tracks: true,
+            },
+          },
           albums: true,
-          tracks: true,
-          feats: true,
+          audiodb: {
+            select: {
+              strArtist: true,
+              thumbId: true,
+              cutoutId: true,
+              intBornYear: true,
+              intFormedYear: true,
+              strBiographyEN: true,
+            }
+          },
+          spotify: {
+            select: {
+              name: true,
+              imageId: true,
+            }
+          },
+          tracks: {
+            where: {
+              metaImageId: {
+                not: null,
+              }
+            },
+            take: 1,
+            select: {
+              metaImageId: true,
+            }
+          }
         }
       })
     },

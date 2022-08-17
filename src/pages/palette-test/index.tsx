@@ -7,7 +7,7 @@ const TEST_ALBUM_IDS = [
 	"cl6vtpxy2289529euy4iluq05yv", // ratatat "magnifique": black & white
 	"cl6vtmkqd31802euy4c720dwvg", // black eyed peas "elephunk": background should be green-blue, not dark blue
 	"cl6vtmu8w50929euy4xttfpg6j", // chilly gonzales "ivory": beige / grey / red / black
-	"cl6vtmkb031065euy407ta575z", // billie eilish "": black / brown / grey / beige
+	"cl6vtmkb031065euy407ta575z", // billie eilish "WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?": black / brown / grey / beige
 	"cl6vtmjw030142euy41xndlgq6", // big soul "funky beats": blue / [black, white, orange-red] in any order that works for contrast
 	"cl6vtsh33337589euy4dj5vdmml", // snarky puppy "family dinner": beige / ? / red / blue
 	"cl6vtsh4u337626euy4bdgd2tx1", // snarky puppy "tell your friends": white should be main color (first in order => background main)

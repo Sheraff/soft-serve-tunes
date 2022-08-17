@@ -1,0 +1,32 @@
+.main {
+	grid-area: 1 / 1 / 4 / 2;
+	z-index: 2;
+	transition: transform 350ms;
+	transform: translateX(-100vw);
+	pointer-events: none;
+	background: var(--palette-bg-main);
+
+	overflow: hidden scroll;
+	width: 100vw;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1em;
+	font-size: 10px;
+}
+.main[data-open="true"] {
+	transform: translateX(0);
+	pointer-events: auto;
+}
+
+.img {
+	width: 100%;
+	aspect-ratio: 5 / 4;
+	object-fit: cover;
+	mask-image: linear-gradient(to bottom, black 50%, transparent);
+}
+
+.sectionTitle {
+	font-size: 20px;
+	margin-bottom: 8px;
+	padding: 0 8px;
+}

@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react"
+import { CSSProperties, RefObject, useEffect, useState } from "react"
 import { retrievePaletteFromIndexedDB, storePaletteInIndexedDB } from "../../client/db/palette"
 
 export default function useImagePalette({
-	ref
+	ref,
+	defaultValues,
 }: {
-	ref: React.RefObject<HTMLImageElement>
+	ref: RefObject<HTMLImageElement>,
+	defaultValues: CSSProperties,
 }) {
-	const [palette, setPalette] = useState<React.CSSProperties>({})
+	const [palette, setPalette] = useState<CSSProperties>(defaultValues)
 	useEffect(() => {
 		if(!ref.current) return
 		const controller = new AbortController()
@@ -27,7 +29,7 @@ export default function useImagePalette({
 					'--palette-bg-gradient': data.palette[1],
 					'--palette-secondary': data.palette[2],
 					'--palette-primary': data.palette[3],
-				} as React.CSSProperties)
+				} as CSSProperties)
 				srcForCurrentPalette = data.src
 			}
 			storePaletteInIndexedDB(data.src, data.palette)

@@ -53,7 +53,7 @@ function ArtistItem({
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => setAppState({playlist: {type: "artist", id: artist.id, index: 0}, view: {type: "home"}})}
+			onClick={() => setAppState({view: {type: "artist", id: artist.id}})}
 		>
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>

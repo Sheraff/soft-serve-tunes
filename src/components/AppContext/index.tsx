@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 
 type PlaylistDefinition = {
 	type: "track" | "album" | "artist" | "genre"
@@ -53,11 +53,29 @@ export function AppState({children}: {children: React.ReactNode}) {
 			const nextAppState = typeof nextState === "function"
 				? nextState(prevState)
 				: nextState
-			const view = { ...prevState.view, ...nextAppState.view }
+			const view = nextAppState.view || prevState.view
 			const playlist = mergePlaylistStates(prevState.playlist, nextAppState.playlist)
+
+			console.log(prevState, view)
+			if (prevState.view.type === "home" && view.type !== "home") {
+				history.pushState({}, "just-allow-back-button")
+			}
+
 			return { view, playlist }
 		})
 	}
+
+	useEffect(() => {
+		const controller = new AbortController()
+		addEventListener('popstate', event => {
+			if (appState.view.type !== "home") {
+				setAppState({view: {type: "home"}})
+				event.preventDefault()
+			}
+		}, {capture: true, signal: controller.signal})
+		return () => controller.abort()
+	})
+
 	return (
 		<AppStateContext.Provider value={{
 			...appState,
