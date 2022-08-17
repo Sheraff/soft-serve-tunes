@@ -48,7 +48,15 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			continue
 		}
 		console.log(`\x1b[35mevent\x1b[0m - uploading ${name}`)
-		const metadata = await parseFile(upload.filepath)
+		let metadata: IAudioMetadata
+		try {
+			metadata = await parseFile(upload.filepath)
+			if (!metadata)
+				throw ""
+		} catch {
+			console.log(`\x1b[31merror\x1b[0m - failed to parse for upload ${name}`)
+			continue
+		}
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
 			const search = sanitizeString(metadata.common.title || pathToSearch(name))
 			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify: ${search}`)

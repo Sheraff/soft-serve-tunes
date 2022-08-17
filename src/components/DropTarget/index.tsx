@@ -30,7 +30,7 @@ export default function DropTarget() {
 				for (let i = 0; i < fileEntries.length; i++) {
 					const fileEntry = fileEntries[i] as FileSystemFileEntry
 					const file = await fileFromFileEntry(fileEntry)
-					if (file && !file.name.startsWith('.')) {
+					if (file && !file.name.startsWith('.') && file.type.startsWith('audio/')) {
 						payloadSize += file.size
 						formData.append("file[]", file)
 						formData.append("name[]", fileEntry.fullPath)
