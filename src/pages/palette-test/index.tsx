@@ -16,7 +16,7 @@ const TEST_ALBUM_IDS = [
 
 function SingleTest({id}: {id: string}) {
 	const ref = useRef<HTMLImageElement>(null)
-	const palette = useImagePalette({ref})
+	const palette = useImagePalette({ref, defaultValues: {}})
 	const {data} = trpc.useQuery(["album.miniature", {id}])
 
 	let imgSrc = ""
