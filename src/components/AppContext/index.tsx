@@ -57,8 +57,22 @@ export function AppState({children}: {children: React.ReactNode}) {
 			const playlist = mergePlaylistStates(prevState.playlist, nextAppState.playlist)
 
 			console.log(prevState, view)
+
 			if (prevState.view.type === "home" && view.type !== "home") {
 				history.pushState({}, "just-allow-back-button")
+			}
+
+			if (playlist && prevState.playlist
+				&& playlist.type === prevState.playlist.type
+				&& playlist.id === prevState.playlist.id
+				&& playlist.index === prevState.playlist.index
+			) {
+				const audioElement = document.querySelector("audio") as HTMLAudioElement
+				const {currentTime, duration} = audioElement
+				if (currentTime > duration - 1) {
+					audioElement.currentTime = 0
+					audioElement.play()
+				}
 			}
 
 			return { view, playlist }
