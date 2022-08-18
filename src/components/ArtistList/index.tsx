@@ -33,18 +33,7 @@ function ArtistItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	let imgSrc = ""
-	if (data?.audiodb?.cutoutId) {
-		imgSrc = data.audiodb.cutoutId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.spotify?.imageId) {
-		imgSrc = data.spotify.imageId
-	} else if (data?.tracks?.[0]?.metaImageId) {
-		imgSrc = data.tracks[0].metaImageId
-	}
-
-	const isEmpty = !imgSrc
+	const isEmpty = !data?.coverSrc
 	const isCutout = data?.audiodb?.cutoutId
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
@@ -64,7 +53,7 @@ function ArtistItem({
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
 					<img
-						src={imgSrc ? `/api/cover/${imgSrc}` : ""}
+						src={data?.coverSrc ? `/api/cover/${data.coverSrc}` : ""}
 						alt=""
 					/>
 				</div>

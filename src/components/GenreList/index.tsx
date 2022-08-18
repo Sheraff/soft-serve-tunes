@@ -20,7 +20,7 @@ export default function GenreList({
 						type="button"
 						onClick={() => {
 							genre && onSelect?.(genre)
-							setAppState({playlist: {type: "genre", id: genre.id, index: 0}})
+							setAppState({playlist: {type: "genre", id: genre.id, index: 0}, view: {type: "home"}})
 						}}
 					>
 						<p className={styles.span}>

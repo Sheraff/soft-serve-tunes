@@ -33,20 +33,9 @@ function AlbumItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	let imgSrc = ""
-	if (data?.spotify?.imageId) {
-		imgSrc = data.spotify.imageId
-	} else if (data?.audiodb?.thumbHqId) {
-		imgSrc = data.audiodb.thumbHqId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.lastfm?.coverId) {
-		imgSrc = data.lastfm.coverId
-	} else if (data?.tracks?.[0]?.metaImageId) {
-		imgSrc = data.tracks[0].metaImageId
-	}
+	
 
-	const isEmpty = !imgSrc
+	const isEmpty = !data?.coverSrc
 	const trackCount = data?._count?.tracks ?? 0
 
 	const {setAppState} = useAppState()
@@ -63,7 +52,7 @@ function AlbumItem({
 		>
 			{!isEmpty && (
 				<img
-					src={imgSrc ? `/api/cover/${imgSrc}` : ""}
+					src={data?.coverSrc ? `/api/cover/${data.coverSrc}` : ""}
 					alt=""
 				/>
 			)}

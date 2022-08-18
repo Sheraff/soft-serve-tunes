@@ -58,6 +58,7 @@ export const trackRouter = createRouter()
       const track = await ctx.prisma.track.findUnique({
         where: { id: input.id },
         select: {
+          id: true,
           name: true,
           metaImageId: true,
           album: {

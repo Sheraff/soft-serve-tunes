@@ -6,12 +6,12 @@ import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
 import GenreList from "../../GenreList"
 import TrackList from "../../TrackList"
-import { Album, Artist, Genre, Track } from "@prisma/client"
 import { inferQueryOutput } from "../../../utils/trpc"
+import PastSearch, { PastSearchItem } from "./PastSearch"
 
 const defaultArray = [] as never[]
 
-const latestSearches: (inferQueryOutput<"track.miniature"> | inferQueryOutput<"album.miniature"> | inferQueryOutput<"artist.miniature"> | inferQueryOutput<"genre.list">[number])[] = []
+const latestSearches: PastSearchItem[] = []
 
 export default function Search({open}: {open: boolean}) {
 
@@ -103,8 +103,8 @@ export default function Search({open}: {open: boolean}) {
 				{showPast && latestSearches.length > 0 && (
 					<div>
 						<h2 className={styles.sectionTitle}>Recent searches</h2>
-						{latestSearches.map(({id, name}) => (
-							<p key={id}>{name}</p>
+						{latestSearches.map((item) => (
+							<PastSearch key={item.entity.id} {...item} />
 						))}
 					</div>
 				)}
@@ -113,7 +113,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Artists</h2>
 						<ArtistList
 							artists={artists.slice(0, 21)}
-							onSelect={(entity: inferQueryOutput<"artist.miniature">) => latestSearches.unshift(entity)}
+							onSelect={(entity: Exclude<inferQueryOutput<"artist.miniature">, null>) => latestSearches.unshift({type: 'artist', entity})}
 						/>
 					</div>
 				)}
@@ -122,7 +122,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Albums</h2>
 						<AlbumList
 							albums={albums.slice(0, 28)}
-							onSelect={(entity: inferQueryOutput<"album.miniature">) => latestSearches.unshift(entity)}
+							onSelect={(entity: Exclude<inferQueryOutput<"album.miniature">, null>) => latestSearches.unshift({type: 'album', entity})}
 						/>
 					</div>
 				)}
@@ -131,7 +131,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Genres</h2>
 						<GenreList
 							genres={genres.slice(0, 21)}
-							onSelect={(entity: inferQueryOutput<"genre.list">[number]) => latestSearches.unshift(entity)}
+							onSelect={(entity: Exclude<inferQueryOutput<"genre.list">[number], null>) => latestSearches.unshift({type: 'genre', entity})}
 						/>
 					</div>
 				)}
@@ -140,7 +140,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Tracks</h2>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
-							onSelect={(entity: inferQueryOutput<"track.miniature">) => latestSearches.unshift(entity)}
+							onSelect={(entity: Exclude<inferQueryOutput<"track.miniature">, null>) => latestSearches.unshift({type: 'track', entity})}
 						/>
 					</div>
 				)}
