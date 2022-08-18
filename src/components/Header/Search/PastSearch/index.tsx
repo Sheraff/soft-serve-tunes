@@ -32,16 +32,32 @@ export default function PastSearch({
 			<div>
 				<p className={styles.name}>{entity.name}</p>
 				{type === 'artist' && (
-					<p className={styles.info}>Artist{entity._count?.albums ? ` · ${entity._count.albums} albums` : entity._count?.tracks ? ` · ${entity._count.tracks} tracks` : ''}</p>
+					<p className={styles.info}>Artist{entity._count?.albums
+						? ` · ${entity._count.albums} album${entity._count.albums > 1 ? 's': ''}`
+						: entity._count?.tracks
+							? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
+							: ''
+					}</p>
 				)}
 				{type === 'album' && (
-					<p className={styles.info}>Album{entity._count?.tracks ? ` · ${entity._count.tracks} tracks` : ''}</p>
+					<p className={styles.info}>Album{entity._count?.tracks
+						? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
+						: ''
+					}</p>
 				)}
 				{type === 'track' && (
-					<p className={styles.info}>Track{entity.artist ? ` · by ${entity.artist.name}` : entity.album ? ` · from ${entity.album.name}` : ''}</p>
+					<p className={styles.info}>Track{entity.artist
+						? ` · by ${entity.artist.name}`
+						: entity.album
+							? ` · from ${entity.album.name}`
+							: ''
+					}</p>
 				)}
 				{type === 'genre' && (
-					<p className={styles.info}>Genre{entity._count?.tracks ? ` · ${entity._count.tracks} tracks` : ''}</p>
+					<p className={styles.info}>Genre{entity._count?.tracks
+						? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
+						: ''
+					}</p>
 				)}
 			</div>
 		</button>
