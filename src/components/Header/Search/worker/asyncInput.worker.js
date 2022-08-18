@@ -90,22 +90,11 @@ function getDistances(input, candidate) {
 /** @type {NamedInterface[]} */
 let dataList = [];
 
-const lookupKey = Symbol("lookupKey")
-
-function getIn(obj, path) {
-  return path.split('.').reduce((acc, key) => acc[key] || '', obj)
-}
-
 /**
  * @param {Object} param
  * @param {NamedInterface[]} param.list
- * @param {string[]} param.list
  */
-function handleList({ list, keys }) {
-  list.forEach((item) => {
-    const lookupValue = keys.map(key => getIn(item, key)).join(' ')
-    item[lookupKey] = lookupValue
-  })
+function handleList({ list }) {
   dataList = list
 }
 
@@ -115,8 +104,8 @@ function handleList({ list, keys }) {
  */
 function handleInput({ input }) {
   const list = dataList.sort((aItem, bItem) => {
-    const aName = aItem[lookupKey];
-    const bName = bItem[lookupKey];
+    const aName = aItem.name;
+    const bName = bItem.name;
     const a = getDistances(input, aName);
     const b = getDistances(input, bName);
     if (a.lcs !== b.lcs) {

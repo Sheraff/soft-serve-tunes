@@ -1,31 +1,36 @@
-import { useRef, useState, useEffect, RefObject } from "react"
+import { useRef, useState, useEffect, RefObject, useMemo } from "react"
 
-type MemoList<T> = WeakMap<T[], Map<string, T[]>>
-const lists = new WeakMap<MemoList>()
+type MinimumWorkerDataObject = {name: string, id: string}
 
-export default function useAsyncInputStringDistance<T extends {name: string}>(
+function getIn(obj: any, path: string) {
+	return path.split('.').reduce((acc, key) => acc[key] || '', obj)
+}
+
+export default function useAsyncInputStringDistance<T extends MinimumWorkerDataObject>(
 	inputRef: RefObject<HTMLInputElement>,
 	dataList: T[],
 	keys: string[] = ["name"],
 ): T[] {
-	const [list, setList] = useState(() => {
-		if (!inputRef.current?.value) {
-			return []
-		}
-		const pastList = lists.get(dataList)
-		if (pastList) {
-			const pastResult = pastList.get(inputRef.current.value)
-			if (pastResult) {
-				return pastResult
-			}
-		}
-		return []
-	})
-
 	const worker = useRef<Worker | null>(null)
+	const [list, setList] = useState<T[]>([])
 
-	const listRef = useRef(dataList)
-	listRef.current = dataList
+	// use namedObjects to pass less data to/from worker, use mapList to map back to original data
+	const [mapList, namedObjects] = useMemo(() => {
+		const map = new Map<string, T>()
+		const namedObjects = [] as Pick<T, keyof MinimumWorkerDataObject>[]
+		for (const item of dataList) {
+			map.set(item.id, item)
+			namedObjects.push({
+				name: keys.map(key => getIn(item, key)).join(' '),
+				id: item.id,
+			})
+		}
+		return [map, namedObjects]
+	}, [dataList, ...keys])
+
+	// use these 2 refs to avoid making calls to worker for an input value that isn't current
+	const isWorking = useRef(false)
+	const nextValue = useRef<string | null>(null)
 
 	useEffect(() => {
 		const {current: inputMemo} = inputRef
@@ -40,19 +45,18 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 			data
 		}: {
 			data: {
-				list: T[]
+				list: MinimumWorkerDataObject[]
 				input: string
 			}
 		}) => {
-			if (inputMemo.value === data.input) {
-				setList(data.list)
+			if (nextValue.current && worker.current) {
+				worker.current.postMessage({ type: "input", input: nextValue.current })
+				nextValue.current = null
+			} else {
+				isWorking.current = false
 			}
-
-			// memoize for later, this is not accurate as listRef might not be the one that triggered the worker
-			// but it's fine enough because it's used for the half second where the worker boots up
-			const memo = lists.get(listRef.current)
-			if (memo) {
-				memo.set(data.input, data.list)
+			if (inputMemo.value === data.input) {
+				setList(data.list.map(({id}) => mapList.get(id) as T)) // might not actually be `T` if list has changed since then
 			}
 		}
 		workerMemo.addEventListener("message", onMessage)
@@ -60,19 +64,21 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 			workerMemo.removeEventListener("message", onMessage)
 			workerMemo.terminate()
 		}
-	}, [inputRef])
+	}, [inputRef, mapList])
 
 	useEffect(() => {
 		const { current: inputMemo } = inputRef
 		if (!worker.current || !inputMemo) return
 
-		if (!lists.has(dataList)) {
-			lists.set(dataList, new Map())
-		}
-		worker.current.postMessage({ type: "list", list: dataList, keys })
+		worker.current.postMessage({ type: "list", list: namedObjects })
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
-				worker.current.postMessage({ type: "input", input: inputMemo.value })
+				if (!isWorking.current) {
+					worker.current.postMessage({ type: "input", input: inputMemo.value })
+					isWorking.current = true
+				} else {
+					nextValue.current = inputMemo.value
+				}
 			} else if (!inputMemo.value) {
 				setList([])
 			}
@@ -83,7 +89,7 @@ export default function useAsyncInputStringDistance<T extends {name: string}>(
 		return () => {
 			inputMemo.removeEventListener("input", onInput)
 		}
-	}, [dataList, inputRef, ...keys])
+	}, [namedObjects, inputRef])
 
 	return list
 }

@@ -73,8 +73,14 @@ export default function AlbumList({
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
+
+	const ref = useRef<HTMLDivElement>(null)
+	useEffect(() => {
+		ref.current?.scrollTo(0, 0)
+	}, [albums])
+
 	return (
-		<div className={styles.wrapper}>
+		<div className={styles.wrapper} ref={ref}>
 			<ul className={styles.main}>
 				{albums.map((album, i) => (
 					<li className={styles.item} key={album.id}>

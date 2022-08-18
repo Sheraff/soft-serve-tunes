@@ -2,7 +2,7 @@
 	width: 100%;
 	height: min-content;
 	overflow: scroll hidden;
-	scroll-snap-type: x mandatory;
+	/* scroll-snap-type: x mandatory; */
 	scroll-padding-left: 8px;
 	z-index: 0;
 }
@@ -23,8 +23,8 @@
 	width: calc((100vw - 3 * 8px) / 2 - 10px);
 }
 .item:nth-child(2n + 1) {
-	scroll-snap-stop: normal;
-	scroll-snap-align: start;
+	/* scroll-snap-stop: normal;
+	scroll-snap-align: start; */
 }
 
 .button {

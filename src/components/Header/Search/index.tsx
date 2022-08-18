@@ -34,9 +34,6 @@ export default function Search({open}: {open: boolean}) {
 
 	// handle focus because it toggles the virtual keyboard
 	useEffect(() => {
-		if (showPast) {
-			return
-		}
 		if (!input.current || !head.current || !results.current) {
 			return
 		}

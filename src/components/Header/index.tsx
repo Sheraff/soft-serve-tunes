@@ -4,6 +4,7 @@ import { useAppState } from "../AppContext"
 import useDisplayAndShow from "../useDisplayAndShow"
 import { useRef } from "react"
 import ArtistView from "./Artist"
+import { trpc } from "../../utils/trpc"
 
 export default function Header() {
 	const {view, setAppState} = useAppState()
@@ -13,7 +14,10 @@ export default function Header() {
 	const artistToggle = useRef<HTMLDivElement>(null)
 	const artistState = useDisplayAndShow(view.type === "artist", artistToggle)
 
-	console.log('header', view.type, view.id)
+	// prefetch select queries
+	trpc.useQuery(["track.list"])
+
+	console.log('header', view)
 
 	return (
 		<>

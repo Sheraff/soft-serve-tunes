@@ -2,7 +2,7 @@
 	width: 100%;
 	height: min-content;
 	overflow: scroll hidden;
-	scroll-snap-type: x mandatory;
+	/* scroll-snap-type: x mandatory; */
 }
 .wrapper::-webkit-scrollbar {
 	display: none;
@@ -21,8 +21,8 @@
 	width: calc((100vw - 4 * 8px) / 3);
 }
 .item:nth-child(3n + 1) {
-	scroll-snap-stop: normal;
-	scroll-snap-align: center;
+	/* scroll-snap-stop: normal;
+	scroll-snap-align: center; */
 }
 .item:nth-child(3n + 2) {
 	transform: translateX(calc(50% + 4px));

@@ -75,8 +75,14 @@ export default function ArtistList({
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
+
+	const ref = useRef<HTMLDivElement>(null)
+	useEffect(() => {
+		ref.current?.scrollTo(0, 0)
+	}, [artists])
+
 	return (
-		<div className={styles.wrapper}>
+		<div className={styles.wrapper} ref={ref}>
 			<ul className={styles.main}>
 				{artists.map((artist, i) => (
 					<li className={styles.item} key={artist.id}>

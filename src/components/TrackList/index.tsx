@@ -81,7 +81,7 @@ export default function TrackList({
 	tracks: Track[]
 	current?: string
 	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
-	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
+	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
