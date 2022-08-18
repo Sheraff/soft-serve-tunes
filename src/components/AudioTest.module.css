@@ -16,7 +16,8 @@
 }
 
 .content {
-	grid-area: body;
+	grid-column: 1 / 2;
+	grid-row: 1 / 3;
 	overflow: hidden scroll;
 	display: flex;
 	flex-direction: column;

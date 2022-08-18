@@ -1,25 +1,39 @@
 .head {
 	grid-area: head;
 	transition: transform 350ms, opacity 350ms;
-	transform: translateX(calc(100vw - 20px - max(.5em, env(safe-area-inset-right)) - max(.5em, env(safe-area-inset-left))));
+	transform: translateX(calc(100vw - 20px - max(8px, env(safe-area-inset-right)) - max(8px, env(safe-area-inset-left))));
 	pointer-events: none;
 	opacity: 0;
-}
-.head input {
-	display: block;
-	width: 100%;
-	height: 100%;
-	padding:
-		max(.5em, env(safe-area-inset-top))
-		max(.5em, env(safe-area-inset-right))
-		.5em
-		calc(max(.5em, env(safe-area-inset-left)) + 20px + 8px);
+	position: relative;
+	background-color: var(--palette-bg-main);
 }
 .head[data-open="true"] {
 	transform: translateX(0);
 	pointer-events: auto;
 	opacity: 1;
 }
+
+.head input {
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding:
+		max(12px, env(safe-area-inset-top))
+		max(8px, env(safe-area-inset-right))
+		12px
+		calc(max(8px, env(safe-area-inset-left)) + 20px + 8px + 4px);
+	font-size: 14px;
+}
+.head::after {
+	content: '';
+	position: absolute;
+	left: calc(max(8px, env(safe-area-inset-left)) + 20px + 8px);
+	bottom: 0;
+	right: max(8px, env(safe-area-inset-right));
+	height: 1px;
+	background-color: var(--palette-secondary);
+}
+
 
 .results {
 	grid-area: 2 / 1 / 4 / 2;
