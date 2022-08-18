@@ -4,6 +4,7 @@
 	gap: 8px;
 	padding: 0 8px;
 	margin-bottom: 8px;
+	width: 100%;
 }
 .empty::before {
 	content: '';
