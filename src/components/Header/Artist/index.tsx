@@ -1,8 +1,11 @@
-import { ForwardedRef, forwardRef, useRef } from "react";
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery";
-import AlbumList from "../../AlbumList";
-import { useAppState } from "../../AppContext";
+import { ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
+import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
+import pluralize from "../../../utils/pluralize"
+import AlbumList from "../../AlbumList"
+import { useAppState } from "../../AppContext"
+import PlayIcon from "../../../icons/play_arrow.svg"
 import styles from "./index.module.css"
+import classNames from "classnames"
 
 export default forwardRef(function ArtistView({
 	open,
@@ -35,6 +38,24 @@ export default forwardRef(function ArtistView({
 		? undefined
 		: {type: "artist", id, index: 0}
 
+	const [seeBio, setSeeBio] = useState(false)
+	const bio = useRef<HTMLDivElement>(null)
+	useEffect(() => {
+		const element = bio.current
+		if (!element) return
+		setSeeBio(false)
+		const observer = new ResizeObserver(([entry]) => {
+			if(entry) {
+				const child = entry.target.firstElementChild as HTMLDivElement
+				if (child.offsetHeight <= entry.contentRect.height) {
+					setSeeBio(true)
+				}
+			}
+		})
+		observer.observe(element)
+		return () => observer.disconnect()
+	}, [data?.audiodb?.strBiographyEN])
+
 	return (
 		<div className={styles.main} data-open={open} ref={ref}>
 			<img
@@ -42,17 +63,37 @@ export default forwardRef(function ArtistView({
 				src={imgSrc ? `/api/cover/${imgSrc}` : ""}
 				alt=""
 			/>
-			<p>
-				{data?.audiodb?.intFormedYear || data?.audiodb?.intBornYear} · {data?._count.albums} albums · {data?._count.tracks} tracks
-			</p>
-			<button type="button" onClick={() => setAppState({
-				view: {type: "home"},
-				playlist: playlistSetter,
-			})}>
-				play
-			</button>
-			<div>
-				{data?.audiodb?.strBiographyEN}
+			<div className={styles.head}>
+				<h2 className={styles.sectionTitle}>{data?.name}</h2>
+				<p className={styles.info}>
+					{data?.audiodb?.intFormedYear || data?.audiodb?.intBornYear} · {data?._count.albums} album{pluralize(data?._count.albums)} · {data?._count.tracks} track{pluralize(data?._count.tracks)}
+				</p>
+				<div
+					className={classNames(styles.bio, {[styles.seeBio]: seeBio})}
+					onClick={() => setSeeBio(!seeBio)}
+				>
+					<div ref={bio} className={styles.bioText}>
+						<div>
+							{data?.audiodb?.strBiographyEN}
+						</div>
+					</div>
+					<button
+						className={styles.toggle}
+						type="button"
+					>
+						{seeBio ? '...Less' : 'More...'}
+					</button>
+				</div>
+				<button
+					className={styles.play}
+					type="button"
+					onClick={() => setAppState({
+						view: {type: "home"},
+						playlist: playlistSetter,
+					})}
+				>
+					<PlayIcon />
+				</button>
 			</div>
 			{data?.albums && Boolean(data.albums.length) && (
 				<div>
