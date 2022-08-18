@@ -67,6 +67,7 @@ export default function Player() {
 		}
 	}
 
+	const artist = item?.artist
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -80,7 +81,17 @@ export default function Player() {
 			<div className={styles.info}>
 				{item?.name}
 				{item?.album?.name ? ` - ${item?.album.name}` : ''}
-				{item?.artist?.name ? ` - ${item?.artist.name}` : ''}
+				{artist && (
+					<>
+						{' - '}
+						<button
+							type="button"
+							onClick={() => setAppState({view: {type: "artist", id: artist.id}})}
+						>
+							{artist.name}
+						</button>
+					</>
+				)}
 			</div>
 			<button className={styles.play} onClick={togglePlay}>{loading ? 'loading' : playing ? 'pause' : 'play'}</button>
 			<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
