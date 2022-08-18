@@ -84,11 +84,11 @@ export default function Search({open}: {open: boolean}) {
 			>
 				<input
 					ref={input}
-					type="search"
-					placeholder="Dee Dee Bridgewater Autumn Leaves"
+					type="text"
 					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
 					onChange={() => input.current?.value ? setShowPast(false) : setShowPast(true)}
 					defaultValue=""
+					inputMode="search"
 				/>
 			</form>
 			<output

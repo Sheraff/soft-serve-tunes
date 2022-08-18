@@ -31,3 +31,4 @@
 .toggle[data-open="true"] {
 	transform: translateX(calc(100% - 100vw + max(8px, env(safe-area-inset-right)) + max(8px, env(safe-area-inset-left))));
 }
+

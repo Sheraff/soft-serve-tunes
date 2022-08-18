@@ -1,0 +1,14 @@
+.main {
+	white-space: pre;
+}
+
+.span {
+	display: inline-block;
+	min-width: 100vw;
+	animation: slide 30s linear infinite;
+}
+
+@keyframes slide {
+	0%   { transform: translate(0); }
+	100% { transform: translate(-100%); }
+}

@@ -5,6 +5,7 @@ import useDisplayAndShow from "../useDisplayAndShow"
 import { useRef } from "react"
 import ArtistView from "./Artist"
 import { trpc } from "../../utils/trpc"
+import SearchIcon from "../../icons/search.svg"
 
 export default function Header() {
 	const {view, setAppState} = useAppState()
@@ -32,7 +33,7 @@ export default function Header() {
 							: {view: {type: "search"}}
 					)}
 				>
-					🔎
+					<SearchIcon />
 				</button>
 			</div>
 			{searchState.display && (

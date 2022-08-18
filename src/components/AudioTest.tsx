@@ -1,7 +1,6 @@
 import { useRef } from "react"
 import styles from "./AudioTest.module.css"
 import { trpc } from "../utils/trpc"
-import Infos from "./Infos"
 import Palette from "./Palette"
 import Cover from "./Cover"
 import { useAppState } from "./AppContext"
@@ -64,7 +63,6 @@ export default function AudioTest({ }) {
 				<Header/>
 				<div className={styles.content}>
 					<Cover ref={img} />
-					<Infos id={item?.id} />
 					<PlaylistViz />
 				</div>
 				<Player />

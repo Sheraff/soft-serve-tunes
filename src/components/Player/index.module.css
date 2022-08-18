@@ -17,7 +17,7 @@
 	grid-template-areas:
 		"time track duration"
 		"info info  info"
-		"prev play  next";
+		"ui   ui    ui";
 	grid-template-columns: auto 1fr auto;
 	color: var(--palette-primary);
 }
@@ -42,12 +42,13 @@
 	grid-area: info;
 }
 
-.prev {
-	grid-area: prev;
+.ui {
+	grid-area: ui;
+	display: flex;
+	justify-content: space-evenly;
+	font-size: 20px;
 }
-.play {
-	grid-area: play;
-}
-.next {
-	grid-area: next;
+
+.ui button {
+	display: flex;
 }

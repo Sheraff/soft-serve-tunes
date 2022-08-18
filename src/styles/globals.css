@@ -46,3 +46,12 @@ ul {
 p, h1, h2, h3 {
   margin: 0;
 }
+
+svg {
+  width: 1em;
+  height: 1em;
+}
+
+svg path {
+  fill: currentColor;
+}

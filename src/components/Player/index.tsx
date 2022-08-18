@@ -5,6 +5,11 @@ import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"
+import PrevIcon from "../../icons/skip_previous.svg"
+import NextIcon from "../../icons/skip_next.svg"
+import PauseIcon from "../../icons/pause.svg"
+import PlayIcon from "../../icons/play_arrow.svg"
+import SlidingText from "./SlidingText"
 
 export default function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
@@ -29,12 +34,19 @@ export default function Player() {
 	}, [list?.length, setAppState])
 	
 	const playPrev = useMemo(() => {
-		if(!list?.length) return () => {}
-		return () => setAppState(({playlist}) => ({
-			playlist: {
-				index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
+		if (!list?.length) return () => {}
+		return () => {
+			if (audio.current && audio.current.currentTime > 10) {
+				audio.current.currentTime = 0
+				audio.current.play()
+				return
 			}
-		}))
+			setAppState(({playlist}) => ({
+				playlist: {
+					index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
+				}
+			}))
+		}
 	}, [list?.length, setAppState])
 
 	const [autoPlay, setAutoPlay] = useState(true)
@@ -67,7 +79,7 @@ export default function Player() {
 		}
 	}
 
-	const artist = item?.artist
+	
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -78,24 +90,12 @@ export default function Player() {
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<div className={styles.duration}>{displayTotalTime}</div>
-			<div className={styles.info}>
-				{item?.name}
-				{item?.album?.name ? ` - ${item?.album.name}` : ''}
-				{artist && (
-					<>
-						{' - '}
-						<button
-							type="button"
-							onClick={() => setAppState({view: {type: "artist", id: artist.id}})}
-						>
-							{artist.name}
-						</button>
-					</>
-				)}
+			<SlidingText className={styles.info} item={item} />
+			<div className={styles.ui}>
+				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
+				<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+				<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
 			</div>
-			<button className={styles.play} onClick={togglePlay}>{loading ? 'loading' : playing ? 'pause' : 'play'}</button>
-			<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}>⬅︎</button>
-			<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}>➡︎</button>
 			<Audio ref={audio}/>
 		</div>
 	)
