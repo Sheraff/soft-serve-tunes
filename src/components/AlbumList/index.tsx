@@ -2,15 +2,18 @@ import type { Album } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
+import { inferQueryOutput } from "../../utils/trpc"
 import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 function AlbumItem({
 	album,
 	enableSiblings,
+	onSelect,
 }: {
 	album: Album
 	enableSiblings?: () => void
+	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["album.miniature", {id: album.id}])
@@ -53,7 +56,10 @@ function AlbumItem({
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => setAppState({playlist: {type: "album", id: album.id, index: 0}, view: {type: "home"}})}
+			onClick={() => {
+				data && onSelect?.(data)
+				setAppState({playlist: {type: "album", id: album.id, index: 0}, view: {type: "home"}})
+			}}
 		>
 			{!isEmpty && (
 				<img
@@ -71,9 +77,11 @@ function AlbumItem({
 }
 
 export default function AlbumList({
-	albums
+	albums,
+	onSelect,
 }: {
 	albums: Album[]
+	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
@@ -85,6 +93,7 @@ export default function AlbumList({
 							<AlbumItem
 								album={album}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								onSelect={onSelect}
 							/>
 						)}
 					</li>

@@ -2,6 +2,7 @@ import type { Track } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
+import { inferQueryOutput } from "../../utils/trpc"
 import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
@@ -10,11 +11,13 @@ function TrackItem({
 	enableSiblings,
 	current,
 	onClick,
+	onSelect,
 }: {
 	track: Track
 	enableSiblings?: () => void
 	current?: boolean
 	onClick?: (id:string, name:string) => void
+	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
@@ -47,6 +50,7 @@ function TrackItem({
 			})}
 			type="button"
 			onClick={() => {
+				data && onSelect?.(data)
 				if (onClick) onClick(track.id, track.name)
 				else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
 			}}
@@ -72,10 +76,12 @@ export default function TrackList({
 	tracks,
 	current,
 	onClick,
+	onSelect,
 }: {
 	tracks: Track[]
 	current?: string
 	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
+	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
@@ -88,6 +94,7 @@ export default function TrackList({
 							enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 							current={current === track.id}
 							onClick={onClick}
+							onSelect={onSelect}
 						/>
 					)}
 				</li>

@@ -4,9 +4,11 @@ import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 export default function GenreList({
-	genres
+	genres,
+	onSelect,
 }: {
 	genres: UseQueryResult<inferQueryOutput<"genre.list">>["data"]
+	onSelect?: (genre: inferQueryOutput<"genre.list">[number]) => void
 }) {
 	const {setAppState} = useAppState()
 	return (
@@ -16,7 +18,10 @@ export default function GenreList({
 					<button
 						className={styles.button}
 						type="button"
-						onClick={() => setAppState({playlist: {type: "genre", id: genre.id, index: 0}})}
+						onClick={() => {
+							genre && onSelect?.(genre)
+							setAppState({playlist: {type: "genre", id: genre.id, index: 0}})
+						}}
 					>
 						<p className={styles.span}>
 							<span className={styles.name}>{genre.name}</span>

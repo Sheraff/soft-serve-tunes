@@ -2,15 +2,18 @@ import type { Artist } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
+import { inferQueryOutput } from "../../utils/trpc"
 import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
 function ArtistItem({
 	artist,
 	enableSiblings,
+	onSelect,
 }: {
 	artist: Artist
 	enableSiblings?: () => void
+	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["artist.miniature", {id: artist.id}])
@@ -53,7 +56,10 @@ function ArtistItem({
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => setAppState({view: {type: "artist", id: artist.id}})}
+			onClick={() => {
+				data && onSelect?.(data)
+				setAppState({view: {type: "artist", id: artist.id}})
+			}}
 		>
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
@@ -73,9 +79,11 @@ function ArtistItem({
 }
 
 export default function ArtistList({
-	artists
+	artists,
+	onSelect,
 }: {
 	artists: Artist[]
+	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	return (
@@ -87,6 +95,7 @@ export default function ArtistList({
 							<ArtistItem
 								artist={artist}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								onSelect={onSelect}
 							/>
 						)}
 					</li>

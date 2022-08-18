@@ -6,9 +6,12 @@ import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
 import GenreList from "../../GenreList"
 import TrackList from "../../TrackList"
+import { Album, Artist, Genre, Track } from "@prisma/client"
+import { inferQueryOutput } from "../../../utils/trpc"
 
 const defaultArray = [] as never[]
-let defaultValue = ""
+
+const latestSearches: (inferQueryOutput<"track.miniature"> | inferQueryOutput<"album.miniature"> | inferQueryOutput<"artist.miniature"> | inferQueryOutput<"genre.list">[number])[] = []
 
 export default function Search({open}: {open: boolean}) {
 
@@ -27,8 +30,13 @@ export default function Search({open}: {open: boolean}) {
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 
+	const [showPast, setShowPast] = useState(true)
+
 	// handle focus because it toggles the virtual keyboard
 	useEffect(() => {
+		if (showPast) {
+			return
+		}
 		if (!input.current || !head.current || !results.current) {
 			return
 		}
@@ -66,7 +74,7 @@ export default function Search({open}: {open: boolean}) {
 			lastScroll = scroll
 		}, {signal: controller.signal, passive: true})
 		return () => controller.abort()
-	}, [open])
+	}, [showPast, open])
 
 	const id = useId()
 	return (
@@ -82,8 +90,8 @@ export default function Search({open}: {open: boolean}) {
 					type="search"
 					placeholder="Dee Dee Bridgewater Autumn Leaves"
 					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
-					onChange={() => defaultValue = input.current?.value || ""}
-					defaultValue={defaultValue}
+					onChange={() => input.current?.value ? setShowPast(false) : setShowPast(true)}
+					defaultValue=""
 				/>
 			</form>
 			<output
@@ -92,28 +100,48 @@ export default function Search({open}: {open: boolean}) {
 				data-open={open}
 				htmlFor={id}
 			>
-				{Boolean(artists.length) && (
+				{showPast && latestSearches.length > 0 && (
+					<div>
+						<h2 className={styles.sectionTitle}>Recent searches</h2>
+						{latestSearches.map(({id, name}) => (
+							<p key={id}>{name}</p>
+						))}
+					</div>
+				)}
+				{!showPast && Boolean(artists.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Artists</h2>
-						<ArtistList artists={artists.slice(0, 21)} />
+						<ArtistList
+							artists={artists.slice(0, 21)}
+							onSelect={(entity: inferQueryOutput<"artist.miniature">) => latestSearches.unshift(entity)}
+						/>
 					</div>
 				)}
-				{Boolean(albums.length) && (
+				{!showPast && Boolean(albums.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Albums</h2>
-						<AlbumList albums={albums.slice(0, 28)} />
+						<AlbumList
+							albums={albums.slice(0, 28)}
+							onSelect={(entity: inferQueryOutput<"album.miniature">) => latestSearches.unshift(entity)}
+						/>
 					</div>
 				)}
-				{Boolean(genres.length) && (
+				{!showPast && Boolean(genres.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Genres</h2>
-						<GenreList genres={genres.slice(0, 21)} />
+						<GenreList
+							genres={genres.slice(0, 21)}
+							onSelect={(entity: inferQueryOutput<"genre.list">[number]) => latestSearches.unshift(entity)}
+						/>
 					</div>
 				)}
-				{Boolean(tracks.length) && (
+				{!showPast && Boolean(tracks.length) && (
 					<div>
 						<h2 className={styles.sectionTitle}>Tracks</h2>
-						<TrackList tracks={tracks.slice(0, 50)} />
+						<TrackList
+							tracks={tracks.slice(0, 50)}
+							onSelect={(entity: inferQueryOutput<"track.miniature">) => latestSearches.unshift(entity)}
+						/>
 					</div>
 				)}
 			</output>
