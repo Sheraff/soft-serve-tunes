@@ -4,6 +4,7 @@ import { useAppState } from "../AppContext"
 import useDisplayAndShow from "../useDisplayAndShow"
 import { useRef } from "react"
 import ArtistView from "./Artist"
+import AlbumView from "./Album"
 import { trpc } from "../../utils/trpc"
 import SearchIcon from "../../icons/search.svg"
 
@@ -14,6 +15,8 @@ export default function Header() {
 	const searchState = useDisplayAndShow(view.type === "search", searchToggle)
 	const artistToggle = useRef<HTMLDivElement>(null)
 	const artistState = useDisplayAndShow(view.type === "artist", artistToggle)
+	const albumToggle = useRef<HTMLDivElement>(null)
+	const albumState = useDisplayAndShow(view.type === "album", albumToggle)
 
 	// prefetch select queries
 	trpc.useQuery(["track.list"])
@@ -41,6 +44,9 @@ export default function Header() {
 			)}
 			{artistState.display && (
 				<ArtistView open={artistState.show} id={view.id as string} ref={artistToggle}/>
+			)}
+			{albumState.display && (
+				<AlbumView open={albumState.show} id={view.id as string} ref={albumToggle}/>
 			)}
 		</>
 	)

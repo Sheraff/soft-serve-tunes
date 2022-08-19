@@ -12,7 +12,6 @@ export default function SlidingText({
 	className?: string
 }) {
 	const {setAppState} = useAppState()
-	const artist = item?.artist
 
 	const [separator, setSeparator] = useState(false)
 	const span = useRef<HTMLDivElement>(null)
@@ -29,11 +28,24 @@ export default function SlidingText({
 		return () => observer.disconnect()
 	}, [])
 
+	const album = item?.album
+	const artist = item?.artist
+
 	const content = item && (
 		<>
 			{' '}
 			{item?.name}
-			{item?.album?.name ? ` · ${item?.album.name}` : ''}
+			{album && (
+				<>
+					{' · '}
+					<button
+						type="button"
+						onClick={() => setAppState({view: {type: "album", id: album.id}})}
+					>
+						{album.name}
+					</button>
+				</>
+			)}
 			{artist && (
 				<>
 					{' · '}

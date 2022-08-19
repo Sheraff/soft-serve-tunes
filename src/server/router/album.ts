@@ -8,13 +8,58 @@ export const albumRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      return ctx.prisma.album.findUnique({
+      const album = await ctx.prisma.album.findUnique({
         where: { id: input.id },
         include: {
+          _count: {
+            select: {
+              tracks: true,
+            }
+          },
           artist: true,
           tracks: true,
+          lastfm: {
+            select: {
+              name: true,
+              releasedate: true,
+              coverId: true,
+            }
+          },
+          audiodb: {
+            select: {
+              strAlbum: true,
+              intYearReleased: true,
+              strDescriptionEN: true,
+              thumbId: true,
+              thumbHqId: true,
+            }
+          },
+          spotify: {
+            select: {
+              name: true,
+              totalTracks: true,
+              releaseDate: true,
+              imageId: true,
+            }
+          }
         }
       })
+      let coverSrc = ""
+      if (album?.spotify?.imageId) {
+        coverSrc = album.spotify.imageId
+      } else if (album?.audiodb?.thumbHqId) {
+        coverSrc = album.audiodb.thumbHqId
+      } else if (album?.audiodb?.thumbId) {
+        coverSrc = album.audiodb.thumbId
+      } else if (album?.lastfm?.coverId) {
+        coverSrc = album.lastfm.coverId
+      } else if (album?.tracks?.[0]?.metaImageId) {
+        coverSrc = album.tracks[0].metaImageId
+      }
+      return {
+        ...album,
+        coverSrc,
+      }
     },
   })
   .query("list", {

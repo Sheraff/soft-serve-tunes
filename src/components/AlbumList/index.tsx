@@ -47,7 +47,7 @@ function AlbumItem({
 			type="button"
 			onClick={() => {
 				data && onSelect?.(data)
-				setAppState({playlist: {type: "album", id: album.id, index: 0}, view: {type: "home"}})
+				setAppState({view: {type: "album", id: album.id}})
 			}}
 		>
 			{!isEmpty && (
