@@ -4,6 +4,7 @@
 	transition: transform 350ms;
 	transform: translateX(-100vw);
 	pointer-events: none;
+	color: var(--palette-primary);
 	background: var(--palette-bg-main);
 
 	overflow: hidden scroll;

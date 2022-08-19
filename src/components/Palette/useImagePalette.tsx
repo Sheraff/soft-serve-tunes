@@ -3,10 +3,10 @@ import { retrievePaletteFromIndexedDB, storePaletteInIndexedDB } from "../../cli
 
 export default function useImagePalette({
 	ref,
-	defaultValues,
+	defaultValues = {},
 }: {
 	ref: RefObject<HTMLImageElement>,
-	defaultValues: CSSProperties,
+	defaultValues?: CSSProperties,
 }) {
 	const [palette, setPalette] = useState<CSSProperties>(defaultValues)
 	useEffect(() => {

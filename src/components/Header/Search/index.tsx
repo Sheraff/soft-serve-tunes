@@ -73,6 +73,12 @@ export default function Search({open}: {open: boolean}) {
 		return () => controller.abort()
 	}, [showPast, open])
 
+	const onSelect = (add: PastSearchItem) => {
+		if (!latestSearches.some((item) => item.entity.id === add.entity.id)) {
+			latestSearches.unshift(add)
+		}
+	}
+
 	const id = useId()
 	return (
 		<>
@@ -110,7 +116,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Artists</h2>
 						<ArtistList
 							artists={artists.slice(0, 21)}
-							onSelect={(entity: Exclude<inferQueryOutput<"artist.miniature">, null>) => latestSearches.unshift({type: 'artist', entity})}
+							onSelect={(entity) => onSelect({type: 'artist', entity})}
 						/>
 					</div>
 				)}
@@ -119,7 +125,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Albums</h2>
 						<AlbumList
 							albums={albums.slice(0, 28)}
-							onSelect={(entity: Exclude<inferQueryOutput<"album.miniature">, null>) => latestSearches.unshift({type: 'album', entity})}
+							onSelect={(entity) => onSelect({type: 'album', entity})}
 						/>
 					</div>
 				)}
@@ -128,7 +134,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Genres</h2>
 						<GenreList
 							genres={genres.slice(0, 21)}
-							onSelect={(entity: Exclude<inferQueryOutput<"genre.list">[number], null>) => latestSearches.unshift({type: 'genre', entity})}
+							onSelect={(entity) => onSelect({type: 'genre', entity})}
 						/>
 					</div>
 				)}
@@ -137,7 +143,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Tracks</h2>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
-							onSelect={(entity: Exclude<inferQueryOutput<"track.miniature">, null>) => latestSearches.unshift({type: 'track', entity})}
+							onSelect={(entity) => onSelect({type: 'track', entity})}
 						/>
 					</div>
 				)}

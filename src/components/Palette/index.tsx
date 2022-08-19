@@ -1,4 +1,4 @@
-import type { RefObject } from "react"
+import type { CSSProperties, RefObject } from "react"
 import useImagePalette from "./useImagePalette"
 import Head from "next/head"
 
@@ -7,7 +7,7 @@ const defaultValues = {
 	'--palette-bg-gradient': '#333',
 	'--palette-secondary': '#ccc',
 	'--palette-primary': '#fff',
-}
+} as CSSProperties
 
 export default function Palette({
 	img,
@@ -23,9 +23,9 @@ export default function Palette({
 					inherits: true;
 					initial-value: ${(defaultValues)[key as keyof typeof defaultValues]};
 				}`).join('\n')}
-				{`body {\n`}
+				{/* {`*, *::before, *::after {\n`}
 				{`transition: ${Object.keys(palette).map((key) => `${key} 400ms`).join(',\n\t')};\n`}
-				{`}\n`}
+				{`}\n`} */}
 			</style>
 			<style key="palette-values">
 				{`body {\n`}
