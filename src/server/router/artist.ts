@@ -1,6 +1,5 @@
 import { createRouter } from "./context"
 import { z } from "zod"
-import lastFmArtistMetadata from "./lastfm/artistMetadata"
 
 export const artistRouter = createRouter()
   .query("searchable", {
@@ -164,20 +163,14 @@ export const artistRouter = createRouter()
           }
         }
       })
-
-      if (!artist) return null
-
       let cover = undefined
-      if (artist.audiodb?.thumb) {
+      if (artist?.audiodb?.thumb) {
         cover = artist.audiodb.thumb
-      } else if (artist.spotify?.image) {
+      } else if (artist?.spotify?.image) {
         cover = artist.spotify.image
-      } else if (artist.tracks?.[0]?.metaImage) {
+      } else if (artist?.tracks?.[0]?.metaImage) {
         cover = artist.tracks[0].metaImage
       }
-
-      lastFmArtistMetadata(input.id)
-
       return {
         ...artist,
         cover,

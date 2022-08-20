@@ -19,6 +19,7 @@ export default forwardRef(function ArtistView({
 		enabled: Boolean(id),
 		keepPreviousData: true,
 	})
+	console.log('artist.get', id, Boolean(id))
 
 	const stableData = useRef(_data)
 	stableData.current = _data || stableData.current
