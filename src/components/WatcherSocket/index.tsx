@@ -19,7 +19,7 @@ export default function WatcherSocket() {
 				console.log("removed", data.payload)
 				if (data.payload?.track) {
 					queryClient.invalidateQueries(["track.searchable"])
-					queryClient.invalidateQueries(["track.miniature"])
+					queryClient.invalidateQueries(["track.miniature", { id: data.payload.track.id }])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'track', id: data.payload.track.id }])
 				}
 				if (data.payload?.artist) {
@@ -39,6 +39,17 @@ export default function WatcherSocket() {
 					queryClient.invalidateQueries(["genre.get", {id: data.payload.genre.id}])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'genre', id: data.payload.genre.id }])
 				}
+			} else if (data.type === "invalidate:track") {
+				console.log("invalidate:track", data.payload.id)
+				queryClient.invalidateQueries(["track.miniature", { id: data.payload.id }])
+			} else if (data.type === "invalidate:album") {
+				console.log("invalidate:album", data.payload.id)
+				queryClient.invalidateQueries(["album.miniature", { id: data.payload.id }])
+				queryClient.invalidateQueries(["album.get", { id: data.payload.id }])
+			} else if (data.type === "invalidate:artist") {
+				console.log("invalidate:artist", data.payload.id)
+				queryClient.invalidateQueries(["artist.miniature", { id: data.payload.id }])
+				queryClient.invalidateQueries(["artist.get", { id: data.payload.id }])
 			} else if (data.type === "global:message") {
 				console[data.payload?.level || 'log'](data.payload.message)
 			}

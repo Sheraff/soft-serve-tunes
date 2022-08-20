@@ -27,21 +27,6 @@ export default function AudioTest({ }) {
 	const item = !list || !playlist ? undefined : list[playlist.index]
 
 	const queryClient = useQueryClient()
-	const {data: lastfm} = trpc.useQuery(["lastfm.track", {
-		id: item?.id as string,
-		force: true,
-	}], {
-		enabled: Boolean(item?.id),
-		onSuccess(lastfm) {
-			if (lastfm?.album?.coverId) {
-				queryClient.invalidateQueries(["album.miniature", {id: lastfm?.album?.entityId}])
-				queryClient.invalidateQueries(["track.miniature", {id: lastfm.entityId}])
-			}
-		}
-	})
-	// const {data: metadata} = trpc.useQuery(["metadata.track", {id: item?.id as string}], {
-	// 	enabled: Boolean(item?.id),
-	// })
 
 	const {data: spotify} = trpc.useQuery(["spotify.track", {
 		id: item?.id as string,

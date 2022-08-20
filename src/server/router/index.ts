@@ -2,7 +2,6 @@ import { createRouter } from "./context"
 import superjson from "superjson"
 
 import { listRouter } from "./list"
-import { lastfmRouter } from "./lastfm"
 import { metadataRouter } from "./metadata"
 import { trackRouter } from "./track"
 import { albumRouter } from "./album"
@@ -15,7 +14,6 @@ import { spotifyRouter } from "./spotify"
 export const appRouter = createRouter()
   .transformer(superjson)
   .merge("list.", listRouter)
-  .merge("lastfm.", lastfmRouter)
   .merge("metadata.", metadataRouter)
   .merge("track.", trackRouter)
   .merge("album.", albumRouter)

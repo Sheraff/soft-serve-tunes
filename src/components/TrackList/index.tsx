@@ -37,7 +37,7 @@ function TrackItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	const isEmpty = !data?.cover
+	const isEmpty = !data?.cover?.id
 
 	const {setAppState} = useAppState()
 
@@ -55,10 +55,10 @@ function TrackItem({
 				else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
 			}}
 		>
-			{!isEmpty && (
+			{data?.cover?.id && (
 				<div className={styles.img}>
 					<img
-						src={`/api/cover/${data.cover?.id}/${Math.round(48*2.5)}`}
+						src={`/api/cover/${data.cover.id}/${Math.round(48*2.5)}`}
 						alt=""
 					/>
 				</div>

@@ -32,7 +32,7 @@ function ArtistItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	const isEmpty = !data?.cover
+	const isEmpty = !data?.cover?.id
 	const isCutout = data?.audiodb?.cutout
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0

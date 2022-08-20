@@ -34,7 +34,7 @@ function AlbumItem({
 
 	
 
-	const isEmpty = !data?.cover
+	const isEmpty = !data?.cover?.id
 	const trackCount = data?._count?.tracks ?? 0
 
 	const {setAppState} = useAppState()

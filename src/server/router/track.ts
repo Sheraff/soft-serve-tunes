@@ -1,5 +1,6 @@
 import { createRouter } from "./context";
 import { z } from "zod";
+import lastFmTrackMetadata from "./lastfm/trackMetadata";
 
 export const trackRouter = createRouter()
   .query("searchable", {
@@ -124,6 +125,9 @@ export const trackRouter = createRouter()
       } else if (track.metaImage) {
         cover = track.metaImage
       }
+
+      lastFmTrackMetadata(track.id)
+
       return {...track, cover}
     }
   })

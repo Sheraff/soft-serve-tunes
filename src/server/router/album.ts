@@ -1,5 +1,6 @@
 import { createRouter } from "./context";
 import { z } from "zod";
+import lastFmAlbumMetadata from "./lastfm/albumMetadata";
 
 export const albumRouter = createRouter()
   .query("searchable", {
@@ -137,6 +138,9 @@ export const albumRouter = createRouter()
             select: {
               id: true,
               name: true,
+              lastfm: {
+                select: { id: true },
+              },
             }
           },
           tracks: {
@@ -201,18 +205,24 @@ export const albumRouter = createRouter()
           }
         }
       })
+
+      if (!album) return null
+
       let cover = undefined
-      if (album?.spotify?.image) {
+      if (album.spotify?.image) {
         cover = album.spotify.image
-      } else if (album?.audiodb?.thumbHq) {
+      } else if (album.audiodb?.thumbHq) {
         cover = album.audiodb.thumbHq
-      } else if (album?.audiodb?.thumb) {
+      } else if (album.audiodb?.thumb) {
         cover = album.audiodb.thumb
-      } else if (album?.lastfm?.cover) {
+      } else if (album.lastfm?.cover) {
         cover = album.lastfm.cover
-      } else if (album?.tracks?.[0]?.metaImage) {
+      } else if (album.tracks?.[0]?.metaImage) {
         cover = album.tracks[0].metaImage
       }
+
+      lastFmAlbumMetadata(input.id, album.artist?.lastfm?.id)
+
       return {
         ...album,
         cover,
