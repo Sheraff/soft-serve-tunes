@@ -52,11 +52,15 @@ export default forwardRef(function AlbumView({
 	if (data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate) {
 		infos.push(`${data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate}`)
 	}
-	if (data?.artist?.name) {
-		infos.push(`${data?.artist?.name}`)
+	if (data?.artist) {
+		infos.push(
+			<button type="button" onClick={() => setAppState({view: {type: "artist", id: data.artist.id}})}>
+				{`${data?.artist?.name}`}
+			</button>
+		)
 	}
 	if (data?._count?.tracks) {
-		infos.push(`${data?._count.tracks} tracks${pluralize(data?._count.tracks)}`)
+		infos.push(`${data?._count.tracks} track${pluralize(data?._count.tracks)}`)
 	}
 
 	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
@@ -71,7 +75,12 @@ export default forwardRef(function AlbumView({
 			<div className={styles.head}>
 				<h2 className={styles.sectionTitle}>{data?.name}</h2>
 				<p className={styles.info}>
-					{infos.join(" · ")}
+					{infos.map((info, i) => (
+						<>
+							{i > 0 ? " · " : ""}
+							{info}
+						</>
+					))}
 				</p>
 				{data?.audiodb?.strDescriptionEN && (
 					<div
