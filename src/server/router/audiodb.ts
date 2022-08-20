@@ -109,32 +109,6 @@ export const audiodbRouter = createRouter()
 			})
 		}
 	})
-	.query("get.track", {
-		input: z.object({
-			id: z.string()
-		}),
-		async resolve({ input, ctx }) {
-			return ctx.prisma.track.findUnique({
-				where: { id: input.id },
-				include: {
-					audiodb: true
-				}
-			})
-		}
-	})
-	.query("get.album", {
-		input: z.object({
-			id: z.string()
-		}),
-		async resolve({ input, ctx }) {
-			return ctx.prisma.album.findUnique({
-				where: { id: input.id },
-				include: {
-					audiodb: true
-				}
-			})
-		}
-	})
 	.mutation("fetch", {
 		input: z.object({
 			id: z.string(),

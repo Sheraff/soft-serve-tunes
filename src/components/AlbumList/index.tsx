@@ -1,4 +1,3 @@
-import type { Album } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
@@ -11,7 +10,7 @@ function AlbumItem({
 	enableSiblings,
 	onSelect,
 }: {
-	album: Album
+	album: inferQueryOutput<"artist.searchable">[number]
 	enableSiblings?: () => void
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
@@ -57,7 +56,7 @@ function AlbumItem({
 				/>
 			)}
 			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
-				<span className={styles.name}>{album.name}</span>
+				<span className={styles.name}>{data?.name || album.name}</span>
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
 				<span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>
 			</p>
@@ -69,7 +68,7 @@ export default function AlbumList({
 	albums,
 	onSelect,
 }: {
-	albums: Album[]
+	albums: inferQueryOutput<"album.searchable">
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)

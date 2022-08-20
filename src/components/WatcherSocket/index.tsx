@@ -11,24 +11,25 @@ export default function WatcherSocket() {
 			const data = JSON.parse(e.data)
 			if (data.type === "watcher:add") {
 				console.log("added track")
-				queryClient.invalidateQueries(["track.list"])
-				queryClient.invalidateQueries(["artist.list"])
-				queryClient.invalidateQueries(["album.list"])
+				queryClient.invalidateQueries(["track.searchable"])
+				queryClient.invalidateQueries(["artist.searchable"])
+				queryClient.invalidateQueries(["album.searchable"])
 				queryClient.invalidateQueries(["genre.list"])
 			} else if (data.type === "watcher:remove") {
 				console.log("removed", data.payload)
 				if (data.payload?.track) {
-					queryClient.invalidateQueries(["track.list"])
-					queryClient.invalidateQueries(["track.get", {id: data.payload.track.id}])
+					queryClient.invalidateQueries(["track.searchable"])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'track', id: data.payload.track.id }])
 				}
 				if (data.payload?.artist) {
-					queryClient.invalidateQueries(["artist.list"])
+					queryClient.invalidateQueries(["artist.searchable"])
+					queryClient.invalidateQueries(["artist.miniature", {id: data.payload.artist.id}])
 					queryClient.invalidateQueries(["artist.get", {id: data.payload.artist.id}])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'artist', id: data.payload.artist.id }])
 				}
 				if (data.payload?.album) {
-					queryClient.invalidateQueries(["album.list"])
+					queryClient.invalidateQueries(["album.searchable"])
+					queryClient.invalidateQueries(["album.miniature", {id: data.payload.album.id}])
 					queryClient.invalidateQueries(["album.get", {id: data.payload.album.id}])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'album', id: data.payload.album.id }])
 				}

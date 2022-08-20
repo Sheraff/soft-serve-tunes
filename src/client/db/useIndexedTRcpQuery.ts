@@ -27,10 +27,10 @@ export default function useIndexedTRcpQuery<
 	const isFromIndexed = useRef(false)
 	const noModeIndexed = useRef(false)
 
-	const refetch = useRef<UseQueryResult<inferQueryOutput<TRouteKey>>['refetch']>(null)
+	const refetch = useRef<UseQueryResult<inferQueryOutput<TRouteKey>>['refetch'] | null>(null)
 	const queryResponse = trpc.useQuery(pathAndInput, {
 		...options,
-		enabled: defaultEnabled,
+		enabled: options.enabled === false ? false : defaultEnabled,
 		onSuccess(data) {
 			options.onSuccess?.(data)
 			if (!isFromIndexed.current) {
@@ -38,11 +38,11 @@ export default function useIndexedTRcpQuery<
 					storeQueryInIndexedDB<inferQueryOutput<TRouteKey>>(pathAndInput, data)
 				})
 			} else if (!data) {
-				refetch.current()
+				refetch.current?.()
 			} else {
 				requestIdleCallback(() => {
 					// TODO: only if network is good
-					refetch.current()
+					refetch.current?.()
 				})
 			}
 			isFromIndexed.current = false

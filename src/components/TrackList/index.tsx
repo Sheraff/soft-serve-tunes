@@ -13,7 +13,7 @@ function TrackItem({
 	onClick,
 	onSelect,
 }: {
-	track: Track
+	track: inferQueryOutput<"track.searchable">[number]
 	enableSiblings?: () => void
 	current?: boolean
 	onClick?: (id:string, name:string) => void
@@ -78,7 +78,7 @@ export default function TrackList({
 	onClick,
 	onSelect,
 }: {
-	tracks: Track[]
+	tracks: inferQueryOutput<"track.searchable">
 	current?: string
 	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
 	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void

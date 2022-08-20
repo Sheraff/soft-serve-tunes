@@ -19,7 +19,7 @@ export default function Header() {
 	const albumState = useDisplayAndShow(view.type === "album", albumToggle)
 
 	// prefetch select queries
-	trpc.useQuery(["track.list"])
+	trpc.useQuery(["track.searchable"])
 
 	console.log('header', view)
 

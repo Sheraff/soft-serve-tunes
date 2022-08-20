@@ -1,4 +1,3 @@
-import type { Artist } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
@@ -11,7 +10,7 @@ function ArtistItem({
 	enableSiblings,
 	onSelect,
 }: {
-	artist: Artist
+	artist: inferQueryOutput<"artist.searchable">[number]
 	enableSiblings?: () => void
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
@@ -71,7 +70,7 @@ export default function ArtistList({
 	artists,
 	onSelect,
 }: {
-	artists: Artist[]
+	artists: inferQueryOutput<"artist.searchable">
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)

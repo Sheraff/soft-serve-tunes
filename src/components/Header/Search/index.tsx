@@ -6,7 +6,6 @@ import ArtistList from "../../ArtistList"
 import AlbumList from "../../AlbumList"
 import GenreList from "../../GenreList"
 import TrackList from "../../TrackList"
-import { inferQueryOutput } from "../../../utils/trpc"
 import PastSearch, { PastSearchItem } from "./PastSearch"
 
 const defaultArray = [] as never[]
@@ -20,9 +19,9 @@ export default function Search({open}: {open: boolean}) {
 	const results = useRef<HTMLOutputElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
-	const {data: tracksRaw} = useIndexedTRcpQuery(["track.list"], {enabled})
-	const {data: albumsRaw} = useIndexedTRcpQuery(["album.list"], {enabled})
-	const {data: artistsRaw} = useIndexedTRcpQuery(["artist.list"], {enabled})
+	const {data: tracksRaw} = useIndexedTRcpQuery(["track.searchable"], {enabled})
+	const {data: albumsRaw} = useIndexedTRcpQuery(["album.searchable"], {enabled})
+	const {data: artistsRaw} = useIndexedTRcpQuery(["artist.searchable"], {enabled})
 	const {data: genresRaw} = useIndexedTRcpQuery(["genre.list"], {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])

@@ -2,50 +2,22 @@ import { createRouter } from "./context";
 import { z } from "zod";
 
 export const trackRouter = createRouter()
-  .query("get", {
-    input: z
-      .object({
-        id: z.string(),
-      }),
-    async resolve({ input, ctx }) {
-      return ctx.prisma.track.findUnique({
-        where: { id: input.id },
-        include: {
-          metaImage: {
-            select: {
-              id: true,
-              palette: true,
-            }
-          },
-          artist: true,
-          album: true,
-          genres: true,
-        }
-      })
-    },
-  })
-  .query("list", {
+  .query("searchable", {
     async resolve({ ctx }) {
       return ctx.prisma.track.findMany({
-        include: {
+        select: {
+          id: true,
+          name: true,
           artist: {
             select: {
-              id: true,
               name: true,
             },
           },
           album: {
             select: {
-              id: true,
               name: true,
             },
           },
-          genres: {
-            select: {
-              id: true,
-              name: true,
-            }
-          }
         }
       })
     }
@@ -61,6 +33,7 @@ export const trackRouter = createRouter()
         select: {
           id: true,
           name: true,
+          createdAt: true,
           metaImage: {
             select: {
               id: true,
@@ -79,7 +52,7 @@ export const trackRouter = createRouter()
           },
           audiodb: {
             select: {
-              strTrack: true,
+              intDuration: true,
               thumb: {
                 select: {
                   id: true,
@@ -88,34 +61,27 @@ export const trackRouter = createRouter()
               },
               album: {
                 select: {
-                  strAlbum: true,
                   thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-                  thumbHq: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-                  artist: {
                     select: {
-                      strArtist: true,
+                      id: true,
+                      palette: true,
                     }
-                  }
+                  },
+                  thumbHq: {
+                    select: {
+                      id: true,
+                      palette: true,
+                    }
+                  },
                 }
               },
             }
           },
           spotify: {
             select: {
-              name: true,
+              durationMs: true,
               album: {
                 select: {
-                  name: true,
                   image: {
                     select: {
                       id: true,
@@ -124,24 +90,13 @@ export const trackRouter = createRouter()
                   },
                 }
               },
-              artist: {
-                select: {
-                  name: true,
-                }
-              }
             }
           },
           lastfm: {
             select: {
-              name: true,
-              artist: {
-                select: {
-                  name: true,
-                }
-              },
+              duration: true,
               album: {
                 select: {
-                  name: true,
                   cover: {
                     select: {
                       id: true,
