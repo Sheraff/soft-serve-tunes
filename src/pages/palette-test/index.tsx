@@ -1,5 +1,4 @@
-import { CSSProperties, useRef } from "react"
-import useImagePalette from "../../components/Palette/useImagePalette"
+import { CSSProperties } from "react"
 import { trpc } from "../../utils/trpc"
 import styles from "./index.module.css"
 
@@ -15,38 +14,25 @@ const TEST_ALBUM_IDS = [
 ]
 
 function SingleTest({id}: {id: string}) {
-	const ref = useRef<HTMLImageElement>(null)
-	const palette = useImagePalette({ref, defaultValues: {}})
 	const {data} = trpc.useQuery(["album.miniature", {id}])
 
-	let imgSrc = ""
-	if (data?.spotify?.imageId) {
-		imgSrc = data.spotify.imageId
-	} else if (data?.audiodb?.thumbHqId) {
-		imgSrc = data.audiodb.thumbHqId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.lastfm?.coverId) {
-		imgSrc = data.lastfm.coverId
-	} else if (data?.tracks?.[0]?.metaImageId) {
-		imgSrc = data.tracks[0].metaImageId
-	}
+	const img = data?.cover
+	const palette = img?.palette ? JSON.parse(img.palette) : []
 
 	return (
 		<div className={styles.item}>
-			<div style={{'--color': palette['--palette-bg-main']} as CSSProperties}></div>
-			<div style={{'--color': palette['--palette-bg-gradient']} as CSSProperties}></div>
-			<div style={{'--color': palette['--palette-secondary']} as CSSProperties}></div>
-			<div style={{'--color': palette['--palette-primary']} as CSSProperties}></div>
+			<div style={{'--color': palette[0]} as CSSProperties}></div>
+			<div style={{'--color': palette[1]} as CSSProperties}></div>
+			<div style={{'--color': palette[2]} as CSSProperties}></div>
+			<div style={{'--color': palette[3]} as CSSProperties}></div>
 			<img
-				src={`/api/cover/${imgSrc}`}
+				src={`/api/cover/${img?.id}`}
 				alt=""
-				ref={ref}
 			/>
 			<span style={{
-				'--bg': palette['--palette-bg-main'],
-				'--color': palette['--palette-primary'],
-				'--border': palette['--palette-secondary'],
+				'--bg': palette[0],
+				'--color': palette[3],
+				'--border': palette[2],
 			}}>test</span>
 		</div>
 	)
