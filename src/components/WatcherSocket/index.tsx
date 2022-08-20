@@ -19,6 +19,7 @@ export default function WatcherSocket() {
 				console.log("removed", data.payload)
 				if (data.payload?.track) {
 					queryClient.invalidateQueries(["track.searchable"])
+					queryClient.invalidateQueries(["track.miniature"])
 					queryClient.invalidateQueries(["playlist.generate", { type: 'track', id: data.payload.track.id }])
 				}
 				if (data.payload?.artist) {
