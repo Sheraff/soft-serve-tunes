@@ -58,7 +58,7 @@ function TrackItem({
 			{!isEmpty && (
 				<div className={styles.img}>
 					<img
-						src={`/api/cover/${data.coverSrc}`}
+						src={`/api/cover/${data.coverSrc}/${Math.round(48*2.5)}`}
 						alt=""
 					/>
 				</div>

@@ -66,8 +66,8 @@ export default function useImagePalette({
 				return
 			}
 			const canvas = document.createElement("canvas")
-			canvas.width = Math.min(img.naturalWidth / 2, 300)
-			canvas.height = Math.min(img.naturalHeight / 2, 300)
+			canvas.width = 300
+			canvas.height = 300
 			const ctx = canvas.getContext("2d")
 			if (!ctx || canvas.height === 0 || canvas.width === 0) return
 			ctx.drawImage(img, 0, 0, canvas.width, canvas.height, )

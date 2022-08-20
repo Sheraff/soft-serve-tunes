@@ -153,7 +153,7 @@ export const lastfmRouter = createRouter()
         throw new Error("Track has no artist, not enough to get last.fm info")
       }
       let lastfmTrackId = track.lastfm?.id
-      let lastfmAlbumId = track.album?.lastfm?.id
+      const lastfmAlbumId = track.album?.lastfm?.id
       let lastfmArtistId = track.artist.lastfm?.id
       if (!track.lastfm || input.force) {
         const url = new URL('/2.0', 'http://ws.audioscrobbler.com')

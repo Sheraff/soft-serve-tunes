@@ -53,7 +53,7 @@ function ArtistItem({
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
 					<img
-						src={data?.coverSrc ? `/api/cover/${data.coverSrc}` : ""}
+						src={data?.coverSrc ? `/api/cover/${data.coverSrc}/${Math.round((393-4*8)/3 * 2.5)}` : ""}
 						alt=""
 					/>
 				</div>

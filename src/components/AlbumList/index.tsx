@@ -52,7 +52,7 @@ function AlbumItem({
 		>
 			{!isEmpty && (
 				<img
-					src={data?.coverSrc ? `/api/cover/${data.coverSrc}` : ""}
+					src={data?.coverSrc ? `/api/cover/${data.coverSrc}/${Math.round(174.5*2.5)}` : ""}
 					alt=""
 				/>
 			)}

@@ -5,7 +5,7 @@ import { dirname, extname, join } from "node:path"
 import { env } from "../env/server.mjs"
 import { prisma } from "../server/db/client"
 
-export async function writeImage(buffer: Buffer, extension: string = 'jpg') {
+export async function writeImage(buffer: Buffer, extension = 'jpg') {
 	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & {0: string, 1: string, 2: string, 3: string, 4: string, length: 32}
 	const fileName = `${hash}${extension.startsWith('.') ? '' : '.'}${extension}`
 	const imagePath = join('.meta', hash[0], hash[1], hash[2], fileName)
