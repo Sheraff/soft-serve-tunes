@@ -29,6 +29,8 @@ export async function writeImage(buffer: Buffer, extension = 'jpg') {
 		const extracted = await extractPalette(buffer)
 		if (extracted) {
 			palette = JSON.stringify(extracted)
+		} else {
+			console.warn('Could not extract palette')
 		}
 	}
 	return {
@@ -51,7 +53,10 @@ export async function fetchAndWriteImage(url?: string) {
 				mimetype,
 				...result,
 			}
-		} catch { }
+		} catch {
+			console.warn('Could not fetch image', url)
+			// always leave a comment when you swallow errors silently!
+		}
 	}
 	return {
 		mimetype: '',

@@ -266,17 +266,19 @@ export const audiodbRouter = createRouter()
 					const url = input[key]
 					if (url) {
 						const {hash, path, mimetype, palette} = await fetchAndWriteImage(url as string)
-						const {id} = await ctx.prisma.image.upsert({
-							where: { id: hash },
-							update: {},
-							create: {
-								id: hash as string,
-								path,
-								mimetype,
-								palette,
-							}
-						})
-						return [key, id] as const
+						if (hash) {
+							const {id} = await ctx.prisma.image.upsert({
+								where: { id: hash },
+								update: {},
+								create: {
+									id: hash as string,
+									path,
+									mimetype,
+									palette,
+								}
+							})
+							return [key, id] as const
+						}
 					}
 				}))
 				const fulfilled = imageIds.filter((result) => result.status === 'fulfilled') as PromiseFulfilledResult<[J, string] | undefined>[]

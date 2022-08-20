@@ -218,17 +218,19 @@ export const lastfmRouter = createRouter()
           const image = lastfm.artist.image.at(-1)?.["#text"]
           if(image) {
             const {hash, path, mimetype, palette} = await fetchAndWriteImage(lastfmImageToUrl(image))
-            const {id} = await ctx.prisma.image.upsert({
-              where: { id: hash },
-              update: {},
-              create: {
-                id: hash as string,
-                path,
-                mimetype,
-                palette,
-              }
-            })
-            coverId = id
+            if (hash) {
+              const {id} = await ctx.prisma.image.upsert({
+                where: { id: hash },
+                update: {},
+                create: {
+                  id: hash as string,
+                  path,
+                  mimetype,
+                  palette,
+                }
+              })
+              coverId = id
+            }
           }
           const lastfmArtist = await ctx.prisma.lastFmArtist.upsert({
             where: { entityId: track.artist.id },
@@ -301,17 +303,19 @@ export const lastfmRouter = createRouter()
           const image = lastfm.album.image.at(-1)?.["#text"]
           if(image) {
             const {hash, path, mimetype, palette} = await fetchAndWriteImage(lastfmImageToUrl(image))
-            const {id} = await ctx.prisma.image.upsert({
-              where: { id: hash },
-              update: {},
-              create: {
-                id: hash as string,
-                path,
-                mimetype,
-                palette,
-              }
-            })
-            coverId = id
+            if (hash) {
+              const {id} = await ctx.prisma.image.upsert({
+                where: { id: hash },
+                update: {},
+                create: {
+                  id: hash as string,
+                  path,
+                  mimetype,
+                  palette,
+                }
+              })
+              coverId = id
+            }
           }
           await ctx.prisma.lastFmAlbum.upsert({
             where: { entityId: track.album.id },

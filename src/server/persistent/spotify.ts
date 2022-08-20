@@ -488,38 +488,10 @@ export async function findTrack(trackDbId: string) {
 			break albumFill
 		}
 		const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
-		await prisma.spotifyAlbum.update({
-			where: {
-				id: albumObject.id
-			},
-			data: {
-				image: {
-					connectOrCreate: {
-						where: {
-							id: hash
-						},
-						create: {
-							id: hash,
-							path,
-							mimetype,
-							palette,
-						}
-					}
-				}
-			}
-		})
-	}
-	artistFill: if (artistObject && !artistObject.imageId) {
-		const artistData = await spotify.fetch(`artists/${artistObject.id}`)
-		if ('error' in artistData) {
-			break artistFill
-		}
-		const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
-		if (image) {
-			const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
-			await prisma.spotifyArtist.update({
+		if (hash) {
+			await prisma.spotifyAlbum.update({
 				where: {
-					id: artistObject.id
+					id: albumObject.id
 				},
 				data: {
 					image: {
@@ -534,22 +506,54 @@ export async function findTrack(trackDbId: string) {
 								palette,
 							}
 						}
-					},
-					popularity: artistData.popularity,
-					...(artistData.genres?.length ? {
-						genres: {
-							connectOrCreate: artistData.genres.map(genre => ({
-								where: {
-									name: genre,
-								},
-								create: {
-									name: genre,
-								}
-							}))
-						}
-					} : {}),
+					}
 				}
 			})
+		}
+	}
+	artistFill: if (artistObject && !artistObject.imageId) {
+		const artistData = await spotify.fetch(`artists/${artistObject.id}`)
+		if ('error' in artistData) {
+			break artistFill
+		}
+		const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
+		if (image) {
+			const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
+			if(hash) {
+				await prisma.spotifyArtist.update({
+					where: {
+						id: artistObject.id
+					},
+					data: {
+						image: {
+							connectOrCreate: {
+								where: {
+									id: hash
+								},
+								create: {
+									id: hash,
+									path,
+									mimetype,
+									palette,
+								}
+							}
+						},
+						popularity: artistData.popularity,
+						...(artistData.genres?.length ? {
+							genres: {
+								connectOrCreate: artistData.genres.map(genre => ({
+									where: {
+										name: genre,
+									},
+									create: {
+										name: genre,
+									}
+								}))
+							}
+						} : {}),
+					}
+				})
+			}
 		} else {
 			await prisma.spotifyArtist.update({
 				where: {
