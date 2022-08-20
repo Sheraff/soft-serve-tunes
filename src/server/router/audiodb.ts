@@ -161,7 +161,6 @@ export const audiodbRouter = createRouter()
 			})
 				.then(async (artist) => {
 					if (!artist) {
-						resolveForId(input.id)
 						return
 					}
 					await queue.next()
@@ -172,7 +171,6 @@ export const audiodbRouter = createRouter()
 					const artistsJson = await artistsData.json()
 					if (!artistsJson.artists || artistsJson.artists.length === 0) {
 						console.log(`\x1b[33m404  \x1b[0m - audiodb: No artist found for ${artist.name}`)
-						resolveForId(input.id)
 						return
 					}
 					const audiodbArtists = z.object({artists: z.array(audiodbArtistSchema)}).parse(artistsJson)
@@ -185,7 +183,6 @@ export const audiodbRouter = createRouter()
 					if (!audiodbArtist) {
 						console.log(`\x1b[33m409  \x1b[0m - audiodb: Multiple artists found for ${artist.name}`)
 						console.log(audiodbArtists.artists.map(a => a.strArtist).join(', '))
-						resolveForId(input.id)
 						return
 					}
 					
@@ -245,15 +242,15 @@ export const audiodbRouter = createRouter()
 						}))
 						if (oneAlbumConnection) {
 							await ctx.prisma.audioDbAlbum.update({
-								where: {idAlbum: audiodbAlbum.idAlbum},
+								where: { idAlbum: audiodbAlbum.idAlbum },
 								data: {
 									entityId: oneAlbumConnection,
 								},
 							})
 						}
 					}
-					resolveForId(input.id)
 				})
+				.finally(() => resolveForId(input.id))
 			return false
 
 			async function keysAndInputToImageIds<

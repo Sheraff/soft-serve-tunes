@@ -7,6 +7,7 @@ import styles from "./index.module.css"
 import classNames from "classnames"
 import TrackList from "../../TrackList"
 import { paletteToCSSProperties } from "../../Palette"
+import { trpc } from "../../../utils/trpc"
 
 export default forwardRef(function AlbumView({
 	open,
@@ -18,6 +19,9 @@ export default forwardRef(function AlbumView({
 	const {data: _data} = useIndexedTRcpQuery(["album.get", {id}], {
 		enabled: Boolean(id),
 		keepPreviousData: true,
+	})
+	trpc.useQuery(["lastfm.album", {id}], {
+		enabled: Boolean(id),
 	})
 
 	const stableData = useRef(_data)

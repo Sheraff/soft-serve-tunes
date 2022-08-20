@@ -5,6 +5,7 @@ import { env } from "../../env/server.mjs"
 import { fetchAndWriteImage } from "../../utils/writeImage"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 import sanitizeString from "../../utils/sanitizeString"
+import { lastFm } from "../persistent/lastfm"
 
 const lastFmTrackSchema = z
   .object({
@@ -103,6 +104,33 @@ const lastFmAlbumSchema = z
   })
 
 export const lastfmRouter = createRouter()
+  .query("track2", {
+    input: z
+      .object({
+        id: z.string(),
+      }),
+    async resolve({ input }) {
+      return lastFm.findTrack(input.id)
+    }
+  })
+  .query("album", {
+    input: z
+      .object({
+        id: z.string(),
+      }),
+    async resolve({ input }) {
+      return lastFm.findAlbum(input.id)
+    }
+  })
+  .query("artist", {
+    input: z
+      .object({
+        id: z.string(),
+      }),
+    async resolve({ input }) {
+      return lastFm.findArtist(input.id)
+    }
+  })
   .query("track", {
     input: z
       .object({
