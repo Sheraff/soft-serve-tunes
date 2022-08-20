@@ -62,18 +62,17 @@ export async function fetchAndWriteImage(url?: string) {
 	}
 }
 
-function extractPalette(buffer: Buffer) {
+async function extractPalette(buffer: Buffer) {
 	return sharp(buffer)
 		.resize(300, 300, {
 			fit: 'cover',
-			withoutEnlargement: true,
 			fastShrinkOnLoad: true,
 		})
 		.extract({
-			top: Math.round(15),
-			left: Math.round(15),
-			width: Math.round(270),
-			height: Math.round(270),
+			top: Math.round(300 * 0.05),
+			left: Math.round(300 * 0.05),
+			width: Math.round(300 * 0.9),
+			height: Math.round(300 * 0.9),
 		})
 		.raw({ depth: 'uchar' })
 		.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
