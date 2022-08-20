@@ -35,7 +35,7 @@ function AlbumItem({
 
 	
 
-	const isEmpty = !data?.coverSrc
+	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
 
 	const {setAppState} = useAppState()
@@ -52,7 +52,7 @@ function AlbumItem({
 		>
 			{!isEmpty && (
 				<img
-					src={data?.coverSrc ? `/api/cover/${data.coverSrc}/${Math.round(174.5*2.5)}` : ""}
+					src={data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5*2.5)}` : ""}
 					alt=""
 				/>
 			)}

@@ -54,20 +54,16 @@ export default function AudioTest({ }) {
 		}
 	})
 
-	const img = useRef<HTMLImageElement>(null)
-
-
 	return (
 		<>
 			<div className={styles.container}>
 				<Header/>
 				<div className={styles.content}>
-					<Cover ref={img} />
+					<Cover />
 					<PlaylistViz />
 				</div>
 				<Player />
 			</div>
-			<Palette img={img} />
 			<Notification />
 			<Test artistId={item?.artistId}/>
 		</>

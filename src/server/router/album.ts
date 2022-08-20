@@ -17,12 +17,26 @@ export const albumRouter = createRouter()
             }
           },
           artist: true,
-          tracks: true,
+          tracks: {
+            include: {
+              metaImage: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              }
+            }
+          },
           lastfm: {
             select: {
               name: true,
               releasedate: true,
-              coverId: true,
+              cover: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           audiodb: {
@@ -30,8 +44,18 @@ export const albumRouter = createRouter()
               strAlbum: true,
               intYearReleased: true,
               strDescriptionEN: true,
-              thumbId: true,
-              thumbHqId: true,
+              thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
+              thumbHq: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           spotify: {
@@ -39,26 +63,31 @@ export const albumRouter = createRouter()
               name: true,
               totalTracks: true,
               releaseDate: true,
-              imageId: true,
+              image: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           }
         }
       })
-      let coverSrc = ""
-      if (album?.spotify?.imageId) {
-        coverSrc = album.spotify.imageId
-      } else if (album?.audiodb?.thumbHqId) {
-        coverSrc = album.audiodb.thumbHqId
-      } else if (album?.audiodb?.thumbId) {
-        coverSrc = album.audiodb.thumbId
-      } else if (album?.lastfm?.coverId) {
-        coverSrc = album.lastfm.coverId
-      } else if (album?.tracks?.[0]?.metaImageId) {
-        coverSrc = album.tracks[0].metaImageId
+      let cover = undefined
+      if (album?.spotify?.image) {
+        cover = album.spotify.image
+      } else if (album?.audiodb?.thumbHq) {
+        cover = album.audiodb.thumbHq
+      } else if (album?.audiodb?.thumb) {
+        cover = album.audiodb.thumb
+      } else if (album?.lastfm?.cover) {
+        cover = album.lastfm.cover
+      } else if (album?.tracks?.[0]?.metaImage) {
+        cover = album.tracks[0].metaImage
       }
       return {
         ...album,
-        coverSrc,
+        cover,
       }
     },
   })
@@ -102,19 +131,39 @@ export const albumRouter = createRouter()
           },
           lastfm: {
             select: {
-              coverId: true,
+              cover: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              }
             }
           },
           audiodb: {
             select: {
-              thumbId: true,
-              thumbHqId: true,
+              thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
+              thumbHq: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           spotify: {
             select: {
               name: true,
-              imageId: true,
+              image: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           artist: {
@@ -130,26 +179,31 @@ export const albumRouter = createRouter()
             },
             take: 1,
             select: {
-              metaImageId: true,
+              metaImage: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           }
         }
       })
-      let coverSrc = ""
-      if (album?.spotify?.imageId) {
-        coverSrc = album.spotify.imageId
-      } else if (album?.audiodb?.thumbHqId) {
-        coverSrc = album.audiodb.thumbHqId
-      } else if (album?.audiodb?.thumbId) {
-        coverSrc = album.audiodb.thumbId
-      } else if (album?.lastfm?.coverId) {
-        coverSrc = album.lastfm.coverId
-      } else if (album?.tracks?.[0]?.metaImageId) {
-        coverSrc = album.tracks[0].metaImageId
+      let cover = undefined
+      if (album?.spotify?.image) {
+        cover = album.spotify.image
+      } else if (album?.audiodb?.thumbHq) {
+        cover = album.audiodb.thumbHq
+      } else if (album?.audiodb?.thumb) {
+        cover = album.audiodb.thumb
+      } else if (album?.lastfm?.cover) {
+        cover = album.lastfm.cover
+      } else if (album?.tracks?.[0]?.metaImage) {
+        cover = album.tracks[0].metaImage
       }
       return {
         ...album,
-        coverSrc,
+        cover,
       }
     }
   })

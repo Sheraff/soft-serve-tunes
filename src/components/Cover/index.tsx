@@ -1,9 +1,9 @@
-import { forwardRef } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 import { useAppState } from "../AppContext"
+import Palette from "../Palette"
 
-export default forwardRef(function Cover({}, ref: React.Ref<HTMLImageElement>) {
+export default function Cover() {
 	const {playlist} = useAppState()
 
 	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
@@ -21,11 +21,13 @@ export default forwardRef(function Cover({}, ref: React.Ref<HTMLImageElement>) {
 		enabled: Boolean(item?.id),
 	})
 	return (
-		<img
-			className={styles.img}
-			src={data?.coverSrc ? `/api/cover/${data.coverSrc}` : ""}
-			alt=""
-			ref={ref}
-		/>
+		<>
+			<img
+				className={styles.img}
+				src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
+				alt=""
+			/>
+			<Palette palette={data?.cover ? JSON.parse(data.cover.palette) : undefined} />
+		</>
 	)
-})
+}

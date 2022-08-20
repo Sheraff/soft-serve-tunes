@@ -14,6 +14,7 @@ export const trackRouter = createRouter()
           metaImage: {
             select: {
               id: true,
+              palette: true,
             }
           },
           artist: true,
@@ -60,7 +61,12 @@ export const trackRouter = createRouter()
         select: {
           id: true,
           name: true,
-          metaImageId: true,
+          metaImage: {
+            select: {
+              id: true,
+              palette: true,
+            }
+          },
           album: {
             select: {
               name: true,
@@ -74,12 +80,27 @@ export const trackRouter = createRouter()
           audiodb: {
             select: {
               strTrack: true,
-              thumbId: true,
+              thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
               album: {
                 select: {
                   strAlbum: true,
-                  thumbId: true,
-                  thumbHqId: true,
+                  thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
+                  thumbHq: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
                   artist: {
                     select: {
                       strArtist: true,
@@ -95,7 +116,12 @@ export const trackRouter = createRouter()
               album: {
                 select: {
                   name: true,
-                  imageId: true,
+                  image: {
+                    select: {
+                      id: true,
+                      palette: true,
+                    }
+                  },
                 }
               },
               artist: {
@@ -116,7 +142,12 @@ export const trackRouter = createRouter()
               album: {
                 select: {
                   name: true,
-                  coverId: true,
+                  cover: {
+                    select: {
+                      id: true,
+                      palette: true,
+                    }
+                  },
                 }
               }
             }
@@ -124,46 +155,21 @@ export const trackRouter = createRouter()
         }
       })
       if (!track) return null
-      let coverSrc = null
-      if (track.spotify?.album?.imageId) {
-        coverSrc = track.spotify.album?.imageId
-      } else if (track.audiodb?.thumbId) {
-        coverSrc = track.audiodb.thumbId
-      } else if (track.audiodb?.album.thumbHqId) {
-        coverSrc = track.audiodb.album.thumbHqId
-      } else if (track.audiodb?.album.thumbId) {
-        coverSrc = track.audiodb.album.thumbId
-      } else if (track.lastfm?.album?.coverId) {
-        coverSrc = track.lastfm.album.coverId
-      } else if (track.metaImageId) {
-        coverSrc = track.metaImageId
+      let cover = undefined
+      if (track.spotify?.album?.image) {
+        cover = track.spotify.album?.image
+      } else if (track.audiodb?.thumb) {
+        cover = track.audiodb.thumb
+      } else if (track.audiodb?.album.thumbHq) {
+        cover = track.audiodb.album.thumbHq
+      } else if (track.audiodb?.album.thumb) {
+        cover = track.audiodb.album.thumb
+      } else if (track.lastfm?.album?.cover) {
+        cover = track.lastfm.album.cover
+      } else if (track.metaImage) {
+        cover = track.metaImage
       }
-      return {...track, coverSrc}
-    }
-  })
-  .query("startsWith", {
-    input: z
-      .object({
-        start: z.string().length(1),
-      }),
-    async resolve({ input, ctx }) {
-      return ctx.prisma.track.findMany({
-        where: {
-          name: {
-            startsWith: input.start,
-          },
-        },
-        include: {
-          metaImage: {
-            select: {
-              id: true,
-            }
-          },
-          artist: true,
-          album: true,
-          genres: true,
-        }
-      })
+      return {...track, cover}
     }
   })
   .mutation("playcount", {

@@ -5,8 +5,8 @@ import { useAppState } from "../../AppContext"
 import PlayIcon from "../../../icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
-import useImagePalette from "../../Palette/useImagePalette"
 import TrackList from "../../TrackList"
+import { paletteToCSSProperties } from "../../Palette"
 
 export default forwardRef(function AlbumView({
 	open,
@@ -48,9 +48,6 @@ export default forwardRef(function AlbumView({
 		return () => observer.disconnect()
 	}, [data?.audiodb?.strDescriptionEN])
 
-	const cover = useRef<HTMLImageElement>(null)
-	const palette = useImagePalette({ref: cover})
-
 	const infos = []
 	if (data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate) {
 		infos.push(`${data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate}`)
@@ -62,12 +59,13 @@ export default forwardRef(function AlbumView({
 		infos.push(`${data?._count.tracks} tracks${pluralize(data?._count.tracks)}`)
 	}
 
+	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
+
 	return (
 		<div className={styles.main} data-open={open} ref={ref} style={palette}>
 			<img
-				ref={cover}
 				className={styles.img}
-				src={data?.coverSrc ? `/api/cover/${data?.coverSrc}` : ""}
+				src={data?.cover ? `/api/cover/${data?.cover.id}` : ""}
 				alt=""
 			/>
 			<div className={styles.head}>

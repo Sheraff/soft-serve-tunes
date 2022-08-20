@@ -33,8 +33,8 @@ function ArtistItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	const isEmpty = !data?.coverSrc
-	const isCutout = data?.audiodb?.cutoutId
+	const isEmpty = !data?.cover
+	const isCutout = data?.audiodb?.cutout
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
 
@@ -53,7 +53,7 @@ function ArtistItem({
 			{!isEmpty && (
 				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
 					<img
-						src={data?.coverSrc ? `/api/cover/${data.coverSrc}/${Math.round((393-4*8)/3 * 2.5)}` : ""}
+						src={data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2.5)}` : ""}
 						alt=""
 					/>
 				</div>

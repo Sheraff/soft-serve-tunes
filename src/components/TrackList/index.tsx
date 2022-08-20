@@ -37,7 +37,7 @@ function TrackItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	const isEmpty = !data?.coverSrc
+	const isEmpty = !data?.cover
 
 	const {setAppState} = useAppState()
 
@@ -58,7 +58,7 @@ function TrackItem({
 			{!isEmpty && (
 				<div className={styles.img}>
 					<img
-						src={`/api/cover/${data.coverSrc}/${Math.round(48*2.5)}`}
+						src={`/api/cover/${data.cover?.id}/${Math.round(48*2.5)}`}
 						alt=""
 					/>
 				</div>

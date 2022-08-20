@@ -14,7 +14,7 @@ export default function PastSearch({
 	entity,
 	type,
 }: PropsWithoutRef<PastSearchItem>) {
-	const isEmpty = !('coverSrc' in entity)
+	const isEmpty = !('cover' in entity)
 	const {setAppState} = useAppState()
 	return (
 		<button
@@ -25,7 +25,7 @@ export default function PastSearch({
 			{!isEmpty && (
 				<img
 					className={styles.img}
-					src={`/api/cover/${entity.coverSrc}`}
+					src={`/api/cover/${entity.cover?.id}`}
 					alt=""
 				/>
 			)}

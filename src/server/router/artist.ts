@@ -8,7 +8,7 @@ export const artistRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      return ctx.prisma.artist.findUnique({
+      const artist = await ctx.prisma.artist.findUnique({
         where: { id: input.id },
         include: {
           _count: {
@@ -21,8 +21,12 @@ export const artistRouter = createRouter()
           audiodb: {
             select: {
               strArtist: true,
-              thumbId: true,
-              cutoutId: true,
+              thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
               intBornYear: true,
               intFormedYear: true,
               strBiographyEN: true,
@@ -31,7 +35,12 @@ export const artistRouter = createRouter()
           spotify: {
             select: {
               name: true,
-              imageId: true,
+              image: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           tracks: {
@@ -42,11 +51,28 @@ export const artistRouter = createRouter()
             },
             take: 1,
             select: {
-              metaImageId: true,
+              metaImage: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           }
         }
       })
+      let cover = undefined
+      if (artist?.audiodb?.thumb) {
+        cover = artist.audiodb.thumb
+      } else if (artist?.spotify?.image) {
+        cover = artist.spotify.image
+      } else if (artist?.tracks?.[0]?.metaImage) {
+        cover = artist.tracks[0].metaImage
+      }
+      return {
+        ...artist,
+        cover,
+      }
     },
   })
   .query("miniature", {
@@ -69,14 +95,29 @@ export const artistRouter = createRouter()
           audiodb: {
             select: {
               strArtist: true,
-              thumbId: true,
-              cutoutId: true,
+              thumb: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
+              cutout: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           spotify: {
             select: {
               name: true,
-              imageId: true,
+              image: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           },
           tracks: {
@@ -87,24 +128,29 @@ export const artistRouter = createRouter()
             },
             take: 1,
             select: {
-              metaImageId: true,
+              metaImage: {
+                select: {
+                  id: true,
+                  palette: true,
+                }
+              },
             }
           }
         }
       })
-      let coverSrc = ""
-      if (artist?.audiodb?.cutoutId) {
-        coverSrc = artist.audiodb.cutoutId
-      } else if (artist?.audiodb?.thumbId) {
-        coverSrc = artist.audiodb.thumbId
-      } else if (artist?.spotify?.imageId) {
-        coverSrc = artist.spotify.imageId
-      } else if (artist?.tracks?.[0]?.metaImageId) {
-        coverSrc = artist.tracks[0].metaImageId
+      let cover = undefined
+      if (artist?.audiodb?.cutout) {
+        cover = artist.audiodb.cutout
+      } else if (artist?.audiodb?.thumb) {
+        cover = artist.audiodb.thumb
+      } else if (artist?.spotify?.image) {
+        cover = artist.spotify.image
+      } else if (artist?.tracks?.[0]?.metaImage) {
+        cover = artist.tracks[0].metaImage
       }
       return {
         ...artist,
-        coverSrc,
+        cover,
       }
     }
   })

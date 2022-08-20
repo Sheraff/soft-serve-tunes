@@ -6,7 +6,7 @@ import { useAppState } from "../../AppContext"
 import PlayIcon from "../../../icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
-import useImagePalette from "../../Palette/useImagePalette"
+import { paletteToCSSProperties } from "../../Palette"
 
 export default forwardRef(function ArtistView({
 	open,
@@ -23,15 +23,6 @@ export default forwardRef(function ArtistView({
 	const stableData = useRef(_data)
 	stableData.current = _data || stableData.current
 	const data = stableData.current
-
-	let imgSrc = ""
-	if (data?.spotify?.imageId) {
-		imgSrc = data.spotify.imageId
-	} else if (data?.audiodb?.thumbId) {
-		imgSrc = data.audiodb.thumbId
-	} else if (data?.tracks?.[0]?.metaImageId) {
-		imgSrc = data.tracks[0].metaImageId
-	}
 
 	const {setAppState, playlist} = useAppState()
 
@@ -57,26 +48,24 @@ export default forwardRef(function ArtistView({
 		return () => observer.disconnect()
 	}, [data?.audiodb?.strBiographyEN])
 
-	const cover = useRef<HTMLImageElement>(null)
-	const palette = useImagePalette({ref: cover})
-
 	const infos = []
 	if (data?.audiodb?.intFormedYear || data?.audiodb?.intBornYear) {
 		infos.push(`${data?.audiodb?.intFormedYear || data?.audiodb?.intBornYear}`)
 	}
-	if (data?._count.albums) {
+	if (data?._count?.albums) {
 		infos.push(`${data._count.albums} album${pluralize(data._count.albums)}`)
 	}
-	if (data?._count.tracks) {
+	if (data?._count?.tracks) {
 		infos.push(`${data._count.tracks} track${pluralize(data._count.tracks)}`)
 	}
+
+	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
 
 	return (
 		<div className={styles.main} data-open={open} ref={ref} style={palette}>
 			<img
-				ref={cover}
 				className={styles.img}
-				src={imgSrc ? `/api/cover/${imgSrc}` : ""}
+				src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
 				alt=""
 			/>
 			<div className={styles.head}>
