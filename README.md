@@ -137,8 +137,8 @@ Here are some resources that we commonly refer to:
 ## Deploy to raspberry
 
 ### update raspbian 
-need an arm64 OS, as prisma doesn't work on 32bits systems
-https://www.raspberrypi.com/software/
+- need an arm64 OS, as prisma doesn't work on 32bits systems https://www.raspberrypi.com/software/
+- need musl for "sharp" image processing: `sudo apt install musl:arm64`
 
 ### access rpi
 freebox > box settings > ports > 
