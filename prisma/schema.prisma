@@ -51,6 +51,7 @@ model Image {
   id                     String          @id
   path                   String          @unique
   mimetype               String
+  palette                String
   track                  Track[]         @relation
   lastfmAlbum            LastFmAlbum[]   @relation
   lastfmArtist           LastFmArtist[]  @relation

@@ -57,9 +57,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	try {
 		console.log(`\x1b[36minfo \x1b[0m - adding new track from file ${relativePath}`)
 		const imageData = metadata.common.picture?.[0]?.data
-		const { hash, path: imagePath } = imageData
+		const { hash, path: imagePath, palette } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
-			: { hash: '', path: '' }
+			: { hash: '', path: '', palette: '' }
 		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist)
 		const track = await prisma.track.create({
 			include: {
@@ -94,6 +94,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 								id: hash,
 								path: imagePath,
 								mimetype: metadata.common.picture?.[0]?.format ?? 'image/*',
+								palette,
 							}
 						}
 					}

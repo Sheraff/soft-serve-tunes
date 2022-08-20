@@ -217,7 +217,7 @@ export const lastfmRouter = createRouter()
           let coverId 
           const image = lastfm.artist.image.at(-1)?.["#text"]
           if(image) {
-            const {hash, path, mimetype} = await fetchAndWriteImage(lastfmImageToUrl(image))
+            const {hash, path, mimetype, palette} = await fetchAndWriteImage(lastfmImageToUrl(image))
             const {id} = await ctx.prisma.image.upsert({
               where: { id: hash },
               update: {},
@@ -225,6 +225,7 @@ export const lastfmRouter = createRouter()
                 id: hash as string,
                 path,
                 mimetype,
+                palette,
               }
             })
             coverId = id
@@ -299,7 +300,7 @@ export const lastfmRouter = createRouter()
           let coverId
           const image = lastfm.album.image.at(-1)?.["#text"]
           if(image) {
-            const {hash, path, mimetype} = await fetchAndWriteImage(lastfmImageToUrl(image))
+            const {hash, path, mimetype, palette} = await fetchAndWriteImage(lastfmImageToUrl(image))
             const {id} = await ctx.prisma.image.upsert({
               where: { id: hash },
               update: {},
@@ -307,6 +308,7 @@ export const lastfmRouter = createRouter()
                 id: hash as string,
                 path,
                 mimetype,
+                palette,
               }
             })
             coverId = id

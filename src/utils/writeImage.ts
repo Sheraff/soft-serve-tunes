@@ -4,12 +4,15 @@ import { mkdir } from "node:fs/promises"
 import { dirname, extname, join } from "node:path"
 import { env } from "../env/server.mjs"
 import { prisma } from "../server/db/client"
+import sharp from "sharp"
+import extractPaletteFromUint8 from "./paletteExtraction.js"
 
 export async function writeImage(buffer: Buffer, extension = 'jpg') {
-	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & {0: string, 1: string, 2: string, 3: string, 4: string, length: 32}
+	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
 	const fileName = `${hash}${extension.startsWith('.') ? '' : '.'}${extension}`
 	const imagePath = join('.meta', hash[0], hash[1], hash[2], fileName)
-	const existingImage = await prisma.image.findUnique({where: {id: hash}})
+	const existingImage = await prisma.image.findUnique({ where: { id: hash } })
+	let palette = existingImage?.palette || ''
 	if (!existingImage) {
 		const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, imagePath)
 		const dir = dirname(fullPath)
@@ -17,17 +20,22 @@ export async function writeImage(buffer: Buffer, extension = 'jpg') {
 			if (error && error.code === 'ENOENT') {
 				await mkdir(dirname(fullPath), { recursive: true })
 			}
-			writeFile(fullPath, buffer, {flag: 'wx'}, (error) => {
+			writeFile(fullPath, buffer, { flag: 'wx' }, (error) => {
 				if (error && error.code !== 'EEXIST') {
 					console.warn('Error writing image', error)
 				}
 			})
 		})
+		const extracted = await extractPalette(buffer)
+		if (extracted) {
+			palette = JSON.stringify(extracted)
+		}
 	}
 	return {
 		hash,
 		path: imagePath,
 		exists: Boolean(existingImage),
+		palette,
 	}
 }
 
@@ -43,12 +51,36 @@ export async function fetchAndWriteImage(url?: string) {
 				mimetype,
 				...result,
 			}
-		} catch {}
+		} catch { }
 	}
 	return {
 		mimetype: '',
 		hash: '',
 		path: '',
+		palette: '',
 		exists: undefined,
 	}
+}
+
+function extractPalette(buffer: Buffer) {
+	return sharp(buffer)
+		.resize(300, 300, {
+			fit: 'cover',
+			withoutEnlargement: true,
+			fastShrinkOnLoad: true,
+		})
+		.extract({
+			top: Math.round(15),
+			left: Math.round(15),
+			width: Math.round(270),
+			height: Math.round(270),
+		})
+		.raw({ depth: 'uchar' })
+		.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+			if (info.channels !== 3 && info.channels !== 4) {
+				return undefined
+			}
+			const array = Uint8ClampedArray.from(data)
+			return extractPaletteFromUint8(array, info.channels)
+		})
 }

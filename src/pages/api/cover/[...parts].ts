@@ -5,7 +5,6 @@ import { env } from "../../../env/server.mjs"
 import { prisma } from "../../../server/db/client"
 import sharp from "sharp"
 import { access } from "node:fs/promises"
-import extractPaletteFromUint8 from "../../../utils/paletteExtraction"
 
 const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 
@@ -36,42 +35,14 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     exactStream.pipe(res)
     returnStream = exactStream
   } catch {
-    const fileStream = sharp(originalFilePath)
-    const transformStream = fileStream.clone()
+    const transformStream = sharp(originalFilePath)
       .resize(width, width, {
         fit: 'cover',
         withoutEnlargement: true,
         fastShrinkOnLoad: false,
       })
       .toFormat('avif')
-
-      returnStream = transformStream.clone().pipe(res)
-
-      transformStream.clone().toFile(exactFilePath)
-      const paletteStream = fileStream.clone()
-      paletteStream
-        .resize(300, 300, {
-          fit: 'cover',
-          withoutEnlargement: true,
-          fastShrinkOnLoad: true,
-        })
-        .extract({
-          top: Math.round(15),
-          left: Math.round(15),
-          width: Math.round(270),
-          height: Math.round(270),
-        })
-        .raw({depth: 'uchar'})
-        .toBuffer({ resolveWithObject: true }).then(({data, info}) => {
-          if (info.channels !== 3 && info.channels !== 4) {
-            return
-          }
-          const array = Uint8ClampedArray.from(data)
-          console.log(array)
-          console.log(data.length, info)
-          const palette = extractPaletteFromUint8(array, info.channels)
-          console.log(palette)
-        })
+    returnStream = transformStream.pipe(res)
   } finally {
     if (returnStream === null) {
       return res.status(500).json({ error: "Error transforming image" })

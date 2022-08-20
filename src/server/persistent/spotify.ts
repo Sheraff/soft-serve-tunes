@@ -487,7 +487,7 @@ export async function findTrack(trackDbId: string) {
 		if (!image) {
 			break albumFill
 		}
-		const {hash, path, mimetype} = await fetchAndWriteImage(image.url)
+		const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
 		await prisma.spotifyAlbum.update({
 			where: {
 				id: albumObject.id
@@ -502,6 +502,7 @@ export async function findTrack(trackDbId: string) {
 							id: hash,
 							path,
 							mimetype,
+							palette,
 						}
 					}
 				}
@@ -515,7 +516,7 @@ export async function findTrack(trackDbId: string) {
 		}
 		const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
 		if (image) {
-			const {hash, path, mimetype} = await fetchAndWriteImage(image.url)
+			const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
 			await prisma.spotifyArtist.update({
 				where: {
 					id: artistObject.id
@@ -530,6 +531,7 @@ export async function findTrack(trackDbId: string) {
 								id: hash,
 								path,
 								mimetype,
+								palette,
 							}
 						}
 					},
