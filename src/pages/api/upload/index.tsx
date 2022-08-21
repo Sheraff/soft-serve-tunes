@@ -10,7 +10,7 @@ import { spotify } from "../../../server/persistent/spotify"
 import sanitizeString from "../../../utils/sanitizeString"
 import pathToSearch from "../../../utils/pathToSearch"
 import { socketServer } from "../../../server/persistent/ws"
-import { log } from "../../../utils/logger"
+import log from "../../../utils/logger"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const form = new formidable.IncomingForm({
