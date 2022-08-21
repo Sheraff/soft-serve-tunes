@@ -6,6 +6,7 @@ import Queue from "../../utils/Queue"
 import sanitizeString from "../../utils/sanitizeString"
 import log from "../../utils/logger"
 import { prisma } from "../db/client"
+import retryable from "../../utils/retryable"
 
 const queue = new Queue(2000)
 
@@ -126,7 +127,7 @@ export async function fetchArtist(id: string) {
 			return
 		}
 		const audiodbArtists = z.object({artists: z.array(audiodbArtistSchema)}).parse(artistsJson)
-		let audiodbArtist
+		let audiodbArtist: z.infer<typeof audiodbArtistSchema> | undefined = undefined
 		if (audiodbArtists.artists.length === 1) {
 			audiodbArtist = audiodbArtists.artists[0]
 		} else if (artist.lastfm?.mbid) {
@@ -140,17 +141,21 @@ export async function fetchArtist(id: string) {
 		}
 		
 		const imageIds = await keysAndInputToImageIds(audiodbArtist, ['strArtistThumb', 'strArtistLogo', 'strArtistCutout', 'strArtistClearart', 'strArtistWideThumb', 'strArtistBanner'])
-		await prisma.audioDbArtist.create({
-			data: {
-				entityId: id,
-				...audiodbArtist,
-				thumbId: imageIds.strArtistThumb,
-				logoId: imageIds.strArtistLogo,
-				cutoutId: imageIds.strArtistCutout,
-				clearartId: imageIds.strArtistClearart,
-				wideThumbId: imageIds.strArtistWideThumb,
-				bannerId: imageIds.strArtistBanner,
-			},
+		await retryable(async () => {
+			if (audiodbArtist) {
+				await prisma.audioDbArtist.create({
+					data: {
+						entityId: id,
+						...audiodbArtist,
+						thumbId: imageIds.strArtistThumb,
+						logoId: imageIds.strArtistLogo,
+						cutoutId: imageIds.strArtistCutout,
+						clearartId: imageIds.strArtistClearart,
+						wideThumbId: imageIds.strArtistWideThumb,
+						bannerId: imageIds.strArtistBanner,
+					},
+				})
+			}
 		})
 		socketServer.send("invalidate:artist", {id: id})
 		await queue.next()
@@ -164,14 +169,16 @@ export async function fetchArtist(id: string) {
 			try {
 				const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
 				const imageIds = await keysAndInputToImageIds(audiodbAlbum, ['strAlbumThumb','strAlbumThumbHQ','strAlbumCDart'])
-				await prisma.audioDbAlbum.create({
-					data: {
-						...(entityAlbum ? {entityId: entityAlbum.id} : {}),
-						...audiodbAlbum,
-						thumbId: imageIds.strAlbumThumb,
-						thumbHqId: imageIds.strAlbumThumbHQ,
-						cdArtId: imageIds.strAlbumCDart,
-					},
+				await retryable(async () => {
+					await prisma.audioDbAlbum.create({
+						data: {
+							...(entityAlbum ? {entityId: entityAlbum.id} : {}),
+							...audiodbAlbum,
+							thumbId: imageIds.strAlbumThumb,
+							thumbHqId: imageIds.strAlbumThumbHQ,
+							cdArtId: imageIds.strAlbumCDart,
+						},
+					})
 				})
 				if (entityAlbum) {
 					socketServer.send("invalidate:album", {id: entityAlbum.id})
@@ -190,12 +197,14 @@ export async function fetchArtist(id: string) {
 						oneAlbumConnection = entityTrack.albumId
 					}
 					const imageIds = await keysAndInputToImageIds(audiodbTrack, ['strTrackThumb'])
-					await prisma.audioDbTrack.create({
-						data: {
-							...(entityTrack ? {entityId: entityTrack.id} : {}),
-							...audiodbTrack,
-							thumbId: imageIds.strTrackThumb,
-						},
+					await retryable(async () => {
+						await prisma.audioDbTrack.create({
+							data: {
+								...(entityTrack ? {entityId: entityTrack.id} : {}),
+								...audiodbTrack,
+								thumbId: imageIds.strTrackThumb,
+							},
+						})
 					})
 					if (entityTrack) {
 						socketServer.send("invalidate:track", {id: entityTrack.id})
