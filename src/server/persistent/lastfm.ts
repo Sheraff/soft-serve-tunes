@@ -11,27 +11,33 @@ import retryable from "../../utils/retryable"
 
 const lastFmCorrectionArtistSchema = z
 	.object({
-		corrections: z.object({
-			correction: z.object({
-				artist: z.object({
-					name: z.string().optional(),
-				})
-			})
-		}).optional()
+		corrections: z.union([
+			z.object({
+				correction: z.object({
+					artist: z.object({
+						name: z.string().optional(),
+					})
+				}),
+			}).optional(),
+			z.string()
+		])
 	})
 
 const lastFmCorrectionTrackSchema = z
 	.object({
-		corrections: z.object({
-			correction: z.object({
-				track: z.object({
-					name: z.string().optional(),
-					artist: z.object({
+		corrections: z.union([
+			z.object({
+				correction: z.object({
+					track: z.object({
 						name: z.string().optional(),
+						artist: z.object({
+							name: z.string().optional(),
+						})
 					})
-				})
-			})
-		}).optional()
+				}),
+			}).optional(),
+			z.string()
+		])
 	})
 
 const lastFmArtistSchema = z
@@ -225,14 +231,11 @@ class LastFM {
 		try {
 			const json = await this.fetch(url)
 			const lastfm = lastFmCorrectionArtistSchema.parse(json)
-			if (lastfm.corrections?.correction?.artist?.name) {
+			if (typeof lastfm.corrections === "object" && lastfm.corrections?.correction?.artist?.name) {
 				return lastfm.corrections.correction.artist.name
 			}
 		} catch (e) {
 			console.log(`error while correcting artist ${artist}`)
-			console.log(url.toString())
-			console.log(this.#pastRequests.includes(url.toString()))
-			console.log(this.#pastResponses.get(url.toString()))
 			console.error(e)
 		}
 		return artist
@@ -243,7 +246,7 @@ class LastFM {
 		try {
 			const json = await this.fetch(url)
 			const lastfm = lastFmCorrectionTrackSchema.parse(json)
-			if (lastfm.corrections?.correction?.track?.name) {
+			if (typeof lastfm.corrections === "object" && lastfm.corrections?.correction?.track?.name) {
 				return lastfm.corrections.correction.track.name
 			}
 		} catch (e) {
