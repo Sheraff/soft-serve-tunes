@@ -6,6 +6,7 @@ import { fetchAndWriteImage } from "../../utils/writeImage"
 import sanitizeString from "../../utils/sanitizeString"
 import { socketServer } from "./ws"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
+import log from "../../utils/logger"
 
 const lastFmCorrectionArtistSchema = z
 	.object({
@@ -276,7 +277,7 @@ class LastFM {
 			}
 		})
 		if (!track) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find track ${id} in prisma.track`)
+			log("error", "404", "lastfm", `failed to find track ${id} in prisma.track`)
 			return false
 		}
 		if (track.lastfm) {
@@ -293,7 +294,7 @@ class LastFM {
 			urls.push(makeTrackUrl({ artist: track.album.artist.name, track: track.name }))
 		}
 		if (urls.length === 0) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm not enough info to look up track ${track.name}`)
+			log("warn", "404", "lastfm", `not enough info to look up track ${track.name}`)
 			return false
 		}
 		let trackData
@@ -305,11 +306,11 @@ class LastFM {
 				trackData = lastfm.track
 				break
 			} else if (lastfm.track) {
-				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
+				log("info", "pass", "lastfm", `discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
 			}
 		}
 		if (!trackData) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for track ${track.name} w/ ${urls.length} tries`)
+			log("warn", "404", "lastfm", `no result for track ${track.name} w/ ${urls.length} tries`)
 			return false
 		}
 
@@ -389,7 +390,7 @@ class LastFM {
 			}
 		})
 		if (!artist) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find artist ${id} in prisma.artist`)
+			log("error", "404", "lastfm", `failed to find artist ${id} in prisma.artist`)
 			return false
 		}
 		if (artist.lastfm) {
@@ -409,11 +410,11 @@ class LastFM {
 				artistData = lastfm.artist
 				break
 			} else if (lastfm.artist) {
-				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for artist ${artist.name}, found ${lastfm.artist.name} but no 'url' field`)
+				log("info", "pass", "lastfm", `discard result for artist ${artist.name}, found ${lastfm.artist.name} but no 'url' field`)
 			}
 		}
 		if (!artistData) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for artist ${artist.name} w/ ${urls.length} tries`)
+			log("warn", "404", "lastfm", `no result for artist ${artist.name} w/ ${urls.length} tries`)
 			return false
 		}
 		let coverId
@@ -496,7 +497,7 @@ class LastFM {
 			}
 		})
 		if (!album) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find album ${id} in prisma.album`)
+			log("error", "404", "lastfm", `failed to find album ${id} in prisma.album`)
 			return false
 		}
 		if (album.lastfm) {
@@ -510,7 +511,7 @@ class LastFM {
 			urls.push(makeAlbumUrl({ album: album.name, artist: album.artist.name }))
 		}
 		if (urls.length === 0) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm not enough info to look up album ${album.name}`)
+			log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
 			return false
 		}
 		let albumData
@@ -522,11 +523,11 @@ class LastFM {
 				albumData = lastfm.album
 				break
 			} else if (lastfm.album) {
-				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for album ${album.name}, found ${lastfm.album.name} but no 'url' field`)
+				log("info", "pass", "lastfm", `discard result for album ${album.name}, found ${lastfm.album.name} but no 'url' field`)
 			}
 		}
 		if (!albumData) {
-			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for album ${album.name} w/ ${urls.length} tries`)
+			log("warn", "404", "lastfm", `no result for album ${album.name} w/ ${urls.length} tries`)
 			return false
 		}
 		let coverId

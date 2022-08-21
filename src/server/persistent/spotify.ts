@@ -6,6 +6,7 @@ import { fetchAndWriteImage } from "../../utils/writeImage"
 import { sep } from "path"
 import sanitizeString from "../../utils/sanitizeString"
 import pathToSearch from "../../utils/pathToSearch"
+import log from "../../utils/logger"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -299,13 +300,13 @@ export async function findTrack(trackDbId: string) {
 		}
 	})
 	if (!track || !track.name) {
-		console.log(`\x1b[33m409  \x1b[0m - spotify: not enough information to find track, need better strategy`)
+		log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
 		console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 		return
 	}
 	const spotifyTrack = track && track.spotify ? track.spotify : null
 	if (spotifyTrack && spotifyTrack.album && spotifyTrack.artist && spotifyTrack.tempo) {
-		console.log('\x1b[36m204  \x1b[0m - spotify: already got everything')
+		log("info", "204", "spotify", `already got everything`)
 		return
 	}
 	const artistName = track.artist?.name
@@ -314,7 +315,7 @@ export async function findTrack(trackDbId: string) {
 		? sanitizeString(pathToSearch(track.file.path))
 		: null
 	if (!spotifyTrack && !artistName && !albumName && !fuzzySearch) {
-		console.log(`\x1b[33m409  \x1b[0m - spotify: not enough information to find track, need better strategy`)
+		log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
 		console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 		return
 	}
@@ -325,7 +326,7 @@ export async function findTrack(trackDbId: string) {
 	trackCreate: if (!spotifyTrack) {
 		const search = fuzzySearch
 			|| `track:${sanitizeString(track.name)}${artistName ? ` artist:${sanitizeString(artistName)}` : ''}${albumName ? ` album:${sanitizeString(albumName)}` : ''}`
-		console.log(`\x1b[36mfetch\x1b[0m - spotify${fuzzySearch ? ' fuzzy' : ''} search: ${search}`)
+		log("info", "fetch", "spotify", `${fuzzySearch ? ' fuzzy' : ''} search: ${search}`)
 		const trackData = await spotify.fetch(`search?type=track&q=${search}`)
 		let candidate = ('tracks' in trackData)
 			? trackData.tracks.items[0]
@@ -333,19 +334,19 @@ export async function findTrack(trackDbId: string) {
 		if (!candidate) {
 			if (artistName && albumName && typeof track.position === 'number') {
 				const search = `artist:${sanitizeString(artistName)} album:${sanitizeString(albumName)}`
-				console.log(`\x1b[36mfetch\x1b[0m - spotify fallback search: #${track.position} of ${search}`)
+				log("info", "fetch", "spotify", `fallback search: #${track.position} of ${search}`)
 				const albumData = await spotify.fetch(`search?type=track&q=${search}`)
 				if ('error' in albumData) {
-					console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
+					log("warn", "404", "spotify", `could not find track`)
 					break trackCreate
 				}
 				candidate = albumData.tracks.items.find(item => item.track_number === track.position)
 				if (!candidate) {
-					console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
+					log("warn", "404", "spotify", `could not find track`)
 					break trackCreate
 				}
 			} else {
-				console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
+				log("warn", "404", "spotify", `could not find track`)
 				break trackCreate
 			}
 		}

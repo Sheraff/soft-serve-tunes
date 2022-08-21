@@ -6,6 +6,7 @@ import { z } from "zod"
 import { fetchAndWriteImage } from "../../utils/writeImage"
 import Queue from "../../utils/Queue"
 import sanitizeString from "../../utils/sanitizeString"
+import log from "../../utils/logger"
 
 const callbacks = new Map<string, Array<() => void>>()
 
@@ -166,11 +167,11 @@ export const audiodbRouter = createRouter()
 					await queue.next()
 					const artistsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/search.php`, 'https://theaudiodb.com')
 					artistsUrl.searchParams.set('s', sanitizeString(artist.name))
-					console.log(`\x1b[36mfetch\x1b[0m - audiodb search: ${artist.name}`)
+					log("info", "fetch", "audiodb", `search: ${artist.name}`)
 					const artistsData = await fetch(artistsUrl)
 					const artistsJson = await artistsData.json()
 					if (!artistsJson.artists || artistsJson.artists.length === 0) {
-						console.log(`\x1b[33m404  \x1b[0m - audiodb: No artist found for ${artist.name}`)
+						log("warn", "404", "audiodb", `No artist found for ${artist.name}`)
 						return
 					}
 					const audiodbArtists = z.object({artists: z.array(audiodbArtistSchema)}).parse(artistsJson)
@@ -181,7 +182,7 @@ export const audiodbRouter = createRouter()
 						audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid && artist.lastfm?.mbid === a.strMusicBrainzID)
 					}
 					if (!audiodbArtist) {
-						console.log(`\x1b[33m409  \x1b[0m - audiodb: Multiple artists found for ${artist.name}`)
+						log("warn", "409", "audiodb", `Multiple artists found for ${artist.name}`)
 						console.log(audiodbArtists.artists.map(a => a.strArtist).join(', '))
 						return
 					}
@@ -202,7 +203,7 @@ export const audiodbRouter = createRouter()
 					await queue.next()
 					const albumsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/album.php`, 'https://theaudiodb.com')
 					albumsUrl.searchParams.set('i', audiodbArtist.idArtist.toString())
-					console.log(`\x1b[36mfetch\x1b[0m - audiodb albums: ${audiodbArtist.strArtist}`)
+					log("info", "fetch", "audiodb", `albums: ${audiodbArtist.strArtist}`)
 					const albumsData = await fetch(albumsUrl)
 					const albumsJson = await albumsData.json()
 					const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
@@ -222,7 +223,7 @@ export const audiodbRouter = createRouter()
 							await queue.next()
 							const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
 							tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
-							console.log(`\x1b[36mfetch\x1b[0m - audiodb tracks: ${audiodbAlbum.strAlbum}`)
+							log("info", "fetch", "audiodb", `tracks: ${audiodbAlbum.strAlbum}`)
 							const tracksData = await fetch(tracksUrl)
 							const tracksJson = await tracksData.json()
 							const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)

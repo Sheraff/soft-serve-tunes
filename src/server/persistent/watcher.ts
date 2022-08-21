@@ -6,6 +6,7 @@ import createTrack from "../db/createTrack"
 import { socketServer } from "./ws"
 import chokidar from "chokidar"
 import { unlink } from "node:fs/promises"
+import log from "../../utils/logger"
 
 type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 
@@ -26,10 +27,10 @@ class MyWatcher {
 
 	async init() {
 		if (this.watcher) {
-			console.log(`\x1b[36mwait \x1b[0m - restarting FSWatcher...`)
+			log("info", "wait", "fswatcher", "restarting...")
 			await this.watcher.close()
 		} else {
-			console.log(`\x1b[36mwait \x1b[0m - initializing FSWatcher...`)
+			log("info", "wait", "fswatcher", "initializing...")
 		}
 
 		this.watcher = chokidar.watch(this.rootFolder, {
@@ -47,12 +48,13 @@ class MyWatcher {
 
 		return new Promise((resolve) => {
 			this.watcher?.once('ready', resolve)
-			console.log(`\x1b[32mready\x1b[0m - FSWatcher is watching ${this.rootFolder}`)
+			log("ready", "ready", "fswatcher", `watching ${this.rootFolder}`)
 		})
 	}
 
 	onError(error: Error) {
-		console.log(`\x1b[31merror\x1b[0m - FSWatcher: ${error.name}`, error)
+		log("error", "error", "fswatcher", error.name)
+		console.log(error)
 	}
 
 	pending: Map<string, {
@@ -66,7 +68,7 @@ class MyWatcher {
 		if(!stats) {
 			stat(path, (error, stats) => {
 				if(error) {
-					console.log(`\x1b[31merror\x1b[0m - could not access file for stats as it was being added ${path}`)
+					log("error", "error", "fswatcher", `could not access file for stats as it was being added ${path}`)
 					return
 				}
 				this.onAdd(path, stats)
@@ -94,7 +96,7 @@ class MyWatcher {
 			select: { ino: true },
 		})
 		if (!file) {
-			console.log(`\x1b[31merror\x1b[0m - ${path} removed, but not found in database`)
+			log("error", "error", "fswatcher", `${path} removed, but not found in database`)
 			return
 		}
 		const ino = String(file.ino)
@@ -115,7 +117,7 @@ class MyWatcher {
 	async enqueueResolve(ino: string) {
 		const entry = this.pending.get(ino)
 		if (!entry) {
-			console.log(`\x1b[31merror\x1b[0m - FSWatcher could not find ${ino} file in pending list`)
+			log("error", "error", "fswatcher", `could not find ${ino} file in pending list`)
 			return
 		}
 		if (this.cleanupTimeoutId) {
@@ -145,7 +147,7 @@ class MyWatcher {
 				where: { ino: dbIno },
 				data: { path: added },
 			})
-			console.log(`\x1b[35mevent\x1b[0m - file move ${added} (from ${dirname(relative(dirname(added), removed))})`)
+			log("event", "event", "fswatcher", `file move ${added} (from ${dirname(relative(dirname(added), removed))})`)
 		} else if (removed) {
 			const dbIno = BigInt(ino)
 			const file = await prisma.file.delete({
@@ -157,16 +159,16 @@ class MyWatcher {
 					where: { id: file.trackId },
 					select: { name: true, id: true },
 				})
-				console.log(`\x1b[35mevent\x1b[0m - file removed from ${removed}, with associated track ${track.name}`)
+				log("event", "event", "fswatcher", `file removed from ${removed}, with associated track ${track.name}`)
 				socketServer.send('watcher:remove', { track })
 			} else {
-				console.log(`\x1b[31merror\x1b[0m - database File entry not found for ${removed} when trying to remove it`)
+				log("error", "error", "fswatcher", `database File entry not found for ${removed} when trying to remove it`)
 			}
 		} else if (added) {
 			await createTrack(added)
 			socketServer.send('watcher:add')
 		} else {
-			console.log(`\x1b[31merror\x1b[0m - FSWatcher could not resolve pending for ${ino} file`)
+			log("error", "error", "fswatcher", `could not resolve pending for ${ino} file`)
 		}
 	}
 
@@ -189,7 +191,7 @@ class MyWatcher {
 			}
 		})
 		for (const album of orphanedAlbums) {
-			console.log(`\x1b[35mevent\x1b[0m - remove album ${album.name} because it wasn't linked to any tracks anymore`)
+			log("event", "event", "fswatcher", `remove album ${album.name} because it wasn't linked to any tracks anymore`)
 			socketServer.send('watcher:remove', { album })
 		}
 		const orphanedArtists = await prisma.artist.findMany({
@@ -211,7 +213,7 @@ class MyWatcher {
 			}
 		})
 		for (const artist of orphanedArtists) {
-			console.log(`\x1b[35mevent\x1b[0m - remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
+			log("event", "event", "fswatcher", `remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
 			socketServer.send('watcher:remove', { artist })
 		}
 		const orphanedGenres = await prisma.genre.findMany({
@@ -234,7 +236,7 @@ class MyWatcher {
 			}
 		})
 		for (const genre of orphanedGenres) {
-			console.log(`\x1b[35mevent\x1b[0m - remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
+			log("event", "event", "fswatcher", `remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
 			socketServer.send('watcher:remove', { genre })
 		}
 		const orphanedImages = await prisma.image.findMany({
@@ -274,10 +276,10 @@ class MyWatcher {
 			}
 		}
 		if (removeCount > 0) {
-			console.log(`\x1b[35mevent\x1b[0m - removed ${removeCount} images that weren't linked to anything anymore`)
+			log("event", "event", "fswatcher", `removed ${removeCount} images that weren't linked to anything anymore`)
 		}
 		if (failCount > 0) {
-			console.log(`\x1b[31merror\x1b[0m - failed to remove ${failCount} images that aren't linked to anything anymore`)
+			log("error", "error", "fswatcher", `failed to remove ${failCount} images that aren't linked to anything anymore`)
 		}
 	}
 }
