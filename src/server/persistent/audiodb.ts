@@ -164,6 +164,11 @@ export async function fetchArtist(id: string) {
 		log("info", "fetch", "audiodb", `albums: ${audiodbArtist.strArtist}`)
 		const albumsData = await fetch(albumsUrl)
 		const albumsJson = await albumsData.json()
+		if (!albumsJson.album || albumsJson.album.length === 0) {
+			log("warn", "404", "audiodb", `No albums found for ${audiodbArtist.strArtist}`)
+			running.delete(id)
+			return
+		}
 		const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
 		for (const audiodbAlbum of audiodbAlbums.album) {
 			try {
@@ -189,6 +194,10 @@ export async function fetchArtist(id: string) {
 				log("info", "fetch", "audiodb", `tracks: ${audiodbAlbum.strAlbum}`)
 				const tracksData = await fetch(tracksUrl)
 				const tracksJson = await tracksData.json()
+				if (!tracksJson.track || tracksJson.track.length === 0) {
+					log("warn", "404", "audiodb", `No tracks found for ${audiodbArtist.strArtist} - ${audiodbAlbum.strAlbum}`)
+					continue
+				}
 				const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
 				let oneAlbumConnection: string | undefined
 				await Promise.allSettled(audiodbTracks.track.map(async (audiodbTrack) => {

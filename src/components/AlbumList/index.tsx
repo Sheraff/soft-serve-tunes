@@ -10,7 +10,7 @@ function AlbumItem({
 	enableSiblings,
 	onSelect,
 }: {
-	album: inferQueryOutput<"artist.searchable">[number]
+	album: {id: string}
 	enableSiblings?: () => void
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
@@ -68,7 +68,7 @@ export default function AlbumList({
 	albums,
 	onSelect,
 }: {
-	albums: inferQueryOutput<"album.searchable">
+	albums: {id: string}[]
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
