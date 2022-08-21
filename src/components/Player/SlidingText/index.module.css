@@ -5,7 +5,12 @@
 .span {
 	display: inline-block;
 	min-width: 100vw;
+	text-align: center;
+}
+
+.sliding .span {
 	animation: slide 30s linear infinite;
+	text-align: left;
 }
 
 @keyframes slide {

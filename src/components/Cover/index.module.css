@@ -4,11 +4,10 @@
 	max-width: 500px;
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
-	z-index: 1;
-	transform-origin: center bottom 0;
-	transform: translateZ(-1px) scale(2);
 	position: relative;
-	top: -2em;
+	z-index: 1;
+	transform-origin: center top 0;
+	transform: translateZ(-1px) scale(2) translateY(-21.5vh);
 }
 .img:not([src]),
 .img[src=""] {

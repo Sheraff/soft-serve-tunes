@@ -62,7 +62,7 @@ export default function SlidingText({
 	)
 
 	return (
-		<div className={classNames(styles.main, className)}>
+		<div className={classNames(styles.main, className, {[styles.sliding]: separator})}>
 			<div className={styles.span} ref={span}>
 				{content}
 			</div>
