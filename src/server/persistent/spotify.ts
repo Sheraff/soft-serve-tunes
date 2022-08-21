@@ -1,12 +1,13 @@
-import { env } from "../../env/server.mjs"
 import { z } from "zod"
 import Queue from "../../utils/Queue"
+import { env } from "../../env/server.mjs"
 import { prisma } from "../db/client"
 import { fetchAndWriteImage } from "../../utils/writeImage"
 import sanitizeString from "../../utils/sanitizeString"
 import pathToSearch from "../../utils/pathToSearch"
 import log from "../../utils/logger"
 import { socketServer } from "./ws"
+import retryable from "../../utils/retryable"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -745,21 +746,6 @@ export async function findTrack(trackDbId: string) {
 		console.error(e)
 	}
 	running.delete(trackDbId)
-}
-
-async function retryable<T>(callback: () => (Promise<T> | T), tries = 0): Promise<T> {
-	try {
-		const result = await callback()
-		return result
-	} catch (e) {
-		if (tries < 5) {
-			await new Promise(resolve => setTimeout(resolve, 1000 * 2**tries))
-			const result = await retryable(callback, tries + 1)
-			return result
-		} else {
-			throw e
-		}
-	}
 }
 
 declare global {

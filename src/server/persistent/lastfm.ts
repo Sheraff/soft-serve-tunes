@@ -7,6 +7,7 @@ import sanitizeString from "../../utils/sanitizeString"
 import { socketServer } from "./ws"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 import log from "../../utils/logger"
+import retryable from "../../utils/retryable"
 
 const lastFmCorrectionArtistSchema = z
 	.object({
@@ -297,59 +298,73 @@ class LastFM {
 			log("warn", "404", "lastfm", `not enough info to look up track ${track.name}`)
 			return false
 		}
-		let trackData
+		let _trackData: z.infer<typeof lastFmTrackSchema>['track'] | null = null
 		for (const url of urls) {
 			const json = await this.fetch(url)
 			const lastfm = lastFmTrackSchema.parse(json)
 			if (lastfm.track && lastfm.track.url) {
 				// no `url` field is usually a sign of poor quality data
-				trackData = lastfm.track
+				_trackData = lastfm.track
 				break
 			} else if (lastfm.track) {
 				log("info", "pass", "lastfm", `discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
 			}
 		}
-		if (!trackData) {
+		if (!_trackData) {
 			log("warn", "404", "lastfm", `no result for track ${track.name} w/ ${urls.length} tries`)
 			return false
 		}
 
+		const trackData = _trackData
+
 		const connectingArtist = track.artist?.lastfm?.id || await findConnectingArtistForTrack(trackData)
 		const connectingAlbum = track.album?.lastfm?.id || await findConnectingAlbumForTrack(trackData)
-		const lastfmTrack = await prisma.lastFmTrack.create({
-			data: {
-				entityId: id,
-				...(connectingAlbum ? { albumId: connectingAlbum } : {}),
-				...(connectingArtist ? { artistId: connectingArtist } : {}),
-				duration: trackData.duration,
-				listeners: trackData.listeners,
-				playcount: trackData.playcount,
-				mbid: trackData.mbid,
-				name: trackData.name,
-				url: trackData.url,
-				tags: {
-					connectOrCreate: trackData.toptags.tag
-						.filter(tag => tag.url)
-						.map(tag => ({
-							where: { url: tag.url },
-							create: {
-								name: tag.name,
-								url: tag.url,
-							}
-						}))
-				},
-			}
+		const trackData_duration = trackData.duration
+		const trackData_listeners = trackData.listeners
+		const trackData_playcount = trackData.playcount
+		const trackData_mbid = trackData.mbid
+		const trackData_name = trackData.name
+		const trackData_url = trackData.url
+		const trackData_toptags_tag = trackData.toptags.tag
+		await retryable(async () => {
+			await prisma.lastFmTrack.create({
+				data: {
+					entityId: id,
+					...(connectingAlbum ? { albumId: connectingAlbum } : {}),
+					...(connectingArtist ? { artistId: connectingArtist } : {}),
+					duration: trackData_duration,
+					listeners: trackData_listeners,
+					playcount: trackData_playcount,
+					mbid: trackData_mbid,
+					name: trackData_name,
+					url: trackData_url,
+					tags: {
+						connectOrCreate: trackData_toptags_tag
+							.filter(tag => tag.url)
+							.map(tag => ({
+								where: { url: tag.url },
+								create: {
+									name: tag.name,
+									url: tag.url,
+								}
+							}))
+					},
+				}
+			})
 		})
-		// if (trackData.mbid) {
-		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-		// 	await prisma.audioDbTrack.updateMany({
-		// 		where: {
-		// 			strMusicBrainzID: trackData.mbid,
-		// 			entityId: undefined,
-		// 		},
-		// 		data: { entityId: id },
-		// 	})
-		// }
+		if (trackData.mbid) {
+			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+			const mbid = trackData.mbid
+			await retryable(async () => {
+				await prisma.audioDbTrack.updateMany({
+					where: {
+						strMusicBrainzID: mbid,
+						entityId: undefined,
+					},
+					data: { entityId: id },
+				})
+			})
+		}
 		const artist = track.artist
 		if (!connectingArtist && artist) {
 			try {
@@ -401,7 +416,7 @@ class LastFM {
 			urls.push(makeArtistUrl({ mbid: artist.audiodb.strMusicBrainzID }))
 		}
 		urls.push(makeArtistUrl({ artist: artist.name }))
-		let artistData
+		let artistData: z.infer<typeof lastFmArtistSchema>['artist'] | null = null
 		for (const url of urls) {
 			const json = await this.fetch(url)
 			const lastfm = lastFmArtistSchema.parse(json)
@@ -417,59 +432,72 @@ class LastFM {
 			log("warn", "404", "lastfm", `no result for artist ${artist.name} w/ ${urls.length} tries`)
 			return false
 		}
-		let coverId
+		let coverId: string | null = null
 		const image = artistData.image.at(-1)?.["#text"]
 		if (image) {
 			const { hash, path, mimetype, palette } = await fetchAndWriteImage(lastfmImageToUrl(image))
 			if (hash && palette && path) {
-				const { id } = await prisma.image.upsert({
-					where: { id: hash },
-					update: {},
-					create: {
-						id: hash as string,
-						path,
-						mimetype,
-						palette,
-					}
+				await retryable(async () => {
+					const { id } = await prisma.image.upsert({
+						where: { id: hash },
+						update: {},
+						create: {
+							id: hash as string,
+							path,
+							mimetype,
+							palette,
+						}
+					})
+					coverId = id
 				})
-				coverId = id
 			}
 		}
 		const connectingTracks = artist.tracks.filter(({ lastfm }) => Boolean(lastfm))
 		const connectingAlbums = artist.albums.filter(({ lastfm }) => Boolean(lastfm))
-		const lastfmArtist = await prisma.lastFmArtist.create({
-			data: {
-				entityId: id,
-				...(connectingTracks.length ? { tracks: { connect: connectingTracks.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
-				...(connectingAlbums.length ? { albums: { connect: connectingAlbums.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
-				mbid: artistData.mbid,
-				name: artistData.name,
-				listeners: artistData.stats.listeners,
-				playcount: artistData.stats.playcount,
-				url: artistData.url,
-				tags: {
-					connectOrCreate: artistData.tags.tag.map(tag => ({
-						where: { url: tag.url },
-						create: {
-							name: tag.name,
-							url: tag.url,
-						}
-					}))
+		const artistData_mbid = artistData.mbid
+		const artistData_name = artistData.name
+		const artistData_stats_listeners = artistData.stats.listeners
+		const artistData_stats_playcount = artistData.stats.playcount
+		const artistData_url = artistData.url
+		const artistData_tags_tag = artistData.tags.tag
+		await retryable(async () => {
+			await prisma.lastFmArtist.create({
+				data: {
+					entityId: id,
+					...(connectingTracks.length ? { tracks: { connect: connectingTracks.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
+					...(connectingAlbums.length ? { albums: { connect: connectingAlbums.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
+					mbid: artistData_mbid,
+					name: artistData_name,
+					listeners: artistData_stats_listeners,
+					playcount: artistData_stats_playcount,
+					url: artistData_url,
+					tags: {
+						connectOrCreate: artistData_tags_tag.map(tag => ({
+							where: { url: tag.url },
+							create: {
+								name: tag.name,
+								url: tag.url,
+							}
+						}))
+					},
+					coverUrl: image,
+					coverId,
 				},
-				coverUrl: image,
-				coverId,
-			},
+			})
 		})
-		// if (artistData.mbid) {
-		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-		// 	await prisma.audioDbArtist.updateMany({
-		// 		where: {
-		// 			strMusicBrainzID: artistData.mbid,
-		// 			entityId: undefined,
-		// 		},
-		// 		data: { entityId: id },
-		// 	})
-		// }
+		if (artistData.mbid) {
+			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+			const mbid = artistData.mbid
+			await retryable(async () => {
+				await prisma.audioDbArtist.updateMany({
+					where: {
+						strMusicBrainzID: mbid,
+						entityId: undefined,
+					},
+					data: { entityId: id },
+				})
+			})
+		}
 		socketServer.send("invalidate:artist", { id })
 		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
 		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
@@ -514,7 +542,7 @@ class LastFM {
 			log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
 			return false
 		}
-		let albumData
+		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
 		for (const url of urls) {
 			const json = await this.fetch(url)
 			const lastfm = lastFmAlbumSchema.parse(json)
@@ -530,22 +558,24 @@ class LastFM {
 			log("warn", "404", "lastfm", `no result for album ${album.name} w/ ${urls.length} tries`)
 			return false
 		}
-		let coverId
+		let coverId: string | null = null
 		const image = albumData.image.at(-1)?.["#text"]
 		if (image) {
 			const { hash, path, mimetype, palette } = await fetchAndWriteImage(lastfmImageToUrl(image))
 			if (hash && palette && path) {
-				const { id } = await prisma.image.upsert({
-					where: { id: hash },
-					update: {},
-					create: {
-						id: hash as string,
-						path,
-						mimetype,
-						palette,
-					}
+				await retryable(async () => {
+					const { id } = await prisma.image.upsert({
+						where: { id: hash },
+						update: {},
+						create: {
+							id: hash as string,
+							path,
+							mimetype,
+							palette,
+						}
+					})
+					coverId = id
 				})
-				coverId = id
 			}
 		}
 		const connectingArtist = album.artist?.lastfm?.id
@@ -553,41 +583,52 @@ class LastFM {
 			...album.tracks.map(({ lastfm }) => lastfm?.id),
 			...await findConnectingTracksForAlbum(albumData)
 		].filter(Boolean))) as string[]
-		await prisma.lastFmAlbum.create({
-			data: {
-				entityId: id,
-				...(connectingArtist ? { artistId: connectingArtist } : {}),
-				...(connectingTracks.length ? { tracks: { connect: connectingTracks.map((id) => ({ id })) } } : {}),
-				mbid: albumData.mbid,
-				name: albumData.name,
-				listeners: albumData.listeners,
-				playcount: albumData.playcount,
-				url: albumData.url,
-				...(albumData.toptags?.tag.length ? {
-					tags: {
-						connectOrCreate: albumData.toptags.tag.map(tag => ({
-							where: { url: tag.url },
-							create: {
-								name: tag.name,
-								url: tag.url,
-							}
-						}))
-					}
-				} : {}),
-				coverUrl: image,
-				coverId,
-			},
+		const albumData_mbid = albumData.mbid
+		const albumData_name = albumData.name
+		const albumData_listeners = albumData.listeners
+		const albumData_playcount = albumData.playcount
+		const albumData_url = albumData.url
+		const albumData_toptags = albumData.toptags
+		await retryable(async () => {
+			await prisma.lastFmAlbum.create({
+				data: {
+					entityId: id,
+					...(connectingArtist ? { artistId: connectingArtist } : {}),
+					...(connectingTracks.length ? { tracks: { connect: connectingTracks.map((id) => ({ id })) } } : {}),
+					mbid: albumData_mbid,
+					name: albumData_name,
+					listeners: albumData_listeners,
+					playcount: albumData_playcount,
+					url: albumData_url,
+					...(albumData_toptags?.tag.length ? {
+						tags: {
+							connectOrCreate: albumData_toptags.tag.map(tag => ({
+								where: { url: tag.url },
+								create: {
+									name: tag.name,
+									url: tag.url,
+								}
+							}))
+						}
+					} : {}),
+					coverUrl: image,
+					coverId,
+				},
+			})
 		})
-		// if (albumData.mbid) {
-		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-		// 	await prisma.audioDbAlbum.updateMany({
-		// 		where: {
-		// 			strMusicBrainzID: albumData.mbid,
-		// 			entityId: undefined
-		// 		},
-		// 		data: { entityId: id },
-		// 	})
-		// }
+		if (albumData.mbid) {
+			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+			const mbid = albumData.mbid
+			await retryable(async () => {
+				await prisma.audioDbAlbum.updateMany({
+					where: {
+						strMusicBrainzID: mbid,
+						entityId: undefined
+					},
+					data: { entityId: id },
+				})
+			})
+		}
 		socketServer.send("invalidate:album", { id })
 		if (connectingArtist)
 			socketServer.send("invalidate:artist", { id: connectingArtist })
