@@ -1,8 +1,7 @@
-import type { Track } from "@prisma/client"
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { inferQueryOutput, trpc } from "../../utils/trpc"
+import { inferQueryOutput } from "../../utils/trpc"
 import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
@@ -21,7 +20,6 @@ function TrackItem({
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
-	trpc.useQuery(["lastfm.track2", {id: track.id}])
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return

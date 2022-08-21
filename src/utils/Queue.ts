@@ -19,11 +19,13 @@ export default class Queue {
 			let nextItem
 			while (nextItem = this.queue[0]) {
 				await this.available
-				if (this.wait) {
-					await nextItem()
-				} else {
-					nextItem()
-				}
+				try {
+					if (this.wait) {
+						await nextItem()
+					} else {
+						nextItem()
+					}
+				} catch {} // catching so that error on 1 item doesn't prevent other items from executing
 				this.queue.shift()
 				this.available = new Promise(resolve => setTimeout(resolve, this.rate))
 			}

@@ -1,6 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "../persistent/lastfm"
+import { fetchArtist } from "../persistent/audiodb"
 import log from "../../utils/logger"
 
 export const artistRouter = createRouter()
@@ -100,6 +101,7 @@ export const artistRouter = createRouter()
 
       if (artist) {
         lastFm.findArtist(input.id)
+        fetchArtist(input.id)
       } else {
         log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
       }
@@ -184,6 +186,7 @@ export const artistRouter = createRouter()
 
       if (artist) {
         lastFm.findArtist(input.id)
+        fetchArtist(input.id)
       } else {
         log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
       }

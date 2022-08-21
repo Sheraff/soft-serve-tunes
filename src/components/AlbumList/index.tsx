@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { inferQueryOutput, trpc } from "../../utils/trpc"
+import { inferQueryOutput } from "../../utils/trpc"
 import { useAppState } from "../AppContext"
 import styles from "./index.module.css"
 
@@ -16,7 +16,6 @@ function AlbumItem({
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = useIndexedTRcpQuery(["album.miniature", {id: album.id}])
-	trpc.useQuery(["lastfm.album", {id: album.id}])
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return

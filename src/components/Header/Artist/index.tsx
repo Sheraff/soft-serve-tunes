@@ -7,7 +7,6 @@ import PlayIcon from "../../../icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import { paletteToCSSProperties } from "../../Palette"
-import { trpc } from "../../../utils/trpc"
 
 export default forwardRef(function ArtistView({
 	open,
@@ -20,10 +19,6 @@ export default forwardRef(function ArtistView({
 		enabled: Boolean(id),
 		keepPreviousData: true,
 	})
-	trpc.useQuery(["lastfm.artist", {id}], {
-		enabled: Boolean(id),
-	})
-	console.log('artist.get', id, Boolean(id))
 
 	const stableData = useRef(_data)
 	stableData.current = _data || stableData.current
