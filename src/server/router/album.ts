@@ -1,6 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "../persistent/lastfm"
+import log from "../../utils/logger"
 
 export const albumRouter = createRouter()
   .query("searchable", {
@@ -112,7 +113,11 @@ export const albumRouter = createRouter()
         cover = album.tracks[0].metaImage
       }
 
-      lastFm.findAlbum(input.id)
+      if (album) {
+        lastFm.findAlbum(input.id)
+      } else {
+        log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
+      }
 
       return {
         ...album,
@@ -218,7 +223,11 @@ export const albumRouter = createRouter()
         cover = album.tracks[0].metaImage
       }
 
-      lastFm.findAlbum(input.id)
+      if (album) {
+        lastFm.findAlbum(input.id)
+      } else {
+        log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
+      }
 
       return {
         ...album,

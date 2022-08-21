@@ -1,6 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "../persistent/lastfm"
+import log from "../../utils/logger"
 
 export const trackRouter = createRouter()
   .query("searchable", {
@@ -113,20 +114,30 @@ export const trackRouter = createRouter()
       if (!track) return null
       let cover = undefined
       if (track.spotify?.album?.image) {
+        log("info", "image", "trpc", `track.miniature selected cover from spotify.album for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.spotify.album?.image
       } else if (track.audiodb?.thumb) {
+        log("info", "image", "trpc", `track.miniature selected cover from audiodb.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.audiodb.thumb
       } else if (track.audiodb?.album.thumbHq) {
+        log("info", "image", "trpc", `track.miniature selected cover from audiodb.album.thumbHq for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.audiodb.album.thumbHq
       } else if (track.audiodb?.album.thumb) {
+        log("info", "image", "trpc", `track.miniature selected cover from audiodb.album.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.audiodb.album.thumb
       } else if (track.lastfm?.album?.cover) {
+        log("info", "image", "trpc", `track.miniature selected cover from lastfm.album.cover for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.lastfm.album.cover
       } else if (track.metaImage) {
+        log("info", "image", "trpc", `track.miniature selected cover from track.metaImage for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.metaImage
       }
 
-      lastFm.findTrack(input.id)
+      if (track) {
+        lastFm.findTrack(input.id)
+      } else {
+        log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
+      }
 
       return {...track, cover}
     }

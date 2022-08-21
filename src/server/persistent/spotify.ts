@@ -326,7 +326,7 @@ export async function findTrack(trackDbId: string) {
 	trackCreate: if (!spotifyTrack) {
 		const search = fuzzySearch
 			|| `track:${sanitizeString(track.name)}${artistName ? ` artist:${sanitizeString(artistName)}` : ''}${albumName ? ` album:${sanitizeString(albumName)}` : ''}`
-		log("info", "fetch", "spotify", `${fuzzySearch ? ' fuzzy' : ''} search: ${search}`)
+		log("info", "fetch", "spotify", `${fuzzySearch ? 'fuzzy ' : ''}search: ${search}`)
 		const trackData = await spotify.fetch(`search?type=track&q=${search}`)
 		let candidate = ('tracks' in trackData)
 			? trackData.tracks.items[0]

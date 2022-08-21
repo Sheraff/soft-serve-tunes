@@ -1,6 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "../persistent/lastfm"
+import log from "../../utils/logger"
 
 export const artistRouter = createRouter()
   .query("searchable", {
@@ -97,7 +98,11 @@ export const artistRouter = createRouter()
         cover = artist.tracks[0].metaImage
       }
 
-      lastFm.findArtist(input.id)
+      if (artist) {
+        lastFm.findArtist(input.id)
+      } else {
+        log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
+      }
 
       return {
         ...artist,
@@ -114,6 +119,7 @@ export const artistRouter = createRouter()
       const artist = await ctx.prisma.artist.findUnique({
         where: { id: input.id },
         select: {
+          name: true,
           _count: {
             select: {
               albums: true,
@@ -176,7 +182,11 @@ export const artistRouter = createRouter()
         cover = artist.tracks[0].metaImage
       }
 
-      lastFm.findArtist(input.id)
+      if (artist) {
+        lastFm.findArtist(input.id)
+      } else {
+        log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
+      }
 
       return {
         ...artist,
