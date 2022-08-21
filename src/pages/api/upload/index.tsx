@@ -10,6 +10,7 @@ import { spotify } from "../../../server/persistent/spotify"
 import sanitizeString from "../../../utils/sanitizeString"
 import pathToSearch from "../../../utils/pathToSearch"
 import { socketServer } from "../../../server/persistent/ws"
+import { log } from "../../../utils/logger"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const form = new formidable.IncomingForm({
@@ -47,19 +48,19 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		if (!upload || !name) {
 			continue
 		}
-		console.log(`\x1b[35mevent\x1b[0m - uploading ${name}`)
+		log("event", "event", "fswatcher", `uploading "${name}"`)
 		let metadata: IAudioMetadata
 		try {
 			metadata = await parseFile(upload.filepath)
 			if (!metadata)
 				throw ""
 		} catch {
-			console.log(`\x1b[31merror\x1b[0m - failed to parse for upload ${name}`)
+			log("error", "error", "fswatcher", `upload failed to parse metadata out of "${name}"`)
 			continue
 		}
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
 			const search = sanitizeString(metadata.common.title || pathToSearch(name))
-			console.log(`\x1b[36mwait \x1b[0m - fetching metadata from spotify: ${search}`)
+			log("info", "wait", "spotify", `upload paused for metadata from ${search}`)
 			const response = await spotify.fetch(`search?type=track&q=${search}`)
 			if ('tracks' in response) {
 				const bestEffort = response.tracks.items[0]
@@ -94,7 +95,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		const proposed = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, randomDirname, filename)
 		const success = await moveTempFile(upload.filepath, proposed)
 		if (!success) {
-			console.log(`\x1b[31merror\x1b[0m - failed to upload ${name}`)
+			log("error", "error", "fswatcher", `failed to upload "${name}"`)
 			unlink(upload.filepath)
 		}
 	}
@@ -113,12 +114,12 @@ export const config = {
 async function moveTempFile(origin: string, destination: string) {
 	try {
 		await stat(destination)
-		console.log(`\x1b[33mretry\x1b[0m - ${destination} already exists`)
+		log("warn", "retry", "fswatcher", `${destination} already exists`)
 		return false
 	} catch {}
 	await mkdir(dirname(destination), {recursive: true})
 	await rename(origin, destination)
-	console.log(`\x1b[32m201  \x1b[0m > uploaded ${destination}`)
+	log("ready", "201", "fswatcher", `upoaded to ${destination}`)
 	return true
 }
 

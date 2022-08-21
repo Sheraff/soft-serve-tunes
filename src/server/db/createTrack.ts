@@ -8,8 +8,10 @@ import { env } from "../../env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
 import { constants } from "node:fs"
 import { lastFm } from "../persistent/lastfm"
-import { correctAlbum } from "../persistent/spotify"
 import sanitizeString from "../../utils/sanitizeString"
+import log from "../../utils/logger"
+
+// TODO: wrap most/all prisma actions in a try/catch (retryable) and log errors
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -27,15 +29,15 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		}
 		try {
 			await access(existingFile.path, constants.F_OK)
-			console.log(`\x1b[36mwarn \x1b[0m - trying to create a duplicate file, request ignored, keeping ${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path)}`)
+			log("warn", "warn", "fswatcher", `trying to create a duplicate file, request ignored, keeping ${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path)}`)
 			return false // true or false? is this success file exists or failure track wasn't created?
 		} catch {
-			console.log(`\x1b[36minfo \x1b[0m - track already exists but file was missing, linking ${relativePath}`)
+			log("info", "info", "fswatcher", `track already exists but file was missing, linking ${relativePath}`)
 			await prisma.file.update({
 				where: { ino: stats.ino },
 				data: { path },
 			})
-			console.log(`\x1b[35mevent\x1b[0m - linked to existing track ${relativePath}`)
+			log("event", "event", "fswatcher", `linked to existing track ${relativePath}`)
 		}
 		return true
 	}
@@ -46,7 +48,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			throw new Error("No metadata")
 		}
 	} catch {
-		console.log(`\x1b[31merror\x1b[0m - could not parse ${relativePath}, probably not a music file`)
+		log("error", "error", "fswatcher", `could not parse metadata out of ${relativePath}, probably not a music file`)
 		return false
 	}
 	const metadata = _metadata as IAudioMetadata
@@ -58,7 +60,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	const position = metadata.common.track.no ?? undefined
 
 	try {
-		console.log(`\x1b[36minfo \x1b[0m - adding new track from file ${relativePath}`)
+		log("info", "info", "fswatcher", `adding new track from file ${relativePath}`)
 		const imageData = metadata.common.picture?.[0]?.data
 		const { hash, path: imagePath, palette } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
@@ -222,7 +224,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				})
 			}
 		}
-		console.log(`\x1b[35mevent\x1b[0m - added ${relativePath}`)
+		log("event", "event", "fswatcher", `added ${relativePath}`)
 		return track
 	} catch (e) {
 		const error = e as PrismaError
@@ -230,11 +232,11 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		if ('errorCode' in error && error.errorCode === 'P1008' && retries < RETRIES) {
 			// wait to avoid race: random to stagger siblings, exponential to let the rest of the library go on
 			const delay = 5 * Math.random() + 2 ** retries
-			console.log(`\x1b[36mwait \x1b[0m - database is busy, retry #${retries + 1} in ${Math.round(delay)}ms for ${relativePath}`)
+			log("info", "wait", "fswatcher", `database is busy, retry #${retries + 1} in ${Math.round(delay)}ms for ${relativePath}`)
 			await new Promise((resolve) => setTimeout(resolve, delay))
 			return createTrack(path, retries + 1)
 		} else {
-			console.log(`\x1b[31merror\x1b[0m - failed to add ${relativePath} after ${retries} retries`)
+			log("error", "error", "fswatcher", `failed to add ${relativePath} after ${retries} retries`)
 			console.warn(error)
 			return false
 		}
