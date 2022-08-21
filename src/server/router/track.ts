@@ -1,5 +1,6 @@
-import { createRouter } from "./context";
-import { z } from "zod";
+import { createRouter } from "./context"
+import { z } from "zod"
+import { lastFm } from "../persistent/lastfm"
 
 export const trackRouter = createRouter()
   .query("searchable", {
@@ -124,6 +125,9 @@ export const trackRouter = createRouter()
       } else if (track.metaImage) {
         cover = track.metaImage
       }
+
+      lastFm.findTrack(input.id)
+
       return {...track, cover}
     }
   })

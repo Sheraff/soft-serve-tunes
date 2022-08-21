@@ -142,7 +142,7 @@ function getSchema(url: SpotifyApiUrl) {
 
 class Spotify {
 	static RATE_LIMIT = 200
-	static STORAGE_LIMIT = 50
+	static STORAGE_LIMIT = 100
 
 	#accessToken: string | null = null
 
@@ -195,7 +195,7 @@ class Spotify {
 		}
 		await this.#queue.next()
 		await this.#refreshToken()
-		const request = fetch(`https://api.spotify.com/v1/${url}`, {
+		const request = fetch(`https://api.spotify.com/v1/${url}&limit=1`, {
 			headers: {
 				'Authorization': `Bearer ${this.#accessToken}`,
 				'Accept': 'application/json',
@@ -218,6 +218,22 @@ class Spotify {
 		return request as Promise<SpotifyApiResponse<URL>>
 	}
 
+	#purgeStoreTimeout: NodeJS.Timeout | null = null
+	#purgeStore() {
+		if (!this.#purgeStoreTimeout) {
+			this.#purgeStoreTimeout = setTimeout(() => {
+				this.#purgeStoreTimeout = null
+				if (this.#pastRequests.length > 0) {
+					const key = this.#pastRequests.shift() as SpotifyApiUrl
+					this.#pastResponses.delete(key)
+				}
+				if (this.#pastRequests.length > 0) {
+					this.#purgeStore()
+				}
+			}, 60_000)
+		}
+	}
+
 	#storeResponse<URL extends SpotifyApiUrl>(url: URL, response: SpotifyApiSuccessResponse<URL>) {
 		this.#pastRequests.push(url)
 		this.#pastResponses.set(url, response)
@@ -225,6 +241,7 @@ class Spotify {
 			const key = this.#pastRequests.shift() as SpotifyApiUrl
 			this.#pastResponses.delete(key)
 		}
+		this.#purgeStore()
 	}
 }
 
@@ -310,11 +327,9 @@ export async function findTrack(trackDbId: string) {
 			|| `track:${sanitizeString(track.name)}${artistName ? ` artist:${sanitizeString(artistName)}` : ''}${albumName ? ` album:${sanitizeString(albumName)}` : ''}`
 		console.log(`\x1b[36mfetch\x1b[0m - spotify${fuzzySearch ? ' fuzzy' : ''} search: ${search}`)
 		const trackData = await spotify.fetch(`search?type=track&q=${search}`)
-		if ('error' in trackData) {
-			console.log(`\x1b[33m404  \x1b[0m - spotify: could not find track`)
-			break trackCreate
-		}
-		let candidate = trackData.tracks.items[0]
+		let candidate = ('tracks' in trackData)
+			? trackData.tracks.items[0]
+			: undefined
 		if (!candidate) {
 			if (artistName && albumName && typeof track.position === 'number') {
 				const search = `artist:${sanitizeString(artistName)} album:${sanitizeString(albumName)}`
@@ -488,7 +503,7 @@ export async function findTrack(trackDbId: string) {
 			break albumFill
 		}
 		const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
-		if (hash) {
+		if (hash && path && palette) {
 			await prisma.spotifyAlbum.update({
 				where: {
 					id: albumObject.id
@@ -519,7 +534,7 @@ export async function findTrack(trackDbId: string) {
 		const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
 		if (image) {
 			const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
-			if(hash) {
+			if (hash && path && palette) {
 				await prisma.spotifyArtist.update({
 					where: {
 						id: artistObject.id

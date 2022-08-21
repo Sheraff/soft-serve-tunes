@@ -207,46 +207,51 @@ export const audiodbRouter = createRouter()
 					const albumsJson = await albumsData.json()
 					const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
 					for (const audiodbAlbum of audiodbAlbums.album) {
-						const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
-						const imageIds = await keysAndInputToImageIds(audiodbAlbum, ['strAlbumThumb','strAlbumThumbHQ','strAlbumCDart'])
-						await ctx.prisma.audioDbAlbum.create({
-							data: {
-								...(entityAlbum ? {entityId: entityAlbum.id} : {}),
-								...audiodbAlbum,
-								thumbId: imageIds.strAlbumThumb,
-								thumbHqId: imageIds.strAlbumThumbHQ,
-								cdArtId: imageIds.strAlbumCDart,
-							},
-						})
-						await queue.next()
-						const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
-						tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
-						console.log(`\x1b[36mfetch\x1b[0m - audiodb tracks: ${audiodbAlbum.strAlbum}`)
-						const tracksData = await fetch(tracksUrl)
-						const tracksJson = await tracksData.json()
-						const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
-						let oneAlbumConnection: string | undefined
-						await Promise.all(audiodbTracks.track.map(async (audiodbTrack) => {
-							const entityTrack = artist.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
-							if (!entityAlbum && !oneAlbumConnection && entityTrack?.albumId) {
-								oneAlbumConnection = entityTrack.albumId
+						try {
+							const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
+							const imageIds = await keysAndInputToImageIds(audiodbAlbum, ['strAlbumThumb','strAlbumThumbHQ','strAlbumCDart'])
+							await ctx.prisma.audioDbAlbum.create({
+								data: {
+									...(entityAlbum ? {entityId: entityAlbum.id} : {}),
+									...audiodbAlbum,
+									thumbId: imageIds.strAlbumThumb,
+									thumbHqId: imageIds.strAlbumThumbHQ,
+									cdArtId: imageIds.strAlbumCDart,
+								},
+							})
+							await queue.next()
+							const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
+							tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
+							console.log(`\x1b[36mfetch\x1b[0m - audiodb tracks: ${audiodbAlbum.strAlbum}`)
+							const tracksData = await fetch(tracksUrl)
+							const tracksJson = await tracksData.json()
+							const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
+							let oneAlbumConnection: string | undefined
+							await Promise.allSettled(audiodbTracks.track.map(async (audiodbTrack) => {
+								const entityTrack = artist.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
+								if (!entityAlbum && !oneAlbumConnection && entityTrack?.albumId) {
+									oneAlbumConnection = entityTrack.albumId
+								}
+								const imageIds = await keysAndInputToImageIds(audiodbTrack, ['strTrackThumb'])
+								return ctx.prisma.audioDbTrack.create({
+									data: {
+										...(entityTrack ? {entityId: entityTrack.id} : {}),
+										...audiodbTrack,
+										thumbId: imageIds.strTrackThumb,
+									},
+								})
+							}))
+							if (oneAlbumConnection) {
+								await ctx.prisma.audioDbAlbum.update({
+									where: { idAlbum: audiodbAlbum.idAlbum },
+									data: {
+										entityId: oneAlbumConnection,
+									},
+								})
 							}
-							const imageIds = await keysAndInputToImageIds(audiodbTrack, ['strTrackThumb'])
-							return ctx.prisma.audioDbTrack.create({
-								data: {
-									...(entityTrack ? {entityId: entityTrack.id} : {}),
-									...audiodbTrack,
-									thumbId: imageIds.strTrackThumb,
-								},
-							})
-						}))
-						if (oneAlbumConnection) {
-							await ctx.prisma.audioDbAlbum.update({
-								where: { idAlbum: audiodbAlbum.idAlbum },
-								data: {
-									entityId: oneAlbumConnection,
-								},
-							})
+						} catch (e) {
+							console.error(e)
+							// catching error because if 1 album fails, it shouldn't prevent the other ones to proceed
 						}
 					}
 				})

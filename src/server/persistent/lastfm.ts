@@ -7,6 +7,31 @@ import sanitizeString from "../../utils/sanitizeString"
 import { socketServer } from "./ws"
 import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
 
+const lastFmCorrectionArtistSchema = z
+	.object({
+		corrections: z.object({
+			correction: z.object({
+				artist: z.object({
+					name: z.string().optional(),
+				})
+			})
+		}).optional()
+	})
+
+const lastFmCorrectionTrackSchema = z
+	.object({
+		corrections: z.object({
+			correction: z.object({
+				track: z.object({
+					name: z.string().optional(),
+					artist: z.object({
+						name: z.string().optional(),
+					})
+				})
+			})
+		}).optional()
+	})
+
 const lastFmArtistSchema = z
 	.object({
 		artist: z.object({
@@ -107,7 +132,7 @@ type WaitlistEntry = (() => Promise<void>)
 
 class LastFM {
 	static RATE_LIMIT = 100
-	static STORAGE_LIMIT = 50
+	static STORAGE_LIMIT = 100
 
 	#queue: Queue
 	#waitlist: WaitlistEntry[] = []
@@ -120,7 +145,8 @@ class LastFM {
 		if (this.#waitlist.length === 1) {
 			while (this.#waitlist.length) {
 				try {
-					await this.#waitlist.shift()?.()
+					await this.#waitlist[0]?.()
+					this.#waitlist.shift()
 				} catch (e) {
 					// catching, just in case, so that 1 item in the waiting list doesn't ruin the entire list
 					console.error(e)
@@ -129,6 +155,16 @@ class LastFM {
 		}
 	}
 
+	async correctArtist(artist: string) {
+		const promise = new Promise<string>(resolve => this.#waitlist.push(() => this.#correctArtist(artist).then(resolve)))
+		this.#processWaitlist()
+		return promise
+	}
+	async correctTrack(artist: string, track: string) {
+		const promise = new Promise<string>(resolve => this.#waitlist.push(() => this.#correctTrack(artist, track).then(resolve)))
+		this.#processWaitlist()
+		return promise
+	}
 	async findTrack(id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findTrack(id).then(resolve)))
 		this.#processWaitlist()
@@ -143,6 +179,76 @@ class LastFM {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findAlbum(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
+	}
+
+	#pastRequests: string[] = []
+	#pastResponses = new Map<string, any>()
+
+	#purgeStoreTimeout: NodeJS.Timeout | null = null
+	#purgeStore() {
+		if (!this.#purgeStoreTimeout) {
+			this.#purgeStoreTimeout = setTimeout(() => {
+				this.#purgeStoreTimeout = null
+				if (this.#pastRequests.length > 0) {
+					const key = this.#pastRequests.shift() as string
+					this.#pastResponses.delete(key)
+				}
+				if (this.#pastRequests.length > 0) {
+					this.#purgeStore()
+				}
+			}, 60_000)
+		}
+	}
+
+	async fetch(url: URL | string) {
+		const string = url.toString()
+		if (this.#pastResponses.has(string)) {
+			return this.#pastResponses.get(string)
+		}
+		await this.#queue.next()
+		const data = await fetch(url)
+		const json = await data.json()
+		this.#pastResponses.set(string, json)
+		this.#pastRequests.push(string)
+		if (this.#pastRequests.length > LastFM.STORAGE_LIMIT) {
+			const pastString = this.#pastRequests.shift() as string
+			this.#pastResponses.delete(pastString)
+		}
+		this.#purgeStore()
+		return json
+	}
+
+	async #correctArtist(artist: string) {
+		const url = makeArtistCorrectionUrl(sanitizeString(artist))
+		try {
+			const json = await this.fetch(url)
+			const lastfm = lastFmCorrectionArtistSchema.parse(json)
+			if (lastfm.corrections?.correction?.artist?.name) {
+				return lastfm.corrections.correction.artist.name
+			}
+		} catch (e) {
+			console.log(`error while correcting artist ${artist}`)
+			console.log(url.toString())
+			console.log(this.#pastRequests.includes(url.toString()))
+			console.log(this.#pastResponses.get(url.toString()))
+			console.error(e)
+		}
+		return artist
+	}
+
+	async #correctTrack(artist: string, track: string) {
+		const url = makeTrackCorrectionUrl(sanitizeString(artist), sanitizeString(track))
+		try {
+			const json = await this.fetch(url)
+			const lastfm = lastFmCorrectionTrackSchema.parse(json)
+			if (lastfm.corrections?.correction?.track?.name) {
+				return lastfm.corrections.correction.track.name
+			}
+		} catch (e) {
+			console.log(`error while correcting track ${track} by ${artist}`)
+			console.error(e)
+		}
+		return track
 	}
 
 	async #findTrack(id: string) {
@@ -170,7 +276,7 @@ class LastFM {
 			}
 		})
 		if (!track) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm failed to find track ${id} in prisma.track`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find track ${id} in prisma.track`)
 			return false
 		}
 		if (track.lastfm) {
@@ -187,23 +293,23 @@ class LastFM {
 			urls.push(makeTrackUrl({ artist: track.album.artist.name, track: track.name }))
 		}
 		if (urls.length === 0) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm not enough info to look up track ${track.name}`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm not enough info to look up track ${track.name}`)
 			return false
 		}
 		let trackData
 		for (const url of urls) {
-			await this.#queue.next()
-			const data = await fetch(url)
-			const json = await data.json()
+			const json = await this.fetch(url)
 			const lastfm = lastFmTrackSchema.parse(json)
 			if (lastfm.track && lastfm.track.url) {
 				// no `url` field is usually a sign of poor quality data
 				trackData = lastfm.track
 				break
+			} else if (lastfm.track) {
+				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
 			}
 		}
 		if (!trackData) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm no result for ${track.name} w/ ${urls.length} tries`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for track ${track.name} w/ ${urls.length} tries`)
 			return false
 		}
 
@@ -214,12 +320,12 @@ class LastFM {
 				entityId: id,
 				...(connectingAlbum ? { albumId: connectingAlbum } : {}),
 				...(connectingArtist ? { artistId: connectingArtist } : {}),
-				url: trackData.url,
 				duration: trackData.duration,
 				listeners: trackData.listeners,
 				playcount: trackData.playcount,
 				mbid: trackData.mbid,
 				name: trackData.name,
+				url: trackData.url,
 				tags: {
 					connectOrCreate: trackData.toptags.tag
 						.filter(tag => tag.url)
@@ -233,13 +339,16 @@ class LastFM {
 				},
 			}
 		})
-		if (trackData.mbid) {
-			// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			await prisma.audioDbTrack.updateMany({
-				where: { strMusicBrainzID: trackData.mbid },
-				data: { entityId: id },
-			})
-		}
+		// if (trackData.mbid) {
+		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+		// 	await prisma.audioDbTrack.updateMany({
+		// 		where: {
+		// 			strMusicBrainzID: trackData.mbid,
+		// 			entityId: undefined,
+		// 		},
+		// 		data: { entityId: id },
+		// 	})
+		// }
 		const artist = track.artist
 		if (!connectingArtist && artist) {
 			try {
@@ -253,7 +362,7 @@ class LastFM {
 		if (!connectingAlbum && album) {
 			try {
 				await new Promise<void>(resolve => this.#findAlbum(album.id).finally(resolve))
-			} catch (error) {
+			} catch (e) {
 				// catching so that a track can still send its invalidation signal if the album fails
 				console.error(e)
 			}
@@ -280,7 +389,7 @@ class LastFM {
 			}
 		})
 		if (!artist) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm failed to find artist ${id} in prisma.artist`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find artist ${id} in prisma.artist`)
 			return false
 		}
 		if (artist.lastfm) {
@@ -293,18 +402,18 @@ class LastFM {
 		urls.push(makeArtistUrl({ artist: artist.name }))
 		let artistData
 		for (const url of urls) {
-			await this.#queue.next()
-			const data = await fetch(url)
-			const json = await data.json()
+			const json = await this.fetch(url)
 			const lastfm = lastFmArtistSchema.parse(json)
 			if (lastfm.artist && lastfm.artist.url) {
 				// no `url` field is usually a sign of poor quality data
 				artistData = lastfm.artist
 				break
+			} else if (lastfm.artist) {
+				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for artist ${artist.name}, found ${lastfm.artist.name} but no 'url' field`)
 			}
 		}
 		if (!artistData) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm no result for ${artist.name} w/ ${urls.length} tries`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for artist ${artist.name} w/ ${urls.length} tries`)
 			return false
 		}
 		let coverId
@@ -332,11 +441,11 @@ class LastFM {
 				entityId: id,
 				...(connectingTracks.length ? { tracks: { connect: connectingTracks.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
 				...(connectingAlbums.length ? { albums: { connect: connectingAlbums.map(({ lastfm }) => ({ id: lastfm?.id })) } } : {}),
-				url: artistData.url,
 				mbid: artistData.mbid,
 				name: artistData.name,
 				listeners: artistData.stats.listeners,
 				playcount: artistData.stats.playcount,
+				url: artistData.url,
 				tags: {
 					connectOrCreate: artistData.tags.tag.map(tag => ({
 						where: { url: tag.url },
@@ -350,13 +459,16 @@ class LastFM {
 				coverId,
 			},
 		})
-		if (artistData.mbid) {
-			// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			await prisma.audioDbArtist.updateMany({
-				where: { strMusicBrainzID: artistData.mbid },
-				data: { entityId: id },
-			})
-		}
+		// if (artistData.mbid) {
+		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+		// 	await prisma.audioDbArtist.updateMany({
+		// 		where: {
+		// 			strMusicBrainzID: artistData.mbid,
+		// 			entityId: undefined,
+		// 		},
+		// 		data: { entityId: id },
+		// 	})
+		// }
 		socketServer.send("invalidate:artist", { id })
 		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
 		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
@@ -384,7 +496,7 @@ class LastFM {
 			}
 		})
 		if (!album) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm failed to find album ${id} in prisma.album`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm failed to find album ${id} in prisma.album`)
 			return false
 		}
 		if (album.lastfm) {
@@ -398,23 +510,23 @@ class LastFM {
 			urls.push(makeAlbumUrl({ album: album.name, artist: album.artist.name }))
 		}
 		if (urls.length === 0) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm not enough info to look up album ${album.name}`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm not enough info to look up album ${album.name}`)
 			return false
 		}
 		let albumData
 		for (const url of urls) {
-			await this.#queue.next()
-			const data = await fetch(url)
-			const json = await data.json()
+			const json = await this.fetch(url)
 			const lastfm = lastFmAlbumSchema.parse(json)
 			if (lastfm.album && lastfm.album.url) {
 				// no `url` field is usually a sign of poor quality data
 				albumData = lastfm.album
 				break
+			} else if (lastfm.album) {
+				console.log(`\x1b[36mpass \x1b[0m - lastfm discard result for album ${album.name}, found ${lastfm.album.name} but no 'url' field`)
 			}
 		}
 		if (!albumData) {
-			console.log(`\x1b[31m404  \x1b[0m - lastfm no result for ${album.name} w/ ${urls.length} tries`)
+			console.log(`\x1b[33m404  \x1b[0m - lastfm no result for album ${album.name} w/ ${urls.length} tries`)
 			return false
 		}
 		let coverId
@@ -445,11 +557,11 @@ class LastFM {
 				entityId: id,
 				...(connectingArtist ? { artistId: connectingArtist } : {}),
 				...(connectingTracks.length ? { tracks: { connect: connectingTracks.map((id) => ({ id })) } } : {}),
-				url: albumData.url,
 				mbid: albumData.mbid,
 				name: albumData.name,
 				listeners: albumData.listeners,
 				playcount: albumData.playcount,
+				url: albumData.url,
 				...(albumData.toptags?.tag.length ? {
 					tags: {
 						connectOrCreate: albumData.toptags.tag.map(tag => ({
@@ -465,13 +577,16 @@ class LastFM {
 				coverId,
 			},
 		})
-		if (albumData.mbid) {
-			// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			await prisma.audioDbAlbum.updateMany({
-				where: { strMusicBrainzID: albumData.mbid },
-				data: { entityId: id },
-			})
-		}
+		// if (albumData.mbid) {
+		// 	// TODO: shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
+		// 	await prisma.audioDbAlbum.updateMany({
+		// 		where: {
+		// 			strMusicBrainzID: albumData.mbid,
+		// 			entityId: undefined
+		// 		},
+		// 		data: { entityId: id },
+		// 	})
+		// }
 		socketServer.send("invalidate:album", { id })
 		if (connectingArtist)
 			socketServer.send("invalidate:artist", { id: connectingArtist })
@@ -485,6 +600,21 @@ function makeApiUrl() {
 	url.searchParams.set('format', 'json')
 	url.searchParams.set('api_key', env.LAST_FM_API_KEY)
 	url.searchParams.set('autocorrect', '1')
+	return url
+}
+
+function makeArtistCorrectionUrl(artist: string) {
+	const url = makeApiUrl()
+	url.searchParams.set('method', 'artist.getcorrection')
+	url.searchParams.set('artist', artist)
+	return url
+}
+
+function makeTrackCorrectionUrl(artist: string, track: string) {
+	const url = makeApiUrl()
+	url.searchParams.set('method', 'track.getcorrection')
+	url.searchParams.set('artist', artist)
+	url.searchParams.set('track', track)
 	return url
 }
 
@@ -541,7 +671,7 @@ async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof la
 	if (!trackData.artist?.url) {
 		return undefined
 	}
-	const artist = await prisma.lastFmArtist.findUnique({
+	const artist = await prisma.lastFmArtist.findFirst({
 		where: { url: trackData.artist.url },
 		select: { id: true },
 	})
@@ -555,7 +685,7 @@ async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof las
 	if (!trackData.album?.url) {
 		return undefined
 	}
-	const album = await prisma.lastFmAlbum.findUnique({
+	const album = await prisma.lastFmAlbum.findFirst({
 		where: { url: trackData.album.url },
 		select: { id: true },
 	})

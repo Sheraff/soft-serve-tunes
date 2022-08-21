@@ -1,5 +1,6 @@
 import { createRouter } from "./context"
 import { z } from "zod"
+import { lastFm } from "../persistent/lastfm"
 
 export const artistRouter = createRouter()
   .query("searchable", {
@@ -95,6 +96,9 @@ export const artistRouter = createRouter()
       } else if (artist?.tracks?.[0]?.metaImage) {
         cover = artist.tracks[0].metaImage
       }
+
+      lastFm.findArtist(input.id)
+
       return {
         ...artist,
         cover,
@@ -171,6 +175,9 @@ export const artistRouter = createRouter()
       } else if (artist?.tracks?.[0]?.metaImage) {
         cover = artist.tracks[0].metaImage
       }
+
+      lastFm.findArtist(input.id)
+
       return {
         ...artist,
         cover,

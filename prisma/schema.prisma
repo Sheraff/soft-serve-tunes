@@ -25,6 +25,7 @@ model File {
 model Track {
   id          String        @id @default(cuid())
   name        String
+  simplified  String
   artistId    String?
   artist      Artist?       @relation(fields: [artistId], references: [id])
   feats       Artist[]      @relation("Featuring")
@@ -44,7 +45,7 @@ model Track {
   metaImage   Image?        @relation(fields: [metaImageId], references: [id])
   spotify     SpotifyTrack? @relation
 
-  @@unique([name, artistId, albumId])
+  @@unique([simplified, artistId, albumId])
 }
 
 model Image {
@@ -56,34 +57,36 @@ model Image {
   lastfmAlbum            LastFmAlbum[]   @relation
   lastfmArtist           LastFmArtist[]  @relation
   audiodbTrack           AudioDbTrack[]  @relation
-  audiodbArtistThumb     AudioDbArtist[] @relation(name: "thumb")
-  audiodbArtistLogo      AudioDbArtist[] @relation(name: "logo")
-  audiodbArtistCutout    AudioDbArtist[] @relation(name: "cutout")
-  audiodbArtistClearart  AudioDbArtist[] @relation(name: "clearart")
-  audiodbArtistWideThumb AudioDbArtist[] @relation(name: "wideThumb")
-  audiodbArtistBanner    AudioDbArtist[] @relation(name: "banner")
-  audiodbAlbumThumb      AudioDbAlbum[]  @relation(name: "thumb")
-  audiodbAlbumThumbHq    AudioDbAlbum[]  @relation(name: "thumbHq")
-  audiodbAlbumCdArt      AudioDbAlbum[]  @relation(name: "cdArt")
+  audiodbArtistThumb     AudioDbArtist[] @relation(name: "AudioDbArtistThumb")
+  audiodbArtistLogo      AudioDbArtist[] @relation(name: "AudioDbArtistLogo")
+  audiodbArtistCutout    AudioDbArtist[] @relation(name: "AudioDbArtistCutout")
+  audiodbArtistClearart  AudioDbArtist[] @relation(name: "AudioDbArtistClearart")
+  audiodbArtistWideThumb AudioDbArtist[] @relation(name: "AudioDbArtistWideThumb")
+  audiodbArtistBanner    AudioDbArtist[] @relation(name: "AudioDbArtistBanner")
+  audiodbAlbumThumb      AudioDbAlbum[]  @relation(name: "AudioDbAlbumThumb")
+  audiodbAlbumThumbHq    AudioDbAlbum[]  @relation(name: "AudioDbAlbumThumbHq")
+  audiodbAlbumCdArt      AudioDbAlbum[]  @relation(name: "AudioDbAlbumCdArt")
   spotifyArtist          SpotifyArtist[] @relation
   spotifyAlbum           SpotifyAlbum[]  @relation
 }
 
 model Artist {
-  id        String         @id @default(cuid())
-  name      String         @unique
-  tracks    Track[]        @relation
-  feats     Track[]        @relation("Featuring")
-  createdAt DateTime       @default(now())
-  albums    Album[]        @relation
-  lastfm    LastFmArtist?  @relation
-  audiodb   AudioDbArtist? @relation
-  spotify   SpotifyArtist? @relation
+  id         String         @id @default(cuid())
+  name       String         @unique
+  simplified String         @unique
+  tracks     Track[]        @relation
+  feats      Track[]        @relation("Featuring")
+  createdAt  DateTime       @default(now())
+  albums     Album[]        @relation
+  lastfm     LastFmArtist?  @relation
+  audiodb    AudioDbArtist? @relation
+  spotify    SpotifyArtist? @relation
 }
 
 model Album {
   id          String        @id @default(cuid())
   name        String
+  simplified  String
   artistId    String?
   artist      Artist?       @relation(fields: [artistId], references: [id])
   tracksCount Int?
@@ -94,7 +97,7 @@ model Album {
   audiodb     AudioDbAlbum? @relation
   spotify     SpotifyAlbum? @relation
 
-  @@unique([name, artistId])
+  @@unique([simplified, artistId])
 }
 
 model Genre {
@@ -110,7 +113,7 @@ model LastFmTrack {
   id        String        @id @default(cuid())
   entityId  String        @unique
   entity    Track         @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  url       String        @unique
+  url       String?
   albumId   String?
   album     LastFmAlbum?  @relation(fields: [albumId], references: [id])
   artistId  String?
@@ -127,7 +130,7 @@ model LastFmAlbum {
   id          String        @id @default(cuid())
   entityId    String        @unique
   entity      Album         @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  url         String        @unique
+  url         String?
   tracks      LastFmTrack[]
   artistId    String?
   artist      LastFmArtist? @relation(fields: [artistId], references: [id])
@@ -146,7 +149,7 @@ model LastFmArtist {
   id        String        @id @default(cuid())
   entityId  String        @unique
   entity    Artist        @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  url       String        @unique
+  url       String?
   tracks    LastFmTrack[]
   albums    LastFmAlbum[]
   mbid      String?
@@ -183,22 +186,22 @@ model AudioDbArtist {
 
   strArtistThumb     String?
   thumbId            String?
-  thumb              Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
+  thumb              Image?  @relation(name: "AudioDbArtistThumb", fields: [thumbId], references: [id])
   strArtistLogo      String?
   logoId             String?
-  logo               Image?  @relation(name: "logo", fields: [logoId], references: [id])
+  logo               Image?  @relation(name: "AudioDbArtistLogo", fields: [logoId], references: [id])
   strArtistCutout    String?
   cutoutId           String?
-  cutout             Image?  @relation(name: "cutout", fields: [cutoutId], references: [id])
+  cutout             Image?  @relation(name: "AudioDbArtistCutout", fields: [cutoutId], references: [id])
   strArtistClearart  String?
   clearartId         String?
-  clearart           Image?  @relation(name: "clearart", fields: [clearartId], references: [id])
+  clearart           Image?  @relation(name: "AudioDbArtistClearart", fields: [clearartId], references: [id])
   strArtistWideThumb String?
   wideThumbId        String?
-  wideThumb          Image?  @relation(name: "wideThumb", fields: [wideThumbId], references: [id])
+  wideThumb          Image?  @relation(name: "AudioDbArtistWideThumb", fields: [wideThumbId], references: [id])
   strArtistBanner    String?
   bannerId           String?
-  banner             Image?  @relation(name: "banner", fields: [bannerId], references: [id])
+  banner             Image?  @relation(name: "AudioDbArtistBanner", fields: [bannerId], references: [id])
 
   albums AudioDbAlbum[]
 }
@@ -218,13 +221,13 @@ model AudioDbAlbum {
 
   strAlbumThumb   String?
   thumbId         String?
-  thumb           Image?  @relation(name: "thumb", fields: [thumbId], references: [id])
+  thumb           Image?  @relation(name: "AudioDbAlbumThumb", fields: [thumbId], references: [id])
   strAlbumThumbHQ String?
   thumbHqId       String?
-  thumbHq         Image?  @relation(name: "thumbHq", fields: [thumbHqId], references: [id])
+  thumbHq         Image?  @relation(name: "AudioDbAlbumThumbHq", fields: [thumbHqId], references: [id])
   strAlbumCDart   String?
   cdArtId         String?
-  cdArt           Image?  @relation(name: "cdArt", fields: [cdArtId], references: [id])
+  cdArt           Image?  @relation(name: "AudioDbAlbumCdArt", fields: [cdArtId], references: [id])
 
   strAllMusicID      String?
   strBBCReviewID     String?
@@ -270,8 +273,8 @@ model SpotifyArtist {
   genres     Genre[]        @relation
   albums     SpotifyAlbum[] @relation
   tracks     SpotifyTrack[] @relation
-  feats      SpotifyTrack[] @relation("Featuring")
-  albumFeats SpotifyAlbum[] @relation("AlbumFeaturing")
+  feats      SpotifyTrack[] @relation("SpotifyTrackFeaturing")
+  albumFeats SpotifyAlbum[] @relation("SpotifyAlbumFeaturing")
 
   artistId String? @unique
   artist   Artist? @relation(fields: [artistId], references: [id])
@@ -283,7 +286,7 @@ model SpotifyAlbum {
   albumType   String
   artistId    String?
   artist      SpotifyArtist?  @relation(fields: [artistId], references: [id])
-  feats       SpotifyArtist[] @relation("AlbumFeaturing")
+  feats       SpotifyArtist[] @relation("SpotifyAlbumFeaturing")
   imageId     String?
   image       Image?          @relation(fields: [imageId], references: [id])
   releaseDate DateTime?
@@ -300,7 +303,7 @@ model SpotifyTrack {
   name        String
   artistId    String?
   artist      SpotifyArtist?  @relation(fields: [artistId], references: [id])
-  feats       SpotifyArtist[] @relation("Featuring")
+  feats       SpotifyArtist[] @relation("SpotifyTrackFeaturing")
   albumId     String
   album       SpotifyAlbum?   @relation(fields: [albumId], references: [id])
   popularity  Int?

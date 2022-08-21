@@ -7,6 +7,9 @@ import { prisma } from "../db/client"
 import { env } from "../../env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
 import { constants } from "node:fs"
+import { lastFm } from "../persistent/lastfm"
+import { correctAlbum } from "../persistent/spotify"
+import sanitizeString from "../../utils/sanitizeString"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -60,7 +63,28 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const { hash, path: imagePath, palette } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
 			: { hash: '', path: '', palette: '' }
-		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist)
+		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist) || []
+
+		const correctedArtist = metadata.common.artist
+			? await lastFm.correctArtist(metadata.common.artist)
+			: undefined
+		const correctedFeats = []
+		for (const feat of feats) {
+			const correctedFeat = await lastFm.correctArtist(feat)
+			if (correctedFeat) {
+				correctedFeats.push(correctedFeat)
+			}
+		}
+
+		const correctedTrack = correctedArtist && name
+			? await lastFm.correctTrack(correctedArtist, name)
+			: name
+
+		const correctedAlbum = metadata.common.album
+		// const correctedAlbum = metadata.common.album && correctedArtist
+		// 	? await correctAlbum(correctedArtist, metadata.common.album, correctedTrack)
+		// 	: undefined
+
 		const track = await prisma.track.create({
 			include: {
 				feats: {
@@ -70,7 +94,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				}
 			},
 			data: {
-				name,
+				name: correctedTrack,
+				simplified: simplifiedName(correctedTrack),
 				position,
 				popularity: 0,
 				year: metadata.common.year,
@@ -99,30 +124,30 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						}
 					}
 				} : {}),
-				...(metadata.common.artist ? {
+				...(correctedArtist ? {
 					artist: {
 						connectOrCreate: {
 							where: {
-								name: metadata.common.artist,
+								simplified: simplifiedName(correctedArtist),
 							},
 							create: {
-								name: metadata.common.artist,
+								name: correctedArtist,
+								simplified: simplifiedName(correctedArtist),
 							}
 						}
 					}
 				} : {}),
-				...(feats?.length ? {
-					feats: {
-						connectOrCreate: feats.map(artist => ({
-							where: {
-								name: artist,
-							},
-							create: {
-								name: artist,
-							}
-						}))
-					}
-				} : {}),
+				feats: {
+					connectOrCreate: correctedFeats.map(artist => ({
+						where: {
+							simplified: simplifiedName(artist),
+						},
+						create: {
+							name: artist,
+							simplified: simplifiedName(artist),
+						}
+					}))
+				},
 				...(metadata.common.genre?.length ? {
 					genres: {
 						connectOrCreate: metadata.common.genre.map(genre => ({
@@ -139,7 +164,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		})
 
 		// update `feats` on secondary artists
-		if (metadata.common.artists?.length) {
+		if (correctedFeats.length) {
 			await Promise.allSettled(track.feats.map(feat => {
 				return prisma.artist.update({
 					where: {
@@ -157,9 +182,10 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		}
 
 		// create album now that we have an artistId
-		if (metadata.common.album) {
+		if (correctedAlbum) {
 			const create: Prisma.AlbumCreateArgs['data'] = {
-				name: metadata.common.album,
+				name: correctedAlbum,
+				simplified: simplifiedName(correctedAlbum),
 				artistId: track.artistId,
 				year: metadata.common.year,
 				tracksCount: metadata.common.track.of,
@@ -173,8 +199,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						album: {
 							connectOrCreate: {
 								where: {
-									name_artistId: {
-										name: metadata.common.album,
+									simplified_artistId: {
+										simplified: simplifiedName(correctedAlbum),
 										artistId: track.artistId
 									}
 								},
@@ -213,4 +239,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return false
 		}
 	}
+}
+
+export function simplifiedName(name: string) {
+	return sanitizeString(name).toLowerCase().replace(/\s+/g, '')
 }

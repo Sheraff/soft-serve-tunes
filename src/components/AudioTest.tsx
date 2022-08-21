@@ -43,6 +43,7 @@ export default function AudioTest({ }) {
 	// 	enabled: Boolean(item?.id),
 	// })
 
+	console.log('fetch spotify?', item?.id)
 	const {data: spotify} = trpc.useQuery(["spotify.track", {
 		id: item?.id as string,
 	}], {
