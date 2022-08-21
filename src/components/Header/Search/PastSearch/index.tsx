@@ -20,7 +20,13 @@ export default function PastSearch({
 		<button
 			type="button"
 			className={classNames(styles.main, {[styles.empty]: isEmpty})}
-			onClick={() => setAppState({playlist: {type, id: entity.id, index: 0}, view: {type: "home"}})}
+			onClick={() => {
+				if (type === 'track' || type === 'genre') {
+					setAppState({playlist: {type, id: entity.id, index: 0}, view: {type: "home"}})
+				} else {
+					setAppState({view: {type, id: entity.id}})
+				}
+			}}
 		>
 			{!isEmpty && (
 				<img
