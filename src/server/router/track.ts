@@ -46,6 +46,9 @@ export const trackRouter = createRouter()
           album: {
             select: {
               name: true,
+              spotify: { select: {image: true} },
+              audiodb: { select: {thumbHq: true, thumb: true} },
+              lastfm: { select: {cover: true} },
             }
           },
           artist: {
@@ -114,7 +117,16 @@ export const trackRouter = createRouter()
       })
       if (!track) return null
       let cover = undefined
-      if (track.spotify?.album?.image) {
+      if (track?.album?.spotify?.image) {
+        log("info", "image", "trpc", `track.miniature selected cover from track.album.spotify.image for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
+        cover = track.album.spotify.image
+      } else if (track?.album?.audiodb?.thumbHq) {
+        log("info", "image", "trpc", `track.miniature selected cover from track.album.audiodb.thumbHq for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
+        cover = track.album.audiodb.thumbHq
+      } else if (track?.album?.audiodb?.thumb) {
+        log("info", "image", "trpc", `track.miniature selected cover from track.album.audiodb.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
+        cover = track.album.audiodb.thumb
+      } else if (track.spotify?.album?.image) {
         log("info", "image", "trpc", `track.miniature selected cover from spotify.album for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.spotify.album?.image
       } else if (track.audiodb?.thumb) {
@@ -132,6 +144,9 @@ export const trackRouter = createRouter()
       } else if (track.metaImage) {
         log("info", "image", "trpc", `track.miniature selected cover from track.metaImage for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.metaImage
+      } else if (track?.album?.lastfm?.cover) {
+        log("info", "image", "trpc", `track.miniature selected cover from track.album.lastfm.cover for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
+        cover = track.album.lastfm.cover
       }
 
       if (track) {
