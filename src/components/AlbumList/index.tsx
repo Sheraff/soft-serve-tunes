@@ -67,9 +67,11 @@ function AlbumItem({
 export default function AlbumList({
 	albums,
 	onSelect,
+	scrollable,
 }: {
 	albums: {id: string}[]
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
+	scrollable: boolean
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
@@ -79,7 +81,7 @@ export default function AlbumList({
 	}, [albums])
 
 	return (
-		<div className={styles.wrapper} ref={ref}>
+		<div className={classNames(styles.wrapper, {[styles.scrollable]: scrollable})} ref={ref}>
 			<ul className={styles.main}>
 				{albums.map((album, i) => (
 					<li className={styles.item} key={album.id}>

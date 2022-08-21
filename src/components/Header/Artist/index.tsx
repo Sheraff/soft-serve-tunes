@@ -103,7 +103,7 @@ export default forwardRef(function ArtistView({
 				</button>
 			</div>
 			{data?.albums && Boolean(data.albums.length) && (
-				<div>
+				<div className={styles.section}>
 					<h2 className={styles.sectionTitle}>Albums</h2>
 					<AlbumList albums={data.albums} />
 				</div>

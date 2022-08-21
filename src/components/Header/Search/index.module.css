@@ -5,6 +5,7 @@
 	pointer-events: none;
 	opacity: 0;
 	position: relative;
+	z-index: 1;
 	background-color: var(--palette-bg-main);
 }
 .head[data-open="true"] {

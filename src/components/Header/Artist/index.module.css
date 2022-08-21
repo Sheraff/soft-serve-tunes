@@ -11,8 +11,9 @@
 	width: 100vw;
 	display: flex;
 	flex-direction: column;
-	gap: 1em;
+	gap: 10px;
 	font-size: 10px;
+	padding-bottom: 10px;
 }
 .main[data-open="true"] {
 	transform: translateX(0);
@@ -21,13 +22,13 @@
 
 .img {
 	width: 100%;
-	aspect-ratio: 5 / 4;
+	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	mask-image: linear-gradient(to bottom, black 50%, transparent);
 }
 
 .head {
-	margin-top: -32px;
+	margin-top: -48px;
 	display: grid;
 	grid-template-columns: 1fr auto;
 	gap: 8px;
@@ -36,11 +37,12 @@
 		"info play"
 		"bio  play";
 	grid-auto-flow: column;
-	padding: 0 8px;
+	position: relative;
+	z-index: 0;
 }
 
 .info {
-
+	padding: 0 0 0 8px;
 }
 
 .play {
@@ -54,16 +56,25 @@
 	border-radius: 50%;
 	border: 1px solid currentColor;
 	z-index: 1;
+	margin: 0 8px 0 0;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .sectionTitle {
 	font-size: 20px;
+	padding: 0 8px;
 }
 
 .bio {
 	position: relative;
 	margin-top: 8px;
 	font-size: 10px;
+	padding: 0 0 0 8px;
 }
 
 .bioText {

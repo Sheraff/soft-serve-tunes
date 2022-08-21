@@ -123,6 +123,7 @@ export default function Search({open}: {open: boolean}) {
 					<div>
 						<h2 className={styles.sectionTitle}>Albums</h2>
 						<AlbumList
+							scrollable
 							albums={albums.slice(0, 28)}
 							onSelect={(entity) => onSelect({type: 'album', entity})}
 						/>

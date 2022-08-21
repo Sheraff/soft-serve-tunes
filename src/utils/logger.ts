@@ -13,7 +13,7 @@ const levelColor: {[key in Levels]: string} = {
 const entityColor: {[key in Entity]: string} = {
 	lastfm: "\x1b[30m\x1b[41m",
 	spotify: "\x1b[30m\x1b[42m",
-	audiodb: "\x1b[30m\x1b[44m",
+	audiodb: "\x1b[37m\x1b[44m",
 	fswatcher: "\x1b[30m\x1b[47m",
 	trpc: "\x1b[37m\x1b[46m",
 }

@@ -112,7 +112,7 @@ export default forwardRef(function AlbumView({
 				</button>
 			</div>
 			{data?.tracks && Boolean(data.tracks.length) && (
-				<div>
+				<div className={styles.section}>
 					<h2 className={styles.sectionTitle}>Tracks</h2>
 					<TrackList tracks={data.tracks} />
 				</div>

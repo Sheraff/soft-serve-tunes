@@ -20,6 +20,10 @@ a {
   box-sizing: border-box;
 }
 
+*::-webkit-scrollbar {
+  display: none;
+}
+
 button, input {
   border: none;
   background: none;

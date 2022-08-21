@@ -23,6 +23,9 @@
 	flex-direction: column;
 	gap: 1em;
 	padding-bottom: 1em;
+	z-index: 0;
+	perspective: 1px;
+	transform-style: preserve-3d;
 }
 
 .select {
