@@ -43,18 +43,26 @@ export async function writeImage(buffer: Buffer, extension = 'jpg') {
 
 export async function fetchAndWriteImage(url?: string) {
 	if (url) {
+		let step = 0
 		try {
 			const response = await fetch(url)
+			step = 1
 			const mimetype = response.headers.get('content-type') ?? 'image/*'
+			step = 2
 			const buffer = await response.arrayBuffer()
+			step = 3
 			const extension = extname(url) || undefined
+			step = 4
 			const result = await writeImage(Buffer.from(buffer), extension)
+			step = 5
 			return {
 				mimetype,
 				...result,
 			}
-		} catch {
-			console.warn('Could not fetch image', url)
+		} catch (e) {
+			console.error('Could not fetch image', url)
+			console.error(`failed at step ${step}`)
+			console.error(e)
 			// always leave a comment when you swallow errors silently!
 		}
 	}
