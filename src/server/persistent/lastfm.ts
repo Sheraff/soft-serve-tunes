@@ -1,13 +1,13 @@
-import { env } from "../../env/server.mjs"
+import { env } from "env/server.mjs"
 import { z } from "zod"
-import Queue from "../../utils/Queue"
-import { prisma } from "../db/client"
-import { fetchAndWriteImage } from "../../utils/writeImage"
-import sanitizeString from "../../utils/sanitizeString"
-import { socketServer } from "./ws"
-import lastfmImageToUrl from "../../utils/lastfmImageToUrl"
-import log from "../../utils/logger"
-import retryable from "../../utils/retryable"
+import Queue from "utils/Queue"
+import { prisma } from "server/db/client"
+import { fetchAndWriteImage } from "utils/writeImage"
+import sanitizeString from "utils/sanitizeString"
+import { socketServer } from "server/persistent/ws"
+import lastfmImageToUrl from "utils/lastfmImageToUrl"
+import log from "utils/logger"
+import retryable from "utils/retryable"
 
 const lastFmCorrectionArtistSchema = z
 	.object({

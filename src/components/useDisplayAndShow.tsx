@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react"
 
 export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElement>) {
 	const [display, setDisplay] = useState(open)

@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useQueryClient } from "react-query"
-import { env } from "../../env/client.mjs"
+import { env } from "env/client.mjs"
 
 export default function WatcherSocket() {
 	const queryClient = useQueryClient()

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
-import { env } from "../../env/client.mjs"
-import { useProgressBar } from "../ProgressBar"
+import { env } from "env/client.mjs"
+import { useProgressBar } from "components/ProgressBar"
 import styles from "./index.module.css"
 
 export default function DropTarget() {

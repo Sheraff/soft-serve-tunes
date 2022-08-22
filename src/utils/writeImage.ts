@@ -2,10 +2,10 @@ import crypto from "node:crypto"
 import { access, constants, writeFile } from "node:fs"
 import { mkdir } from "node:fs/promises"
 import { dirname, extname, join } from "node:path"
-import { env } from "../env/server.mjs"
-import { prisma } from "../server/db/client"
+import { env } from "env/server.mjs"
+import { prisma } from "server/db/client"
 import sharp from "sharp"
-import extractPaletteFromUint8 from "./paletteExtraction"
+import extractPaletteFromUint8 from "utils/paletteExtraction"
 
 export async function writeImage(buffer: Buffer, extension = 'jpg') {
 	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }

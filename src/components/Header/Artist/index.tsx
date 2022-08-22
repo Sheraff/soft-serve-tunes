@@ -1,12 +1,12 @@
 import { ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import pluralize from "../../../utils/pluralize"
-import AlbumList from "../../AlbumList"
-import { useAppState } from "../../AppContext"
-import PlayIcon from "../../../icons/play_arrow.svg"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import pluralize from "utils/pluralize"
+import AlbumList from "components/AlbumList"
+import { useAppState } from "components/AppContext"
+import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
-import { paletteToCSSProperties } from "../../Palette"
+import { paletteToCSSProperties } from "components/Palette"
 
 export default forwardRef(function ArtistView({
 	open,

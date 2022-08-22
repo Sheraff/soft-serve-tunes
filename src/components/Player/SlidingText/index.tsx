@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
-import { inferQueryOutput } from "../../../utils/trpc"
-import { useAppState } from "../../AppContext"
+import { inferQueryOutput } from "utils/trpc"
+import { useAppState } from "components/AppContext"
 import styles from "./index.module.css"
 
 export default function SlidingText({

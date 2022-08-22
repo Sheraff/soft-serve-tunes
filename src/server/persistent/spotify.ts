@@ -1,13 +1,13 @@
 import { z } from "zod"
-import Queue from "../../utils/Queue"
-import { env } from "../../env/server.mjs"
-import { prisma } from "../db/client"
-import { fetchAndWriteImage } from "../../utils/writeImage"
-import sanitizeString from "../../utils/sanitizeString"
-import pathToSearch from "../../utils/pathToSearch"
-import log from "../../utils/logger"
-import { socketServer } from "./ws"
-import retryable from "../../utils/retryable"
+import Queue from "utils/Queue"
+import { env } from "env/server.mjs"
+import { prisma } from "server/db/client"
+import { fetchAndWriteImage } from "utils/writeImage"
+import sanitizeString from "utils/sanitizeString"
+import pathToSearch from "utils/pathToSearch"
+import log from "utils/logger"
+import { socketServer } from "server/persistent/ws"
+import retryable from "utils/retryable"
 
 const imageSchema = z.object({
 	url: z.string(),

@@ -1,9 +1,9 @@
 import { createRouter } from "./context"
-import { socketServer } from "../persistent/ws"
+import { socketServer } from "server/persistent/ws"
 import type { WebSocket } from 'ws'
-import createTrack from "../db/createTrack"
-import listFilesFromDir from "../db/listFilesFromDir"
-import { env } from "../../env/server.mjs"
+import createTrack from "server/db/createTrack"
+import listFilesFromDir from "server/db/listFilesFromDir"
+import { env } from "env/server.mjs"
 
 const populating: {
   promise: Promise<null | void> | null

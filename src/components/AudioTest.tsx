@@ -1,9 +1,9 @@
 import styles from "./AudioTest.module.css"
-import Cover from "./Cover"
-import PlaylistViz from "./PlaylistViz"
-import Player from "./Player"
-import Header from "./Header"
-import Notification from "./Notification"
+import Cover from "components/Cover"
+import PlaylistViz from "components/PlaylistViz"
+import Player from "components/Player"
+import Header from "components/Header"
+import Notification from "components/Notification"
 
 export default function AudioTest({ }) {
 	return (

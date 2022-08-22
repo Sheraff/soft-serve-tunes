@@ -1,12 +1,12 @@
 import { stat, Stats } from "node:fs"
 import { dirname, join, relative } from "node:path"
-import { env } from "../../env/server.mjs"
-import { prisma } from "../db/client"
-import createTrack from "../db/createTrack"
-import { socketServer } from "./ws"
+import { env } from "env/server.mjs"
+import { prisma } from "server/db/client"
+import createTrack from "server/db/createTrack"
+import { socketServer } from "server/persistent/ws"
 import chokidar from "chokidar"
 import { unlink } from "node:fs/promises"
-import log from "../../utils/logger"
+import log from "utils/logger"
 
 type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 

@@ -1,7 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
-import { lastFm } from "../persistent/lastfm"
-import log from "../../utils/logger"
+import { lastFm } from "server/persistent/lastfm"
+import log from "utils/logger"
 
 export const albumRouter = createRouter()
   .query("searchable", {

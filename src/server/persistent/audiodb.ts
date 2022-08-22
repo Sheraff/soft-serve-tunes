@@ -1,12 +1,12 @@
-import { socketServer } from "../persistent/ws"
-import { env } from "../../env/server.mjs"
+import { socketServer } from "server/persistent/ws"
+import { env } from "env/server.mjs"
 import { z } from "zod"
-import { fetchAndWriteImage } from "../../utils/writeImage"
-import Queue from "../../utils/Queue"
-import sanitizeString from "../../utils/sanitizeString"
-import log from "../../utils/logger"
-import { prisma } from "../db/client"
-import retryable from "../../utils/retryable"
+import { fetchAndWriteImage } from "utils/writeImage"
+import Queue from "utils/Queue"
+import sanitizeString from "utils/sanitizeString"
+import log from "utils/logger"
+import { prisma } from "server/db/client"
+import retryable from "utils/retryable"
 
 const queue = new Queue(2000)
 

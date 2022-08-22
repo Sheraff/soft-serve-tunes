@@ -1,12 +1,12 @@
 import { ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import pluralize from "../../../utils/pluralize"
-import { useAppState } from "../../AppContext"
-import PlayIcon from "../../../icons/play_arrow.svg"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import pluralize from "utils/pluralize"
+import { useAppState } from "components/AppContext"
+import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
-import TrackList from "../../TrackList"
-import { paletteToCSSProperties } from "../../Palette"
+import TrackList from "components/TrackList"
+import { paletteToCSSProperties } from "components/Palette"
 
 export default forwardRef(function AlbumView({
 	open,

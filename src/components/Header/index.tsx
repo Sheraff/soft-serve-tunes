@@ -1,12 +1,12 @@
 import Search from "./Search"
 import styles from "./index.module.css"
-import { useAppState } from "../AppContext"
-import useDisplayAndShow from "../useDisplayAndShow"
+import { useAppState } from "components/AppContext"
+import useDisplayAndShow from "components/useDisplayAndShow"
 import { useRef } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
-import { trpc } from "../../utils/trpc"
-import SearchIcon from "../../icons/search.svg"
+import { trpc } from "utils/trpc"
+import SearchIcon from "icons/search.svg"
 
 export default function Header() {
 	const {view, setAppState} = useAppState()

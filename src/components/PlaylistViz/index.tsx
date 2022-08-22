@@ -1,6 +1,6 @@
-import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useAppState } from "../AppContext"
-import TrackList from "../TrackList"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { useAppState } from "components/AppContext"
+import TrackList from "components/TrackList"
 
 function rotateList<T>(list: T[], index: number) {
 	const _index = (index + list.length) % list.length

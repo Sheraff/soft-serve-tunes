@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import ArtistList from "../../ArtistList"
-import AlbumList from "../../AlbumList"
-import GenreList from "../../GenreList"
-import TrackList from "../../TrackList"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import ArtistList from "components/ArtistList"
+import AlbumList from "components/AlbumList"
+import GenreList from "components/GenreList"
+import TrackList from "components/TrackList"
 import PastSearch, { PastSearchItem } from "./PastSearch"
 
 const defaultArray = [] as never[]

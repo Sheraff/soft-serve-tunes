@@ -1,5 +1,5 @@
 import { CSSProperties } from "react"
-import { trpc } from "../../utils/trpc"
+import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 
 const TEST_ALBUM_IDS = [

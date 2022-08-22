@@ -1,6 +1,6 @@
 import type { UseQueryResult } from "react-query"
-import type { inferQueryOutput } from "../../utils/trpc"
-import { useAppState } from "../AppContext"
+import type { inferQueryOutput } from "utils/trpc"
+import { useAppState } from "components/AppContext"
 import styles from "./index.module.css"
 
 export default function GenreList({

@@ -1,4 +1,4 @@
-import { env } from "../../env/server.mjs"
+import { env } from "env/server.mjs"
 import { ServerOptions, WebSocketServer, WebSocket } from 'ws'
 
 class MyWebSocketServer extends WebSocketServer {

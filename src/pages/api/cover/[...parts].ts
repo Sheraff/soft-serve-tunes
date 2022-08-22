@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { constants, createReadStream, ReadStream } from "node:fs"
 import { join } from "node:path"
-import { env } from "../../../env/server.mjs"
-import { prisma } from "../../../server/db/client"
+import { env } from "env/server.mjs"
+import { prisma } from "server/db/client"
 import sharp from "sharp"
 import { access } from "node:fs/promises"
 

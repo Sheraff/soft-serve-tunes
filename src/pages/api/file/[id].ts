@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { createReadStream } from "node:fs"
-import { prisma } from "../../../server/db/client"
+import { prisma } from "server/db/client"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const {id} = req.query

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { useQueryClient, UseQueryResult } from "react-query"
 import { retrieveQueryFromIndexedDB, storeQueryInIndexedDB } from "./trpc"
-import { inferQueryOutput, inferUseTRPCQueryOptions, trpc } from "../../utils/trpc"
+import { inferQueryOutput, inferUseTRPCQueryOptions, trpc } from "utils/trpc"
 import type { inferHandlerInput } from "@trpc/server"
-import type { AppRouter } from "../../server/router"
+import type { AppRouter } from "server/router"
 
 type TQuery = keyof AppRouter["_def"]["queries"];
 

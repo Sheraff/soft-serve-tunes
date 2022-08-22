@@ -1,6 +1,6 @@
 import { ForwardedRef, forwardRef, memo } from "react"
-import useIndexedTRcpQuery from "../../../client/db/useIndexedTRcpQuery"
-import { useAppState } from "../../AppContext"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { useAppState } from "components/AppContext"
 
 const Audio = forwardRef(function Audio(_, ref: ForwardedRef<HTMLAudioElement>) {
 	const {playlist} = useAppState()

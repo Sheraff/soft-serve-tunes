@@ -1,7 +1,7 @@
-import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
-import { useAppState } from "../AppContext"
-import Palette from "../Palette"
+import { useAppState } from "components/AppContext"
+import Palette from "components/Palette"
 
 export default function Cover() {
 	const {playlist} = useAppState()

@@ -1,15 +1,15 @@
 import { access, stat } from "node:fs/promises"
 import { basename, extname, relative } from "node:path"
 import { IAudioMetadata, parseFile } from 'music-metadata'
-import { writeImage } from "../../utils/writeImage"
+import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
-import { prisma } from "../db/client"
-import { env } from "../../env/server.mjs"
+import { prisma } from "server/db/client"
+import { env } from "env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
 import { constants } from "node:fs"
-import { lastFm } from "../persistent/lastfm"
-import sanitizeString from "../../utils/sanitizeString"
-import log from "../../utils/logger"
+import { lastFm } from "server/persistent/lastfm"
+import sanitizeString from "utils/sanitizeString"
+import log from "utils/logger"
 
 // TODO: wrap most/all prisma actions in a try/catch (retryable) and log errors
 

@@ -1,8 +1,8 @@
 import { readdir, stat } from "node:fs/promises"
 import { join } from "node:path"
-import { env } from "../../env/server.mjs"
+import { env } from "env/server.mjs"
 
-export default async function listFilesFromDir(dirPath: string = '', fileList: string[] = []): Promise<string[]> {
+export default async function listFilesFromDir(dirPath = '', fileList: string[] = []): Promise<string[]> {
 	const dir = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dirPath)
 	const dirFiles = await readdir(dir)
 	for (const file of dirFiles) {

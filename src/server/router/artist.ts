@@ -1,8 +1,8 @@
 import { createRouter } from "./context"
 import { z } from "zod"
-import { lastFm } from "../persistent/lastfm"
-import { fetchArtist } from "../persistent/audiodb"
-import log from "../../utils/logger"
+import { lastFm } from "server/persistent/lastfm"
+import { fetchArtist } from "server/persistent/audiodb"
+import log from "utils/logger"
 
 export const artistRouter = createRouter()
   .query("searchable", {

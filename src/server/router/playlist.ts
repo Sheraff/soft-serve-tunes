@@ -1,5 +1,4 @@
 import { createRouter } from "./context"
-import type { Prisma } from "@prisma/client";
 import { z } from "zod"
 
 // TODO: find a way to type this

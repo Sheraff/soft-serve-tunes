@@ -1,8 +1,8 @@
 import { createRouter } from "./context"
 import { z } from "zod"
-import { lastFm } from "../persistent/lastfm"
-import { findTrack } from "../persistent/spotify"
-import log from "../../utils/logger"
+import { lastFm } from "server/persistent/lastfm"
+import { findTrack } from "server/persistent/spotify"
+import log from "utils/logger"
 
 export const trackRouter = createRouter()
   .query("searchable", {

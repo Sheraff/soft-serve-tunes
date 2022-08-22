@@ -1,8 +1,8 @@
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { inferQueryOutput } from "../../utils/trpc"
-import { useAppState } from "../AppContext"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { inferQueryOutput } from "utils/trpc"
+import { useAppState } from "components/AppContext"
 import styles from "./index.module.css"
 
 function ArtistItem({

@@ -1,6 +1,6 @@
 import { useEffect } from "react"
-import useIndexedTRcpQuery from "../../client/db/useIndexedTRcpQuery"
-import { useAppState } from "../AppContext"
+import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { useAppState } from "components/AppContext"
 
 export default function Notification() {
 	const {playlist, setAppState} = useAppState()

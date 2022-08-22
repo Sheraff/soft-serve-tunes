@@ -1,13 +1,13 @@
 import type { NextPage } from "next"
 import Head from "next/head"
 import { useEffect, useState } from "react"
-import AudioTest from "../components/AudioTest"
-import DropTarget from "../components/DropTarget"
-import { ProgressBarSingleton, useProgressBar } from "../components/ProgressBar"
-import { AppState } from "../components/AppContext"
-import WatcherSocket from "../components/WatcherSocket"
-import { env } from "../env/client.mjs"
-import { trpc } from "../utils/trpc"
+import AudioTest from "components/AudioTest"
+import DropTarget from "components/DropTarget"
+import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
+import { AppState } from "components/AppContext"
+import WatcherSocket from "components/WatcherSocket"
+import { env } from "env/client.mjs"
+import { trpc } from "utils/trpc"
 
 
 const Home: NextPage = () => {
