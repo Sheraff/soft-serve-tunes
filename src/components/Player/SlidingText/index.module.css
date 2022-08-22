@@ -1,16 +1,21 @@
 .main {
-	white-space: pre;
+	white-space: nowrap;
 }
 
 .span {
 	display: inline-block;
-	min-width: 100vw;
+	min-width: 100%;
 	text-align: center;
 }
 
 .sliding .span {
 	animation: slide 30s linear infinite;
 	text-align: left;
+}
+
+.sliding .span::before {
+	content: " ";
+	white-space: pre;
 }
 
 @keyframes slide {
