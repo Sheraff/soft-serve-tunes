@@ -24,7 +24,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   }
   const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, '.meta', a, b, c, id) // this is how images are stored
 
-  const width = dimension ? Number(dimension) : deviceWidth
+  const width = Math.round(dimension ? Number(dimension) : deviceWidth)
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
 
   let returnStream: ReadStream | NextApiResponse | null = null
