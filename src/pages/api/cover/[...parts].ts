@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { constants, createReadStream, ReadStream } from "node:fs"
-import { basename, dirname, extname, join } from "node:path"
+import { join } from "node:path"
 import { env } from "../../../env/server.mjs"
 import { prisma } from "../../../server/db/client"
 import sharp from "sharp"
@@ -11,23 +11,22 @@ const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const {parts} = req.query
   if (!parts) {
-    return res.status(400).json({ error: "Missing id" })
+    return res.status(400).json({ error: "Missing path" })
   }
-  const [id, dimension = "750"] = Array.isArray(parts) ? parts : [parts]
+  const [id, dimension] = Array.isArray(parts) ? parts : [parts]
   if (!id) {
     return res.status(400).json({ error: "Missing id" })
   }
-  const width = dimension ? Number(dimension) : deviceWidth
-  const cover = await prisma.image.findUnique({
-    where: { id },
-    select: { path: true, mimetype: true },
-  })
-  if (!cover) {
-    return res.status(404).json({ error: "Cover not found" })
+
+  const [a, b, c] = id
+  if (!a || !b || !c) {
+    return res.status(400).json({ error: "Invalid id" })
   }
-  const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
-  const extensionLess = `${dirname(originalFilePath)}/${basename(originalFilePath, extname(originalFilePath))}`
+  const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, '.meta', a, b, c, id) // this is how images are stored
+
+  const width = dimension ? Number(dimension) : deviceWidth
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
+
   let returnStream: ReadStream | NextApiResponse | null = null
   try {
     await access(exactFilePath, constants.R_OK)
@@ -35,6 +34,14 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     exactStream.pipe(res)
     returnStream = exactStream
   } catch {
+    const cover = await prisma.image.findUnique({
+      where: { id },
+      select: { path: true },
+    })
+    if (!cover) {
+      return res.status(404).json({ error: "Cover not found" })
+    }
+    const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     const transformStream = sharp(originalFilePath)
       .resize(width, width, {
         fit: 'cover',
@@ -50,14 +57,13 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     transformStream
       .clone()
       .toFile(exactFilePath)
-  } finally {
-    if (returnStream === null) {
-      return res.status(500).json({ error: "Error transforming image" })
-    }
-    res
-      .status(200)
-      .setHeader("Content-Type", "image/avif")
-      .setHeader("cache-control", "public, max-age=31536000")
-    return returnStream
   }
+  if (returnStream === null) {
+    return res.status(500).json({ error: "Error transforming image" })
+  }
+  res
+    .status(200)
+    .setHeader("Content-Type", "image/avif")
+    .setHeader("cache-control", "public, max-age=31536000")
+  return returnStream
 }
