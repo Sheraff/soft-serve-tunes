@@ -189,6 +189,11 @@ cp /etc/apache2/mods-available/http2.conf /etc/apache2/mods-enabled/http2.conf
 systemctl restart apache2
 ```
 
+### process manager
+install pm2 `npm install pm2@latest -g`
+spawn the server w/ `npm run spawn` or `pm2 start npm --time --name soft-serve-tunes -- start`
+subsequent re-start can be done w/ `pm2 reload 0` or `pm2 reload soft-serve-tunes`
+
 
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
