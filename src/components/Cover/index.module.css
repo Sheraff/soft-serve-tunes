@@ -7,7 +7,8 @@
 	position: relative;
 	z-index: 1;
 	transform-origin: center top 0;
-	transform: translateZ(-1px) scale(2) translateY(-21.5vh);
+	transform: translateZ(-1px) scale(2);
+	top: calc(-50% - 10px);
 }
 .img:not([src]),
 .img[src=""] {
