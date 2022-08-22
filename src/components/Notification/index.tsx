@@ -27,8 +27,8 @@ export default function Notification() {
 			title: data.name,
 			artist: data.artist?.name,
 			album: data.album?.name,
-			...(data.coverSrc ? {artwork: [
-				{ src: `/api/cover/${data.coverSrc}` },
+			...(data.cover?.id ? {artwork: [
+				{ src: `/api/cover/${data.cover.id}`, type: "image/avif" },
 			]} : {}),
 		})
 	}, [data])
