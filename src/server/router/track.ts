@@ -37,6 +37,7 @@ export const trackRouter = createRouter()
           id: true,
           name: true,
           createdAt: true,
+          position: true,
           metaImage: {
             select: {
               id: true,

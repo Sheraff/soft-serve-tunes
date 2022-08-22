@@ -38,7 +38,7 @@ function TrackItem({
 
 	const isEmpty = !data?.cover
 
-	const {setAppState} = useAppState()
+	const {setAppState, view: {type}, playlist} = useAppState()
 
 	return (
 		<button
@@ -63,7 +63,15 @@ function TrackItem({
 				</div>
 			)}
 			<p className={styles.span}>
-				<span className={styles.name}>{data?.name}</span>
+				<span className={styles.name}>
+					{( data?.position && (
+						type === "album" 
+						|| (type === "home" && playlist?.type === "album")
+					)) && (
+						`${data?.position?.toString().padStart(2, '0')} · `
+					)}
+					{data?.name}
+				</span>
 				{data?.album?.name && <span>{data?.album.name}</span>}
 				{data?.artist?.name && <span>{data?.artist.name}</span>}
 			</p>
