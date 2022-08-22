@@ -42,7 +42,14 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
         fastShrinkOnLoad: false,
       })
       .toFormat('avif')
-    returnStream = transformStream.pipe(res)
+    // respond
+    returnStream = transformStream
+      .clone()
+      .pipe(res)
+    // store
+    transformStream
+      .clone()
+      .toFile(exactFilePath)
   } finally {
     if (returnStream === null) {
       return res.status(500).json({ error: "Error transforming image" })

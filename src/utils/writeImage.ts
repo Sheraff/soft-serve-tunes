@@ -26,11 +26,16 @@ export async function writeImage(buffer: Buffer, extension = 'jpg') {
 				}
 			})
 		})
-		const extracted = await extractPalette(buffer)
-		if (extracted) {
-			palette = JSON.stringify(extracted)
-		} else {
-			console.warn('Could not extract palette')
+		try {
+			const extracted = await extractPalette(buffer)
+			if (extracted) {
+				palette = JSON.stringify(extracted)
+			} else {
+				console.warn('Could not extract palette')
+			}
+		} catch (error) {
+			console.error('Error extracting palette')
+			console.error(error)
 		}
 	}
 	return {
