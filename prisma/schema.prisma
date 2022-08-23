@@ -23,27 +23,30 @@ model File {
 }
 
 model Track {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   simplified  String
   artistId    String?
-  artist      Artist?       @relation(fields: [artistId], references: [id])
-  feats       Artist[]      @relation("Featuring")
+  artist      Artist?  @relation(fields: [artistId], references: [id])
+  feats       Artist[] @relation("Featuring")
   albumId     String?
-  album       Album?        @relation(fields: [albumId], references: [id])
+  album       Album?   @relation(fields: [albumId], references: [id])
   position    Int?
   popularity  Int?
-  createdAt   DateTime      @default(now())
-  file        File?         @relation
+  createdAt   DateTime @default(now())
+  file        File?    @relation
   year        Int?
-  genres      Genre[]       @relation
+  genres      Genre[]  @relation
+  playcount   Int      @default(0)
+  favourite   Boolean  @default(false)
+  metaImageId String?
+  metaImage   Image?   @relation(fields: [metaImageId], references: [id])
+
+  spotify     SpotifyTrack? @relation
   lastfm      LastFmTrack?  @relation
   audiodb     AudioDbTrack? @relation
-  playcount   Int           @default(0)
-  favourite   Boolean       @default(false)
-  metaImageId String?
-  metaImage   Image?        @relation(fields: [metaImageId], references: [id])
-  spotify     SpotifyTrack? @relation
+  lastfmDate  DateTime?
+  spotifyDate DateTime?
 
   @@unique([simplified, artistId, albumId])
 }
@@ -71,31 +74,38 @@ model Image {
 }
 
 model Artist {
-  id         String         @id @default(cuid())
-  name       String         @unique
-  simplified String         @unique
-  tracks     Track[]        @relation
-  feats      Track[]        @relation("Featuring")
-  createdAt  DateTime       @default(now())
-  albums     Album[]        @relation
-  lastfm     LastFmArtist?  @relation
-  audiodb    AudioDbArtist? @relation
-  spotify    SpotifyArtist? @relation
+  id         String   @id @default(cuid())
+  name       String   @unique
+  simplified String   @unique
+  tracks     Track[]  @relation
+  feats      Track[]  @relation("Featuring")
+  createdAt  DateTime @default(now())
+  albums     Album[]  @relation
+
+  lastfm      LastFmArtist?  @relation
+  audiodb     AudioDbArtist? @relation
+  spotify     SpotifyArtist? @relation
+  lastfmDate  DateTime?
+  audiodbDate DateTime?
+  spotifyDate DateTime?
 }
 
 model Album {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   simplified  String
   artistId    String?
-  artist      Artist?       @relation(fields: [artistId], references: [id])
+  artist      Artist?  @relation(fields: [artistId], references: [id])
   tracksCount Int?
-  createdAt   DateTime      @default(now())
-  tracks      Track[]       @relation
+  createdAt   DateTime @default(now())
+  tracks      Track[]  @relation
   year        Int?
+
   lastfm      LastFmAlbum?  @relation
   audiodb     AudioDbAlbum? @relation
   spotify     SpotifyAlbum? @relation
+  lastfmDate  DateTime?
+  spotifyDate DateTime?
 
   @@unique([simplified, artistId])
 }

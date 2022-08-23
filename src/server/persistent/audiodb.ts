@@ -76,7 +76,7 @@ async function audiodbFetch(endpoint: Endpoint, ...params: [string, string][]) {
 	})
 }
 
-export async function fetchArtist(id: string) {
+async function fetchArtist(id: string) {
 	const existing = await prisma.audioDbArtist.findUnique({
 		where: { entityId: id },
 	})
@@ -94,6 +94,7 @@ export async function fetchArtist(id: string) {
 		select: {
 			id: true,
 			name: true,
+			audiodbDate: true,
 			lastfm: {
 				select: {
 					mbid: true,
@@ -128,6 +129,15 @@ export async function fetchArtist(id: string) {
 		running.delete(id)
 		return
 	}
+	if (artist.audiodbDate && artist.audiodbDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+		return false
+	}
+	await retryable(() => (
+		prisma.artist.update({
+			where: { id },
+			data: { audiodbDate: new Date().toISOString() },
+		})
+	))
 	await queue.next()
 	try {
 		log("info", "fetch", "audiodb", `search: ${artist.name}`)
@@ -272,4 +282,8 @@ async function keysAndInputToImageIds<
 	const values = fulfilled.map(({value}) => value)
 	const content = values.filter(Boolean) as [J, string][]
 	return Object.fromEntries(content) as R
+}
+
+export const audiodb = {
+	fetchArtist
 }

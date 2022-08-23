@@ -259,12 +259,19 @@ class LastFM {
 		return track
 	}
 
+	#running = new Set<string>()
+
 	async #findTrack(id: string) {
+		if (this.#running.has(id)) {
+			return false
+		}
+		this.#running.add(id)
 		const track = await prisma.track.findUnique({
 			where: { id },
 			select: {
 				name: true,
 				lastfm: { select: { id: true } },
+				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
 				artist: {
 					select: {
@@ -285,11 +292,23 @@ class LastFM {
 		})
 		if (!track) {
 			log("error", "404", "lastfm", `failed to find track ${id} in prisma.track`)
+			this.#running.delete(id)
 			return false
 		}
 		if (track.lastfm) {
+			this.#running.delete(id)
 			return false
 		}
+		if (track.lastfmDate && track.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
+		await retryable(() => (
+			prisma.track.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const urls: URL[] = []
 		if (track.audiodb?.strMusicBrainzID) {
 			urls.push(makeTrackUrl({ mbid: track.audiodb.strMusicBrainzID }))
@@ -302,6 +321,7 @@ class LastFM {
 		}
 		if (urls.length === 0) {
 			log("warn", "404", "lastfm", `not enough info to look up track ${track.name}`)
+			this.#running.delete(id)
 			return false
 		}
 		let _trackData: z.infer<typeof lastFmTrackSchema>['track'] | null = null
@@ -318,6 +338,7 @@ class LastFM {
 		}
 		if (!_trackData) {
 			log("warn", "404", "lastfm", `no result for track ${track.name} w/ ${urls.length} tries`)
+			this.#running.delete(id)
 			return false
 		}
 
@@ -391,15 +412,21 @@ class LastFM {
 		}
 		socketServer.send("invalidate:track", { id })
 		log("info", "200", "lastfm", `fetched track ${track.name}`)
+		this.#running.delete(id)
 		return true
 	}
 
 	async #findArtist(id: string) {
+		if (this.#running.has(id)) {
+			return false
+		}
+		this.#running.add(id)
 		const artist = await prisma.artist.findUnique({
 			where: { id },
 			select: {
 				name: true,
 				lastfm: { select: { id: true } },
+				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
 				tracks: {
 					select: { id: true, lastfm: { select: { id: true } } },
@@ -413,11 +440,23 @@ class LastFM {
 		})
 		if (!artist) {
 			log("error", "404", "lastfm", `failed to find artist ${id} in prisma.artist`)
+			this.#running.delete(id)
 			return false
 		}
 		if (artist.lastfm) {
+			this.#running.delete(id)
 			return false
 		}
+		if (artist.lastfmDate && artist.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
+		await retryable(() => (
+			prisma.artist.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const urls: URL[] = []
 		if (artist.audiodb?.strMusicBrainzID) {
 			urls.push(makeArtistUrl({ mbid: artist.audiodb.strMusicBrainzID }))
@@ -437,6 +476,7 @@ class LastFM {
 		}
 		if (!artistData) {
 			log("warn", "404", "lastfm", `no result for artist ${artist.name} w/ ${urls.length} tries`)
+			this.#running.delete(id)
 			return false
 		}
 		let coverId: string | null = null
@@ -509,15 +549,21 @@ class LastFM {
 		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
 		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
 		log("info", "200", "lastfm", `fetched artist ${artist.name}`)
+		this.#running.delete(id)
 		return true
 	}
 
 	async #findAlbum(id: string) {
+		if (this.#running.has(id)) {
+			return false
+		}
+		this.#running.add(id)
 		const album = await prisma.album.findUnique({
 			where: { id },
 			select: {
 				name: true,
 				lastfm: { select: { id: true } },
+				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
 				tracks: {
 					select: { id: true, lastfm: { select: { id: true } } },
@@ -534,11 +580,23 @@ class LastFM {
 		})
 		if (!album) {
 			log("error", "404", "lastfm", `failed to find album ${id} in prisma.album`)
+			this.#running.delete(id)
 			return false
 		}
 		if (album.lastfm) {
+			this.#running.delete(id)
 			return false
 		}
+		if (album.lastfmDate && album.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
+		await retryable(() => (
+			prisma.album.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const urls: URL[] = []
 		if (album.audiodb?.strMusicBrainzID) {
 			urls.push(makeAlbumUrl({ mbid: album.audiodb.strMusicBrainzID }))
@@ -548,6 +606,7 @@ class LastFM {
 		}
 		if (urls.length === 0) {
 			log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
+			this.#running.delete(id)
 			return false
 		}
 		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
@@ -564,6 +623,7 @@ class LastFM {
 		}
 		if (!albumData) {
 			log("warn", "404", "lastfm", `no result for album ${album.name} w/ ${urls.length} tries`)
+			this.#running.delete(id)
 			return false
 		}
 		let coverId: string | null = null
@@ -642,6 +702,7 @@ class LastFM {
 			socketServer.send("invalidate:artist", { id: connectingArtist })
 		connectingTracks.forEach((id) => socketServer.send("invalidate:track", { id }))
 		log("info", "200", "lastfm", `fetched album ${album.name}`)
+		this.#running.delete(id)
 		return true
 	}
 }

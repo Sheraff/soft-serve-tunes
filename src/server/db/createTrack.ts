@@ -63,7 +63,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		log("info", "info", "fswatcher", `adding new track from file ${relativePath}`)
 		const imageData = metadata.common.picture?.[0]?.data
 		const { hash, path: imagePath, palette } = imageData
-			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1])
+			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1], `from createTrack ${name}`)
 			: { hash: '', path: '', palette: '' }
 		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist) || []
 

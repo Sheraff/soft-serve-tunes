@@ -1,7 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
-import { findTrack } from "server/persistent/spotify"
+import { spotify } from "server/persistent/spotify"
 import log from "utils/logger"
 
 export const trackRouter = createRouter()
@@ -152,7 +152,7 @@ export const trackRouter = createRouter()
 
       if (track) {
         lastFm.findTrack(input.id)
-        findTrack(input.id)
+        spotify.findTrack(input.id)
       } else {
         log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
       }
