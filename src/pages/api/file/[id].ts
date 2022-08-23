@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { createReadStream } from "node:fs"
 import { prisma } from "server/db/client"
+import log from "utils/logger"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const {id} = req.query
   if (!id || Array.isArray(id)) {
+    log("error", "400", `File request is missing an id`)
     return res.status(400).json({ error: "Missing id" })
   }
 
@@ -13,6 +15,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
     select: { path: true, size: true, container: true },
   })
   if (!file) {
+    log("error", "404", `File request could not match the id ${id}`)
     return res.status(404).json({ error: "File not found" })
   }
   
@@ -20,6 +23,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {
+    log("error", "416", `File request for range is out of bounds (${file.path})`)
     return res.status(416).json({error: "Invalid range"})
   }
   const end = partials[1]
@@ -36,9 +40,11 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   })
 
   if (range === undefined) {
+    log("info", "206", `File request for range responded with available range (${file.path})`)
     return res.end()
   }
 
+  log("info", "206", `File request for range is streaming (${file.path})`)
   const readStream = createReadStream(file.path, {start, end, highWaterMark: 512*1024})
   readStream.pipe(res)
 }
