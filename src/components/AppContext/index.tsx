@@ -71,7 +71,6 @@ export function AppState({children}: {children: React.ReactNode}) {
 				const {currentTime, duration} = audioElement
 				if (currentTime > duration - 1) {
 					audioElement.currentTime = 0
-					audioElement.play()
 				}
 			}
 

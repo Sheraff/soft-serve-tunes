@@ -64,12 +64,6 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 
 		const onPlay = () => {
-			const {src} = element
-			if (currentSrc !== src) {
-				setTotalSeconds(0)
-				setSeconds(0)
-				currentSrc = src
-			}
 			setPlaying(true)
 		}
 
@@ -106,6 +100,21 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			setLoading(false)
 		}
 
+		const observer = new MutationObserver(() => {
+			const {src} = element
+			if (src !== currentSrc) {
+				setTotalSeconds(0)
+				setSeconds(0)
+				currentSrc = src
+				setLoading(true)
+				element.play()
+			}
+		})
+		observer.observe(element, {
+			attributes: true,
+			attributeFilter: ['src']
+		})
+
 		const controller = new AbortController()
 		element.addEventListener('durationchange', onDuration, {signal: controller.signal})
 		element.addEventListener('timeupdate', onTimeUpdate, {signal: controller.signal})
@@ -116,7 +125,10 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		element.addEventListener('waiting', onWaiting, {signal: controller.signal})
 		element.addEventListener('playing', onPlaying, {signal: controller.signal})
 
-		return () => controller.abort()
+		return () => {
+			observer.disconnect()
+			controller.abort()
+		}
 	}, [audio])
 
 	const progress = Boolean(seconds && totalSeconds) 

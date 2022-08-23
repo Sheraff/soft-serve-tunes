@@ -72,14 +72,11 @@ export default function Player() {
 		if (!audio.current) return
 		if (playing) {
 			audio.current.pause()
-			setAutoPlay(false)
 		} else {
 			audio.current.play()
-			setAutoPlay(true)
 		}
 	}
 
-	
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -87,6 +84,7 @@ export default function Player() {
 				audio={audio}
 				progress={progress}
 				canSetTime={Boolean(item && totalSeconds && !loading)}
+				loading={loading}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<div className={styles.duration}>{displayTotalTime}</div>

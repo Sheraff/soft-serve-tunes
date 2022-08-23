@@ -1,5 +1,6 @@
 import classNames from "classnames"
 import { useEffect, useState, useRef, useCallback, RefObject, CSSProperties } from "react"
+import Loading from "./loading.svg"
 import styles from "./index.module.css"
 
 export default function ProgressInput({
@@ -7,11 +8,13 @@ export default function ProgressInput({
 	audio,
 	progress: parentProgress = 0,
 	canSetTime = false,
+	loading = false,
 }: {
 	className?: string
 	audio: RefObject<HTMLAudioElement>
 	progress?: number // [0 - 100] progress of <audio>
 	canSetTime?: boolean // sometimes <audio> cannot be given a currentTime
+	loading: boolean
 }) {
 	const parentProgressRef = useRef(parentProgress)
 	useEffect(() => {
@@ -132,6 +135,7 @@ export default function ProgressInput({
 			className={classNames(className, styles.main, {
 				[styles.user]: !bindInputToPlayer,
 				[styles.disabled]: !canSetTime,
+				[styles.loading]: loading,
 			})}
 			style={{'--progress': progress} as CSSProperties}
 		>
@@ -143,7 +147,9 @@ export default function ProgressInput({
 				step="any"
 			/>
 			<div className={styles.progress} />
-			<div className={styles.thumb} />
+			<div className={styles.thumb}>
+				{loading && <Loading className={styles.loader} />}
+			</div>
 		</div>
 	)
 }
