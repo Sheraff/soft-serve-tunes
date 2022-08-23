@@ -46,7 +46,10 @@ export async function writeImage(buffer: Buffer, extension = 'jpg') {
 	}
 }
 
-export async function fetchAndWriteImage(url?: string) {
+export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
+	(Awaited<ReturnType<typeof writeImage>> & {mimetype: string})
+	| {mimetype: '',hash: '',path: '',palette: '',exists: undefined}
+> {
 	if (url) {
 		let step = 0
 		try {
@@ -68,7 +71,10 @@ export async function fetchAndWriteImage(url?: string) {
 			console.error('Could not fetch image', url)
 			console.error(`failed at step ${step}`)
 			console.error(e)
-			// always leave a comment when you swallow errors silently!
+			if (retries < 5) {
+				await new Promise(resolve => setTimeout(resolve, 500 * (retries + 1) ** 2))
+				return fetchAndWriteImage(url, retries + 1)
+			}
 		}
 	}
 	return {

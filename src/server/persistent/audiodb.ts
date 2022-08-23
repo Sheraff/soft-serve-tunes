@@ -62,6 +62,20 @@ const audiodbTrackSchema = z.object({
 
 const running = new Set<string>()
 
+type Endpoint = "search" | "album" | "track"
+
+async function audiodbFetch(endpoint: Endpoint, ...params: [string, string][]) {
+	const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, 'https://theaudiodb.com')
+	params.forEach(([key, value]) => {
+		url.searchParams.append(key, value)
+	})
+	return retryable(async () => {
+		const response = await fetch(url)
+		const json = await response.json()
+		return json
+	})
+}
+
 export async function fetchArtist(id: string) {
 	const existing = await prisma.audioDbArtist.findUnique({
 		where: { entityId: id },
@@ -116,11 +130,8 @@ export async function fetchArtist(id: string) {
 	}
 	await queue.next()
 	try {
-		const artistsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/search.php`, 'https://theaudiodb.com')
-		artistsUrl.searchParams.set('s', sanitizeString(artist.name))
 		log("info", "fetch", "audiodb", `search: ${artist.name}`)
-		const artistsData = await fetch(artistsUrl)
-		const artistsJson = await artistsData.json()
+		const artistsJson = await audiodbFetch('search', ['s', sanitizeString(artist.name)])
 		if (!artistsJson.artists || artistsJson.artists.length === 0) {
 			log("warn", "404", "audiodb", `No artist found for ${artist.name}`)
 			running.delete(id)
@@ -159,11 +170,8 @@ export async function fetchArtist(id: string) {
 		})
 		socketServer.send("invalidate:artist", {id: id})
 		await queue.next()
-		const albumsUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/album.php`, 'https://theaudiodb.com')
-		albumsUrl.searchParams.set('i', audiodbArtist.idArtist.toString())
 		log("info", "fetch", "audiodb", `albums: ${audiodbArtist.strArtist}`)
-		const albumsData = await fetch(albumsUrl)
-		const albumsJson = await albumsData.json()
+		const albumsJson = await audiodbFetch('album', ['i', audiodbArtist.idArtist.toString()])
 		if (!albumsJson.album || albumsJson.album.length === 0) {
 			log("warn", "404", "audiodb", `No albums found for ${audiodbArtist.strArtist}`)
 			running.delete(id)
@@ -189,11 +197,8 @@ export async function fetchArtist(id: string) {
 					socketServer.send("invalidate:album", {id: entityAlbum.id})
 				}
 				await queue.next()
-				const tracksUrl = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/track.php`, 'https://theaudiodb.com')
-				tracksUrl.searchParams.set('m', audiodbAlbum.idAlbum.toString())
 				log("info", "fetch", "audiodb", `tracks: ${audiodbAlbum.strAlbum}`)
-				const tracksData = await fetch(tracksUrl)
-				const tracksJson = await tracksData.json()
+				const tracksJson = await audiodbFetch('track', ['m', audiodbAlbum.idAlbum.toString()])
 				if (!tracksJson.track || tracksJson.track.length === 0) {
 					log("warn", "404", "audiodb", `No tracks found for ${audiodbArtist.strArtist} - ${audiodbAlbum.strAlbum}`)
 					continue

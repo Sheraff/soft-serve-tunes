@@ -195,29 +195,30 @@ class Spotify {
 		if (cached) {
 			return cached
 		}
+		const schema = getSchema(url)
+		if (!schema) {
+			throw new Error(`Unknown schema for ${url}`)
+		}
+		const union = z.union([
+			notFoundSchema,
+			schema,
+		])
 		await this.#queue.next()
 		await this.#refreshToken()
-		const request = fetch(`https://api.spotify.com/v1/${url}&limit=1`, {
-			headers: {
-				'Authorization': `Bearer ${this.#accessToken}`,
-				'Accept': 'application/json',
-			}
-		}).then(async response => {
+		return retryable(async () => {
+			const response = await fetch(`https://api.spotify.com/v1/${url}&limit=1`, {
+				headers: {
+					'Authorization': `Bearer ${this.#accessToken}`,
+					'Accept': 'application/json',
+				}
+			})
 			const json = await response.json()
-			const schema = getSchema(url)
-			if (!schema) {
-				throw new Error(`Unknown schema for ${url}`)
-			}
-			const data = z.union([
-				notFoundSchema,
-				schema,
-			]).parse(json)
+			const data = union.parse(json)
 			if (!('error' in data)) {
 				this.#storeResponse(url, data as SpotifyApiSuccessResponse<URL>)
 			}
-			return data
+			return data as SpotifyApiResponse<URL>
 		})
-		return request as Promise<SpotifyApiResponse<URL>>
 	}
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null

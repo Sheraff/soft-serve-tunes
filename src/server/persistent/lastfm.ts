@@ -214,8 +214,11 @@ class LastFM {
 			return this.#pastResponses.get(string)
 		}
 		await this.#queue.next()
-		const data = await fetch(url)
-		const json = await data.json()
+		const json = await retryable(async () => {
+			const data = await fetch(url)
+			const json = await data.json()
+			return json
+		})
 		this.#pastResponses.set(string, json)
 		this.#pastRequests.push(string)
 		if (this.#pastRequests.length > LastFM.STORAGE_LIMIT) {
@@ -387,6 +390,7 @@ class LastFM {
 			}
 		}
 		socketServer.send("invalidate:track", { id })
+		log("info", "200", "lastfm", `fetched track ${track.name}`)
 		return true
 	}
 
@@ -504,6 +508,7 @@ class LastFM {
 		socketServer.send("invalidate:artist", { id })
 		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
 		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
+		log("info", "200", "lastfm", `fetched artist ${artist.name}`)
 		return true
 	}
 
@@ -636,6 +641,7 @@ class LastFM {
 		if (connectingArtist)
 			socketServer.send("invalidate:artist", { id: connectingArtist })
 		connectingTracks.forEach((id) => socketServer.send("invalidate:track", { id }))
+		log("info", "200", "lastfm", `fetched album ${album.name}`)
 		return true
 	}
 }
