@@ -12,7 +12,9 @@ type TPathAndArgs<TRouteKey extends TQuery> = [
 	...args: inferHandlerInput<AppRouter['_def']['queries'][TRouteKey]>
 ]
 
-export default function useIndexedTRcpQuery<
+export default trpc.useQuery
+
+function useIndexedTRcpQuery<
 	TRouteKey extends TQuery
 >(
 	pathAndInput: TPathAndArgs<TRouteKey>,
