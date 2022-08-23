@@ -2,11 +2,13 @@ import Search from "./Search"
 import styles from "./index.module.css"
 import { useAppState } from "components/AppContext"
 import useDisplayAndShow from "components/useDisplayAndShow"
+import { signOut } from "next-auth/react"
 import { useRef } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
+import LogoutIcon from "icons/logout.svg"
 
 export default function Header() {
 	const {view, setAppState} = useAppState()
@@ -26,6 +28,9 @@ export default function Header() {
 	return (
 		<>
 			<div className={styles.head}>
+				<button onClick={() => signOut()} className={styles.logout}>
+					<LogoutIcon />
+				</button>
 				<button
 					ref={searchToggle}
 					className={styles.toggle}
