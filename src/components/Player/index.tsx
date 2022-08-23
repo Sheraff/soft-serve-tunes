@@ -84,7 +84,7 @@ export default function Player() {
 				audio={audio}
 				progress={progress}
 				canSetTime={Boolean(item && totalSeconds && !loading)}
-				loading={loading}
+				loading={playing && loading}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<div className={styles.duration}>{displayTotalTime}</div>

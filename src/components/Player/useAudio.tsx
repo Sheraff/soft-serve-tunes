@@ -100,6 +100,10 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			setLoading(false)
 		}
 
+		const onEnded = () => {
+			setPlaying(false)
+		}
+
 		const observer = new MutationObserver(() => {
 			const {src} = element
 			if (src !== currentSrc) {
@@ -119,6 +123,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		element.addEventListener('durationchange', onDuration, {signal: controller.signal})
 		element.addEventListener('timeupdate', onTimeUpdate, {signal: controller.signal})
 		element.addEventListener('play', onPlay, {signal: controller.signal})
+		element.addEventListener('ended', onEnded, {signal: controller.signal})
 		element.addEventListener('pause', onPause, {signal: controller.signal})
 		element.addEventListener('loadedmetadata', onLoad, {signal: controller.signal})
 		element.addEventListener('stalled', onStalled, {signal: controller.signal})
