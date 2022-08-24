@@ -20,7 +20,22 @@ export const serverSchema = z.object({
   WEBSOCKET_SERVER_PORT: z.string().transform(Number),
   MAIN_DEVICE_WIDTH: z.string().transform(Number),
   MAIN_DEVICE_DENSITY: z.string().transform(Number),
-  DAYS_BETWEEN_REFETCH: z.string().transform(days => 1000 * 60 * 60 * 24 * Number(days))
+  DAYS_BETWEEN_REFETCH: z.string().transform(days => 1000 * 60 * 60 * 24 * Number(days)),
+  ALLOWED_USERS: z.preprocess(
+    (string) => {
+      if (typeof string !== "string") throw new Error('invalid ALLOWED_USERS env type')
+      return string
+        .split(",")
+        .map((pair) => pair
+          .split(":")
+          .map(value => value.trim())
+        )
+    },
+    z.array(z.tuple([
+      z.string(),
+      z.string()
+    ]))
+  ),
 });
 
 /**

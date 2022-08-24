@@ -1,0 +1,29 @@
+.main {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	justify-content: center;
+	height: 100%;
+	padding: 20px;
+}
+
+.item {
+	font-size: 12px;
+	border-radius: 4px;
+	border: 1px solid currentColor;
+	padding: 8px;
+	text-align: center;
+}
+
+.item svg {
+	margin-right: 8px;
+	vertical-align: text-top;
+}
+
+.twitch {
+	background-color: #6441a488;
+}
+
+.spotify {
+	background-color: #1ed76088;
+}

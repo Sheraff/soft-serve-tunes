@@ -10,6 +10,12 @@ import { env } from "../../../env/server.mjs";
 export const authOptions: NextAuthOptions = {
 	// Include user.id on session
 	callbacks: {
+		async signIn({user, account}) {
+			const allowed = env.ALLOWED_USERS.some(
+				([provider, email]) => account.provider === provider && user.email === email
+			)
+			return allowed
+		},
 		session({ session, user }) {
 			if (session.user) {
 				session.user.id = user.id;

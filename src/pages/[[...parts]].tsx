@@ -1,6 +1,6 @@
 import type { NextPage } from "next"
 import Head from "next/head"
-import { useSession, signIn, getProviders } from "next-auth/react"
+import { useSession, getProviders } from "next-auth/react"
 import { useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import DropTarget from "components/DropTarget"
@@ -9,6 +9,7 @@ import { AppState } from "components/AppContext"
 import WatcherSocket from "components/WatcherSocket"
 import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
+import SignIn from "components/SignIn"
 
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
@@ -72,13 +73,9 @@ const Home: NextPage<{
 						<DropTarget />
 					</>
 				)}
-				{!session && providers && Object.values(providers).map((provider) => (
-					<div key={provider.name}>
-						<button onClick={() => signIn(provider.id)}>
-							Sign in with {provider.name}
-						</button>
-					</div>
-				))}
+				{!session && providers && (
+					<SignIn providers={providers} />
+				)}
 			</AppState>
 		</>
 	)
