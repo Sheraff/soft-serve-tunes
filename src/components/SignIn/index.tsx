@@ -2,11 +2,13 @@ import { signIn, getProviders } from "next-auth/react"
 import styles from "./index.module.css"
 import SpotifyIcon from "icons/spotify.svg"
 import TwitchIcon from "icons/twitch.svg"
+import GithubIcon from "icons/github.svg"
 import classNames from "classnames"
 
 const Icons = {
 	spotify: SpotifyIcon,
 	twitch: TwitchIcon,
+	github: GithubIcon,
 } as const
 
 export default function SignIn({
