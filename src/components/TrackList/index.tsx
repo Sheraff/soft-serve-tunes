@@ -4,6 +4,8 @@ import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
 import { useAppState } from "components/AppContext"
 import styles from "./index.module.css"
+import useSlideTrack from "./useSlideTrack"
+import FavoriteIcon from "icons/favorite.svg"
 
 function TrackItem({
 	track,
@@ -18,7 +20,7 @@ function TrackItem({
 	onClick?: (id:string, name:string) => void
 	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
 }) {
-	const item = useRef<HTMLButtonElement>(null)
+	const item = useRef<HTMLDivElement>(null)
 	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
 	
 	useEffect(() => {
@@ -40,42 +42,46 @@ function TrackItem({
 
 	const {setAppState, view: {type}, playlist} = useAppState()
 
+	useSlideTrack(item)
+
 	return (
-		<button
-			ref={enableSiblings ? item : undefined}
-			className={classNames(styles.button, {
-				[styles.empty]: isEmpty,
-				[styles.current]: current,
-			})}
-			type="button"
-			onClick={() => {
-				data && onSelect?.(data)
-				if (onClick) onClick(track.id, track.name)
-				else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
-			}}
-		>
-			{!isEmpty && (
-				<div className={styles.img}>
-					<img
-						src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2.5)}`}
-						alt=""
-					/>
-				</div>
-			)}
-			<p className={styles.span}>
-				<span className={styles.name}>
-					{( data?.position && (
-						type === "album" 
-						|| (type === "home" && playlist?.type === "album")
-					)) && (
-						`${data?.position?.toString().padStart(2, '0')} · `
-					)}
-					{data?.name}
-				</span>
-				{data?.album?.name && <span>{data?.album.name}</span>}
-				{data?.artist?.name && <span>{data?.artist.name}</span>}
-			</p>
-		</button>
+		<div ref={item} className={styles.wrapper}>
+			<button
+				className={classNames(styles.button, {
+					[styles.empty]: isEmpty,
+					[styles.current]: current,
+				})}
+				type="button"
+				onClick={() => {
+					data && onSelect?.(data)
+					if (onClick) onClick(track.id, track.name)
+					else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
+				}}
+			>
+				{!isEmpty && (
+					<div className={styles.img}>
+						<img
+							src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2.5)}`}
+							alt=""
+						/>
+					</div>
+				)}
+				<p className={styles.span}>
+					<span className={styles.name}>
+						{( data?.position && (
+							type === "album" 
+							|| (type === "home" && playlist?.type === "album")
+						)) && (
+							`${data?.position?.toString().padStart(2, '0')} · `
+						)}
+						{data?.name}
+					</span>
+					{data?.album?.name && <span>{data?.album.name}</span>}
+					{data?.artist?.name && <span>{data?.artist.name}</span>}
+				</p>
+			</button>
+			<FavoriteIcon className={styles.fav} />
+		</div>
 	)
 }
 
