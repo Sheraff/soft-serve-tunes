@@ -1,5 +1,7 @@
 import { IAudioMetadata, parseFile } from "music-metadata"
 import type { NextApiRequest, NextApiResponse } from "next"
+import { unstable_getServerSession as getServerSession } from "next-auth"
+import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import formidable, { Fields, Files } from "formidable"
 import { mkdir, rename, stat, unlink } from "fs/promises"
 import { basename, dirname, extname, join, sep } from "path"
@@ -13,6 +15,11 @@ import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
+	const session = await getServerSession(req, res, nextAuthOptions);
+	if (!session) {
+		return res.status(401).json({ error: "authentication required" })
+	}
+
 	const form = new formidable.IncomingForm({
 		multiples: true,
 	})
@@ -119,7 +126,7 @@ async function moveTempFile(origin: string, destination: string) {
 	} catch {}
 	await mkdir(dirname(destination), {recursive: true})
 	await rename(origin, destination)
-	log("ready", "201", "fswatcher", `upoaded to ${destination}`)
+	log("ready", "201", "fswatcher", `uploaded to ${destination}`)
 	return true
 }
 

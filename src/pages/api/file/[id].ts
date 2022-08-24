@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { unstable_getServerSession as getServerSession } from "next-auth";
+import { unstable_getServerSession as getServerSession } from "next-auth"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import { createReadStream } from "node:fs"
 import { prisma } from "server/db/client"
