@@ -19,12 +19,15 @@ export default function SignIn({
 			{Object.values(providers).map((provider) => {
 				const Icon = Icons[provider.id as keyof typeof Icons]
 				return (
-				<div key={provider.name} className={classNames(styles.item, styles[provider.id])}>
-					<button onClick={() => signIn(provider.id)}>
-						<Icon />
-						Sign in with {provider.name}
-					</button>
-				</div>
+				<button
+					type="button"
+					key={provider.name}
+					className={classNames(styles.item, styles[provider.id])}
+					onClick={() => signIn(provider.id)}
+				>
+					<Icon />
+					Sign in with {provider.name}
+				</button>
 			)})}
 		</div>
 	)
