@@ -32,6 +32,7 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 				element.style.removeProperty('--x')
 				element.classList.remove(styles.animate as string)
 				element.classList.toggle(styles.liked as string)
+				element.classList.remove(styles.will as string)
 				controller.abort()
 			}, {signal, once: true})
 		}
@@ -55,11 +56,12 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 					} else {
 						return
 					}
+					element.classList.add(styles.will as string)
 				}
 				event.preventDefault()
-				const clamp = Math.sign(dx) * Math.min(Math.abs(dx), 48)
-				const spring = Math.sign(dx) * Math.log2(Math.max(Math.abs(dx) - 48, 1)) * 5
-				element.style.setProperty('--x', `${clamp + spring}px`)
+				const r = Math.abs(dx) / 48
+				const total = Math.sign(dx) * (Math.atan(r) + r/10) * 48
+				element.style.setProperty('--x', `${total}px`)
 			}, {signal, capture: true, passive: false})
 
 			window.addEventListener('touchend', (event) => {
