@@ -63,7 +63,8 @@
 	10%   { color: var(--palette-bg-gradient); scale: 1 0.8; }
 	30%  { color: var(--palette-bg-gradient); scale: 1.8; }
 	80%  { color: var(--palette-secondary); scale: 2.1 2.3; }
-	90%  { color: var(--palette-secondary); scale: 0.9 0.7; }
+	87%  { color: var(--palette-secondary); scale: 1 1; }
+	93%  { color: var(--palette-secondary); scale: 1.1 0.8; }
 	100% { color: var(--palette-secondary); scale: 1; }
 }
 .liked.animate::after {
