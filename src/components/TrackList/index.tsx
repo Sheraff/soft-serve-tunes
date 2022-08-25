@@ -6,6 +6,7 @@ import { useAppState } from "components/AppContext"
 import styles from "./index.module.css"
 import useSlideTrack from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
+import PlayIcon from "icons/play_arrow.svg"
 
 function TrackItem({
 	track,
@@ -42,14 +43,16 @@ function TrackItem({
 
 	const {setAppState, view: {type}, playlist} = useAppState()
 
-	useSlideTrack(item)
+	useSlideTrack(item, {id: track.id, favorite: data?.userData?.favorite})
 
 	return (
-		<div ref={item} className={styles.wrapper}>
+		<div ref={item} className={classNames(styles.wrapper, {
+			[styles.liked as string]: data?.userData?.favorite
+		})}>
 			<button
 				className={classNames(styles.button, {
-					[styles.empty]: isEmpty,
-					[styles.current]: current,
+					[styles.empty as string]: isEmpty,
+					[styles.current as string]: current,
 				})}
 				type="button"
 				onClick={() => {
@@ -65,6 +68,9 @@ function TrackItem({
 							alt=""
 						/>
 					</div>
+				)}
+				{current && (
+					<PlayIcon className={styles.play}/>
 				)}
 				<p className={styles.span}>
 					<span className={styles.name}>

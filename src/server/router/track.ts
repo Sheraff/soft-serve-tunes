@@ -2,7 +2,9 @@ import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { spotify } from "server/persistent/spotify"
+import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
+import { TRPCError } from "@trpc/server"
 
 export const trackRouter = createRouter()
   .query("searchable", {
@@ -42,6 +44,11 @@ export const trackRouter = createRouter()
             select: {
               id: true,
               palette: true,
+            }
+          },
+          userData: {
+            select: {
+              favorite: true,
             }
           },
           album: {
@@ -166,13 +173,45 @@ export const trackRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      return ctx.prisma.track.update({
+      if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const now = new Date().toISOString()
+      return ctx.prisma.userTrack.upsert({
         where: { id: input.id },
-        data: {
-          playcount: {
-            increment: 1,
-          },
+        update: {
+          playcount: { increment: 1 },
+          lastListen: now,
         },
+        create: {
+          id: input.id,
+          playcount: 1,
+          lastListen: now,
+        }
       })
+    }
+  })
+  .mutation("like", {
+    input: z
+      .object({
+        id: z.string(),
+        toggle: z.boolean(),
+      }),
+    async resolve({ input, ctx }) {
+      if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const result = await ctx.prisma.userTrack.upsert({
+        where: { id: input.id },
+        update: {
+          favorite: input.toggle,
+        },
+        create: {
+          id: input.id,
+          favorite: input.toggle,
+        }
+      })
+      socketServer.send("invalidate:track", {id: input.id})
+      return result
     }
   })

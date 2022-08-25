@@ -37,8 +37,6 @@ model Track {
   file        File?    @relation
   year        Int?
   genres      Genre[]  @relation
-  playcount   Int      @default(0)
-  favourite   Boolean  @default(false)
   metaImageId String?
   metaImage   Image?   @relation(fields: [metaImageId], references: [id])
 
@@ -48,7 +46,17 @@ model Track {
   lastfmDate  DateTime?
   spotifyDate DateTime?
 
+  userData UserTrack? @relation
+
   @@unique([simplified, artistId, albumId])
+}
+
+model UserTrack {
+  id         String    @id
+  track      Track     @relation(fields: [id], references: [id])
+  playcount  Int       @default(0)
+  favorite   Boolean   @default(false)
+  lastListen DateTime?
 }
 
 model Image {

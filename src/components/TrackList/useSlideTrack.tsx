@@ -1,4 +1,5 @@
-import { RefObject, useEffect } from "react"
+import { RefObject, useEffect, useRef } from "react"
+import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 
 function getTouchFromId(list: TouchList, id: number) {
@@ -9,7 +10,21 @@ function getTouchFromId(list: TouchList, id: number) {
 	}
 }
 
-export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
+export default function useSlideTrack(
+	ref: RefObject<HTMLDivElement>,
+	{
+		id,
+		favorite,
+	}: {
+		id: string,
+		favorite?: boolean
+	}
+) {
+	const {mutate: likeMutation} = trpc.useMutation(["track.like"])
+
+	const data = useRef({id, favorite})
+	data.current.id = id
+	data.current.favorite = favorite
 
 	useEffect(() => {
 		const element = ref.current
@@ -34,6 +49,10 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 				element.classList.toggle(styles.liked as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
+				likeMutation({
+					id: data.current.id,
+					toggle: !data.current.favorite,
+				})
 			}, {signal, once: true})
 		}
 
@@ -60,7 +79,7 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 				}
 				event.preventDefault()
 				const r = Math.abs(dx) / 48
-				const total = Math.sign(dx) * (Math.atan(r) + r/10) * 48
+				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
 				element.style.setProperty('--x', `${total}px`)
 			}, {signal, capture: true, passive: false})
 
@@ -96,6 +115,6 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 			if (uxController) uxController.abort()
 			if (animController) animController.abort()
 		}
-	}, [ref])
+	}, [ref, likeMutation])
 
 }
