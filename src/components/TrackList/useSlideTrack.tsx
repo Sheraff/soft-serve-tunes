@@ -31,7 +31,7 @@ export default function useSlideTrack(ref: RefObject<HTMLDivElement>) {
 			element.addEventListener('animationend', () => {
 				element.style.removeProperty('--x')
 				element.classList.remove(styles.animate as string)
-				element.classList.add(styles.liked as string)
+				element.classList.toggle(styles.liked as string)
 				controller.abort()
 			}, {signal, once: true})
 		}

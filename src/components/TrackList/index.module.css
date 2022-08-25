@@ -59,6 +59,26 @@
 	90%  { color: var(--palette-secondary); scale: 0.9 0.7; }
 	100% { color: var(--palette-secondary); scale: 1; }
 }
+.liked.animate::after {
+	animation: slide-dislike 750ms ease-out forwards;
+}
+.liked.animate .fav {
+	animation: fall 750ms ease-in forwards;
+}
+.liked.animate .button {
+	animation: slide-dislike 750ms ease-out forwards;
+}
+@keyframes slide-dislike {
+	0%  { transform: translateX(var(--x)); }
+	50%  { transform: translateX(calc(var(--x) * .7)); }
+	100% { transform: translateX(0); }
+}
+@keyframes fall {
+	0%   { color: var(--palette-secondary); scale: 1; }
+	5%   { color: var(--palette-secondary); scale: 1.1; }
+	50% { color: var(--palette-bg-gradient); scale: 0.5; opacity: 0.2; }
+	70%,100% { color: var(--palette-bg-gradient); scale: 0.2; opacity: 0; }
+}
 
 
 .button {
