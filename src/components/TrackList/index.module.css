@@ -30,7 +30,7 @@
 	top: 50%;
 	right: 0;
 	padding: 8px 16px;
-	transform: translateY(-50%);
+	translate: 0 -50%;
 	clip-path: inset(0 0 0 calc(100% + var(--x)));
 }
 .liked .fav {
@@ -39,23 +39,25 @@
 }
 
 .animate::after {
-	animation: slide 1s ease-in-out forwards;
+	animation: slide 750ms ease-out forwards;
 }
 .animate .fav {
-	animation: jump 1s ease-in forwards;
+	animation: jump 750ms ease-in forwards;
 }
 .animate .button {
-	animation: slide 1s ease-in-out forwards;
+	animation: slide 750ms ease-out forwards;
 }
 @keyframes slide {
-	0%   { transform: translateX(var(--x)); }
-	100% { transform: translateX(0); }
+	0%  { transform: translateX(var(--x)); }
+	90%,100% { transform: translateX(0); }
 }
 @keyframes jump {
-	0%   { color: var(--palette-bg-gradient); transform: translateY(-50%); }
-	25%  { color: var(--palette-bg-gradient); transform: translateY(-50%) scale(2); }
-	75%  { color: var(--palette-secondary); transform: translateY(-50%) scale(2); }
-	100% { color: var(--palette-secondary); transform: translateY(-50%); }
+	0%   { color: var(--palette-bg-gradient); scale: 1; }
+	10%   { color: var(--palette-bg-gradient); scale: 1 0.8; }
+	30%  { color: var(--palette-bg-gradient); scale: 1.8; }
+	80%  { color: var(--palette-secondary); scale: 2.1 2.3; }
+	90%  { color: var(--palette-secondary); scale: 0.9 0.7; }
+	100% { color: var(--palette-secondary); scale: 1; }
 }
 
 
