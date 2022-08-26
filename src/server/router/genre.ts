@@ -45,4 +45,35 @@ export const genreRouter = createRouter()
       })
     }
   })
+  .query("most-fav", {
+    async resolve({ ctx }) {
+      const genres = await ctx.prisma.genre.findMany({
+        where: {tracks: {some: {userData: {favorite: true}}}},
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              tracks: true,
+            }
+          },
+          tracks: {
+            where: {
+              userData: {
+                favorite: true,
+              }
+            },
+            select: {
+              id: true,
+            }
+          }
+        }
+      })
+      const mostLiked = genres
+        .sort((a, b) => b.tracks.length - a.tracks.length)
+        .slice(0, 10)
+        .map(({id, name, _count}) => ({id, name, _count}))
+      return mostLiked
+    }
+  })
 

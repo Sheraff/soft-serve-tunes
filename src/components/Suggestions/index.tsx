@@ -3,6 +3,7 @@ import SectionTitle from "atoms/SectionTitle"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import AlbumList from "components/AlbumList"
 import ArtistList from "components/ArtistList"
+import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import { ReactNode, useState } from "react"
@@ -105,6 +106,7 @@ export default function Suggestions(){
 	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
 	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.most-danceable", {trait, order}])
 	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
+	const {data: genreFavs = []} = useIndexedTRcpQuery(["genre.most-fav"])
 
 	return (
 		<div className={styles.scrollable}>
@@ -124,6 +126,10 @@ export default function Suggestions(){
 						<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 					</Dialog>
 					<TrackList tracks={trackDanceable} />
+				</div>
+				<div className={styles.section}>
+					<SectionTitle>Favorite genres</SectionTitle>
+					<GenreList genres={genreFavs} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Danceable albums</SectionTitle>
