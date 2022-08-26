@@ -177,18 +177,65 @@ export const trackRouter = createRouter()
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
       const now = new Date().toISOString()
-      return ctx.prisma.userTrack.upsert({
+      const track = await ctx.prisma.track.update({
         where: { id: input.id },
-        update: {
-          playcount: { increment: 1 },
-          lastListen: now,
+        select: {
+          albumId: true,
+          artistId: true,
         },
-        create: {
-          id: input.id,
-          playcount: 1,
-          lastListen: now,
+        data: {
+          userData: {
+            upsert: {
+              update: {
+                playcount: { increment: 1 },
+                lastListen: now,
+              },
+              create: {
+                playcount: 1,
+                lastListen: now,
+              }
+            }
+          }
         }
       })
+      if (track.albumId) {
+        await ctx.prisma.album.update({
+          where: { id: track.albumId },
+          data: {
+            userData: {
+              upsert: {
+                update: {
+                  playcount: { increment: 1 },
+                  lastListen: now,
+                },
+                create: {
+                  playcount: 1,
+                  lastListen: now,
+                }
+              }
+            }
+          }
+        })
+      }
+      if (track.artistId) {
+        await ctx.prisma.artist.update({
+          where: { id: track.artistId },
+          data: {
+            userData: {
+              upsert: {
+                update: {
+                  playcount: { increment: 1 },
+                  lastListen: now,
+                },
+                create: {
+                  playcount: 1,
+                  lastListen: now,
+                }
+              }
+            }
+          }
+        })
+      }
     }
   })
   .mutation("like", {

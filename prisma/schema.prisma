@@ -112,6 +112,16 @@ model Artist {
   lastfmDate  DateTime?
   audiodbDate DateTime?
   spotifyDate DateTime?
+
+  userData UserArtist? @relation
+}
+
+model UserArtist {
+  id         String    @id
+  artist     Artist    @relation(fields: [id], references: [id])
+  playcount  Int       @default(0)
+  favorite   Boolean   @default(false)
+  lastListen DateTime?
 }
 
 model Album {
@@ -131,7 +141,17 @@ model Album {
   lastfmDate  DateTime?
   spotifyDate DateTime?
 
+  userData UserAlbum? @relation
+
   @@unique([simplified, artistId])
+}
+
+model UserAlbum {
+  id         String    @id
+  album      Album     @relation(fields: [id], references: [id])
+  playcount  Int       @default(0)
+  favorite   Boolean   @default(false)
+  lastListen DateTime?
 }
 
 model Genre {

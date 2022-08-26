@@ -10,12 +10,13 @@ import NextIcon from "icons/skip_next.svg"
 import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import SlidingText from "./SlidingText"
+import { trpc } from "utils/trpc"
 
 export default function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 
 	const {playlist, setAppState} = useAppState()
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
+	const { data: list } = useIndexedTRcpQuery(["playlist.generate", {
 		type: playlist?.type as string,
 		id: playlist?.id as string,
 	}], {
@@ -63,8 +64,9 @@ export default function Player() {
 		loading,
 		displayCurrentTime,
 		displayTotalTime,
-		seconds,
+		displayRemainingTime,
 		totalSeconds,
+		playedSeconds,
 		progress,
 	} = useAudio(audio)
 
@@ -77,6 +79,17 @@ export default function Player() {
 		}
 	}
 
+	const [endTime, setEndTime] = useState(false)
+	const switchEndTime = () => setEndTime(a => !a)
+
+	const consideredPlayed = playedSeconds > 45 || playedSeconds / totalSeconds > 0.4
+	const {mutate} = trpc.useMutation(["track.playcount"])
+	useEffect(() => {
+		if (consideredPlayed && item?.id) {
+			mutate({id: item?.id})
+		}
+	}, [mutate, consideredPlayed, item?.id])
+
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -87,7 +100,13 @@ export default function Player() {
 				loading={playing && loading}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
-			<div className={styles.duration}>{displayTotalTime}</div>
+			<button
+				type="button"
+				className={styles.duration}
+				onClick={switchEndTime}
+			>
+				{endTime ? `-${displayRemainingTime}` : displayTotalTime}
+			</button>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
 				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>

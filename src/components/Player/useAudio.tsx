@@ -17,17 +17,11 @@ function arrayToTimeDisplayString(array: number[]) {
 		.join(':')
 }
 
-function pairOfTimeVectorsToPairOfDisplayStrings(vec1: TimeVector, vec2: TimeVector): [string, string] {
-	if (vec1[0] === 0 && vec2[0] === 0) {
-		return [
-			arrayToTimeDisplayString([vec1[1], vec1[2]]),
-			arrayToTimeDisplayString([vec2[1], vec2[2]]),
-		]
+function pairOfTimeVectorsToPairOfDisplayStrings(vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
+	if (vectors[0][0] === 0 && vectors[1][0] === 0) {
+		return vectors.map((vec) => arrayToTimeDisplayString([vec[1], vec[2]])) as [string, string, string]
 	}
-	return [
-		arrayToTimeDisplayString(vec1),
-		arrayToTimeDisplayString(vec2),
-	]
+	return vectors.map(arrayToTimeDisplayString) as [string, string, string]
 }
 
 export default function useAudio(audio: RefObject<HTMLAudioElement>) {
@@ -35,18 +29,28 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 	const [totalSeconds, setTotalSeconds] = useState(0) // total time of source
 	const [playing, setPlaying] = useState(false) // follows state of DOM node
 	const [loading, setLoading] = useState(true)
+	const [playedSeconds, setPlayedSeconds] = useState(0) // how long the source has been playing (excludes loading / stalled / seeking)
+	const remainingSeconds = totalSeconds - seconds
 
-	const [displayCurrentTime, displayTotalTime] = useMemo(() => {
+	const [displayCurrentTime, displayTotalTime, displayRemainingTime] = useMemo(() => {
 		const currentTimeVector = secondsToTimeVector(seconds)
 		const totalTimeVector = secondsToTimeVector(totalSeconds)
-		return pairOfTimeVectorsToPairOfDisplayStrings(currentTimeVector, totalTimeVector)
-	}, [seconds, totalSeconds])
+		const remainingTimeVector = secondsToTimeVector(remainingSeconds)
+		return pairOfTimeVectorsToPairOfDisplayStrings([currentTimeVector, totalTimeVector, remainingTimeVector])
+	}, [seconds, totalSeconds, remainingSeconds])
 
 	useEffect(() => {
 		const element = audio.current
 		if (!element) return
 
 		let currentSrc: string
+		let currentPlayedSectionStart: number
+		let loading = true
+
+		const _setLoading = (bool: boolean) => {
+			setLoading(bool)
+			loading = bool
+		}
 
 		const onDuration = () => {
 			const {duration, src} = element
@@ -60,13 +64,17 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			if (!Number.isNaN(currentTime) && (src === currentSrc)) {
 				setSeconds(currentTime)
 				onDuration() // TODO: shouldn't have to be called every time
+				if (!loading) {
+					const delta = currentTime - currentPlayedSectionStart
+					setPlayedSeconds(prev => prev + delta)
+				}
+				currentPlayedSectionStart = currentTime
 			}
 		}
 
 		const onPlay = () => {
 			setPlaying(true)
 		}
-
 
 		const onLoad = () => {
 			onDuration()
@@ -78,7 +86,11 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 
 		const onStalled = () => {
-			setLoading(true)
+			_setLoading(true)
+		}
+
+		const onUnStalled = () => {
+			_setLoading(false)
 		}
 
 		let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -87,8 +99,8 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			if (!loadingTimeoutId) {
 				loadingTimeoutId = setTimeout(() => {
 					loadingTimeoutId = null
-					setLoading(true)
-				}, 1000)
+					_setLoading(true)
+				}, 1000) // TODO: why wait 1s? I don't remember why I wrote this
 			}
 		}
 
@@ -97,7 +109,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				clearTimeout(loadingTimeoutId)
 			}
 			loadingTimeoutId = null
-			setLoading(false)
+			_setLoading(false)
 		}
 
 		const onEnded = () => {
@@ -107,10 +119,12 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		const observer = new MutationObserver(() => {
 			const {src} = element
 			if (src !== currentSrc) {
+				currentSrc = src
+				currentPlayedSectionStart = 0
 				setTotalSeconds(0)
 				setSeconds(0)
-				currentSrc = src
-				setLoading(true)
+				setPlayedSeconds(0)
+				_setLoading(true)
 				element.play()
 			}
 		})
@@ -129,6 +143,8 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		element.addEventListener('stalled', onStalled, {signal: controller.signal})
 		element.addEventListener('waiting', onWaiting, {signal: controller.signal})
 		element.addEventListener('playing', onPlaying, {signal: controller.signal})
+		element.addEventListener('seeking', onStalled, {signal: controller.signal})
+		element.addEventListener('seeked', onUnStalled, {signal: controller.signal})
 
 		return () => {
 			observer.disconnect()
@@ -145,8 +161,11 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		loading,
 		displayCurrentTime,
 		displayTotalTime,
+		displayRemainingTime,
 		seconds,
 		totalSeconds,
+		remainingSeconds,
+		playedSeconds,
 		progress,
 	}
 }
