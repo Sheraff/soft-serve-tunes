@@ -54,8 +54,6 @@ function Suggestions(){
 	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
 	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.most-danceable"])
 	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
-	console.log('track danceable', trackDanceable)
-	console.log('album danceable', albumDanceable)
 	return (
 		<div className={styles.center}>
 			<div className={styles.centerChildren}>
