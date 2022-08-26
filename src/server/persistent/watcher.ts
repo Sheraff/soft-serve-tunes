@@ -222,6 +222,7 @@ class MyWatcher {
 				subgenres: { none: {} },
 				supgenres: { none: {} },
 				spotifyArtists: { none: {} },
+				audiodbTracks: { none: {} },
 			},
 			select: {
 				id: true,

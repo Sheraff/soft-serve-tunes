@@ -10,6 +10,7 @@ import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
+import { string } from "zod"
 
 // TODO: wrap most/all prisma actions in a try/catch (retryable) and log errors
 
@@ -87,6 +88,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		// 	? await correctAlbum(correctedArtist, metadata.common.album, correctedTrack)
 		// 	: undefined
 
+		const genres = uniqueGenres(metadata.common.genre || [])
+
 		const track = await prisma.track.create({
 			include: {
 				feats: {
@@ -150,18 +153,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						}
 					}))
 				},
-				...(metadata.common.genre?.length ? {
-					genres: {
-						connectOrCreate: metadata.common.genre.map(genre => ({
-							where: {
-								name: genre,
-							},
-							create: {
-								name: genre,
-							}
-						}))
-					}
-				} : {}),
+				genres: {
+					connectOrCreate: genres.map(({name, simplified}) => ({
+						where: { simplified },
+						create: { name, simplified }
+					}))
+				}
 			}
 		})
 
@@ -245,4 +242,25 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 export function simplifiedName(name: string) {
 	return sanitizeString(name).toLowerCase().replace(/\s+/g, '')
+}
+
+export function uniqueGenres(genres: string[]) {
+	const names = genres
+		.flatMap((genre) => genre
+			.split(',')
+			.map(name => name.trim())
+		)
+	const uniqueSimplifiedNames = new Set<string>()
+	const filteredGenres = names.reduce<{
+		simplified: string
+		name: string
+	}[]>((list, name) => {
+		const simplified = simplifiedName(name)
+		if (!uniqueSimplifiedNames.has(simplified)) {
+			uniqueSimplifiedNames.add(simplified)
+			list.push({ simplified, name })
+		}
+		return list
+	}, [])
+	return filteredGenres
 }

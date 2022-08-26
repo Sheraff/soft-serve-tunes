@@ -8,6 +8,7 @@ import pathToSearch from "utils/pathToSearch"
 import log from "utils/logger"
 import { socketServer } from "server/persistent/ws"
 import retryable from "utils/retryable"
+import { uniqueGenres } from "server/db/createTrack"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -633,18 +634,12 @@ class Spotify {
 										}
 									},
 									popularity,
-									...(artistData.genres?.length ? {
-										genres: {
-											connectOrCreate: artistData.genres.map(genre => ({
-												where: {
-													name: genre,
-												},
-												create: {
-													name: genre,
-												}
-											}))
-										}
-									} : {}),
+									genres: {
+										connectOrCreate: uniqueGenres(artistData.genres || []).map(({name, simplified}) => ({
+											where: { simplified },
+											create: { name, simplified }
+										}))
+									}
 								}
 							})
 						})
@@ -658,18 +653,12 @@ class Spotify {
 							},
 							data: {
 								popularity: artistData.popularity,
-								...(artistData.genres?.length ? {
-									genres: {
-										connectOrCreate: artistData.genres.map(genre => ({
-											where: {
-												name: genre,
-											},
-											create: {
-												name: genre,
-											}
-										}))
-									}
-								} : {}),
+								genres: {
+									connectOrCreate: uniqueGenres(artistData.genres || []).map(({name, simplified}) => ({
+										where: { simplified },
+										create: { name, simplified }
+									}))
+								}
 							}
 						})
 					})

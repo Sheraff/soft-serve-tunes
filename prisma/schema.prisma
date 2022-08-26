@@ -46,7 +46,8 @@ model Track {
   lastfmDate  DateTime?
   spotifyDate DateTime?
 
-  userData UserTrack? @relation
+  userData        UserTrack?      @relation
+  playlistEntries PlaylistEntry[]
 
   @@unique([simplified, artistId, albumId])
 }
@@ -57,6 +58,21 @@ model UserTrack {
   playcount  Int       @default(0)
   favorite   Boolean   @default(false)
   lastListen DateTime?
+}
+
+model PlaylistEntry {
+  id         String   @id @default(cuid())
+  order      Int
+  trackId    String
+  track      Track    @relation(fields: [trackId], references: [id])
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+}
+
+model Playlist {
+  id       String          @id @default(cuid())
+  editable Boolean         @default(true)
+  entries  PlaylistEntry[]
 }
 
 model Image {
@@ -121,8 +137,10 @@ model Album {
 model Genre {
   id             String          @id @default(cuid())
   name           String          @unique
+  simplified     String          @unique
   tracks         Track[]         @relation
   spotifyArtists SpotifyArtist[] @relation
+  audiodbTracks  AudioDbTrack[]  @relation
   subgenres      Genre[]         @relation("LinkedGenre")
   supgenres      Genre[]         @relation("LinkedGenre")
 }
@@ -272,7 +290,7 @@ model AudioDbTrack {
   entity   Track?       @relation(fields: [entityId], references: [id])
 
   intDuration      Int?
-  strGenre         String?
+  genres           Genre[] @relation
   strMusicVid      String?
   intTrackNumber   Int?
   strMusicBrainzID String? // should be unique in theory, but wrong metadata on some track can cause issues

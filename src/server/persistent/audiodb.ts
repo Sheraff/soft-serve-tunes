@@ -7,6 +7,7 @@ import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
+import { uniqueGenres } from "server/db/createTrack"
 
 const queue = new Queue(2000)
 
@@ -215,17 +216,25 @@ async function fetchArtist(id: string) {
 				}
 				const audiodbTracks = z.object({track: z.array(audiodbTrackSchema)}).parse(tracksJson)
 				let oneAlbumConnection: string | undefined
-				await Promise.allSettled(audiodbTracks.track.map(async (audiodbTrack) => {
+				await Promise.allSettled(audiodbTracks.track.map(async (data) => {
+					const {strGenre, ...audiodbTrack} = data
+					const genres = uniqueGenres(strGenre ? [strGenre] : [])
 					const entityTrack = artist.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
 					if (!entityAlbum && !oneAlbumConnection && entityTrack?.albumId) {
 						oneAlbumConnection = entityTrack.albumId
 					}
-					const imageIds = await keysAndInputToImageIds(audiodbTrack, ['strTrackThumb'])
+					const imageIds = await keysAndInputToImageIds(data, ['strTrackThumb'])
 					await retryable(async () => {
 						await prisma.audioDbTrack.create({
 							data: {
 								...(entityTrack ? {entityId: entityTrack.id} : {}),
 								...audiodbTrack,
+								genres: {
+									connectOrCreate: genres.map(({name, simplified}) => ({
+										where: { simplified },
+										create: { name, simplified }
+									}))
+								},
 								thumbId: imageIds.strTrackThumb,
 							},
 						})
@@ -254,11 +263,11 @@ async function fetchArtist(id: string) {
 }
 
 async function keysAndInputToImageIds<
-	K extends readonly (keyof I)[],
-	J extends K[keyof K] & string,
-	I extends {[key in J]?: string | number | null | undefined} & {[key: string]: any},
-	R extends {[key in keyof Pick<I, J>]: string}
->(input: I, keys: K): Promise<R> {
+	AllKeys extends readonly (keyof Input)[],
+	Key extends AllKeys[keyof AllKeys] & string,
+	Input extends {[key in Key]?: string | number | null | undefined} & {[key in Exclude<string, Key>]: unknown},
+	Result extends {[key in keyof Pick<Input, Key>]: string}
+>(input: Input, keys: AllKeys): Promise<Result> {
 	const imageIds = await Promise.allSettled(keys.map(async (key) => {
 		const url = input[key]
 		if (url) {
@@ -278,10 +287,10 @@ async function keysAndInputToImageIds<
 			}
 		}
 	}))
-	const fulfilled = imageIds.filter((result) => result.status === 'fulfilled') as PromiseFulfilledResult<[J, string] | undefined>[]
+	const fulfilled = imageIds.filter((result) => result.status === 'fulfilled') as PromiseFulfilledResult<[Key, string] | undefined>[]
 	const values = fulfilled.map(({value}) => value)
-	const content = values.filter(Boolean) as [J, string][]
-	return Object.fromEntries(content) as R
+	const content = values.filter(Boolean) as [Key, string][]
+	return Object.fromEntries(content) as Result
 }
 
 export const audiodb = {
