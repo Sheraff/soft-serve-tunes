@@ -5,6 +5,7 @@ import { spotify } from "server/persistent/spotify"
 import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { TRPCError } from "@trpc/server"
+import retryable from "utils/retryable"
 
 export const trackRouter = createRouter()
   .query("searchable", {
@@ -177,30 +178,13 @@ export const trackRouter = createRouter()
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
       const now = new Date().toISOString()
-      const track = await ctx.prisma.track.update({
-        where: { id: input.id },
-        select: {
-          albumId: true,
-          artistId: true,
-        },
-        data: {
-          userData: {
-            upsert: {
-              update: {
-                playcount: { increment: 1 },
-                lastListen: now,
-              },
-              create: {
-                playcount: 1,
-                lastListen: now,
-              }
-            }
-          }
-        }
-      })
-      if (track.albumId) {
-        await ctx.prisma.album.update({
-          where: { id: track.albumId },
+      const track = await retryable(() =>
+        ctx.prisma.track.update({
+          where: { id: input.id },
+          select: {
+            albumId: true,
+            artistId: true,
+          },
           data: {
             userData: {
               upsert: {
@@ -216,27 +200,51 @@ export const trackRouter = createRouter()
             }
           }
         })
-        socketServer.send("invalidate:album", {id: track.albumId})
+      )
+      const {albumId, artistId} = track
+      if (albumId) {
+        await retryable(() =>
+          ctx.prisma.album.update({
+            where: { id: albumId },
+            data: {
+              userData: {
+                upsert: {
+                  update: {
+                    playcount: { increment: 1 },
+                    lastListen: now,
+                  },
+                  create: {
+                    playcount: 1,
+                    lastListen: now,
+                  }
+                }
+              }
+            }
+          })
+        )
+        socketServer.send("invalidate:album", {id: albumId})
       }
-      if (track.artistId) {
-        await ctx.prisma.artist.update({
-          where: { id: track.artistId },
-          data: {
-            userData: {
-              upsert: {
-                update: {
-                  playcount: { increment: 1 },
-                  lastListen: now,
-                },
-                create: {
-                  playcount: 1,
-                  lastListen: now,
+      if (artistId) {
+        await retryable(() =>
+          ctx.prisma.artist.update({
+            where: { id: artistId },
+            data: {
+              userData: {
+                upsert: {
+                  update: {
+                    playcount: { increment: 1 },
+                    lastListen: now,
+                  },
+                  create: {
+                    playcount: 1,
+                    lastListen: now,
+                  }
                 }
               }
             }
-          }
-        })
-        socketServer.send("invalidate:artist", {id: track.artistId})
+          })
+        )
+        socketServer.send("invalidate:artist", {id: artistId})
       }
       socketServer.send("invalidate:track", {id: input.id})
     }
@@ -251,62 +259,69 @@ export const trackRouter = createRouter()
       if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
-      const track = await ctx.prisma.track.update({
-        where: { id: input.id },
-        select: {
-          albumId: true,
-          artistId: true,
-        },
-        data: {
-          userData: {
-            upsert: {
-              update: {
-                favorite: input.toggle,
-              },
-              create: {
-                favorite: input.toggle,
+      const track = await retryable(() =>
+        ctx.prisma.track.update({
+          where: { id: input.id },
+          select: {
+            albumId: true,
+            artistId: true,
+          },
+          data: {
+            userData: {
+              upsert: {
+                update: {
+                  favorite: input.toggle,
+                },
+                create: {
+                  favorite: input.toggle,
+                }
               }
             }
           }
-        }
-      })
+        })
+      )
       const kind = input.toggle ? 'increment' : 'decrement'
       const init = input.toggle ? 1 : 0
-      if (track.albumId) {
-        await ctx.prisma.album.update({
-          where: { id: track.albumId },
-          data: {
-            userData: {
-              upsert: {
-                update: {
-                  favorite: { [kind]: 1 },
-                },
-                create: {
-                  favorite: init,
+      const {albumId, artistId} = track
+      if (albumId) {
+        await retryable(() =>
+          ctx.prisma.album.update({
+            where: { id: albumId },
+            data: {
+              userData: {
+                upsert: {
+                  update: {
+                    favorite: { [kind]: 1 },
+                  },
+                  create: {
+                    favorite: init,
+                  }
                 }
               }
             }
-          }
-        })
-        socketServer.send("invalidate:album", {id: track.albumId})
+          })
+        )
+        socketServer.send("invalidate:album", {id: albumId})
       }
-      if (track.artistId) {
-        await ctx.prisma.artist.update({
-          where: { id: track.artistId },
-          data: {
-            userData: {
-              upsert: {
-                update: {
-                  favorite: { [kind]: 1 },
-                },
-                create: {
-                  favorite: init,
+      if (artistId) {
+        await retryable(() =>
+          ctx.prisma.artist.update({
+            where: { id: artistId },
+            data: {
+              userData: {
+                upsert: {
+                  update: {
+                    favorite: { [kind]: 1 },
+                  },
+                  create: {
+                    favorite: init,
+                  }
                 }
               }
             }
-          }
-        })
-        socketServer.send("invalidate:artist", {id: track.artistId})
+          })
+        )
+        socketServer.send("invalidate:artist", {id: artistId})
       }
       socketServer.send("invalidate:track", {id: input.id})
       return track
