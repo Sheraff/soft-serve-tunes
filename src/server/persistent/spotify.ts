@@ -143,6 +143,19 @@ function getSchema(url: SpotifyApiUrl) {
 	}
 }
 
+function isListRequest(url: SpotifyApiUrl) {
+	switch (true) {
+		case url.startsWith('tracks/'): return false
+		case url.startsWith('audio-features/'): return false
+		case url.startsWith('albums/'): return false
+		case url.startsWith('artists/') && url.endsWith('/albums'): return true
+		case url.startsWith('artists/'): return false
+		case url.startsWith('search?') && url.includes('type=track'): return true
+		case url.startsWith('search?') && url.includes('type=artist'): return true
+		case url.startsWith('search?') && url.includes('type=album'): return true
+	}
+}
+
 class Spotify {
 	static RATE_LIMIT = 200
 	static STORAGE_LIMIT = 100
@@ -204,10 +217,12 @@ class Spotify {
 			notFoundSchema,
 			schema,
 		])
+		const isList = isListRequest(url)
+		const fullURL = `https://api.spotify.com/v1/${url}${isList ? '&limit=1' : ''}`
 		await this.#queue.next()
 		await this.#refreshToken()
 		return retryable(async () => {
-			const response = await fetch(`https://api.spotify.com/v1/${url}&limit=1`, {
+			const response = await fetch(fullURL, {
 				headers: {
 					'Authorization': `Bearer ${this.#accessToken}`,
 					'Accept': 'application/json',
@@ -318,7 +333,7 @@ class Spotify {
 			}
 			const spotifyTrack = track && track.spotify ? track.spotify : null
 			if (spotifyTrack && spotifyTrack.album && spotifyTrack.artist && spotifyTrack.tempo) {
-				log("info", "204", "spotify", `already got everything`)
+				log("info", "204", "spotify", `already got everything for ${track.name} by ${spotifyTrack.artist.name} in ${spotifyTrack.album.name} (${spotifyTrack.tempo}bps)`)
 				this.#running.delete(trackDbId)
 				return
 			}
@@ -328,7 +343,7 @@ class Spotify {
 				? sanitizeString(pathToSearch(track.file.path))
 				: null
 			if (!spotifyTrack && !artistName && !albumName && !fuzzySearch) {
-				log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
+				log("warn", "409", "spotify", `not enough information to find track ${track.name}, need better strategy`)
 				console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 				this.#running.delete(trackDbId)
 				return
@@ -668,6 +683,7 @@ class Spotify {
 			featuresFill: if (!spotifyTrack?.tempo && spotifyTrackId) {
 				const featuresData = await this.fetch(`audio-features/${spotifyTrackId}`)
 				if ('error' in featuresData) {
+					log("error", "500", "spotify", `Could not find audio-features for ${spotifyTrackId}`)
 					break featuresFill
 				}
 				await retryable(async () => {

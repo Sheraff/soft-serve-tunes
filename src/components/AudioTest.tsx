@@ -9,6 +9,7 @@ import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import ArtistList from "./ArtistList"
 import Palette from "./Palette"
 import AlbumList from "./AlbumList"
+import TrackList from "./TrackList"
 
 function GlobalPalette() {
 	const {playlist} = useAppState()
@@ -51,6 +52,10 @@ function Suggestions(){
 	const {data: albumFavs = []} = useIndexedTRcpQuery(["album.most-fav"])
 	const {data: albumRecent = []} = useIndexedTRcpQuery(["album.most-recent-listen"])
 	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
+	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.most-danceable"])
+	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
+	console.log('track danceable', trackDanceable)
+	console.log('album danceable', albumDanceable)
 	return (
 		<div className={styles.center}>
 			<div className={styles.centerChildren}>
@@ -58,6 +63,10 @@ function Suggestions(){
 				<ArtistList artists={artistFavs} lines={1} />
 				<h2>Recently listened albums</h2>
 				<AlbumList albums={albumRecent} lines={1} scrollable />
+				<h2>Danceable tracks</h2>
+				<TrackList tracks={trackDanceable} />
+				<h2>Danceable albums</h2>
+				<AlbumList albums={albumDanceable} lines={1} scrollable />
 				<h2>Recently listened artists</h2>
 				<ArtistList artists={artistRecent} lines={1} />
 				<h2>Favorite albums</h2>

@@ -312,3 +312,19 @@ export const trackRouter = createRouter()
       return track
     }
   })
+  .query("most-danceable", {
+    async resolve({ ctx }) {
+      return ctx.prisma.track.findMany({
+        // where: { spotify: { danceability: { gt: 0 } } },
+        orderBy: { spotify: { danceability: "desc" } },
+        take: 5,
+        include: {
+          spotify: {
+            select: {
+              danceability: true,
+            }
+          }
+        }
+      })
+    }
+  })

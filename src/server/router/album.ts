@@ -264,4 +264,31 @@ export const albumRouter = createRouter()
       })
     }
   })
+  .query("most-danceable", {
+    async resolve({ ctx }) {
+      const spotifyTracks = await ctx.prisma.spotifyTrack.groupBy({
+        by: ["albumId"],
+        _avg: {
+          danceability: true,
+        },
+        having: {
+          danceability: {
+            _avg: {
+              gt: 0.5
+            }
+          },
+          albumId: {not: undefined}
+        },
+      })
+      const spotifyAlbumId = spotifyTracks
+        .filter(a => a._avg.danceability && a.albumId)
+        .sort((a, b) => (a._avg.danceability as number) - (b._avg.danceability as number))
+        .slice(0, 10)
+        .map(a => a.albumId) as string[]
+      return ctx.prisma.album.findMany({
+        where: {spotify: {id: { in: spotifyAlbumId }}},
+        select: { id: true, name: true },
+      })
+    }
+  })
 

@@ -360,7 +360,7 @@ model SpotifyTrack {
   artistId    String?
   artist      SpotifyArtist?  @relation(fields: [artistId], references: [id])
   feats       SpotifyArtist[] @relation("SpotifyTrackFeaturing")
-  albumId     String
+  albumId     String?
   album       SpotifyAlbum?   @relation(fields: [albumId], references: [id])
   popularity  Int?
   durationMs  Int?
