@@ -28,20 +28,6 @@
 	transform-style: preserve-3d;
 }
 
-.center {
-	grid-column: 1 / 2;
-	grid-row: 2 / 3;
-	overflow: hidden scroll;
-	padding-bottom: 1em;
-}
-
-.centerChildren {
-	display: flex;
-	flex-direction: column;
-	gap: 1em;
-	height: fit-content;
-}
-
 .select {
 	width: 100%;
 }

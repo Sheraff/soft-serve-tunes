@@ -7,6 +7,7 @@ import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import { paletteToCSSProperties } from "components/Palette"
+import SectionTitle from "atoms/SectionTitle"
 
 export default forwardRef(function ArtistView({
 	open,
@@ -28,7 +29,7 @@ export default forwardRef(function ArtistView({
 
 	const playlistSetter = playlist && playlist.type === "artist" && playlist.id === id
 		? undefined
-		: {type: "artist", id, index: 0}
+		: {type: "artist", id, index: 0} as const
 
 	const [seeBio, setSeeBio] = useState(false)
 	const bio = useRef<HTMLDivElement>(null)
@@ -69,13 +70,13 @@ export default forwardRef(function ArtistView({
 				alt=""
 			/>
 			<div className={styles.head}>
-				<h2 className={styles.sectionTitle}>{data?.name}</h2>
+				<SectionTitle>{data?.name}</SectionTitle>
 				<p className={styles.info}>
 					{infos.join(" · ")}
 				</p>
 				{data?.audiodb?.strBiographyEN && (
 					<div
-						className={classNames(styles.bio, {[styles.seeBio]: seeBio})}
+						className={classNames(styles.bio, {[styles.seeBio as string]: seeBio})}
 						onClick={() => setSeeBio(!seeBio)}
 					>
 						<div ref={bio} className={styles.bioText}>
@@ -104,7 +105,7 @@ export default forwardRef(function ArtistView({
 			</div>
 			{data?.albums && Boolean(data.albums.length) && (
 				<div className={styles.section}>
-					<h2 className={styles.sectionTitle}>Albums</h2>
+					<SectionTitle>Albums</SectionTitle>
 					<AlbumList albums={data.albums} />
 				</div>
 			)}

@@ -328,15 +328,30 @@ export const trackRouter = createRouter()
     }
   })
   .query("most-danceable", {
-    async resolve({ ctx }) {
+    input: z.object({
+      trait: z.union([
+        z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
+        z.literal("energy"), // fast, loud, and noisy
+        z.literal("speechiness"), // talk show, audio book, poetry
+        z.literal("acousticness"),
+        z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
+        z.literal("liveness"), // performed live / studio recording
+        z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
+      ]),
+      order: z.union([
+        z.literal("desc"),
+        z.literal("asc"),
+      ]),
+    }),
+    async resolve({ input, ctx }) {
       return ctx.prisma.track.findMany({
-        // where: { spotify: { danceability: { gt: 0 } } },
-        orderBy: { spotify: { danceability: "desc" } },
+        where: { spotify: { [input.trait]: { gt: 0 } } },
+        orderBy: { spotify: { [input.trait]: input.order } },
         take: 5,
         include: {
           spotify: {
             select: {
-              danceability: true,
+              [input.trait]: true,
             }
           }
         }

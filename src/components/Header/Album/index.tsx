@@ -7,6 +7,7 @@ import styles from "./index.module.css"
 import classNames from "classnames"
 import TrackList from "components/TrackList"
 import { paletteToCSSProperties } from "components/Palette"
+import SectionTitle from "atoms/SectionTitle"
 
 export default forwardRef(function AlbumView({
 	open,
@@ -73,7 +74,7 @@ export default forwardRef(function AlbumView({
 				alt=""
 			/>
 			<div className={styles.head}>
-				<h2 className={styles.sectionTitle}>{data?.name}</h2>
+				<SectionTitle>{data?.name}</SectionTitle>
 				<p className={styles.info}>
 					{infos.map((info, i) => (
 						<>
@@ -84,7 +85,7 @@ export default forwardRef(function AlbumView({
 				</p>
 				{data?.audiodb?.strDescriptionEN && (
 					<div
-						className={classNames(styles.bio, {[styles.seeBio]: seeBio})}
+						className={classNames(styles.bio, {[styles.seeBio as string]: seeBio})}
 						onClick={() => setSeeBio(!seeBio)}
 					>
 						<div ref={bio} className={styles.bioText}>
@@ -113,7 +114,7 @@ export default forwardRef(function AlbumView({
 			</div>
 			{data?.tracks && Boolean(data.tracks.length) && (
 				<div className={styles.section}>
-					<h2 className={styles.sectionTitle}>Tracks</h2>
+					<SectionTitle>Tracks</SectionTitle>
 					<TrackList tracks={data.tracks} />
 				</div>
 			)}

@@ -8,6 +8,7 @@ import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import PastSearch from "./PastSearch"
 import { usePastSearchesMutation, usePastSearchesQuery } from "client/db/indexedPastSearches"
+import SectionTitle from "atoms/SectionTitle"
 
 const defaultArray = [] as never[]
 
@@ -100,7 +101,7 @@ export default function Search({open}: {open: boolean}) {
 			>
 				{showPast && latestSearches.length > 0 && (
 					<div>
-						<h2 className={styles.sectionTitle}>Recent searches</h2>
+						<SectionTitle>Recent searches</SectionTitle>
 						{latestSearches.map((item) => (
 							<PastSearch key={item.id} id={item.id} type={item.type} />
 						))}
@@ -108,7 +109,7 @@ export default function Search({open}: {open: boolean}) {
 				)}
 				{!showPast && Boolean(artists.length) && (
 					<div>
-						<h2 className={styles.sectionTitle}>Artists</h2>
+						<SectionTitle>Artists</SectionTitle>
 						<ArtistList
 							artists={artists.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: 'artist', id})}
@@ -117,7 +118,7 @@ export default function Search({open}: {open: boolean}) {
 				)}
 				{!showPast && Boolean(albums.length) && (
 					<div>
-						<h2 className={styles.sectionTitle}>Albums</h2>
+						<SectionTitle>Albums</SectionTitle>
 						<AlbumList
 							scrollable
 							albums={albums.slice(0, 28)}
@@ -127,7 +128,7 @@ export default function Search({open}: {open: boolean}) {
 				)}
 				{!showPast && Boolean(genres.length) && (
 					<div>
-						<h2 className={styles.sectionTitle}>Genres</h2>
+						<SectionTitle>Genres</SectionTitle>
 						<GenreList
 							genres={genres.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: 'genre', id})}
@@ -136,7 +137,7 @@ export default function Search({open}: {open: boolean}) {
 				)}
 				{!showPast && Boolean(tracks.length) && (
 					<div>
-						<h2 className={styles.sectionTitle}>Tracks</h2>
+						<SectionTitle>Tracks</SectionTitle>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
 							onSelect={({id}) => id && onSelect({type: 'track', id})}

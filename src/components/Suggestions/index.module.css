@@ -1,0 +1,27 @@
+.scrollable {
+	grid-column: 1 / 2;
+	grid-row: 2 / 3;
+	overflow: hidden scroll;
+	padding: 1em 0;
+}
+
+.main {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+	height: fit-content;
+}
+
+.section {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	grid-template-rows: auto auto;
+	column-gap: 8px;
+	padding: 0 8px;
+}
+
+.section > :last-child {
+	grid-column-end: span 2;
+	margin: 0 -8px;
+	width: 100vw;
+}

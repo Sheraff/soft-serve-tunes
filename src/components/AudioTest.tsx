@@ -6,10 +6,8 @@ import Header from "components/Header"
 import Notification from "components/Notification"
 import { useAppState } from "components/AppContext"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import ArtistList from "./ArtistList"
 import Palette from "./Palette"
-import AlbumList from "./AlbumList"
-import TrackList from "./TrackList"
+import Suggestions from "./Suggestions"
 
 function GlobalPalette() {
 	const {playlist} = useAppState()
@@ -41,39 +39,6 @@ function NowPlaying() {
 		<div className={styles.content}>
 			<Cover />
 			<PlaylistViz />
-		</div>
-	)
-}
-
-function Suggestions(){
-	const {data: artistFavs = []} = useIndexedTRcpQuery(["artist.most-fav"])
-	const {data: artistRecent = []} = useIndexedTRcpQuery(["artist.most-recent-listen"])
-	const {data: artistNewest = []} = useIndexedTRcpQuery(["artist.most-recent-add"])
-	const {data: albumFavs = []} = useIndexedTRcpQuery(["album.most-fav"])
-	const {data: albumRecent = []} = useIndexedTRcpQuery(["album.most-recent-listen"])
-	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
-	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.most-danceable"])
-	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
-	return (
-		<div className={styles.center}>
-			<div className={styles.centerChildren}>
-				<h2>Favorite artists</h2>
-				<ArtistList artists={artistFavs} lines={1} />
-				<h2>Recently listened albums</h2>
-				<AlbumList albums={albumRecent} lines={1} scrollable />
-				<h2>Danceable tracks</h2>
-				<TrackList tracks={trackDanceable} />
-				<h2>Danceable albums</h2>
-				<AlbumList albums={albumDanceable} lines={1} scrollable />
-				<h2>Recently listened artists</h2>
-				<ArtistList artists={artistRecent} lines={1} />
-				<h2>Favorite albums</h2>
-				<AlbumList albums={albumFavs} lines={1} scrollable />
-				<h2>Newest artists</h2>
-				<ArtistList artists={artistNewest} lines={1} />
-				<h2>Newest albums</h2>
-				<AlbumList albums={albumNewest} lines={1} scrollable />
-			</div>
 		</div>
 	)
 }
