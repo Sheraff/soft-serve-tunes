@@ -10,7 +10,7 @@ function ArtistItem({
 	enableSiblings,
 	onSelect,
 }: {
-	artist: inferQueryOutput<"artist.searchable">[number]
+	artist: {id: string, name: string}
 	enableSiblings?: () => void
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
@@ -69,9 +69,11 @@ function ArtistItem({
 export default function ArtistList({
 	artists,
 	onSelect,
+	lines = 3,
 }: {
-	artists: inferQueryOutput<"artist.searchable">
+	artists: {id: string, name: string}[]
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
+	lines?: 1 | 3
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
@@ -82,7 +84,7 @@ export default function ArtistList({
 
 	return (
 		<div className={styles.wrapper} ref={ref}>
-			<ul className={styles.main}>
+			<ul className={classNames(styles.main, styles[`lines-${lines}`])}>
 				{artists.map((artist, i) => (
 					<li className={styles.item} key={artist.id}>
 						{i <= enableUpTo && (

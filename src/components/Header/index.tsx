@@ -9,9 +9,11 @@ import AlbumView from "./Album"
 import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
 import LogoutIcon from "icons/logout.svg"
+import DashboardIcon from "icons/dashboard.svg"
+import QueueMusicIcon from "icons/queue_music.svg"
 
 export default function Header() {
-	const {view, setAppState} = useAppState()
+	const {view, main, setAppState} = useAppState()
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(view.type === "search", searchToggle)
@@ -25,21 +27,32 @@ export default function Header() {
 
 	console.log('header', view)
 
+	const showDashboardIcon = main.type === "home"
+	const onClickMainIcon = showDashboardIcon
+		? () => setAppState({view: {type: "suggestions"}})
+		: () => setAppState({view: {type: "home"}})
+
 	return (
 		<>
 			<div className={styles.head}>
 				<button onClick={() => signOut()} className={styles.logout}>
 					<LogoutIcon />
 				</button>
+				<button onClick={onClickMainIcon} className={styles.logout}>
+					{showDashboardIcon && <DashboardIcon />}
+					{!showDashboardIcon && <QueueMusicIcon />}
+				</button>
 				<button
 					ref={searchToggle}
 					className={styles.toggle}
 					data-open={searchState.show}
-					onClick={() => setAppState(
-						({view}) => view.type === "search"
-							? {view: {type: "home"}}
-							: {view: {type: "search"}}
-					)}
+					onClick={() => {
+						if (view.type === "search") {
+							history.back()
+						} else {
+							setAppState({view: {type: "search"}})
+						}
+					}}
 				>
 					<SearchIcon />
 				</button>

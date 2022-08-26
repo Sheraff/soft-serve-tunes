@@ -197,4 +197,33 @@ export const artistRouter = createRouter()
       }
     },
   })
+  .query("most-fav", {
+    async resolve({ ctx }) {
+      return ctx.prisma.artist.findMany({
+        where: { userData: { favorite: { gt: 0 } } },
+        orderBy: { userData: { favorite: "desc" } },
+        take: 10,
+        select: { id: true, name: true },
+      })
+    }
+  })
+  .query("most-recent-listen", {
+    async resolve({ ctx }) {
+      return ctx.prisma.artist.findMany({
+        where: { userData: { isNot: null } },
+        orderBy: { userData: { lastListen: "desc" } },
+        take: 10,
+        select: { id: true, name: true },
+      })
+    }
+  })
+  .query("most-recent-add", {
+    async resolve({ ctx }) {
+      return ctx.prisma.artist.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, name: true },
+      })
+    }
+  })
 

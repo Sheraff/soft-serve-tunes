@@ -216,6 +216,7 @@ export const trackRouter = createRouter()
             }
           }
         })
+        socketServer.send("invalidate:album", {id: track.albumId})
       }
       if (track.artistId) {
         await ctx.prisma.artist.update({
@@ -235,7 +236,9 @@ export const trackRouter = createRouter()
             }
           }
         })
+        socketServer.send("invalidate:artist", {id: track.artistId})
       }
+      socketServer.send("invalidate:track", {id: input.id})
     }
   })
   .mutation("like", {
@@ -248,17 +251,64 @@ export const trackRouter = createRouter()
       if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
-      const result = await ctx.prisma.userTrack.upsert({
+      const track = await ctx.prisma.track.update({
         where: { id: input.id },
-        update: {
-          favorite: input.toggle,
+        select: {
+          albumId: true,
+          artistId: true,
         },
-        create: {
-          id: input.id,
-          favorite: input.toggle,
+        data: {
+          userData: {
+            upsert: {
+              update: {
+                favorite: input.toggle,
+              },
+              create: {
+                favorite: input.toggle,
+              }
+            }
+          }
         }
       })
+      const kind = input.toggle ? 'increment' : 'decrement'
+      const init = input.toggle ? 1 : 0
+      if (track.albumId) {
+        await ctx.prisma.album.update({
+          where: { id: track.albumId },
+          data: {
+            userData: {
+              upsert: {
+                update: {
+                  favorite: { [kind]: 1 },
+                },
+                create: {
+                  favorite: init,
+                }
+              }
+            }
+          }
+        })
+        socketServer.send("invalidate:album", {id: track.albumId})
+      }
+      if (track.artistId) {
+        await ctx.prisma.artist.update({
+          where: { id: track.artistId },
+          data: {
+            userData: {
+              upsert: {
+                update: {
+                  favorite: { [kind]: 1 },
+                },
+                create: {
+                  favorite: init,
+                }
+              }
+            }
+          }
+        })
+        socketServer.send("invalidate:artist", {id: track.artistId})
+      }
       socketServer.send("invalidate:track", {id: input.id})
-      return result
+      return track
     }
   })

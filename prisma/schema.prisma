@@ -120,7 +120,7 @@ model UserArtist {
   id         String    @id
   artist     Artist    @relation(fields: [id], references: [id])
   playcount  Int       @default(0)
-  favorite   Boolean   @default(false)
+  favorite   Int       @default(0)
   lastListen DateTime?
 }
 
@@ -150,7 +150,7 @@ model UserAlbum {
   id         String    @id
   album      Album     @relation(fields: [id], references: [id])
   playcount  Int       @default(0)
-  favorite   Boolean   @default(false)
+  favorite   Int       @default(0)
   lastListen DateTime?
 }
 

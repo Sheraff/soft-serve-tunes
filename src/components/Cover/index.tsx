@@ -1,7 +1,6 @@
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import styles from "./index.module.css"
 import { useAppState } from "components/AppContext"
-import Palette from "components/Palette"
 
 export default function Cover() {
 	const {playlist} = useAppState()
@@ -27,7 +26,6 @@ export default function Cover() {
 				src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
 				alt=""
 			/>
-			<Palette palette={data?.cover ? JSON.parse(data.cover.palette) : undefined} />
 		</>
 	)
 }

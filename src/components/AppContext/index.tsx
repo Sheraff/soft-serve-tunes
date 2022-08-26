@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 
 type PlaylistDefinition = {
 	type: "track" | "album" | "artist" | "genre"
@@ -6,7 +6,11 @@ type PlaylistDefinition = {
 	index: number
 } | null
 
+const PANELED_VIEWS = ["search", "artist", "album"] as const
+
 type ViewDefinition = {
+	type: "suggestions"
+} | {
 	type: "home"
 } | {
 	type: "search"
@@ -18,6 +22,8 @@ type ViewDefinition = {
 	id: string
 }
 
+type NonPaneledView = Exclude<ViewDefinition['type'], (typeof PANELED_VIEWS)[number]>
+
 type SetAppState = (
 	nextState: {playlist?: Partial<PlaylistDefinition>, view?: ViewDefinition}
 	| ((prevState: {playlist: PlaylistDefinition, view: ViewDefinition}) => {playlist?: Partial<PlaylistDefinition>, view?: ViewDefinition})
@@ -25,16 +31,20 @@ type SetAppState = (
 
 const initialAppState = {
 	view: {
-		type: "home",
+		type: "suggestions",
 	},
 	playlist: null,
 	setAppState: () => {},
+	main: {
+		type: "suggestions",
+	}
 } as const
 
 const AppStateContext = createContext<{
 	playlist: PlaylistDefinition
 	view: ViewDefinition
 	setAppState: SetAppState
+	main: ViewDefinition & {type: NonPaneledView}
 }>(initialAppState)
 
 function mergePlaylistStates(prevState: PlaylistDefinition, nextState?: Partial<PlaylistDefinition>) {
@@ -46,8 +56,18 @@ function mergePlaylistStates(prevState: PlaylistDefinition, nextState?: Partial<
 	throw new Error("Invalid playlist state")
 }
 
+function isPaneledView(type: ViewDefinition['type']) {
+	return PANELED_VIEWS.includes(type as (typeof PANELED_VIEWS)[number])
+}
+
 export function AppState({children}: {children: React.ReactNode}) {
 	const [appState, _setAppState] = useState<{playlist: PlaylistDefinition, view: ViewDefinition}>(initialAppState)
+
+	const latestNonPaneledView = useRef<ViewDefinition & {type: NonPaneledView}>(initialAppState.view)
+	if (!isPaneledView(appState.view.type)) {
+		latestNonPaneledView.current = appState.view as (ViewDefinition & {type: NonPaneledView})
+	}
+
 	const setAppState: SetAppState = (nextState) => {
 		_setAppState(prevState => {
 			const nextAppState = typeof nextState === "function"
@@ -58,7 +78,7 @@ export function AppState({children}: {children: React.ReactNode}) {
 
 			console.log(prevState, view)
 
-			if (prevState.view.type === "home" && view.type !== "home") {
+			if (!isPaneledView(prevState.view.type) && isPaneledView(view.type)) {
 				history.pushState({}, "just-allow-back-button")
 			}
 
@@ -81,8 +101,8 @@ export function AppState({children}: {children: React.ReactNode}) {
 	useEffect(() => {
 		const controller = new AbortController()
 		addEventListener('popstate', event => {
-			if (appState.view.type !== "home") {
-				setAppState({view: {type: "home"}})
+			if (isPaneledView(appState.view.type)) {
+				setAppState({view: {type: latestNonPaneledView.current.type}})
 				event.preventDefault()
 			}
 		}, {capture: true, signal: controller.signal})
@@ -93,6 +113,7 @@ export function AppState({children}: {children: React.ReactNode}) {
 		<AppStateContext.Provider value={{
 			...appState,
 			setAppState,
+			main: latestNonPaneledView.current,
 		}}>
 			{children}
 		</AppStateContext.Provider>
