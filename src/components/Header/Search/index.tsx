@@ -6,11 +6,10 @@ import ArtistList from "components/ArtistList"
 import AlbumList from "components/AlbumList"
 import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
-import PastSearch, { PastSearchItem } from "./PastSearch"
+import PastSearch from "./PastSearch"
+import { usePastSearchesMutation, usePastSearchesQuery } from "client/db/indexedPastSearches"
 
 const defaultArray = [] as never[]
-
-const latestSearches: PastSearchItem[] = []
 
 export default function Search({open}: {open: boolean}) {
 
@@ -72,11 +71,8 @@ export default function Search({open}: {open: boolean}) {
 		return () => controller.abort()
 	}, [showPast, open])
 
-	const onSelect = (add: PastSearchItem) => {
-		if (!latestSearches.some((item) => item.entity.id === add.entity.id)) {
-			latestSearches.unshift(add)
-		}
-	}
+	const {data: latestSearches = []} = usePastSearchesQuery()
+	const {mutate: onSelect} = usePastSearchesMutation()
 
 	const id = useId()
 	return (
@@ -106,7 +102,7 @@ export default function Search({open}: {open: boolean}) {
 					<div>
 						<h2 className={styles.sectionTitle}>Recent searches</h2>
 						{latestSearches.map((item) => (
-							<PastSearch key={item.entity.id} {...item} />
+							<PastSearch key={item.id} id={item.id} type={item.type} />
 						))}
 					</div>
 				)}
@@ -115,7 +111,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Artists</h2>
 						<ArtistList
 							artists={artists.slice(0, 21)}
-							onSelect={(entity) => onSelect({type: 'artist', entity})}
+							onSelect={({id}) => id && onSelect({type: 'artist', id})}
 						/>
 					</div>
 				)}
@@ -125,7 +121,7 @@ export default function Search({open}: {open: boolean}) {
 						<AlbumList
 							scrollable
 							albums={albums.slice(0, 28)}
-							onSelect={(entity) => onSelect({type: 'album', entity})}
+							onSelect={({id}) => id && onSelect({type: 'album', id})}
 						/>
 					</div>
 				)}
@@ -134,7 +130,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Genres</h2>
 						<GenreList
 							genres={genres.slice(0, 21)}
-							onSelect={(entity) => onSelect({type: 'genre', entity})}
+							onSelect={({id}) => id && onSelect({type: 'genre', id})}
 						/>
 					</div>
 				)}
@@ -143,7 +139,7 @@ export default function Search({open}: {open: boolean}) {
 						<h2 className={styles.sectionTitle}>Tracks</h2>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
-							onSelect={(entity) => onSelect({type: 'track', entity})}
+							onSelect={({id}) => id && onSelect({type: 'track', id})}
 						/>
 					</div>
 				)}

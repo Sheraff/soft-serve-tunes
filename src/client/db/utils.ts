@@ -2,7 +2,7 @@ let dbPromise: Promise<IDBDatabase> | null = null
 
 const DB_NAME = "soft-serve-tunes"
 const DB_VERSION = 1
-type Stores = "requests" | "palette"
+type Stores = "requests" | "pastSearches"
 
 export function openDB(): Promise<IDBDatabase> {
 	if (dbPromise)
@@ -25,9 +25,9 @@ export function openDB(): Promise<IDBDatabase> {
 
 function onUpgradeNeeded(
 	event: IDBVersionChangeEvent,
-	reject: (reason?: any) => void
+	reject: (reason?: Error) => void
 ) {
-	const db = event.target.result
+	const db = event.target.result as IDBDatabase
 	db.onerror = () => {
 		console.error(`failed to upgrade db`, db.error?.message)
 		reject(db.error)
@@ -35,7 +35,7 @@ function onUpgradeNeeded(
 	}
 
 	db.createObjectStore("requests", {keyPath: "key"})
-	db.createObjectStore("palette", {keyPath: "key"})
+	db.createObjectStore("pastSearches", {keyPath: "key"})
 }
 
 type QueryStorage<T> = {
@@ -75,4 +75,39 @@ export async function storeInIndexedDB<T>(storeName: Stores, key: string, result
 	request.onerror = () => {
 		console.error(`failed to store entity ${key} in indexedDB`, request.error?.message)
 	}
+}
+
+export async function listAllFromIndexedDB<T>(storeName: Stores): Promise<T[]> {
+	const db = await openDB()
+	const tx = db.transaction(storeName)
+	const store = tx.objectStore(storeName)
+	const request = store.getAll() as IDBRequest<QueryStorage<T>[]>
+	return new Promise((resolve, reject) => {
+		request.onerror = () => {
+			console.error(`failed to retrieve entities from indexedDB ${storeName}`, request.error?.message)
+			reject(request.error)
+		}
+		request.onsuccess = () => {
+			const result = request.result?.map(({result}) => result)
+			if (result) {
+				resolve(result)
+			} else {
+				resolve([])
+			}
+		}
+	})
+}
+
+export async function deleteFromIndexedDB(storeName: Stores, key: string) {
+	const db = await openDB()
+	const tx = db.transaction(storeName, "readwrite")
+	const store = tx.objectStore(storeName)
+	const request = store.delete(key)
+	return new Promise((resolve, reject) => {
+		request.onerror = () => {
+			console.error(`failed to delete entity ${key} from indexedDB ${storeName}`, request.error?.message)
+			reject(request.error)
+		}
+		request.onsuccess = () => resolve()
+	})
 }

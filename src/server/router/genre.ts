@@ -11,9 +11,13 @@ export const genreRouter = createRouter()
       return ctx.prisma.genre.findUnique({
         where: { id: input.id },
         include: {
-          tracks: true,
-          subgenres: true,
-          supgenres: true,
+          _count: {
+            select: {
+              tracks: true,
+              subgenres: true,
+              supgenres: true,
+            }
+          }
         }
       })
     },
