@@ -44,8 +44,10 @@ function ArtistItem({
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => {
+			onClick={(event) => {
 				data && onSelect?.(data)
+				window._artistViewInit = event.currentTarget
+				console.log('emitter', window._artistViewInit)
 				setAppState({view: {type: "artist", id: artist.id}})
 			}}
 		>

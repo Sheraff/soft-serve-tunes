@@ -1,4 +1,4 @@
-import { ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
@@ -64,12 +64,47 @@ export default forwardRef(function ArtistView({
 
 	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
 
+	const main = useRef<HTMLDivElement>(null)
+	useImperativeHandle(ref, () => main.current as HTMLDivElement)
+	
+	// synchronously compute initial position if a `_artistViewInit` emitter has been set
+	const initialPositionRef = useRef<CSSProperties | null>(null)
+	const initialImageSrc = useRef<string | null>(null)
+	if (open && !initialPositionRef.current && window._artistViewInit) {
+		const toggle = window._artistViewInit
+		const rect = toggle.getBoundingClientRect()
+		initialPositionRef.current = {
+			'--top': `${rect.top}px`,
+			'--left': `${rect.left}px`,
+			'--scale': `${rect.width / innerWidth}`,
+			'--end': `${Math.hypot(innerWidth, innerHeight)}px`,
+		} as CSSProperties
+		const image = toggle.querySelector('img')
+		initialImageSrc.current = image ? image.getAttribute("src") : null
+		window._artistViewInit = undefined
+	}
+
 	return (
-		<div className={styles.main} data-open={open} ref={ref} style={palette}>
+		<div
+			className={styles.main}
+			data-open={open}
+			data-bubble={initialPositionRef.current !== null}
+			ref={main}
+			style={{
+				...palette,
+				...(initialPositionRef.current || {}),
+			}}
+		>
+			<img
+				className={classNames(styles.img, styles.preview)}
+				src={initialImageSrc.current || ""}
+				alt=""
+			/>
 			<img
 				className={styles.img}
 				src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
 				alt=""
+				decoding="async"
 			/>
 			<div className={styles.head}>
 				<SectionTitle>{data?.name}</SectionTitle>

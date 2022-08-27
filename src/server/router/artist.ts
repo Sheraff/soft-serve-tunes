@@ -52,12 +52,12 @@ export const artistRouter = createRouter()
                   palette: true,
                 }
               },
-              cutout: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
+              // cutout: {
+              //   select: {
+              //     id: true,
+              //     palette: true,
+              //   }
+              // },
             }
           },
           spotify: {
@@ -89,9 +89,10 @@ export const artistRouter = createRouter()
         }
       })
       let cover = undefined
-      if (artist?.audiodb?.cutout) {
-        cover = artist.audiodb.cutout
-      } else if (artist?.audiodb?.thumb) {
+      // if (artist?.audiodb?.cutout) {
+      //   cover = artist.audiodb.cutout
+      // } else 
+      if (artist?.audiodb?.thumb) {
         cover = artist.audiodb.thumb
       } else if (artist?.spotify?.image) {
         cover = artist.spotify.image

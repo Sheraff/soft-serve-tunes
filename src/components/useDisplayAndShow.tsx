@@ -38,11 +38,14 @@ export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElem
 			return
 		}
 		const controller = new AbortController()
-		ref.current.addEventListener("transitionend", () => {
+		const afterTransition = () => {
 			if (ref.current) {
 				setDisplay(false)
 			}
-		} , {once: true, signal: controller.signal})
+			controller.abort()
+		}
+		ref.current.addEventListener("transitionend", afterTransition , {once: true, signal: controller.signal})
+		ref.current.addEventListener("animationend", afterTransition , {once: true, signal: controller.signal})
 		return () => {
 			controller.abort()
 		}
