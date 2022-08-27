@@ -1,3 +1,5 @@
+import { playerDisplayRemaining } from "components/Player"
+import { preferredTrackList } from "components/Suggestions"
 import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
 import { Suspense, useCallback, useEffect } from "react"
 import asyncPersistedAtom from "./asyncPersistedAtom"
@@ -115,7 +117,6 @@ export const playlist = asyncPersistedAtom<Playlist>("playlist", {
 	index: 0,
 })
 
-
 export function useShowHome() {
 	const setAlbum = useSetAtom(albumView)
 	const setArtist = useSetAtom(artistView)
@@ -157,12 +158,12 @@ function Back() {
 }
 
 function Preloader() {
-	// useAtomValue(panelStack)
 	useAtomValue(_artistView)
 	useAtomValue(_albumView)
-	// useAtomValue(_searchView)
 	useAtomValue(mainView)
 	useAtomValue(playlist)
+	useAtomValue(playerDisplayRemaining)
+	useAtomValue(preferredTrackList)
 	return null
 }
 

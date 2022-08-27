@@ -2,10 +2,12 @@ import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import AlbumList from "components/AlbumList"
+import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
+import { useAtom } from "jotai"
 import { memo, useState } from "react"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
@@ -87,15 +89,24 @@ function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string
 	return replaceOther
 }
 
+export const preferredTrackList = asyncPersistedAtom<{
+	trait: keyof typeof FEATURES
+	order: "asc" | "desc"
+}>("preferredTrackList", {
+	trait: "danceability",
+	order: "desc"
+})
+
 export default memo(function Suggestions(){
 
 	const [open, setOpen] = useState(false)
-	const [trait, setTrait] = useState<keyof typeof FEATURES>("danceability")
-	const [order, setOrder] = useState<"asc" | "desc">("desc")
+	const [{trait, order}, setPreferredTracks] = useAtom(preferredTrackList)
 	const onSelect = (option: Option) => {
 		setOpen(false)
-		setTrait(option.key)
-		setOrder(option.type)
+		setPreferredTracks({
+			trait: option.key,
+			order: option.type,
+		})
 	}
 
 	const {data: artistFavs = []} = useIndexedTRcpQuery(["artist.most-fav"])

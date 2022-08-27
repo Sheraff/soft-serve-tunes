@@ -10,8 +10,11 @@ import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import SlidingText from "./SlidingText"
 import { trpc } from "utils/trpc"
-import { useSetAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCurrentTrack"
+import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
+
+export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
 
 export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
@@ -71,8 +74,8 @@ export default memo(function Player() {
 		}
 	}
 
-	const [endTime, setEndTime] = useState(false)
-	const switchEndTime = () => setEndTime(a => !a)
+	const [displayRemaining, setDisplayRemaining] = useAtom(playerDisplayRemaining)
+	const switchEndTime = () => setDisplayRemaining(a => !a)
 
 	const consideredPlayed = playedSeconds > 45 || playedSeconds / totalSeconds > 0.4
 	const {mutate} = trpc.useMutation(["track.playcount"])
@@ -97,7 +100,7 @@ export default memo(function Player() {
 				className={styles.duration}
 				onClick={switchEndTime}
 			>
-				{endTime ? `-${displayRemainingTime}` : displayTotalTime}
+				{displayRemaining ? `-${displayRemainingTime}` : displayTotalTime}
 			</button>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>

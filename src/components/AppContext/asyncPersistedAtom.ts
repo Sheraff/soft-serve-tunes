@@ -29,7 +29,7 @@ export default function asyncPersistedAtom<T extends Serializable>(
 			})
 	}
 
-	const derivedAtom = atom<T, T | ((prev?: T) => T)>(
+	const derivedAtom = atom<T, T | ((prev: T) => T)>(
 		(get) => get(baseAtom),
 		(get, set, value) => {
 			const next = typeof value === 'function'

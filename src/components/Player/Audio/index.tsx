@@ -10,7 +10,6 @@ const Audio = forwardRef(function Audio(_, ref: ForwardedRef<HTMLAudioElement>) 
 			hidden
 			playsInline
 			src={item?.id && `/api/file/${item.id}`}
-			autoPlay
 		/>
 	)
 })
