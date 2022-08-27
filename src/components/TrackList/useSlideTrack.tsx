@@ -64,7 +64,16 @@ export default function useSlideTrack(
 			isDragging = true
 			let capture = false
 
+			const end = () => {
+				controller.abort()
+				uxController = null
+				isDragging = false
+			}
+
 			window.addEventListener('touchmove', (event) => {
+				if (!event.cancelable) {
+					return end()
+				}
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				const dx = match.clientX - touch.clientX
@@ -73,7 +82,7 @@ export default function useSlideTrack(
 					if (Math.abs(dx) > Math.abs(dy)) {
 						capture = true
 					} else {
-						return
+						return end()
 					}
 					element.classList.add(styles.will as string)
 				}
@@ -87,9 +96,7 @@ export default function useSlideTrack(
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				
-				controller.abort()
-				uxController = null
-				isDragging = false
+				end()
 				if (!capture) return
 
 				const dx = match.clientX - touch.clientX
