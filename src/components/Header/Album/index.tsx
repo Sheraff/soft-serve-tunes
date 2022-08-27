@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
@@ -76,20 +76,43 @@ export default forwardRef(function AlbumView({
 
 	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
 
+	const main = useRef<HTMLDivElement>(null)
+	useImperativeHandle(ref, () => main.current as HTMLDivElement)
+
+	// synchronously compute initial position if an `artist.rect` emitter has been set
+	const initialPositionRef = useRef<CSSProperties | null>(null)
+	const initialImageSrc = useRef<string | null>(null)
+	if (open && !initialPositionRef.current && album.rect) {
+		initialPositionRef.current = {
+			'--top': `${album.rect.top}px`,
+			'--left': `${album.rect.left}px`,
+			'--scale': `${album.rect.width / innerWidth}`,
+		} as CSSProperties
+		initialImageSrc.current = album.rect.src || null
+	}
+
 	return (
 		<div
 			className={styles.main}
 			data-open={open}
-			ref={ref}
+			data-bubble={initialPositionRef.current !== null}
+			ref={main}
 			style={{
 				"--z": z,
 				...palette,
+				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
+			<img
+				className={classNames(styles.img, styles.preview)}
+				src={initialImageSrc.current || ""}
+				alt=""
+			/>
 			<img
 				className={styles.img}
 				src={data?.cover ? `/api/cover/${data?.cover.id}` : ""}
 				alt=""
+				decoding="async"
 			/>
 			<div className={styles.head}>
 				<SectionTitle>{data?.name}</SectionTitle>

@@ -37,6 +37,7 @@ function AlbumItem({
 
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
+	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2.5)}` : ""
 
 	const setAlbum = useSetAtom(albumView)
 
@@ -45,18 +46,20 @@ function AlbumItem({
 			ref={enableSiblings ? item : undefined}
 			className={styles.button}
 			type="button"
-			onClick={() => {
+			onClick={(event) => {
 				data && onSelect?.(data)
+				const {top, left, width} = event.currentTarget.getBoundingClientRect()
 				setAlbum({
 					id: album.id,
 					name: data?.name || album.name,
 					open: true,
+					rect: {top, left, width, src}
 				})
 			}}
 		>
 			{!isEmpty && (
 				<img
-					src={data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2.5)}` : ""}
+					src={src}
 					alt=""
 				/>
 			)}

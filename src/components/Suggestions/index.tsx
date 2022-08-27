@@ -6,7 +6,7 @@ import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
-import { ReactNode, useState } from "react"
+import { memo, useState } from "react"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
 
@@ -87,7 +87,7 @@ function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string
 	return replaceOther
 }
 
-export default function Suggestions(){
+export default memo(function Suggestions(){
 
 	const [open, setOpen] = useState(false)
 	const [trait, setTrait] = useState<keyof typeof FEATURES>("danceability")
@@ -154,4 +154,4 @@ export default function Suggestions(){
 			</div>
 		</div>
 	)
-}
+})

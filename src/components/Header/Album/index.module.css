@@ -14,17 +14,60 @@
 	gap: 10px;
 	font-size: 10px;
 	padding-bottom: 10px;
+
+	will-change: transform, clip-path;
 }
-.main[data-open="true"] {
+.main[data-open="true"]:not([data-bubble="true"]) {
 	transform: translateX(0);
 	pointer-events: auto;
+}
+.main[data-open="true"][data-bubble="true"] {
+	transform: translateX(0);
+	transform-origin: top left;
+	animation: bubble-zoom 650ms ease, bubble-open 500ms ease 150ms backwards;
+	pointer-events: auto;
+}
+@keyframes bubble-zoom {
+	0%   { transform: translate(var(--left), var(--top)) scale(var(--scale)); }
+	100% { transform: translate(0) scale(1); }
+}
+@keyframes bubble-open {
+	0%   { clip-path: inset(0% 0% calc(100% - 100vw) 0% round 4px); }
+	100% { clip-path: inset(0% round 0px); }
+}
+
+.main::before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	padding-bottom: 100%;
+	z-index: 3;
+	background: linear-gradient(to top, var(--palette-bg-main) 0%, transparent 50%);
+	will-change: opacity;
+}
+.main[data-open="true"][data-bubble="true"]::before,
+.main[data-open="true"][data-bubble="true"] .head {
+	animation: bubble-fade 650ms ease;
+}
+@keyframes bubble-fade {
+	0%   { opacity: 0; }
+	100% { opacity: 1; }
 }
 
 .img {
 	width: 100%;
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
-	mask-image: linear-gradient(to bottom, black 50%, transparent);
+	z-index: 2;
+}
+.preview {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
 }
 
 .head {
@@ -38,7 +81,8 @@
 		"bio  play";
 	grid-auto-flow: column;
 	position: relative;
-	z-index: 0;
+	z-index: 4;
+	will-change: opacity;
 }
 
 .info {
