@@ -1,8 +1,8 @@
 let dbPromise: Promise<IDBDatabase> | null = null
 
 const DB_NAME = "soft-serve-tunes"
-const DB_VERSION = 1
-type Stores = "requests" | "pastSearches"
+const DB_VERSION = 2
+type Stores = "requests" | "pastSearches" | "appState"
 
 export function openDB(): Promise<IDBDatabase> {
 	if (dbPromise)
@@ -34,8 +34,13 @@ function onUpgradeNeeded(
 		dbPromise = null
 	}
 
-	db.createObjectStore("requests", {keyPath: "key"})
-	db.createObjectStore("pastSearches", {keyPath: "key"})
+	if (event.oldVersion < 1) {
+		db.createObjectStore("requests", {keyPath: "key"})
+		db.createObjectStore("pastSearches", {keyPath: "key"})
+	}
+	if (event.oldVersion < 2) {
+		db.createObjectStore("appState", {keyPath: "key"})
+	}
 }
 
 type QueryStorage<T> = {

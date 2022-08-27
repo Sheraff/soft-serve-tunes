@@ -1,5 +1,6 @@
 import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
-import { useCallback, useEffect } from "react"
+import { Suspense, useCallback, useEffect } from "react"
+import asyncPersistedAtom from "./asyncPersistedAtom"
 
 type Panel = "artist" | "album" | "search"
 export const panelStack = atom<Panel[]>([])
@@ -15,11 +16,15 @@ type ArtistView = {
 		src?: string,
 	}
 }
-const _artistView = atom<ArtistView>({
-	id: "cl7ackbmy20574654y4vrqekmfb",
-	name: "MGMT",
-	open: false,
-})
+const _artistView = asyncPersistedAtom<ArtistView>(
+	"artistView",
+	{
+		id: "cl7ackbmy20574654y4vrqekmfb",
+		name: "MGMT",
+		open: false,
+	},
+	(value) => ({...value, open: false, rect: undefined})
+)
 export const artistView = atom(
 	(get) => get(_artistView),
 	(get, set, value: ArtistView | ((prev: ArtistView) => ArtistView)) => {
@@ -47,11 +52,15 @@ type AlbumView = {
 		src?: string,
 	}
 }
-const _albumView = atom<AlbumView>({
-	id: "cl7ackd5z20628354y4a90y4vn7",
-	name: "Oracular Spectacular",
-	open: false,
-})
+const _albumView = asyncPersistedAtom<AlbumView>(
+	"albumView",
+	{
+		id: "cl7ackd5z20628354y4a90y4vn7",
+		name: "Oracular Spectacular",
+		open: false,
+	},
+	(value) => ({...value, open: false, rect: undefined})
+)
 export const albumView = atom(
 	(get) => get(_albumView),
 	(get, set, value: AlbumView | ((prev: AlbumView) => AlbumView)) => {
@@ -91,7 +100,7 @@ export const searchView = atom(
 )
 
 type MainView = "suggestions" | "home"
-export const mainView = atom<MainView>("suggestions")
+export const mainView = asyncPersistedAtom<MainView>("mainView", "suggestions")
 
 
 type Playlist = {
@@ -100,7 +109,7 @@ type Playlist = {
 	index: number
 }
 
-export const playlist = atom<Playlist>({
+export const playlist = asyncPersistedAtom<Playlist>("playlist", {
 	type: "album",
 	id: "cl7ackd5z20628354y4a90y4vn7",
 	index: 0,
@@ -147,12 +156,25 @@ function Back() {
 	return null
 }
 
+function Preloader() {
+	// useAtomValue(panelStack)
+	useAtomValue(_artistView)
+	useAtomValue(_albumView)
+	// useAtomValue(_searchView)
+	useAtomValue(mainView)
+	useAtomValue(playlist)
+	return null
+}
+
 
 export function AppState({children}: {children: React.ReactNode}) {
 	return (
 		<Provider>
-			{children}
-			<Back />
+			<Suspense>
+				<Preloader />
+				{children}
+				<Back />
+			</Suspense>
 		</Provider>
 	)
 }

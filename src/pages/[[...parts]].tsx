@@ -9,6 +9,7 @@ import WatcherSocket from "components/WatcherSocket"
 import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
+import { AppState } from "components/AppContext"
 
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
@@ -64,14 +65,15 @@ const Home: NextPage<{
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<ProgressBarSingleton />
-			{ready && (session || !providers) && (
-				<>
-					{console.log(session)}
-					<AudioTest />
-					<WatcherSocket />
-					<DropTarget />
-				</>
-			)}
+			<AppState>
+				{ready && (session || !providers) && (
+					<>
+						<AudioTest />
+						<WatcherSocket />
+						<DropTarget />
+					</>
+				)}
+			</AppState>
 			{!session && providers && (
 				<SignIn providers={providers} />
 			)}
