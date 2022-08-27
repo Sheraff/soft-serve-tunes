@@ -146,14 +146,14 @@ freebox > box settings > ports >
 - if terminal isn't happy because it's a new unknown source `ssh-keygen -R [host]`
 
 ### app
-install node, upgrade to 18
-git clone the project
-install `npm i`
-configure .env music folder
-build (put pi on a fan, it's gonna heat up) `npm run build`
-`rm prisma/db.sqlite`
-`npm run db`
-`npm start`
+- install node, upgrade to 18
+- git clone the project
+- install `npm i`
+- configure .env music folder
+- build (put pi on a fan, it's gonna heat up) `npm run build`
+- `rm prisma/db.sqlite`
+- `npm run db`
+- `npm start`
 
 ### ports
 freebox > static local IP for server
@@ -190,10 +190,23 @@ systemctl restart apache2
 ```
 
 ### process manager
-install pm2 `npm install pm2@latest -g`
-spawn the server w/ `npm run spawn` or `pm2 start npm --time --name soft-serve-tunes -- start`
-subsequent re-start can be done w/ `pm2 reload 0` or `pm2 reload soft-serve-tunes`
+- install pm2 `npm install pm2@latest -g`
+- spawn the server w/ `npm run spawn` or `pm2 start npm --time --name soft-serve-tunes -- start`
+- subsequent re-start can be done w/ `pm2 reload 0` or `pm2 reload soft-serve-tunes`
 
+### prevent connection "timeout after idle"
+The raspberry pi comes with a power management utility on its wifi chip. This results in 
+connections that are very slow / timeout if the raspberry hasn't connected to the network in 
+a while. [This forum post helped.](https://forums.raspberrypi.com/viewtopic.php?t=231125)
+- observe the "Power Management" setting w/ `iwconfig`
+  ```
+  wlan0
+      Power Management:on
+  ```
+- disable power management `sudo iwconfig wlan0 power off`
+- disable power management permanently:
+  - `sudo nano /etc/rc.local`
+  - add `iwconfig wlan0 power off` to the file
 
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
