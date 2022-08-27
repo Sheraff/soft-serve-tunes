@@ -19,13 +19,13 @@ export function useCurrentPlaylist() {
 	return list
 }
 
-export function useCurrentTrack() {
+export function useCurrentTrack(offset = 0) {
 	const {index} = useAtomValue(playlist)
 	const list = useCurrentPlaylist()
 	
 	const item = (!list || !playlist)
 		? undefined
-		: list[positiveModulo(index, list.length)]
+		: list[positiveModulo(index + offset, list.length)]
 
 	return item
 }

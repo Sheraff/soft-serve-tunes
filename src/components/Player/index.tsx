@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import Audio from "./Audio"
 import { playlist } from "components/AppContext"
 import styles from "./index.module.css"
@@ -13,11 +13,12 @@ import { trpc } from "utils/trpc"
 import { useSetAtom } from "jotai"
 import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCurrentTrack"
 
-export default function Player() {
+export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 	const setPlaylist = useSetAtom(playlist)
 	const list = useCurrentPlaylist()
 	const item = useCurrentTrack()
+	const nextItem = useCurrentTrack(1)
 	
 	const playNext = useCallback(
 		() => setPlaylist((value) => ({...value, index: value.index + 1})),
@@ -40,9 +41,15 @@ export default function Player() {
 		const element = audio.current
 		if (!element) return
 		const controller = new AbortController()
-		element.addEventListener('ended', playNext, {signal: controller.signal})
+		element.addEventListener('ended', () => {
+			if (nextItem) {
+				element.src = `/api/file/${nextItem.id}`
+				element.play()
+			}
+			playNext()
+		}, {signal: controller.signal})
 		return () => controller.abort()
-	}, [autoPlay, playNext])
+	}, [autoPlay, playNext, nextItem])
 
 	const {
 		playing,
@@ -101,4 +108,4 @@ export default function Player() {
 			<Audio ref={audio}/>
 		</div>
 	)
-}
+})
