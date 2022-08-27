@@ -61,6 +61,7 @@ const Home: NextPage<{
 			<Head>
 				<title>Soft Serve Tunes</title>
 				<meta name="description" content="self hosted music streaming" />
+				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<AppState>
