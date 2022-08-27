@@ -1,8 +1,9 @@
 import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { albumView, artistView } from "components/AppContext"
 import styles from "./index.module.css"
+import { useSetAtom } from "jotai"
 
 export default function SlidingText({
 	item,
@@ -11,7 +12,8 @@ export default function SlidingText({
 	item: Exclude<inferQueryOutput<"playlist.generate">, undefined>[number] | undefined
 	className?: string
 }) {
-	const {setAppState} = useAppState()
+	const setAlbum = useSetAtom(albumView)
+	const setArtist = useSetAtom(artistView)
 
 	const [separator, setSeparator] = useState(false)
 	const span = useRef<HTMLDivElement>(null)
@@ -39,7 +41,7 @@ export default function SlidingText({
 					{' · '}
 					<button
 						type="button"
-						onClick={() => setAppState({view: {type: "album", id: album.id}})}
+						onClick={() => setAlbum({id: album.id, name: album.name, open: true})}
 					>
 						{album.name}
 					</button>
@@ -50,7 +52,7 @@ export default function SlidingText({
 					{' · '}
 					<button
 						type="button"
-						onClick={() => setAppState({view: {type: "artist", id: artist.id}})}
+						onClick={() => setArtist({id: artist.id, name: artist.name, open: true})}
 					>
 						{artist.name}
 					</button>
@@ -61,7 +63,7 @@ export default function SlidingText({
 	)
 
 	return (
-		<div className={classNames(styles.main, className, {[styles.sliding]: separator})}>
+		<div className={classNames(styles.main, className, {[styles.sliding as string]: separator})}>
 			<div className={styles.span} ref={span}>
 				{content}
 			</div>

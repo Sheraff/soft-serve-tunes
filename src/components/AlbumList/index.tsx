@@ -2,15 +2,16 @@ import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
+import { useSetAtom } from "jotai"
 
 function AlbumItem({
 	album,
 	enableSiblings,
 	onSelect,
 }: {
-	album: {id: string}
+	album: {id: string, name?: string}
 	enableSiblings?: () => void
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
@@ -37,7 +38,7 @@ function AlbumItem({
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
 
-	const {setAppState} = useAppState()
+	const setAlbum = useSetAtom(albumView)
 
 	return (
 		<button
@@ -46,7 +47,11 @@ function AlbumItem({
 			type="button"
 			onClick={() => {
 				data && onSelect?.(data)
-				setAppState({view: {type: "album", id: album.id}})
+				setAlbum({
+					id: album.id,
+					name: data?.name || album.name,
+					open: true,
+				})
 			}}
 		>
 			{!isEmpty && (
@@ -55,7 +60,7 @@ function AlbumItem({
 					alt=""
 				/>
 			)}
-			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
+			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
 				<span className={styles.name}>{data?.name || album.name}</span>
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
 				<span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>
@@ -70,7 +75,7 @@ export default function AlbumList({
 	scrollable = false,
 	lines = 2,
 }: {
-	albums: {id: string}[]
+	albums: {id: string, name?: string}[]
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 	scrollable?: boolean
 	lines?: 1 | 2

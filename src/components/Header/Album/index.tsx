@@ -1,37 +1,39 @@
-import { ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
-import { useAppState } from "components/AppContext"
+import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import TrackList from "components/TrackList"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 
 export default forwardRef(function AlbumView({
 	open,
 	id,
+	z,
 }: {
-	open: boolean;
-	id: string;
+	open: boolean
+	id: string
+	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const {view, setAppState, playlist} = useAppState()
-	const active = view.type === "album"
-	const enabled = Boolean(id && active)
+	const album = useAtomValue(albumView)
+	const enabled = Boolean(id && album.open)
 
-	const {data: _data} = useIndexedTRcpQuery(["album.get", {id}], {
+	const {data} = useIndexedTRcpQuery(["album.get", {id}], {
 		enabled,
 		keepPreviousData: true,
 	})
 
-	const stableData = useRef(_data)
-	stableData.current = enabled ? _data : stableData.current
-	const data = stableData.current
-
-	const playlistSetter = playlist && playlist.type === "album" && playlist.id === id
+	const [playlistData, setPlaylist] = useAtom(playlist)
+	const playlistSetter = playlistData.type === "album" && playlistData.id === id
 		? undefined
 		: {type: "album", id, index: 0} as const
+
+	const showHome = useShowHome()
+	const setArtist = useSetAtom(artistView)
 
 	const [seeBio, setSeeBio] = useState(false)
 	const bio = useRef<HTMLDivElement>(null)
@@ -59,8 +61,12 @@ export default forwardRef(function AlbumView({
 	}
 	if (data?.artist) {
 		infos.push(
-			<button type="button" onClick={() => setAppState({view: {type: "artist", id: data.artist.id}})}>
-				{`${data?.artist?.name}`}
+			<button type="button" onClick={() => data.artist && setArtist({
+				id: data.artist.id,
+				name: data.artist.name,
+				open: true,
+			})}>
+				{`${data.artist?.name}`}
 			</button>
 		)
 	}
@@ -71,7 +77,15 @@ export default forwardRef(function AlbumView({
 	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
 
 	return (
-		<div className={styles.main} data-open={open} ref={ref} style={palette}>
+		<div
+			className={styles.main}
+			data-open={open}
+			ref={ref}
+			style={{
+				"--z": z,
+				...palette,
+			} as CSSProperties}
+		>
 			<img
 				className={styles.img}
 				src={data?.cover ? `/api/cover/${data?.cover.id}` : ""}
@@ -108,10 +122,11 @@ export default forwardRef(function AlbumView({
 				<button
 					className={styles.play}
 					type="button"
-					onClick={() => setAppState({
-						view: {type: "home"},
-						playlist: playlistSetter,
-					})}
+					onClick={() => {
+						if (playlistSetter)
+							setPlaylist(playlistSetter)
+						showHome()
+					}}
 				>
 					<PlayIcon />
 				</button>

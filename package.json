@@ -22,6 +22,7 @@
     "chokidar": "^3.5.3",
     "classnames": "^2.3.1",
     "formidable": "^2.0.1",
+    "jotai": "^1.8.1",
     "music-metadata": "^8.0.1",
     "next": "12.2.5",
     "next-auth": "^4.10.3",

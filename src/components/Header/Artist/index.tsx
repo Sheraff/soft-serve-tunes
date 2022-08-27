@@ -2,36 +2,37 @@ import { CSSProperties, ForwardedRef, forwardRef, useEffect, useImperativeHandle
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
-import { useAppState } from "components/AppContext"
+import { artistView, playlist, useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
+import { useAtom, useAtomValue } from "jotai"
 
 export default forwardRef(function ArtistView({
 	open,
 	id,
+	z,
 }: {
-	open: boolean;
-	id: string;
+	open: boolean
+	id: string
+	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const {view, setAppState, playlist} = useAppState()
-	const active = view.type === "artist"
-	const enabled = Boolean(id && active)
+	const artist = useAtomValue(artistView)
+	const enabled = Boolean(id && artist.open)
 
-	const {data: _data} = useIndexedTRcpQuery(["artist.get", {id}], {
+	const {data} = useIndexedTRcpQuery(["artist.get", {id}], {
 		enabled,
 		keepPreviousData: true,
 	})
 
-	const stableData = useRef(_data)
-	stableData.current = enabled ? _data : stableData.current
-	const data = stableData.current
-
-	const playlistSetter = playlist && playlist.type === "artist" && playlist.id === id
+	const [playlistData, setPlaylist] = useAtom(playlist)
+	const playlistSetter = playlistData.type === "album" && playlistData.id === id
 		? undefined
 		: {type: "artist", id, index: 0} as const
+
+	const showHome = useShowHome()
 
 	const [seeBio, setSeeBio] = useState(false)
 	const bio = useRef<HTMLDivElement>(null)
@@ -67,21 +68,17 @@ export default forwardRef(function ArtistView({
 	const main = useRef<HTMLDivElement>(null)
 	useImperativeHandle(ref, () => main.current as HTMLDivElement)
 	
-	// synchronously compute initial position if a `_artistViewInit` emitter has been set
+	// synchronously compute initial position if an `artist.rect` emitter has been set
 	const initialPositionRef = useRef<CSSProperties | null>(null)
 	const initialImageSrc = useRef<string | null>(null)
-	if (open && !initialPositionRef.current && window._artistViewInit) {
-		const toggle = window._artistViewInit
-		const rect = toggle.getBoundingClientRect()
+	if (open && !initialPositionRef.current && artist.rect) {
 		initialPositionRef.current = {
-			'--top': `${rect.top}px`,
-			'--left': `${rect.left}px`,
-			'--scale': `${rect.width / innerWidth}`,
+			'--top': `${artist.rect.top}px`,
+			'--left': `${artist.rect.left}px`,
+			'--scale': `${artist.rect.width / innerWidth}`,
 			'--end': `${Math.hypot(innerWidth, innerHeight)}px`,
 		} as CSSProperties
-		const image = toggle.querySelector('img')
-		initialImageSrc.current = image ? image.getAttribute("src") : null
-		window._artistViewInit = undefined
+		initialImageSrc.current = artist.rect.src || null
 	}
 
 	return (
@@ -91,9 +88,10 @@ export default forwardRef(function ArtistView({
 			data-bubble={initialPositionRef.current !== null}
 			ref={main}
 			style={{
+				"--z": z,
 				...palette,
 				...(initialPositionRef.current || {}),
-			}}
+			} as CSSProperties}
 		>
 			<img
 				className={classNames(styles.img, styles.preview)}
@@ -132,10 +130,11 @@ export default forwardRef(function ArtistView({
 				<button
 					className={styles.play}
 					type="button"
-					onClick={() => setAppState({
-						view: {type: "home"},
-						playlist: playlistSetter,
-					})}
+					onClick={() => {
+						if (playlistSetter)
+							setPlaylist(playlistSetter)
+						showHome()
+					}}
 				>
 					<PlayIcon />
 				</button>

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import DropTarget from "components/DropTarget"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
-import { AppState } from "components/AppContext"
 import WatcherSocket from "components/WatcherSocket"
 import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
@@ -64,20 +63,18 @@ const Home: NextPage<{
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
-			<AppState>
-				<ProgressBarSingleton />
-				{ready && (session || !providers) && (
-					<>
-						{console.log(session)}
-						<AudioTest />
-						<WatcherSocket />
-						<DropTarget />
-					</>
-				)}
-				{!session && providers && (
-					<SignIn providers={providers} />
-				)}
-			</AppState>
+			<ProgressBarSingleton />
+			{ready && (session || !providers) && (
+				<>
+					{console.log(session)}
+					<AudioTest />
+					<WatcherSocket />
+					<DropTarget />
+				</>
+			)}
+			{!session && providers && (
+				<SignIn providers={providers} />
+			)}
 		</>
 	)
 }

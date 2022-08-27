@@ -1,126 +1,134 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { atom, Provider, useSetAtom } from "jotai"
+import { useCallback } from "react"
 
-type PlaylistDefinition = {
+type Panel = "artist" | "album" | "search"
+export const panelStack = atom<Panel[]>([])
+
+type ArtistView = {
+	id: string,
+	name?: string,
+	open: boolean,
+	rect?: {
+		top: number,
+		left: number,
+		width: number,
+		src?: string,
+	}
+}
+const _artistView = atom<ArtistView>({
+	id: "cl7ackbmy20574654y4vrqekmfb",
+	name: "MGMT",
+	open: false,
+})
+export const artistView = atom(
+	(get) => get(_artistView),
+	(get, set, value: ArtistView | ((prev: ArtistView) => ArtistView)) => {
+		const newView = typeof value === "function"
+			? value(get(_artistView))
+			: value
+		set(panelStack, (stack) => {
+			const newStack = stack.filter((name) => name !== "artist")
+			if(newView.open) newStack.push("artist")
+			return newStack
+		})
+		set(_artistView, newView)
+	}
+)
+
+type AlbumView = {
+	id: string,
+	name?: string,
+	open: boolean,
+	rect?: {
+		top: number,
+		left: number,
+		width: number,
+		src?: string,
+	}
+}
+const _albumView = atom<AlbumView>({
+	id: "cl7ackd5z20628354y4a90y4vn7",
+	name: "Oracular Spectacular",
+	open: false,
+})
+export const albumView = atom(
+	(get) => get(_albumView),
+	(get, set, value: AlbumView | ((prev: AlbumView) => AlbumView)) => {
+		const newView = typeof value === "function"
+			? value(get(_albumView))
+			: value
+		set(panelStack, (stack) => {
+			const newStack = stack.filter((name) => name !== "album")
+			if(newView.open) newStack.push("album")
+			return newStack
+		})
+		set(_albumView, newView)
+	}
+)
+
+type SearchView = {
+	open: boolean
+}
+const _searchView = atom<SearchView>({
+	open: false,
+})
+export const searchView = atom(
+	(get) => get(_searchView),
+	(get, set, value: SearchView | ((prev: SearchView) => SearchView)) => {
+		const newView = typeof value === "function"
+			? value(get(_searchView))
+			: value
+		set(panelStack, (stack) => {
+			const newStack = stack.filter((name) => name !== "search")
+			if(newView.open) newStack.push("search")
+			return newStack
+		})
+		set(_searchView, newView)
+	}
+)
+
+type MainView = "suggestions" | "home"
+export const mainView = atom<MainView>("suggestions")
+
+
+type Playlist = {
 	type: "track" | "album" | "artist" | "genre"
 	id: string
 	index: number
-} | null
-
-const PANELED_VIEWS = ["search", "artist", "album"] as const
-
-type ViewDefinition = {
-	type: "suggestions"
-} | {
-	type: "home"
-} | {
-	type: "search"
-} | {
-	type: "artist"
-	id: string
-} | {
-	type: "album"
-	id: string
 }
 
-type NonPaneledView = Exclude<ViewDefinition['type'], (typeof PANELED_VIEWS)[number]>
+export const playlist = atom<Playlist>({
+	type: "album",
+	id: "cl7ackd5z20628354y4a90y4vn7",
+	index: 0,
+})
 
-type SetAppState = (
-	nextState: {playlist?: Partial<PlaylistDefinition>, view?: ViewDefinition}
-	| ((prevState: {playlist: PlaylistDefinition, view: ViewDefinition}) => {playlist?: Partial<PlaylistDefinition>, view?: ViewDefinition})
-) => void
 
-const initialAppState = {
-	view: {
-		type: "suggestions",
-	},
-	playlist: null,
-	setAppState: () => {},
-	main: {
-		type: "suggestions",
-	}
-} as const
+export function useShowHome() {
+	const setAlbum = useSetAtom(albumView)
+	const setArtist = useSetAtom(artistView)
+	const setSearch = useSetAtom(searchView)
+	const setMainView = useSetAtom(mainView)
 
-const AppStateContext = createContext<{
-	playlist: PlaylistDefinition
-	view: ViewDefinition
-	setAppState: SetAppState
-	main: ViewDefinition & {type: NonPaneledView}
-}>(initialAppState)
-
-function mergePlaylistStates(prevState: PlaylistDefinition, nextState?: Partial<PlaylistDefinition>) {
-	if (nextState === null) return null
-	if (!nextState) return prevState
-	if (prevState && nextState) return {...prevState, ...nextState}
-	const {type, id, index} = nextState
-	if (type && id && index !== undefined) return {type, id, index}
-	throw new Error("Invalid playlist state")
+	return useCallback((which?: MainView) => {
+		setAlbum(prev => ({...prev, open: false}))
+		setArtist(prev => ({...prev, open: false}))
+		setSearch(prev => ({...prev, open: false}))
+		if (which)
+			setMainView(which)
+	}, [
+		setAlbum,
+		setArtist,
+		setSearch,
+		setMainView,
+	])
 }
 
-function isPaneledView(type: ViewDefinition['type']) {
-	return PANELED_VIEWS.includes(type as (typeof PANELED_VIEWS)[number])
-}
 
 export function AppState({children}: {children: React.ReactNode}) {
-	const [appState, _setAppState] = useState<{playlist: PlaylistDefinition, view: ViewDefinition}>(initialAppState)
-
-	const latestNonPaneledView = useRef<ViewDefinition & {type: NonPaneledView}>(initialAppState.view)
-	if (!isPaneledView(appState.view.type)) {
-		latestNonPaneledView.current = appState.view as (ViewDefinition & {type: NonPaneledView})
-	}
-
-	const setAppState: SetAppState = (nextState) => {
-		_setAppState(prevState => {
-			const nextAppState = typeof nextState === "function"
-				? nextState(prevState)
-				: nextState
-			const view = nextAppState.view || prevState.view
-			const playlist = mergePlaylistStates(prevState.playlist, nextAppState.playlist)
-
-			history.pushState({}, "just-allow-back-button")
-
-			if (playlist && prevState.playlist
-				&& playlist.type === prevState.playlist.type
-				&& playlist.id === prevState.playlist.id
-				&& playlist.index === prevState.playlist.index
-			) {
-				const audioElement = document.querySelector("audio") as HTMLAudioElement
-				const {currentTime, duration} = audioElement
-				if (currentTime > duration - 1) {
-					audioElement.currentTime = 0
-				}
-			}
-
-			return { view, playlist }
-		})
-	}
-
-	useEffect(() => {
-		const controller = new AbortController()
-		addEventListener('popstate', event => {
-			if (isPaneledView(appState.view.type)) {
-				setAppState({view: {type: latestNonPaneledView.current.type}})
-			} else if (appState.view.type === "home") {
-				setAppState({view: {type: "suggestions"}})
-			} else {
-				setAppState({view: {type: "home"}})
-			}
-			event.preventDefault()
-			history.pushState({}, "just-allow-back-button")
-		}, {capture: true, signal: controller.signal})
-		return () => controller.abort()
-	})
-
 	return (
-		<AppStateContext.Provider value={{
-			...appState,
-			setAppState,
-			main: latestNonPaneledView.current,
-		}}>
+		<Provider>
 			{children}
-		</AppStateContext.Provider>
+		</Provider>
 	)
-}
-
-export function useAppState() {
-	return useContext(AppStateContext)
 }

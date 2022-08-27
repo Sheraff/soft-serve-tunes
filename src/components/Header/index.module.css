@@ -32,7 +32,7 @@
 	transition: transform 350ms;
 	height: 20px;
 	width: 20px;
-	z-index: 2;
+	z-index: calc(var(--z, 2) + 1);
 	font-size: 20px;
 }
 

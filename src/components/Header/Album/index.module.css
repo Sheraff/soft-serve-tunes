@@ -1,6 +1,6 @@
 .main {
 	grid-area: 1 / 1 / 4 / 2;
-	z-index: 2;
+	z-index: var(--z, 2);
 	transition: transform 350ms;
 	transform: translateX(-100vw);
 	pointer-events: none;

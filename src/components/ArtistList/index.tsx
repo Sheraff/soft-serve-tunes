@@ -2,8 +2,9 @@ import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
+import { useSetAtom } from "jotai"
 
 function ArtistItem({
 	artist,
@@ -33,11 +34,11 @@ function ArtistItem({
 	}, [enableSiblings])
 
 	const isEmpty = !data?.cover
-	const isCutout = data?.audiodb?.cutout
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
+	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2.5)}` : undefined
 
-	const {setAppState} = useAppState()
+	const setArtist = useSetAtom(artistView)
 
 	return (
 		<button
@@ -46,20 +47,24 @@ function ArtistItem({
 			type="button"
 			onClick={(event) => {
 				data && onSelect?.(data)
-				window._artistViewInit = event.currentTarget
-				console.log('emitter', window._artistViewInit)
-				setAppState({view: {type: "artist", id: artist.id}})
+				const {top, left, width} = event.currentTarget.getBoundingClientRect()
+				setArtist({
+					id: artist.id,
+					name: data?.name || artist.name,
+					open: true,
+					rect: {top, left, width, src}
+				})
 			}}
 		>
 			{!isEmpty && (
-				<div className={classNames(styles.img, {[styles.cutout]: isCutout})}>
+				<div className={styles.img}>
 					<img
-						src={data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2.5)}` : ""}
+						src={src}
 						alt=""
 					/>
 				</div>
 			)}
-			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
+			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
 				<span className={styles.name}>{artist.name}</span>
 				{albumCount > 1 && <span>{albumCount} albums</span>}
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}

@@ -1,6 +1,10 @@
 import { RefObject, useEffect, useRef, useState } from "react"
 
-export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElement>) {
+export default function useDisplayAndShow(
+	open: boolean,
+	ref: RefObject<HTMLElement>,
+	onDone?: () => void
+) {
 	const [display, setDisplay] = useState(open)
 	const [show, setShow] = useState(open)
 	const initial = useRef(true)
@@ -32,7 +36,7 @@ export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElem
 		}
 	}, [display])
 
-	// display after show
+	// display after show=false
 	useEffect(() => {
 		if (initial.current || show || !ref.current) {
 			return
@@ -50,6 +54,25 @@ export default function useDisplayAndShow(open: boolean, ref: RefObject<HTMLElem
 			controller.abort()
 		}
 	}, [show, ref])
+	
+	// handle `done` after show=true
+	useEffect(() => {
+		if (initial.current || !show || !ref.current || !onDone) {
+			return
+		}
+		const controller = new AbortController()
+		const afterTransition = () => {
+			if (ref.current) {
+				onDone?.()
+			}
+			controller.abort()
+		}
+		ref.current.addEventListener("transitionend", afterTransition , {once: true, signal: controller.signal})
+		ref.current.addEventListener("animationend", afterTransition , {once: true, signal: controller.signal})
+		return () => {
+			controller.abort()
+		}
+	}, [show, ref, onDone])
 
 	useEffect(() => {
 		initial.current = false

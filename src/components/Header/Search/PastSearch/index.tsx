@@ -1,9 +1,10 @@
 import classNames from "classnames"
 import { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
+import { useSetAtom } from "jotai"
 
 const OPTIONS = {
 	track: {
@@ -31,7 +32,11 @@ export default function PastSearch({
 	id: string
 	type: keyof typeof OPTIONS
 }) {
-	const {setAppState} = useAppState()
+
+	const setArtist = useSetAtom(artistView)
+	const setAlbum = useSetAtom(albumView)
+	const setPlaylist = useSetAtom(playlist)
+	const showHome = useShowHome()
 
 	const {key, Component} = OPTIONS[type]
 	const {data: entity} = useIndexedTRcpQuery([key, {id}])
@@ -44,9 +49,12 @@ export default function PastSearch({
 			className={classNames(styles.main, {[styles.empty as string]: isEmpty})}
 			onClick={() => {
 				if (type === 'track' || type === 'genre') {
-					setAppState({playlist: {type, id, index: 0}, view: {type: "home"}})
-				} else {
-					setAppState({view: {type, id}})
+					setPlaylist({type, id, index: 0})
+					showHome("home")
+				} else if (type === "album") {
+					setAlbum({id, open: true, name: entity?.name})
+				} else if (type === "artist") {
+					setArtist({id, open: true, name: entity?.name})
 				}
 			}}
 		>

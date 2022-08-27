@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react"
+import { CSSProperties, useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
@@ -12,7 +12,13 @@ import SectionTitle from "atoms/SectionTitle"
 
 const defaultArray = [] as never[]
 
-export default function Search({open}: {open: boolean}) {
+export default function Search({
+	open,
+	z,
+}: {
+	open: boolean
+	z: number
+}) {
 
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
@@ -83,6 +89,7 @@ export default function Search({open}: {open: boolean}) {
 				className={styles.head}
 				data-open={open}
 				id={id}
+				style={{"--z": z} as CSSProperties}
 			>
 				<input
 					ref={input}
@@ -98,6 +105,7 @@ export default function Search({open}: {open: boolean}) {
 				className={styles.results}
 				data-open={open}
 				htmlFor={id}
+				style={{'--z': z} as CSSProperties}
 			>
 				{showPast && latestSearches.length > 0 && (
 					<div>

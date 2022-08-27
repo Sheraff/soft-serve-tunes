@@ -4,28 +4,14 @@ import PlaylistViz from "components/PlaylistViz"
 import Player from "components/Player"
 import Header from "components/Header"
 import Notification from "components/Notification"
-import { useAppState } from "components/AppContext"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import Palette from "./Palette"
-import Suggestions from "./Suggestions"
+import { mainView } from "components/AppContext"
+import Palette from "components/Palette"
+import Suggestions from "components/Suggestions"
+import { useAtomValue } from "jotai"
+import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
 
 function GlobalPalette() {
-	const {playlist} = useAppState()
-
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
-		type: playlist?.type as string,
-		id: playlist?.id as string,
-	}], {
-		enabled: Boolean(playlist?.type && playlist?.id)
-	})
-	
-	const item = !list || !playlist ? undefined : list[playlist.index]
-
-	const { data } = useIndexedTRcpQuery(["track.miniature", {
-		id: item?.id as string
-	}], {
-		enabled: Boolean(item?.id),
-	})
+	const data = useCurrentTrackDetails()
 
 	return (
 		<Palette
@@ -44,15 +30,15 @@ function NowPlaying() {
 }
 
 export default function AudioTest() {
-	const {main} = useAppState()
+	const main = useAtomValue(mainView)
 	return (
 		<>
 			<div className={styles.container}>
 				<Header/>
-					{main.type === "home" && (
+					{main === "home" && (
 						<NowPlaying />
 					)}
-					{main.type === "suggestions" && (
+					{main === "suggestions" && (
 						<Suggestions />
 					)}
 				<Player />

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Audio from "./Audio"
-import { useAppState } from "components/AppContext"
+import { playlist } from "components/AppContext"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"
@@ -11,44 +10,30 @@ import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import SlidingText from "./SlidingText"
 import { trpc } from "utils/trpc"
+import { useSetAtom } from "jotai"
+import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCurrentTrack"
 
 export default function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
-
-	const {playlist, setAppState} = useAppState()
-	const { data: list } = useIndexedTRcpQuery(["playlist.generate", {
-		type: playlist?.type as string,
-		id: playlist?.id as string,
-	}], {
-		enabled: Boolean(playlist?.type && playlist?.id)
-	})
+	const setPlaylist = useSetAtom(playlist)
+	const list = useCurrentPlaylist()
+	const item = useCurrentTrack()
 	
-	const item = (!list || !playlist) ? undefined : list[playlist.index]
-	
-	const playNext = useMemo(() => {
-		if(!list?.length) return () => {}
-		return () => setAppState(({playlist}) => ({
-			playlist: {
-				index: playlist?.index === undefined ? undefined : (playlist.index + 1) % list.length,
-			}
-		}))
-	}, [list?.length, setAppState])
-	
-	const playPrev = useMemo(() => {
-		if (!list?.length) return () => {}
-		return () => {
+	const playNext = useCallback(
+		() => setPlaylist((value) => ({...value, index: value.index + 1})),
+		[setPlaylist]
+	)
+	const playPrev = useCallback(
+		() => {
 			if (audio.current && audio.current.currentTime > 10) {
 				audio.current.currentTime = 0
 				audio.current.play()
 				return
 			}
-			setAppState(({playlist}) => ({
-				playlist: {
-					index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
-				}
-			}))
-		}
-	}, [list?.length, setAppState])
+			setPlaylist((value) => ({...value, index: value.index - 1}))
+		},
+		[setPlaylist]
+	)
 
 	const [autoPlay, setAutoPlay] = useState(true)
 	useEffect(() => {

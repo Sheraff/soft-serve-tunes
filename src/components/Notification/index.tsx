@@ -1,24 +1,11 @@
 import { useEffect } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import { useAppState } from "components/AppContext"
+import { playlist } from "components/AppContext"
+import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
+import { useSetAtom } from "jotai"
 
 export default function Notification() {
-	const {playlist, setAppState} = useAppState()
-
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
-		type: playlist?.type as string,
-		id: playlist?.id as string,
-	}], {
-		enabled: Boolean(playlist?.type && playlist?.id)
-	})
-	
-	const item = !list || !playlist ? undefined : list[playlist.index]
-
-	const { data } = useIndexedTRcpQuery(["track.miniature", {
-		id: item?.id as string
-	}], {
-		enabled: Boolean(item?.id),
-	})
+	const data = useCurrentTrackDetails()
+	const setPlaylist = useSetAtom(playlist)
 
 	useEffect(() => {
 		if (!data) return
@@ -34,22 +21,15 @@ export default function Notification() {
 	}, [data])
 
 	useEffect(() => {
-		if(!list) return
+		if(!data) return
+
 		navigator.mediaSession.setActionHandler('previoustrack', () => {
-			setAppState(({playlist}) => ({
-				playlist: {
-					index: playlist?.index === undefined ? undefined : (playlist.index - 1 + list.length) % list.length,
-				}
-			}))
+			setPlaylist(prev => ({...prev, index: prev.index + 1}))
 		})
 		navigator.mediaSession.setActionHandler('nexttrack', () => {
-			setAppState(({playlist}) => ({
-				playlist: {
-					index: playlist?.index === undefined ? undefined : (playlist.index + 1) % list.length,
-				}
-			}))
+			setPlaylist(prev => ({...prev, index: prev.index - 1}))
 		})
-	}, [setAppState, list])
+	}, [setPlaylist, data])
 
 	return null
 }

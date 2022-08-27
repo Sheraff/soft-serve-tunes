@@ -1,6 +1,7 @@
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import { useAppState } from "components/AppContext"
+import { playlist } from "components/AppContext"
+import { useCurrentPlaylist } from "components/AppContext/useCurrentTrack"
 import TrackList from "components/TrackList"
+import { useAtom } from "jotai"
 
 function rotateList<T>(list: T[], index: number) {
 	const _index = (index + list.length) % list.length
@@ -11,29 +12,21 @@ function rotateList<T>(list: T[], index: number) {
 }
 
 export default function PlaylistViz() {
-	const {playlist, setAppState} = useAppState()
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {
-		type: playlist?.type as string,
-		id: playlist?.id as string,
-	}], {
-		enabled: Boolean(playlist?.type && playlist?.id)
-	})
+	const [{index}, setPlaylist] = useAtom(playlist)
+	const list = useCurrentPlaylist()
 
-	if (!list || !playlist) return null
+	if (!list) return null
 	
-	const current = list[playlist.index]?.id
+	const current = list[index]?.id
 
 	return (
 		<TrackList
-			tracks={rotateList(list, playlist.index - 1)}
+			tracks={rotateList(list, index - 1)}
 			current={current}
-			onClick={(id) => setAppState({
-				playlist: {
-					type: playlist.type,
-					id: playlist.id,
-					index: list.findIndex((item) => item.id === id)
-				}
-			})}
+			onClick={(id) => setPlaylist(prev => ({
+				...prev,
+				index: list.findIndex((item) => item.id === id)
+			}))}
 		/>
 	)
 }

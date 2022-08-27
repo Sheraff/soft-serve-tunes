@@ -2,11 +2,12 @@ import classNames from "classnames"
 import { useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import useSlideTrack from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
 import PlayIcon from "icons/play_arrow.svg"
+import { useSetAtom } from "jotai"
 
 function TrackItem({
 	track,
@@ -23,6 +24,9 @@ function TrackItem({
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
+
+	const setPlaylist = useSetAtom(playlist)
+	const showHome = useShowHome()
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return
@@ -41,8 +45,6 @@ function TrackItem({
 
 	const isEmpty = !data?.cover
 
-	const {setAppState, view: {type}, playlist} = useAppState()
-
 	useSlideTrack(item, {id: track.id, favorite: data?.userData?.favorite})
 
 	return (
@@ -57,8 +59,12 @@ function TrackItem({
 				type="button"
 				onClick={() => {
 					data && onSelect?.(data)
-					if (onClick) onClick(track.id, track.name)
-					else setAppState({playlist: {type: "track", id: track.id, index: 0}, view: {type: "home"}})
+					if (onClick) {
+						onClick(track.id, track.name)
+					} else {
+						setPlaylist({type: "track", id: track.id, index: 0})
+						showHome("home")
+					}
 				}}
 			>
 				{!isEmpty && (
@@ -74,11 +80,9 @@ function TrackItem({
 				)}
 				<p className={styles.span}>
 					<span className={styles.name}>
-						{( data?.position && (
-							type === "album" 
-							|| (type === "home" && playlist?.type === "album")
-						)) && (
-							`${data?.position?.toString().padStart(2, '0')} · `
+						{/* TODO: not always show `position`, only if relevant (in album view, or in playlist of album) */}
+						{typeof data?.position !== undefined && data?.position !== null && (
+							`${data?.position.toString().padStart(2, '0')} · `
 						)}
 						{data?.name}
 					</span>

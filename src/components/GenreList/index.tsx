@@ -1,7 +1,8 @@
 import type { UseQueryResult } from "react-query"
 import type { inferQueryOutput } from "utils/trpc"
-import { useAppState } from "components/AppContext"
+import { playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
+import { useSetAtom } from "jotai"
 
 export default function GenreList({
 	genres,
@@ -10,7 +11,8 @@ export default function GenreList({
 	genres: UseQueryResult<inferQueryOutput<"genre.list">>["data"]
 	onSelect?: (genre: inferQueryOutput<"genre.list">[number]) => void
 }) {
-	const {setAppState} = useAppState()
+	const setPlaylist = useSetAtom(playlist)
+	const showHome = useShowHome()
 	return (
 		<ul className={styles.main}>
 			{genres?.map(genre => (
@@ -20,7 +22,8 @@ export default function GenreList({
 						type="button"
 						onClick={() => {
 							genre && onSelect?.(genre)
-							setAppState({playlist: {type: "genre", id: genre.id, index: 0}, view: {type: "home"}})
+							setPlaylist({type: "genre", id: genre.id, index: 0})
+							showHome("home")
 						}}
 					>
 						<p className={styles.span}>
