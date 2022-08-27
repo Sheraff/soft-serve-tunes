@@ -155,7 +155,12 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 	}, [audio])
 
-	// Acquire WakeLockSentinel to prevent audio from stopping after 1 track when phone screen is locked
+	/**
+	 * Acquire WakeLockSentinel to prevent audio from stopping after 1 track when phone screen is locked
+	 * If this isn't enough and playlists keep getting stopped at the end of a track, the
+	 * next thing to try would be to handle the "change src, call .play()" right inside the `ended` event
+	 * listener, and not rely on a React render to propagate the new src
+	 */
 	const wakeLockSentinel = useRef<Promise<WakeLockSentinel> | null>(null)
 	useEffect(() => {
 		if (playing && !wakeLockSentinel.current) {
