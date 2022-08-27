@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useMemo, useState } from "react"
+import { RefObject, useEffect, useMemo, useRef, useState } from "react"
 
 type TimeVector = [number, number, number]
 
@@ -63,7 +63,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			const {currentTime, src} = element
 			if (!Number.isNaN(currentTime) && (src === currentSrc)) {
 				setSeconds(currentTime)
-				onDuration() // TODO: shouldn't have to be called every time
+				// onDuration() // TODO: shouldn't have to be called every time
 				if (!loading) {
 					const delta = currentTime - currentPlayedSectionStart
 					setPlayedSeconds(prev => prev + delta)
@@ -72,17 +72,18 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			}
 		}
 
+		// onPlay / onPause reflect the intention of the user, but `onPlay` doesn't mean audio is actually coming out
+		// it might still be loading
 		const onPlay = () => {
 			setPlaying(true)
 		}
-
-		const onLoad = () => {
-			onDuration()
-			onTimeUpdate()
-		}
-
 		const onPause = () => {
 			setPlaying(false)
+		}
+
+		const onMetadata = () => {
+			// onDuration()
+			// onTimeUpdate()
 		}
 
 		const onStalled = () => {
@@ -93,8 +94,17 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			_setLoading(false)
 		}
 
+		// onPlaying / onWaiting reflect the actual status of the audio
+		// `onPlaying` is emitted when audio comes out of the speaker
+		// `onWaiting` is emitted when audio is interrupted for buffering reasons
 		let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null
-
+		const onPlaying = () => {
+			if (loadingTimeoutId) {
+				clearTimeout(loadingTimeoutId)
+			}
+			loadingTimeoutId = null
+			_setLoading(false)
+		}
 		const onWaiting = () => {
 			if (!loadingTimeoutId) {
 				loadingTimeoutId = setTimeout(() => {
@@ -104,18 +114,11 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			}
 		}
 
-		const onPlaying = () => {
-			if (loadingTimeoutId) {
-				clearTimeout(loadingTimeoutId)
-			}
-			loadingTimeoutId = null
-			_setLoading(false)
-		}
-
 		const onEnded = () => {
 			setPlaying(false)
 		}
 
+		// watch for "src" attribute change
 		const observer = new MutationObserver(() => {
 			const {src} = element
 			if (src !== currentSrc) {
@@ -139,7 +142,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		element.addEventListener('play', onPlay, {signal: controller.signal})
 		element.addEventListener('ended', onEnded, {signal: controller.signal})
 		element.addEventListener('pause', onPause, {signal: controller.signal})
-		element.addEventListener('loadedmetadata', onLoad, {signal: controller.signal})
+		element.addEventListener('loadedmetadata', onMetadata, {signal: controller.signal})
 		element.addEventListener('stalled', onStalled, {signal: controller.signal})
 		element.addEventListener('waiting', onWaiting, {signal: controller.signal})
 		element.addEventListener('playing', onPlaying, {signal: controller.signal})
@@ -151,6 +154,37 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			controller.abort()
 		}
 	}, [audio])
+
+	// Acquire WakeLockSentinel to prevent audio from stopping after 1 track when phone screen is locked
+	const wakeLockSentinel = useRef<Promise<WakeLockSentinel> | null>(null)
+	useEffect(() => {
+		if (playing && !wakeLockSentinel.current) {
+			// lock can only be acquired if page is visible
+			if (document.visibilityState === 'visible') {
+				wakeLockSentinel.current = navigator.wakeLock.request("screen")
+				return
+			} else {
+				const controller = new AbortController()
+				document.addEventListener("visibilitychange", () => {
+					if (document.visibilityState === 'visible') {
+						wakeLockSentinel.current = navigator.wakeLock.request("screen")
+						controller.abort()
+					}
+				}, {signal: controller.signal})
+				return () => controller.abort()
+			}
+		}
+		if (!wakeLockSentinel.current) {
+			return
+		}
+		// release lock after 15 minutes without playing, because it seems like the neighborly thing to do
+		const timeoutId = setTimeout(async () => {
+			const lock = await wakeLockSentinel.current
+			lock?.release()
+			wakeLockSentinel.current = null
+		}, 1000 * 15)
+		return () => clearTimeout(timeoutId)
+	}, [playing])
 
 	const progress = Boolean(seconds && totalSeconds) 
 		? seconds / totalSeconds
