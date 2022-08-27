@@ -76,11 +76,7 @@ export function AppState({children}: {children: React.ReactNode}) {
 			const view = nextAppState.view || prevState.view
 			const playlist = mergePlaylistStates(prevState.playlist, nextAppState.playlist)
 
-			console.log(prevState, view)
-
-			if (!isPaneledView(prevState.view.type) && isPaneledView(view.type)) {
-				history.pushState({}, "just-allow-back-button")
-			}
+			history.pushState({}, "just-allow-back-button")
 
 			if (playlist && prevState.playlist
 				&& playlist.type === prevState.playlist.type
@@ -103,8 +99,13 @@ export function AppState({children}: {children: React.ReactNode}) {
 		addEventListener('popstate', event => {
 			if (isPaneledView(appState.view.type)) {
 				setAppState({view: {type: latestNonPaneledView.current.type}})
-				event.preventDefault()
+			} else if (appState.view.type === "home") {
+				setAppState({view: {type: "suggestions"}})
+			} else {
+				setAppState({view: {type: "home"}})
 			}
+			event.preventDefault()
+			history.pushState({}, "just-allow-back-button")
 		}, {capture: true, signal: controller.signal})
 		return () => controller.abort()
 	})
