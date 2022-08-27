@@ -1,5 +1,5 @@
-import { atom, Provider, useSetAtom } from "jotai"
-import { useCallback } from "react"
+import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
+import { useCallback, useEffect } from "react"
 
 type Panel = "artist" | "album" | "search"
 export const panelStack = atom<Panel[]>([])
@@ -31,6 +31,7 @@ export const artistView = atom(
 			if(newView.open) newStack.push("artist")
 			return newStack
 		})
+		history.pushState({}, "just-allow-back-button")
 		set(_artistView, newView)
 	}
 )
@@ -62,6 +63,7 @@ export const albumView = atom(
 			if(newView.open) newStack.push("album")
 			return newStack
 		})
+		history.pushState({}, "just-allow-back-button")
 		set(_albumView, newView)
 	}
 )
@@ -83,6 +85,7 @@ export const searchView = atom(
 			if(newView.open) newStack.push("search")
 			return newStack
 		})
+		history.pushState({}, "just-allow-back-button")
 		set(_searchView, newView)
 	}
 )
@@ -124,11 +127,32 @@ export function useShowHome() {
 	])
 }
 
+function Back() {
+	const stack = useAtomValue(panelStack)
+	const setMainView = useSetAtom(mainView)
+	const showHome = useShowHome()
+	useEffect(() => {
+		const controller = new AbortController()
+		addEventListener('popstate', event => {
+			if (stack.length) {
+				showHome()
+			} else {
+				setMainView(value => value === "home" ? "suggestions" : "home")
+			}
+			event.preventDefault()
+			history.pushState({}, "just-allow-back-button")
+		}, {capture: true, signal: controller.signal})
+		return () => controller.abort()
+	})
+	return null
+}
+
 
 export function AppState({children}: {children: React.ReactNode}) {
 	return (
 		<Provider>
 			{children}
+			<Back />
 		</Provider>
 	)
 }
