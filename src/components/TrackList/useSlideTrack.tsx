@@ -41,18 +41,35 @@ export default function useSlideTrack(
 			const controller = new AbortController()
 			const {signal} = controller
 			animController = controller
-			element.classList.add(styles.animate as string)
+			element.classList.add(styles['like-anim'] as string)
 
 			element.addEventListener('animationend', () => {
 				element.style.removeProperty('--x')
-				element.classList.remove(styles.animate as string)
+				element.classList.remove(styles['like-anim'] as string)
 				element.classList.toggle(styles.liked as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
+				animController = null
 				likeMutation({
 					id: data.current.id,
 					toggle: !data.current.favorite,
 				})
+			}, {signal, once: true})
+		}
+		
+		function reset() {
+			if (!element) return
+			const controller = new AbortController()
+			const {signal} = controller
+			animController = controller
+			element.classList.add(styles['reset-anim'] as string)
+
+			element.addEventListener('animationend', () => {
+				element.style.removeProperty('--x')
+				element.classList.remove(styles['reset-anim'] as string)
+				element.classList.remove(styles.will as string)
+				controller.abort()
+				animController = null
 			}, {signal, once: true})
 		}
 
@@ -103,9 +120,10 @@ export default function useSlideTrack(
 				if (dx < -48) {
 					like()
 				} else if (dx > 48) {
-					// add to "play next"
+					// TODO: add to "play next"
+					reset()
 				} else {
-					// return to normal
+					reset()
 				}
 			}, {signal, passive: false})
 		}

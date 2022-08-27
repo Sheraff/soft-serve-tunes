@@ -44,21 +44,19 @@
 	will-change: transform, color;
 }
 
-.animate::after {
-	animation: slide 750ms ease-out forwards;
+.like-anim::after,
+.like-anim .button {
+	animation: like-slide 750ms ease-out forwards;
 }
-.animate .fav {
-	animation: jump 750ms ease-in forwards;
+.like-anim .fav {
+	animation: like-jump 750ms ease-in forwards;
 }
-.animate .button {
-	animation: slide 750ms ease-out forwards;
-}
-@keyframes slide {
-	0%  { transform: translateX(var(--x)); }
-	40% { transform: translateX(-24px); }
+@keyframes like-slide {
+	0%       { transform: translateX(var(--x)); }
+	40%      { transform: translateX(-24px); }
 	90%,100% { transform: translateX(0); }
 }
-@keyframes jump {
+@keyframes like-jump {
 	0%   { color: var(--palette-bg-gradient); scale: 1; }
 	10%  { color: var(--palette-bg-gradient); scale: 1 0.8; }
 	30%  { color: var(--palette-bg-gradient); scale: 1.8; }
@@ -67,25 +65,39 @@
 	93%  { color: var(--palette-secondary); scale: 1.1 0.8; }
 	100% { color: var(--palette-secondary); scale: 1; }
 }
-.liked.animate::after {
-	animation: slide-dislike 750ms ease-out forwards;
+.liked.like-anim::after,
+.liked.like-anim .button {
+	animation: dislike-slide 750ms ease-out forwards;
 }
-.liked.animate .fav {
-	animation: fall 750ms ease-in forwards;
+.liked.like-anim .fav {
+	animation: dislike-fall 750ms ease-in forwards;
 }
-.liked.animate .button {
-	animation: slide-dislike 750ms ease-out forwards;
-}
-@keyframes slide-dislike {
-	0%  { transform: translateX(var(--x)); }
+@keyframes dislike-slide {
+	0%   { transform: translateX(var(--x)); }
 	50%  { transform: translateX(-48px); }
 	100% { transform: translateX(0); }
 }
-@keyframes fall {
-	0%   { color: var(--palette-secondary); scale: 1; }
-	5%   { color: var(--palette-secondary); scale: 1.1; }
-	50% { color: var(--palette-bg-gradient); scale: 0.5; opacity: 0.2; }
+@keyframes dislike-fall {
+	0%       { color: var(--palette-secondary); scale: 1; }
+	5%       { color: var(--palette-secondary); scale: 1.1; }
+	50%      { color: var(--palette-bg-gradient); scale: 0.5; opacity: 0.2; }
 	70%,100% { color: var(--palette-bg-gradient); scale: 0.2; opacity: 0; }
+}
+
+.reset-anim::after,
+.reset-anim .button {
+	animation: reset-slide 300ms ease-out forwards;
+}
+.reset-anim:not(.liked) .fav {
+	animation: reset-clip 300ms ease-out forwards;
+}
+@keyframes reset-slide {
+	0%   { transform: translateX(var(--x)); }
+	100% { transform: translateX(0); }
+}
+@keyframes reset-clip {
+	0%   { clip-path: inset(0 0 0 calc(100% + var(--x))); }
+	100% { clip-path: inset(0 0 0 100%); }
 }
 
 
