@@ -16,16 +16,18 @@ export default forwardRef(function ArtistView({
 	open: boolean;
 	id: string;
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const {view, setAppState, playlist} = useAppState()
+	const active = view.type === "artist"
+	const enabled = Boolean(id && active)
+
 	const {data: _data} = useIndexedTRcpQuery(["artist.get", {id}], {
-		enabled: Boolean(id),
+		enabled,
 		keepPreviousData: true,
 	})
 
 	const stableData = useRef(_data)
-	stableData.current = _data || stableData.current
+	stableData.current = enabled ? _data : stableData.current
 	const data = stableData.current
-
-	const {setAppState, playlist} = useAppState()
 
 	const playlistSetter = playlist && playlist.type === "artist" && playlist.id === id
 		? undefined

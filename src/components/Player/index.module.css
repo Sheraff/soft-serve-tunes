@@ -9,7 +9,7 @@
 	padding:
 		10px
 		max(10px, env(safe-area-inset-right))
-		max(16px, env(safe-area-inset-bottom))
+		max(12px, env(safe-area-inset-bottom))
 		max(10px, env(safe-area-inset-left));
 	box-shadow: 0 0 10px var(--palette-bg-gradient);
 

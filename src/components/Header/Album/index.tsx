@@ -16,16 +16,18 @@ export default forwardRef(function AlbumView({
 	open: boolean;
 	id: string;
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const {view, setAppState, playlist} = useAppState()
+	const active = view.type === "album"
+	const enabled = Boolean(id && active)
+
 	const {data: _data} = useIndexedTRcpQuery(["album.get", {id}], {
-		enabled: Boolean(id),
+		enabled,
 		keepPreviousData: true,
 	})
 
 	const stableData = useRef(_data)
-	stableData.current = _data || stableData.current
+	stableData.current = enabled ? _data : stableData.current
 	const data = stableData.current
-
-	const {setAppState, playlist} = useAppState()
 
 	const playlistSetter = playlist && playlist.type === "album" && playlist.id === id
 		? undefined
@@ -50,8 +52,10 @@ export default forwardRef(function AlbumView({
 	}, [data?.audiodb?.strDescriptionEN])
 
 	const infos = []
-	if (data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate) {
-		infos.push(`${data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate}`)
+	const date = data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate
+	if (date) {
+		const string = typeof date === "number" ? date.toString() : date.getFullYear().toString()
+		infos.push(string)
 	}
 	if (data?.artist) {
 		infos.push(

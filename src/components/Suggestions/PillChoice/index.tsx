@@ -22,7 +22,7 @@ export default function PillChoice<
 						onClick={() => onSelect(pair[0])}
 						className={classNames(styles.item, {[styles.current]: current === pair[0].label})}
 					>
-						{pair[0].label}
+						<span>{pair[0].label}</span>
 					</button>
 					<button
 						key={pair[1].label}
@@ -30,7 +30,7 @@ export default function PillChoice<
 						onClick={() => onSelect(pair[1])}
 						className={classNames(styles.item, {[styles.current]: current === pair[1].label})}
 					>
-						{pair[1].label}
+						<span>{pair[1].label}</span>
 					</button>
 				</div>
 			))}

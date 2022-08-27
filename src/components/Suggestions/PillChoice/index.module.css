@@ -48,12 +48,13 @@
 	margin-left: -8px;
 }
 
-.current {
-	/* background-color: red; */
-	color: var(--palette-secondary);
+.current:nth-child(even) {
+	background: linear-gradient(-90deg, var(--palette-bg-gradient), transparent);
+}
+.current:nth-child(odd) {
+	background: linear-gradient(90deg, var(--palette-bg-gradient), transparent);
 }
 
-.current:nth-child(even)::after,
-.current:nth-child(odd) + .item {
-	/* background-color: var(--palette-secondary); */
+.current span {
+	color: var(--palette-secondary);
 }

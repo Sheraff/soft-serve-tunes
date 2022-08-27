@@ -11,10 +11,10 @@ const keys = [
 ]
 
 const defaultValues = [
-	'#000',
-	'#333',
-	'#ccc',
-	'#fff',
+	'#0d0110',
+	'#300a38',
+	'#b145c7',
+	'#e6dde9',
 ] as PaletteDefinition
 
 export function paletteToCSSProperties(palette: PaletteDefinition): CSSProperties {
