@@ -77,10 +77,12 @@ export default function ArtistList({
 	artists,
 	onSelect,
 	lines = 3,
+	loading = false,
 }: {
 	artists: {id: string, name: string}[]
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 	lines?: 1 | 3
+	loading?: boolean
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
@@ -91,7 +93,7 @@ export default function ArtistList({
 
 	return (
 		<div className={styles.wrapper} ref={ref}>
-			<ul className={classNames(styles.main, styles[`lines-${lines}`])}>
+			<ul className={classNames(styles.main, styles[`lines-${lines}`], {[styles.loading]: loading})}>
 				{artists.map((artist, i) => (
 					<li className={styles.item} key={artist.id}>
 						{i <= enableUpTo && (

@@ -15,19 +15,28 @@
 	column-gap: 8px;
 	padding: 0 8px;
 	width: fit-content;
+	--side: calc((100vw - 4 * 8px) / 3);
 }
 .main:not(.lines-1) {
-	padding-right: calc((100vw - 4 * 8px) / 6 + 8px);
+	padding-right: calc(var(--side) / 2 + 8px);
 }
 .lines-3 {
 	grid-template-rows: auto auto auto;
 }
 .item {
-	width: calc((100vw - 4 * 8px) / 3);
+	width: var(--side);
 }
 .lines-3 .item:nth-child(3n + 2) {
 	transform: translateX(calc(50% + 4px));
 }
+
+.loading {
+	height: var(--side);
+}
+.loading.lines-3 {
+	height: calc(var(--side) * 3);
+}
+
 
 .button {
 	width: 100%;
@@ -41,7 +50,7 @@
 .img {
 	position: relative;
 	width: 100%;
-	height: calc((100vw - 4 * 8px) / 3);
+	height: var(--side);
 	border-radius: 50%;
 	overflow: hidden;
 }
@@ -73,7 +82,7 @@
 }
 .empty {
 	width: 100%;
-	height: calc((100vw - 4 * 8px) / 3);
+	height: var(--side);
 	border-radius: 50%;
 	padding: 10%;
 	border: 1px solid var(--palette-secondary);

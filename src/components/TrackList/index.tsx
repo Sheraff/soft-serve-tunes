@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { useEffect, useRef, useState } from "react"
+import { startTransition, useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
 import { playlist, useShowHome } from "components/AppContext"
@@ -64,8 +64,10 @@ function TrackItem({
 					if (onClick) {
 						onClick(track.id, track.name)
 					} else {
-						setPlaylist({type: "track", id: track.id, index: 0})
-						showHome("home")
+						startTransition(() => {
+							setPlaylist({type: "track", id: track.id, index: 0})
+							showHome("home")
+						})
 					}
 				}}
 			>

@@ -77,11 +77,13 @@ export default function AlbumList({
 	onSelect,
 	scrollable = false,
 	lines = 2,
+	loading = false,
 }: {
 	albums: {id: string, name?: string}[]
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 	scrollable?: boolean
 	lines?: 1 | 2
+	loading?: boolean
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
@@ -92,7 +94,7 @@ export default function AlbumList({
 
 	return (
 		<div className={classNames(styles.wrapper, {[styles.scrollable as string]: scrollable})} ref={ref}>
-			<ul className={classNames(styles.main, styles[`lines-${lines}`])}>
+			<ul className={classNames(styles.main, styles[`lines-${lines}`], {[styles.loading]: loading})}>
 				{albums.map((album, i) => (
 					<li className={styles.item} key={album.id}>
 						{i <= enableUpTo && (

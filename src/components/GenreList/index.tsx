@@ -3,6 +3,7 @@ import type { inferQueryOutput } from "utils/trpc"
 import { playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
+import { startTransition } from "react"
 
 export default function GenreList({
 	genres,
@@ -21,9 +22,11 @@ export default function GenreList({
 						className={styles.button}
 						type="button"
 						onClick={() => {
-							genre && onSelect?.(genre)
-							setPlaylist({type: "genre", id: genre.id, index: 0})
-							showHome("home")
+							startTransition(() => {
+								genre && onSelect?.(genre)
+								setPlaylist({type: "genre", id: genre.id, index: 0})
+								showHome("home")
+							})
 						}}
 					>
 						<p className={styles.span}>

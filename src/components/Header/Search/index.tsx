@@ -121,6 +121,7 @@ export default function Search({
 						<ArtistList
 							artists={artists.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: 'artist', id})}
+							loading={!artists.length}
 						/>
 					</div>
 				)}
@@ -131,6 +132,7 @@ export default function Search({
 							scrollable
 							albums={albums.slice(0, 28)}
 							onSelect={({id}) => id && onSelect({type: 'album', id})}
+							loading={!albums.length}
 						/>
 					</div>
 				)}

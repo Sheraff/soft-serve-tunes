@@ -122,14 +122,14 @@ function TracksByTraitSuggestion() {
 
 export default memo(function Suggestions(){
 
-	const {data: artistFavs = []} = useIndexedTRcpQuery(["artist.most-fav"])
-	const {data: artistRecent = []} = useIndexedTRcpQuery(["artist.most-recent-listen"])
-	const {data: artistNewest = []} = useIndexedTRcpQuery(["artist.most-recent-add"])
-	const {data: albumFavs = []} = useIndexedTRcpQuery(["album.most-fav"])
-	const {data: albumRecent = []} = useIndexedTRcpQuery(["album.most-recent-listen"])
-	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
+	const {data: artistFavs = [], isLoading: artistFavsLoading} = useIndexedTRcpQuery(["artist.most-fav"])
+	const {data: artistRecent = [], isLoading: artistRecentLoading} = useIndexedTRcpQuery(["artist.most-recent-listen"])
+	const {data: artistNewest = [], isLoading: artistNewestLoading} = useIndexedTRcpQuery(["artist.most-recent-add"])
+	const {data: albumFavs = [], isLoading: albumFavsLoading} = useIndexedTRcpQuery(["album.most-fav"])
+	const {data: albumRecent = [], isLoading: albumRecentLoading} = useIndexedTRcpQuery(["album.most-recent-listen"])
+	const {data: albumNewest = [], isLoading: albumNewestLoading} = useIndexedTRcpQuery(["album.most-recent-add"])
 	
-	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
+	const {data: albumDanceable = [], isLoading: albumDanceableLoading} = useIndexedTRcpQuery(["album.most-danceable"])
 	const {data: genreFavs = []} = useIndexedTRcpQuery(["genre.most-fav"])
 
 	return (
@@ -137,11 +137,11 @@ export default memo(function Suggestions(){
 			<div className={styles.main}>
 				<div className={styles.section}>
 					<SectionTitle>Favorite artists</SectionTitle>
-					<ArtistList artists={artistFavs} lines={1} />
+					<ArtistList artists={artistFavs} lines={1} loading={artistFavsLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened albums</SectionTitle>
-					<AlbumList albums={albumRecent} lines={1} scrollable />
+					<AlbumList albums={albumRecent} lines={1} scrollable loading={albumRecentLoading}/>
 				</div>
 				<div className={styles.section}>
 					<Suspense>
@@ -154,23 +154,23 @@ export default memo(function Suggestions(){
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Danceable albums</SectionTitle>
-					<AlbumList albums={albumDanceable} lines={1} scrollable />
+					<AlbumList albums={albumDanceable} lines={1} scrollable loading={albumDanceableLoading}/>
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened artists</SectionTitle>
-					<ArtistList artists={artistRecent} lines={1} />
+					<ArtistList artists={artistRecent} lines={1} loading={artistRecentLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite albums</SectionTitle>
-					<AlbumList albums={albumFavs} lines={1} scrollable />
+					<AlbumList albums={albumFavs} lines={1} scrollable loading={albumFavsLoading}/>
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Newest artists</SectionTitle>
-					<ArtistList artists={artistNewest} lines={1} />
+					<ArtistList artists={artistNewest} lines={1} loading={artistNewestLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Newest albums</SectionTitle>
-					<AlbumList albums={albumNewest} lines={1} scrollable />
+					<AlbumList albums={albumNewest} lines={1} scrollable loading={albumNewestLoading}/>
 				</div>
 			</div>
 		</div>

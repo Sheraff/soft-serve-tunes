@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, startTransition, useEffect, useImperativeHandle, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
@@ -22,7 +22,7 @@ export default forwardRef(function ArtistView({
 	const artist = useAtomValue(artistView)
 	const enabled = Boolean(id && artist.open)
 
-	const {data} = useIndexedTRcpQuery(["artist.get", {id}], {
+	const {data, isLoading} = useIndexedTRcpQuery(["artist.get", {id}], {
 		enabled,
 		keepPreviousData: true,
 	})
@@ -131,9 +131,11 @@ export default forwardRef(function ArtistView({
 					className={styles.play}
 					type="button"
 					onClick={() => {
-						if (playlistSetter)
-							setPlaylist(playlistSetter)
-						showHome()
+						startTransition(() => {
+							if (playlistSetter)
+								setPlaylist(playlistSetter)
+							showHome()
+						})
 					}}
 				>
 					<PlayIcon />
@@ -142,7 +144,7 @@ export default forwardRef(function ArtistView({
 			{data?.albums && Boolean(data.albums.length) && (
 				<div className={styles.section}>
 					<SectionTitle>Albums</SectionTitle>
-					<AlbumList albums={data.albums} />
+					<AlbumList albums={data.albums} loading={isLoading} />
 				</div>
 			)}
 		</div>

@@ -5,6 +5,7 @@ import styles from "./index.module.css"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
+import { startTransition } from "react"
 
 const OPTIONS = {
 	track: {
@@ -48,14 +49,16 @@ export default function PastSearch({
 			type="button"
 			className={classNames(styles.main, {[styles.empty as string]: isEmpty})}
 			onClick={() => {
-				if (type === 'track' || type === 'genre') {
-					setPlaylist({type, id, index: 0})
-					showHome("home")
-				} else if (type === "album") {
-					setAlbum({id, open: true, name: entity?.name})
-				} else if (type === "artist") {
-					setArtist({id, open: true, name: entity?.name})
-				}
+				startTransition(() => {
+					if (type === 'track' || type === 'genre') {
+						setPlaylist({type, id, index: 0})
+						showHome("home")
+					} else if (type === "album") {
+						setAlbum({id, open: true, name: entity?.name})
+					} else if (type === "artist") {
+						setArtist({id, open: true, name: entity?.name})
+					}
+				})
 			}}
 		>
 			{!isEmpty && (

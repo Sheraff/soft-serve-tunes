@@ -1,4 +1,4 @@
-import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { memo, startTransition, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Audio from "./Audio"
 import { playlist } from "components/AppContext"
 import styles from "./index.module.css"
@@ -46,7 +46,9 @@ export default memo(function Player() {
 	const nextItem = useCurrentTrack(1)
 	
 	const playNext = useCallback(
-		() => setPlaylist((value) => ({...value, index: value.index + 1})),
+		() => startTransition(() => {
+			setPlaylist((value) => ({...value, index: value.index + 1}))
+		}),
 		[setPlaylist]
 	)
 	const playPrev = useCallback(
@@ -56,7 +58,9 @@ export default memo(function Player() {
 				audio.current.play()
 				return
 			}
-			setPlaylist((value) => ({...value, index: value.index - 1}))
+			startTransition(() => {
+				setPlaylist((value) => ({...value, index: value.index - 1}))
+			})
 		},
 		[setPlaylist]
 	)

@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, startTransition, useEffect, useImperativeHandle, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
@@ -146,9 +146,11 @@ export default forwardRef(function AlbumView({
 					className={styles.play}
 					type="button"
 					onClick={() => {
-						if (playlistSetter)
-							setPlaylist(playlistSetter)
-						showHome()
+						startTransition(() => {
+							if (playlistSetter)
+								setPlaylist(playlistSetter)
+							showHome()
+						})
 					}}
 				>
 					<PlayIcon />

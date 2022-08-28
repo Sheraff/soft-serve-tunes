@@ -2,9 +2,14 @@
 	width: 100%;
 	height: min-content;
 	z-index: 0;
+	--side: calc((100vw - 3 * 8px) / 2);
 }
 .wrapper::-webkit-scrollbar {
 	display: none;
+}
+
+.scrollable {
+	--side: calc((100vw - 3 * 8px) / 2 - 10px);
 }
 
 .main {
@@ -15,8 +20,15 @@
 	width: fit-content;
 }
 
+.loading {
+	height: var(--side);
+}
+.loading.scrollable.lines-2 {
+	height: calc(var(--side) * 2 + 8px);
+}
+
 .item {
-	width: calc((100vw - 3 * 8px) / 2);
+	width: var(--side);
 }
 
 .scrollable {
@@ -33,17 +45,13 @@
 	grid-template-rows: auto auto;
 }
 .scrollable .item {
-	width: calc((100vw - 3 * 8px) / 2 - 10px);
-}
-.scrollable .item:nth-child(2n + 1) {
-	/* scroll-snap-stop: normal;
-	scroll-snap-align: start; */
+	width: var(--side);
 }
 
 .button {
 	position: relative;
 	width: 100%;
-	height: calc((100vw - 3 * 8px) / 2 - 10px);
+	height: var(--side);
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-end;
@@ -86,7 +94,7 @@
 }
 .empty {
 	width: 100%;
-	height: calc((100vw - 3 * 8px) / 2 - 10px);
+	height: var(--side);
 	padding: 10%;
 	background-color: var(--palette-primary);
 	display: flex;
