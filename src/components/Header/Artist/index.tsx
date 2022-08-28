@@ -134,7 +134,7 @@ export default forwardRef(function ArtistView({
 						startTransition(() => {
 							if (playlistSetter)
 								setPlaylist(playlistSetter)
-							showHome()
+							showHome("home")
 						})
 					}}
 				>

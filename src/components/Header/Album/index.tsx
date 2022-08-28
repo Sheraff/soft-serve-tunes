@@ -149,7 +149,7 @@ export default forwardRef(function AlbumView({
 						startTransition(() => {
 							if (playlistSetter)
 								setPlaylist(playlistSetter)
-							showHome()
+							showHome("home")
 						})
 					}}
 				>
