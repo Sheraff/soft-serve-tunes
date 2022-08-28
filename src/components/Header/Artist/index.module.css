@@ -11,7 +11,6 @@
 	width: 100vw;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
 	font-size: 10px;
 	padding-bottom: 10px;
 
@@ -36,19 +35,17 @@
 	100% { clip-path: circle(var(--end) at 50vw 0); }
 }
 
-.main::before {
+.head::before {
 	content: "";
 	display: block;
 	position: absolute;
-	top: 0;
-	left: 0;
 	right: 0;
-	padding-bottom: 100%;
-	z-index: 3;
-	background: linear-gradient(to top, var(--palette-bg-main) 0%, transparent 50%);
-	will-change: opacity;
+	left: 0;
+	bottom: 0;
+	height: calc(100% + 50vw);
+	z-index: -1;
+	background: linear-gradient(to top, var(--palette-bg-main) calc(100% - 50vw - 24px), transparent 100%);
 }
-.main[data-open="true"][data-bubble="true"]::before,
 .main[data-open="true"][data-bubble="true"] .head {
 	animation: bubble-fade 650ms ease;
 }
@@ -63,10 +60,11 @@
 	object-fit: cover;
 	position: relative;
 	z-index: 2;
+	position: sticky;
+	top: 0;
 }
 .preview {
 	position: absolute;
-	top: 0;
 	left: 0;
 	z-index: 1;
 }
@@ -84,6 +82,7 @@
 	position: relative;
 	z-index: 4;
 	will-change: opacity;
+	padding-bottom: 10px;
 }
 
 .info {
@@ -108,6 +107,9 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	z-index: 4;
+	background-color: var(--palette-bg-main);
+	margin-top: -1px; /* avoids weird bug where we see the image below the background */
 }
 
 .sectionTitle {
