@@ -1,6 +1,9 @@
 import type { NextPage } from "next"
+import type { NextApiRequest, NextApiResponse } from "next"
 import Head from "next/head"
 import { useSession, getProviders } from "next-auth/react"
+import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
+import { unstable_getServerSession as getServerSession } from "next-auth"
 import { useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import DropTarget from "components/DropTarget"
@@ -10,17 +13,23 @@ import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
+import { loadingStatus } from "server/router/list"
 
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
+	ssrLoggedIn: boolean
+	shouldAwaitServer: boolean
 }> = ({
 	providers,
+	ssrLoggedIn,
+	shouldAwaitServer,
 }) => {
 	const setProgress = useProgressBar()
-	const [ready, setReady] = useState(false)
+	const [ready, setReady] = useState(!shouldAwaitServer)
 	const { mutate } = trpc.useMutation(["list.populate"])
 
 	useEffect(() => {
+		if (ready) return
 		const controller = new AbortController()
 		let socket: WebSocket | null = null
 		mutate(undefined, {
@@ -52,9 +61,11 @@ const Home: NextPage<{
 			controller.abort()
 			socket?.close()
 		}
-	}, [mutate, setProgress])
+	}, [mutate, setProgress, ready])
 
 	const { data: session } = useSession()
+
+	const loggedIn = ssrLoggedIn || session || !providers
 
 	return (
 		<>
@@ -66,7 +77,7 @@ const Home: NextPage<{
 			</Head>
 			<ProgressBarSingleton />
 			<AppState>
-				{ready && (session || !providers) && (
+				{ready && loggedIn && (
 					<>
 						<AudioTest />
 						<WatcherSocket />
@@ -74,17 +85,29 @@ const Home: NextPage<{
 					</>
 				)}
 			</AppState>
-			{!session && providers && (
+			{!loggedIn && (
 				<SignIn providers={providers} />
 			)}
 		</>
 	)
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({
+	req,
+	res,
+}: {
+	req: NextApiRequest
+	res: NextApiResponse
+}) {
 	const providers = await getProviders()
+	const session = await getServerSession(req, res, nextAuthOptions);
+	const shouldAwaitServer = !loadingStatus.populated
 	return {
-		props: { providers },
+		props: {
+			providers,
+			ssrLoggedIn: Boolean(session),
+			shouldAwaitServer,
+		},
 	}
 }
 

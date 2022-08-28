@@ -47,6 +47,8 @@ function TrackItem({
 
 	useSlideTrack(item, {id: track.id, favorite: data?.userData?.favorite})
 
+	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
+
 	return (
 		<div ref={item} className={classNames(styles.wrapper, {
 			[styles.liked as string]: data?.userData?.favorite
@@ -81,8 +83,8 @@ function TrackItem({
 				<p className={styles.span}>
 					<span className={styles.name}>
 						{/* TODO: not always show `position`, only if relevant (in album view, or in playlist of album) */}
-						{typeof data?.position !== undefined && data?.position !== null && (
-							`${data?.position.toString().padStart(2, '0')} · `
+						{position !== false && (
+							`${position.toString().padStart(2, '0')} · `
 						)}
 						{data?.name}
 					</span>

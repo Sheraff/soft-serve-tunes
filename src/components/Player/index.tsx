@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react"
+import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Audio from "./Audio"
 import { playlist } from "components/AppContext"
 import styles from "./index.module.css"
@@ -13,8 +13,30 @@ import { trpc } from "utils/trpc"
 import { useAtom, useSetAtom } from "jotai"
 import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCurrentTrack"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
+import GlobalPalette from "./GlobalPalette"
+import Notification from "components/Notification"
 
 export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
+
+function RightTimeSlot({
+	displayRemainingTime,
+	displayTotalTime,
+}: {
+	displayRemainingTime: string
+	displayTotalTime: string
+}) {
+	const [displayRemaining, setDisplayRemaining] = useAtom(playerDisplayRemaining)
+	const switchEndTime = () => setDisplayRemaining(a => !a)
+	return (
+		<button
+			type="button"
+			className={styles.duration}
+			onClick={switchEndTime}
+		>
+			{displayRemaining ? `-${displayRemainingTime}` : displayTotalTime}
+		</button>
+	)
+}
 
 export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
@@ -74,9 +96,6 @@ export default memo(function Player() {
 		}
 	}
 
-	const [displayRemaining, setDisplayRemaining] = useAtom(playerDisplayRemaining)
-	const switchEndTime = () => setDisplayRemaining(a => !a)
-
 	const consideredPlayed = playedSeconds > 45 || playedSeconds / totalSeconds > 0.4
 	const {mutate} = trpc.useMutation(["track.playcount"])
 	useEffect(() => {
@@ -95,13 +114,12 @@ export default memo(function Player() {
 				loading={playing && loading}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
-			<button
-				type="button"
-				className={styles.duration}
-				onClick={switchEndTime}
-			>
-				{displayRemaining ? `-${displayRemainingTime}` : displayTotalTime}
-			</button>
+			<Suspense fallback={<div className={styles.duration}>{displayTotalTime}</div>}>
+				<RightTimeSlot
+					displayTotalTime={displayTotalTime}
+					displayRemainingTime={displayRemainingTime}
+				/>
+			</Suspense>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
 				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
@@ -109,6 +127,8 @@ export default memo(function Player() {
 				<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
 			</div>
 			<Audio ref={audio}/>
+			<GlobalPalette />
+			<Notification />
 		</div>
 	)
 })

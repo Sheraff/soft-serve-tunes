@@ -68,6 +68,7 @@ export const trackRouter = createRouter()
           audiodb: {
             select: {
               intDuration: true,
+              intTrackNumber: true,
               thumb: {
                 select: {
                   id: true,
@@ -95,6 +96,8 @@ export const trackRouter = createRouter()
           spotify: {
             select: {
               durationMs: true,
+              trackNumber: true,
+              discNumber: true,
               album: {
                 select: {
                   image: {
@@ -327,7 +330,7 @@ export const trackRouter = createRouter()
       return track
     }
   })
-  .query("most-danceable", {
+  .query("by-trait", {
     input: z.object({
       trait: z.union([
         z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity

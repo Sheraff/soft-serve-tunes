@@ -8,7 +8,7 @@ import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import { useAtom } from "jotai"
-import { memo, useState } from "react"
+import { memo, Suspense, useState } from "react"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
 
@@ -97,8 +97,7 @@ export const preferredTrackList = asyncPersistedAtom<{
 	order: "desc"
 })
 
-export default memo(function Suggestions(){
-
+function TracksByTraitSuggestion() {
 	const [open, setOpen] = useState(false)
 	const [{trait, order}, setPreferredTracks] = useAtom(preferredTrackList)
 	const onSelect = (option: Option) => {
@@ -108,6 +107,20 @@ export default memo(function Suggestions(){
 			order: option.type,
 		})
 	}
+	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.by-trait", {trait, order}])
+	return (
+		<>
+			<SectionTitle>{moustache(FEATURES[trait][order].description, "track")}</SectionTitle>
+			<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
+				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
+			</Dialog>
+			<TrackList tracks={trackDanceable} />
+		</>
+	)
+}
+
+export default memo(function Suggestions(){
 
 	const {data: artistFavs = []} = useIndexedTRcpQuery(["artist.most-fav"])
 	const {data: artistRecent = []} = useIndexedTRcpQuery(["artist.most-recent-listen"])
@@ -115,7 +128,7 @@ export default memo(function Suggestions(){
 	const {data: albumFavs = []} = useIndexedTRcpQuery(["album.most-fav"])
 	const {data: albumRecent = []} = useIndexedTRcpQuery(["album.most-recent-listen"])
 	const {data: albumNewest = []} = useIndexedTRcpQuery(["album.most-recent-add"])
-	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.most-danceable", {trait, order}])
+	
 	const {data: albumDanceable = []} = useIndexedTRcpQuery(["album.most-danceable"])
 	const {data: genreFavs = []} = useIndexedTRcpQuery(["genre.most-fav"])
 
@@ -131,12 +144,9 @@ export default memo(function Suggestions(){
 					<AlbumList albums={albumRecent} lines={1} scrollable />
 				</div>
 				<div className={styles.section}>
-					<SectionTitle>{moustache(FEATURES[trait][order].description, "track")}</SectionTitle>
-					<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
-					<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
-						<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
-					</Dialog>
-					<TrackList tracks={trackDanceable} />
+					<Suspense>
+						<TracksByTraitSuggestion />
+					</Suspense>
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite genres</SectionTitle>

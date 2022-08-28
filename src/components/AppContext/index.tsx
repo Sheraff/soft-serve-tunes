@@ -1,5 +1,3 @@
-import { playerDisplayRemaining } from "components/Player"
-import { preferredTrackList } from "components/Suggestions"
 import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
 import { Suspense, useCallback, useEffect } from "react"
 import asyncPersistedAtom from "./asyncPersistedAtom"
@@ -18,15 +16,11 @@ type ArtistView = {
 		src?: string,
 	}
 }
-const _artistView = asyncPersistedAtom<ArtistView>(
-	"artistView",
-	{
-		id: "cl7ackbmy20574654y4vrqekmfb",
-		name: "MGMT",
-		open: false,
-	},
-	(value) => ({...value, open: false, rect: undefined})
-)
+const _artistView = atom<ArtistView>({
+	id: "cl7ackbmy20574654y4vrqekmfb",
+	name: "MGMT",
+	open: false,
+})
 export const artistView = atom(
 	(get) => get(_artistView),
 	(get, set, value: ArtistView | ((prev: ArtistView) => ArtistView)) => {
@@ -54,15 +48,11 @@ type AlbumView = {
 		src?: string,
 	}
 }
-const _albumView = asyncPersistedAtom<AlbumView>(
-	"albumView",
-	{
-		id: "cl7ackd5z20628354y4a90y4vn7",
-		name: "Oracular Spectacular",
-		open: false,
-	},
-	(value) => ({...value, open: false, rect: undefined})
-)
+const _albumView = atom<AlbumView>({
+	id: "cl7ackd5z20628354y4a90y4vn7",
+	name: "Oracular Spectacular",
+	open: false,
+})
 export const albumView = atom(
 	(get) => get(_albumView),
 	(get, set, value: AlbumView | ((prev: AlbumView) => AlbumView)) => {
@@ -102,7 +92,7 @@ export const searchView = atom(
 )
 
 type MainView = "suggestions" | "home"
-export const mainView = asyncPersistedAtom<MainView>("mainView", "suggestions")
+export const mainView = atom<MainView>("suggestions")
 
 
 type Playlist = {
@@ -157,22 +147,11 @@ function Back() {
 	return null
 }
 
-function Preloader() {
-	useAtomValue(_artistView)
-	useAtomValue(_albumView)
-	useAtomValue(mainView)
-	useAtomValue(playlist)
-	useAtomValue(playerDisplayRemaining)
-	useAtomValue(preferredTrackList)
-	return null
-}
-
 
 export function AppState({children}: {children: React.ReactNode}) {
 	return (
 		<Provider>
 			<Suspense>
-				<Preloader />
 				{children}
 				<Back />
 			</Suspense>

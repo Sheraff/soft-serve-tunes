@@ -3,22 +3,12 @@ import Cover from "components/Cover"
 import PlaylistViz from "components/PlaylistViz"
 import Player from "components/Player"
 import Header from "components/Header"
-import Notification from "components/Notification"
 import { mainView } from "components/AppContext"
-import Palette from "components/Palette"
 import Suggestions from "components/Suggestions"
 import { useAtomValue } from "jotai"
-import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
+import { Suspense } from "react"
 
-function GlobalPalette() {
-	const data = useCurrentTrackDetails()
 
-	return (
-		<Palette
-			palette={data?.cover ? JSON.parse(data.cover.palette) : undefined}
-		/>
-	)
-}
 
 function NowPlaying() {
 	return (
@@ -32,19 +22,19 @@ function NowPlaying() {
 export default function AudioTest() {
 	const main = useAtomValue(mainView)
 	return (
-		<>
-			<div className={styles.container}>
-				<Header/>
-					{main === "home" && (
-						<NowPlaying />
-					)}
-					{main === "suggestions" && (
-						<Suggestions />
-					)}
+		<div className={styles.container}>
+			<Header/>
+			{main === "home" && (
+				<Suspense>
+					<NowPlaying />
+				</Suspense>
+			)}
+			{main === "suggestions" && (
+				<Suggestions />
+			)}
+			<Suspense>
 				<Player />
-			</div>
-			<GlobalPalette />
-			<Notification />
-		</>
+			</Suspense>
+		</div>
 	)
 }

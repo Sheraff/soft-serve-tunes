@@ -16,13 +16,14 @@ const populating: {
 }
 
 declare global {
-  var persisted: {populated: boolean} | null;
+  // eslint-disable-next-line no-var
+  var loadingStatus: {populated: boolean} | null
 }
 
-const persisted = globalThis.persisted || {populated: false}
+export const loadingStatus = globalThis.loadingStatus || {populated: false}
 
 if (env.NODE_ENV !== "production") {
-	globalThis.persisted = persisted
+  globalThis.loadingStatus = loadingStatus
 }
 
 socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
@@ -48,7 +49,7 @@ socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
 export const listRouter = createRouter()
   .mutation("populate", {
     async resolve() {
-      if (persisted.populated) {
+      if (loadingStatus.populated) {
         return false
       }
       if (!populating.promise) {
@@ -64,7 +65,7 @@ export const listRouter = createRouter()
           })
           .then(() => {
             populating.promise = null
-            persisted.populated = true
+            loadingStatus.populated = true
           })
       }
       return true
