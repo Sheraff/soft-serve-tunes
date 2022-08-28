@@ -70,10 +70,11 @@ export default memo(function Player() {
 		const element = audio.current
 		if (!element) return
 		const controller = new AbortController()
-		element.addEventListener('ended', () => {
+		element.addEventListener("ended", () => {
 			if (nextItem) {
+				element.setAttribute("autoplay", "true")
 				element.src = `/api/file/${nextItem.id}`
-				element.play()
+				element.load()
 			}
 			playNext()
 		}, {signal: controller.signal})

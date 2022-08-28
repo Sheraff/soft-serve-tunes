@@ -43,6 +43,7 @@ export default function PastSearch({
 	const {data: entity} = useIndexedTRcpQuery([key, {id}])
 
 	const isEmpty = !entity || !('cover' in entity)
+	const src = entity?.cover ? `/api/cover/${entity.cover.id}/${Math.round(56 * 2)}` : undefined
 
 	return (
 		<button
@@ -64,7 +65,7 @@ export default function PastSearch({
 			{!isEmpty && (
 				<img
 					className={styles.img}
-					src={`/api/cover/${entity.cover?.id}`}
+					src={src}
 					alt=""
 				/>
 			)}

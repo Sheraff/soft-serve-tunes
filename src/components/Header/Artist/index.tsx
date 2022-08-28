@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, startTransition, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
@@ -11,7 +11,7 @@ import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue } from "jotai"
 
 export default forwardRef(function ArtistView({
-	open,
+	open: _open,
 	id,
 	z,
 }: {
@@ -19,6 +19,7 @@ export default forwardRef(function ArtistView({
 	id: string
 	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const open = useDeferredValue(_open)
 	const artist = useAtomValue(artistView)
 	const enabled = Boolean(id && artist.open)
 
@@ -81,6 +82,8 @@ export default forwardRef(function ArtistView({
 		initialImageSrc.current = artist.rect.src || null
 	}
 
+	const albums = useDeferredValue(data?.albums)
+
 	return (
 		<div
 			className={styles.main}
@@ -141,12 +144,12 @@ export default forwardRef(function ArtistView({
 					<PlayIcon />
 				</button>
 			</div>
-			{data?.albums && Boolean(data.albums.length) && (
+			{useMemo(() => albums && Boolean(albums.length) && (
 				<div className={styles.section}>
 					<SectionTitle>Albums</SectionTitle>
-					<AlbumList albums={data.albums} loading={isLoading} />
+					<AlbumList albums={albums} loading={isLoading} />
 				</div>
-			)}
+			), [albums, isLoading])}
 		</div>
 	)
 })

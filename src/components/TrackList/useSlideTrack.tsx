@@ -133,7 +133,7 @@ export default function useSlideTrack(
 				const touch = event.changedTouches.item(0) as Touch
 				start(touch)
 			}
-		}, {signal})
+		}, {signal, passive: true})
 
 		return () => {
 			controller.abort()

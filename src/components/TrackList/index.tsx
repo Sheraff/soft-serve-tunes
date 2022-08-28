@@ -33,7 +33,9 @@ function TrackItem({
 
 		const observer = new IntersectionObserver(([entry]) => {
 			if (entry?.isIntersecting) {
-				enableSiblings()
+				startTransition(() => {
+					enableSiblings()
+				})
 			}
 		}, {
 			rootMargin: "0px 100px 0px 0px",
@@ -74,7 +76,7 @@ function TrackItem({
 				{!isEmpty && (
 					<div className={styles.img}>
 						<img
-							src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2.5)}`}
+							src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2)}`}
 							alt=""
 						/>
 					</div>

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, RefObject, useMemo } from "react"
+import { useRef, useState, useEffect, RefObject, useMemo, startTransition } from "react"
 
 type MinimumWorkerDataObject = {name: string, id: string}
 
@@ -56,7 +56,9 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 				isWorking.current = false
 			}
 			if (inputMemo.value === data.input) {
-				setList(data.list.map(({id}) => mapList.get(id) as T)) // might not actually be `T` if list has changed since then
+				startTransition(() => {
+					setList(data.list.map(({id}) => mapList.get(id) as T)) // might not actually be `T` if list has changed since then
+				})
 			}
 		}
 		workerMemo.addEventListener("message", onMessage)
@@ -80,7 +82,9 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 					nextValue.current = inputMemo.value
 				}
 			} else if (!inputMemo.value) {
-				setList([])
+				startTransition(() => {
+					setList([])
+				})
 			}
 		}
 		onInput()

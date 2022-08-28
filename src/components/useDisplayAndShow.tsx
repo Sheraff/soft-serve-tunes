@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from "react"
+import { RefObject, startTransition, useEffect, useRef, useState } from "react"
 
 export default function useDisplayAndShow(
 	open: boolean,
@@ -14,11 +14,13 @@ export default function useDisplayAndShow(
 		if (initial.current) {
 			return
 		}
-		if (open) {
-			setDisplay(true)
-		} else {
-			setShow(false)
-		}
+		startTransition(() => {
+			if (open) {
+				setDisplay(true)
+			} else {
+				setShow(false)
+			}
+		})
 	}, [open])
 
 	// show after display
@@ -44,7 +46,9 @@ export default function useDisplayAndShow(
 		const controller = new AbortController()
 		const afterTransition = () => {
 			if (ref.current) {
-				setDisplay(false)
+				startTransition(() => {
+					setDisplay(false)
+				})
 			}
 			controller.abort()
 		}
@@ -63,7 +67,9 @@ export default function useDisplayAndShow(
 		const controller = new AbortController()
 		const afterTransition = () => {
 			if (ref.current) {
-				onDone?.()
+				startTransition(() => {
+					onDone()
+				})
 			}
 			controller.abort()
 		}

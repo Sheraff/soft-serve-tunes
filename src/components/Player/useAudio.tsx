@@ -128,7 +128,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				setSeconds(0)
 				setPlayedSeconds(0)
 				_setLoading(true)
-				element.play()
+				// element.play()
 			}
 		})
 		observer.observe(element, {

@@ -23,13 +23,14 @@ const _artistView = atom<ArtistView>({
 })
 export const artistView = atom(
 	(get) => get(_artistView),
-	(get, set, value: ArtistView | ((prev: ArtistView) => ArtistView)) => {
+	(get, set, value: ArtistView | ((prev: ArtistView, get) => ArtistView | undefined)) => {
 		const newView = typeof value === "function"
-			? value(get(_artistView))
+			? value(get(_artistView), get)
 			: value
+		if (newView === undefined) return
 		set(panelStack, (stack) => {
 			const newStack = stack.filter((name) => name !== "artist")
-			if(newView.open) newStack.push("artist")
+			if (newView.open) newStack.push("artist")
 			return newStack
 		})
 		history.pushState({}, "just-allow-back-button")
@@ -55,13 +56,14 @@ const _albumView = atom<AlbumView>({
 })
 export const albumView = atom(
 	(get) => get(_albumView),
-	(get, set, value: AlbumView | ((prev: AlbumView) => AlbumView)) => {
+	(get, set, value: AlbumView | ((prev: AlbumView, get) => AlbumView | undefined)) => {
 		const newView = typeof value === "function"
-			? value(get(_albumView))
+			? value(get(_albumView), get)
 			: value
+		if (newView === undefined) return
 		set(panelStack, (stack) => {
 			const newStack = stack.filter((name) => name !== "album")
-			if(newView.open) newStack.push("album")
+			if (newView.open) newStack.push("album")
 			return newStack
 		})
 		history.pushState({}, "just-allow-back-button")
@@ -77,13 +79,14 @@ const _searchView = atom<SearchView>({
 })
 export const searchView = atom(
 	(get) => get(_searchView),
-	(get, set, value: SearchView | ((prev: SearchView) => SearchView)) => {
+	(get, set, value: SearchView | ((prev: SearchView, get) => SearchView | undefined)) => {
 		const newView = typeof value === "function"
-			? value(get(_searchView))
+			? value(get(_searchView), get)
 			: value
+		if (newView === undefined) return
 		set(panelStack, (stack) => {
 			const newStack = stack.filter((name) => name !== "search")
-			if(newView.open) newStack.push("search")
+			if (newView.open) newStack.push("search")
 			return newStack
 		})
 		history.pushState({}, "just-allow-back-button")
@@ -114,9 +117,14 @@ export function useShowHome() {
 	const setMainView = useSetAtom(mainView)
 
 	return useCallback((which?: MainView) => {
-		setAlbum(prev => ({...prev, open: false}))
-		setArtist(prev => ({...prev, open: false}))
-		setSearch(prev => ({...prev, open: false}))
+		const close = (name: Panel) => (prev, get) => {
+			const stack = get(panelStack)
+			if(!stack.includes(name)) return undefined
+			return {...prev, open: false}
+		}
+		setAlbum(close("album"))
+		setArtist(close("artist"))
+		setSearch(close("search"))
 		if (which)
 			setMainView(which)
 	}, [

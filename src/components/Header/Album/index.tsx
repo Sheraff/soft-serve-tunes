@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, startTransition, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
@@ -11,7 +11,7 @@ import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 
 export default forwardRef(function AlbumView({
-	open,
+	open: _open,
 	id,
 	z,
 }: {
@@ -19,6 +19,7 @@ export default forwardRef(function AlbumView({
 	id: string
 	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const open = useDeferredValue(_open)
 	const album = useAtomValue(albumView)
 	const enabled = Boolean(id && album.open)
 
@@ -91,6 +92,8 @@ export default forwardRef(function AlbumView({
 		initialImageSrc.current = album.rect.src || null
 	}
 
+	const tracks = useDeferredValue(data?.tracks)
+
 	return (
 		<div
 			className={styles.main}
@@ -156,12 +159,12 @@ export default forwardRef(function AlbumView({
 					<PlayIcon />
 				</button>
 			</div>
-			{data?.tracks && Boolean(data.tracks.length) && (
+			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<div className={styles.section}>
 					<SectionTitle>Tracks</SectionTitle>
-					<TrackList tracks={data.tracks} />
+					<TrackList tracks={tracks} />
 				</div>
-			)}
+			), [tracks])}
 		</div>
 	)
 })

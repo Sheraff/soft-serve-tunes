@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { useEffect, useRef, useState } from "react"
+import { startTransition, useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
 import { albumView } from "components/AppContext"
@@ -23,7 +23,9 @@ function AlbumItem({
 
 		const observer = new IntersectionObserver(([entry]) => {
 			if (entry?.isIntersecting) {
-				enableSiblings()
+				startTransition(() => {
+					enableSiblings()
+				})
 			}
 		}, {
 			rootMargin: "0px 100px 0px 0px",
@@ -37,7 +39,7 @@ function AlbumItem({
 
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
-	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2.5)}` : ""
+	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2)}` : ""
 
 	const setAlbum = useSetAtom(albumView)
 
@@ -48,12 +50,15 @@ function AlbumItem({
 			type="button"
 			onClick={(event) => {
 				data && onSelect?.(data)
-				const {top, left, width} = event.currentTarget.getBoundingClientRect()
-				setAlbum({
-					id: album.id,
-					name: data?.name || album.name,
-					open: true,
-					rect: {top, left, width, src}
+				const element = event.currentTarget
+				const {top, left, width} = element.getBoundingClientRect()
+				startTransition(() => {
+					setAlbum({
+						id: album.id,
+						name: data?.name || album.name,
+						open: true,
+						rect: {top, left, width, src}
+					})
 				})
 			}}
 		>

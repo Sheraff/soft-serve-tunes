@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { useEffect, useRef, useState } from "react"
+import { startTransition, useEffect, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
 import { artistView } from "components/AppContext"
@@ -23,7 +23,9 @@ function ArtistItem({
 
 		const observer = new IntersectionObserver(([entry]) => {
 			if (entry?.isIntersecting) {
-				enableSiblings()
+				startTransition(() => {
+					enableSiblings()
+				})
 			}
 		}, {
 			rootMargin: "0px 100px 0px 0px",
@@ -36,7 +38,7 @@ function ArtistItem({
 	const isEmpty = !data?.cover
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
-	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2.5)}` : undefined
+	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2)}` : undefined
 
 	const setArtist = useSetAtom(artistView)
 
@@ -47,12 +49,15 @@ function ArtistItem({
 			type="button"
 			onClick={(event) => {
 				data && onSelect?.(data)
-				const {top, left, width} = event.currentTarget.getBoundingClientRect()
-				setArtist({
-					id: artist.id,
-					name: data?.name || artist.name,
-					open: true,
-					rect: {top, left, width, src}
+				const element = event.currentTarget
+				const {top, left, width} = element.getBoundingClientRect()
+				startTransition(() => {
+					setArtist({
+						id: artist.id,
+						name: data?.name || artist.name,
+						open: true,
+						rect: {top, left, width, src}
+					})
 				})
 			}}
 		>
