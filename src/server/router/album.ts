@@ -264,25 +264,47 @@ export const albumRouter = createRouter()
       })
     }
   })
-  .query("most-danceable", {
-    async resolve({ ctx }) {
+  .query("by-trait", {
+    input: z.object({
+      trait: z.union([
+        z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
+        z.literal("energy"), // fast, loud, and noisy
+        z.literal("speechiness"), // talk show, audio book, poetry
+        z.literal("acousticness"),
+        z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
+        z.literal("liveness"), // performed live / studio recording
+        z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
+      ]),
+      order: z.union([
+        z.literal("desc"),
+        z.literal("asc"),
+      ]),
+    }),
+    async resolve({ input, ctx }) {
+      const {trait, order} = input
       const spotifyTracks = await ctx.prisma.spotifyTrack.groupBy({
         by: ["albumId"],
         _avg: {
-          danceability: true,
+          [trait]: true,
         },
         having: {
-          danceability: {
+          NOT: {
+            albumId: undefined,
+          },
+          [trait]: {
             _avg: {
-              gt: 0.5
+              [order === "desc" ? "gt" : "lt"]: 0.5,
             }
           },
-          albumId: {not: undefined}
         },
       })
+      const orderMultiplier = order === "desc" ? 1 : -1
       const spotifyAlbumId = spotifyTracks
-        .filter(a => a._avg.danceability && a.albumId)
-        .sort((a, b) => (a._avg.danceability as number) - (b._avg.danceability as number))
+        .filter(a => (a._avg[trait] !== null) && a.albumId)
+        .sort((a, b) => {
+          const delta = (a._avg[trait] as unknown as number) - (b._avg[trait] as unknown as number)
+          return orderMultiplier * delta
+        })
         .slice(0, 10)
         .map(a => a.albumId) as string[]
       return ctx.prisma.album.findMany({

@@ -208,6 +208,28 @@ export const artistRouter = createRouter()
       })
     }
   })
+  .query("least-recent-listen", {
+    async resolve({ ctx }) {
+      const neverListened = await ctx.prisma.artist.findMany({
+        where: { OR: [
+          { userData: {lastListen: null} },
+          { userData: {is: null} },
+        ]},
+        take: 10,
+        select: { id: true, name: true },
+      })
+      if (neverListened.length === 10) {
+        return neverListened
+      }
+      const oldestListened = await ctx.prisma.artist.findMany({
+        where: { userData: { isNot: null } },
+        orderBy: { userData: { lastListen: "asc" } },
+        take: 10 - neverListened.length,
+        select: { id: true, name: true },
+      })
+      return neverListened.concat(oldestListened)
+    }
+  })
   .query("most-recent-listen", {
     async resolve({ ctx }) {
       return ctx.prisma.artist.findMany({

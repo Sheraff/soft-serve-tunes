@@ -81,7 +81,7 @@ const options = Object.entries(FEATURES).map(([key, {asc, desc}]) => ([
 	{label: desc.qualifier, key, type: "desc"},
 ])) as [Option, Option][]
 
-function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string}`, type: "track" | "album") {
+function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string}`, type: "tracks" | "albums") {
 	const [first, ...rest] = type
 	const capitalized = [(first as string).toUpperCase(), ...rest].join("")
 	const replaceFirst = description.replace("{{Type}}", capitalized)
@@ -107,15 +107,46 @@ function TracksByTraitSuggestion() {
 			order: option.type,
 		})
 	}
-	const {data: trackDanceable = []} = useIndexedTRcpQuery(["track.by-trait", {trait, order}])
+	const {data: tracks = []} = useIndexedTRcpQuery(["track.by-trait", {trait, order}])
 	return (
 		<>
-			<SectionTitle>{moustache(FEATURES[trait][order].description, "track")}</SectionTitle>
+			<SectionTitle>{moustache(FEATURES[trait][order].description, "tracks")}</SectionTitle>
 			<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
 			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
-			<TrackList tracks={trackDanceable} />
+			<TrackList tracks={tracks} />
+		</>
+	)
+}
+
+export const preferredAlbumList = asyncPersistedAtom<{
+	trait: keyof typeof FEATURES
+	order: "asc" | "desc"
+}>("preferredAlbumList", {
+	trait: "danceability",
+	order: "desc"
+})
+
+function AlbumsByTraitSuggestion() {
+	const [open, setOpen] = useState(false)
+	const [{trait, order}, setPreferredAlbums] = useAtom(preferredAlbumList)
+	const onSelect = (option: Option) => {
+		setOpen(false)
+		setPreferredAlbums({
+			trait: option.key,
+			order: option.type,
+		})
+	}
+	const {data: albums = [], isLoading} = useIndexedTRcpQuery(["album.by-trait", {trait, order}])
+	return (
+		<>
+			<SectionTitle>{moustache(FEATURES[trait][order].description, "albums")}</SectionTitle>
+			<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
+				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
+			</Dialog>
+			<AlbumList albums={albums}  lines={1} scrollable loading={isLoading}/>
 		</>
 	)
 }
@@ -124,28 +155,22 @@ export default memo(function Suggestions(){
 
 	const {data: artistFavs = [], isLoading: artistFavsLoading} = useIndexedTRcpQuery(["artist.most-fav"])
 	const {data: artistRecent = [], isLoading: artistRecentLoading} = useIndexedTRcpQuery(["artist.most-recent-listen"])
-	const {data: artistNewest = [], isLoading: artistNewestLoading} = useIndexedTRcpQuery(["artist.most-recent-add"])
+	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = useIndexedTRcpQuery(["artist.least-recent-listen"])
 	const {data: albumFavs = [], isLoading: albumFavsLoading} = useIndexedTRcpQuery(["album.most-fav"])
 	const {data: albumRecent = [], isLoading: albumRecentLoading} = useIndexedTRcpQuery(["album.most-recent-listen"])
 	const {data: albumNewest = [], isLoading: albumNewestLoading} = useIndexedTRcpQuery(["album.most-recent-add"])
-	
-	const {data: albumDanceable = [], isLoading: albumDanceableLoading} = useIndexedTRcpQuery(["album.most-danceable"])
 	const {data: genreFavs = []} = useIndexedTRcpQuery(["genre.most-fav"])
 
 	return (
 		<div className={styles.scrollable}>
 			<div className={styles.main}>
 				<div className={styles.section}>
-					<SectionTitle>Favorite artists</SectionTitle>
-					<ArtistList artists={artistFavs} lines={1} loading={artistFavsLoading} />
-				</div>
-				<div className={styles.section}>
-					<SectionTitle>Recently listened albums</SectionTitle>
-					<AlbumList albums={albumRecent} lines={1} scrollable loading={albumRecentLoading}/>
+					<SectionTitle>Recently listened artists</SectionTitle>
+					<ArtistList artists={artistRecent} lines={1} loading={artistRecentLoading} />
 				</div>
 				<div className={styles.section}>
 					<Suspense>
-						<TracksByTraitSuggestion />
+						<AlbumsByTraitSuggestion />
 					</Suspense>
 				</div>
 				<div className={styles.section}>
@@ -153,20 +178,25 @@ export default memo(function Suggestions(){
 					<GenreList genres={genreFavs} />
 				</div>
 				<div className={styles.section}>
-					<SectionTitle>Danceable albums</SectionTitle>
-					<AlbumList albums={albumDanceable} lines={1} scrollable loading={albumDanceableLoading}/>
+					<SectionTitle>Recently listened albums</SectionTitle>
+					<AlbumList albums={albumRecent} lines={1} scrollable loading={albumRecentLoading}/>
 				</div>
 				<div className={styles.section}>
-					<SectionTitle>Recently listened artists</SectionTitle>
-					<ArtistList artists={artistRecent} lines={1} loading={artistRecentLoading} />
+					<SectionTitle>Favorite artists</SectionTitle>
+					<ArtistList artists={artistFavs} lines={1} loading={artistFavsLoading} />
+				</div>
+				<div className={styles.section}>
+					<Suspense>
+						<TracksByTraitSuggestion />
+					</Suspense>
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite albums</SectionTitle>
 					<AlbumList albums={albumFavs} lines={1} scrollable loading={albumFavsLoading}/>
 				</div>
 				<div className={styles.section}>
-					<SectionTitle>Newest artists</SectionTitle>
-					<ArtistList artists={artistNewest} lines={1} loading={artistNewestLoading} />
+					<SectionTitle>Artists not played in a while</SectionTitle>
+					<ArtistList artists={artistLongTime} lines={1} loading={artistLongTimeLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Newest albums</SectionTitle>
