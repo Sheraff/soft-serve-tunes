@@ -96,6 +96,9 @@ export default function useSlideTrack(
 				const dx = match.clientX - touch.clientX
 				if (!capture) {
 					const dy = match.clientY - touch.clientY
+					if (dx === dy && dx === 0) {
+						return
+					}
 					if (Math.abs(dx) > Math.abs(dy)) {
 						capture = true
 					} else {
@@ -107,7 +110,7 @@ export default function useSlideTrack(
 				const r = Math.abs(dx) / 48
 				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
 				element.style.setProperty('--x', `${total}px`)
-			}, {signal, capture: true, passive: false})
+			}, {signal, passive: false})
 
 			window.addEventListener('touchend', (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
