@@ -111,7 +111,7 @@
 	transform: translateX(var(--x));
 	user-select: none;
 	color: var(--palette-primary);
-	touch-action: none;
+	touch-action: pan-x pan-y;
 }
 .empty::before {
 	content: "";

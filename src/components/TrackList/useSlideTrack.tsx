@@ -88,9 +88,6 @@ export default function useSlideTrack(
 			}
 
 			window.addEventListener('touchmove', (event) => {
-				if (!event.cancelable) {
-					return end()
-				}
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				const dx = match.clientX - touch.clientX
@@ -106,11 +103,10 @@ export default function useSlideTrack(
 					}
 					element.classList.add(styles.will as string)
 				}
-				event.preventDefault()
 				const r = Math.abs(dx) / 48
 				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
 				element.style.setProperty('--x', `${total}px`)
-			}, {signal, passive: false})
+			}, {signal})
 
 			window.addEventListener('touchend', (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
