@@ -20,7 +20,19 @@ freebox > box settings > ports >
 
 ### app
 - install node, upgrade to 18
+  ```sh
+  sudo su
+  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+  sudo apt install nodejs
+  ```
+- install git
+  ```sh
+  sudo apt install git
+  ```
 - git clone the project
+  ```sh
+  git clone https://github.com/Sheraff/soft-serve-tunes.git
+  ```
 - install `npm i`
 - configure .env music folder
 - build (put pi on a fan, it's gonna heat up) `npm run build`
@@ -41,6 +53,13 @@ freebox > box settings > ports >
 - `apt-get install apache2`
 - freebox ports should be set to their default value (443 > 443, 80 > 80)
 - install cert-bot by let's encrypt (https://certbot.eff.org/instructions?ws=apache&os=debianbuster)
+  ```sh
+  sudo apt install snapd
+  sudo snap install core; sudo snap refresh core
+  sudo snap install --classic certbot
+  sudo ln -s /snap/bin/certbot /usr/bin/certbot
+  sudo certbot --apache
+  ```
 - in /etc/apache2/sited-enabled, edit the .conf files (see example below) so that
   - all HTTP traffic is redirected to HTTPS
   - incoming 443 and outgoing 3000 go to the correct destination
@@ -66,6 +85,11 @@ systemctl restart apache2
 - install pm2 `npm install pm2@latest -g`
 - spawn the server w/ `npm run spawn` or `pm2 start npm --time --name soft-serve-tunes -- start`
 - subsequent re-start can be done w/ `pm2 reload 0` or `pm2 reload soft-serve-tunes`
+- auto-start pm2 on reboot: 
+  ```sh
+  pm2 startup
+  pm2 save
+  ```
 
 ### prevent connection "timeout after idle"
 The raspberry pi comes with a power management utility on its wifi chip. This results in 
