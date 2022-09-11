@@ -1,9 +1,11 @@
 .progress {
+	pointer-events: none;
 	position: fixed;
 	top: 0;
+	z-index: 9999;
 	width: 100%;
 	height: 10px;
-	background: white;
+	background: var(--palette-secondary, white);
 	transform-origin: left;
 	transform: scaleX(var(--progress, 0));
 	transition: transform 0.5s linear;
