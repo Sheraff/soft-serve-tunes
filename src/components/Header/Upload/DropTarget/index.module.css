@@ -1,0 +1,20 @@
+.main {
+	pointer-events: none;
+	position: fixed;
+	z-index: 999;
+	inset: 0;
+}
+
+.main:not(.hover) > * {
+	display: none;
+}
+
+.hover {
+	pointer-events: all;
+	background-color: var(--palette-primary);
+	color: var(--palette-bg-gradient);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: min(40vmin, 160px)
+}

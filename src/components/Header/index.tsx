@@ -12,6 +12,7 @@ import LogoutIcon from "icons/logout.svg"
 import DashboardIcon from "icons/dashboard.svg"
 import QueueMusicIcon from "icons/queue_music.svg"
 import { useAtom, useAtomValue } from "jotai"
+import Upload from "./Upload"
 
 export default function Header() {
 	const stack = useAtomValue(panelStack)
@@ -57,6 +58,7 @@ export default function Header() {
 				<button onClick={() => signOut()} className={styles.logout}>
 					<LogoutIcon />
 				</button>
+				<Upload className={styles.logout} />
 				<button onClick={onClickMainIcon} className={styles.logout}>
 					{showDashboardIcon && <DashboardIcon />}
 					{!showDashboardIcon && <QueueMusicIcon />}

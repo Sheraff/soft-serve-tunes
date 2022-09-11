@@ -1,0 +1,20 @@
+.label {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.label input {
+	display: none;
+}
+
+.label p {
+	display: inline-block;
+	font-size: 12px;
+	margin-left: 4px;
+}
+
+.instructions {
+	font-size: 10px;
+	text-align: center;
+}

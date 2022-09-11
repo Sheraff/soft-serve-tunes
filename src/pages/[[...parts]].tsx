@@ -6,7 +6,6 @@ import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import { unstable_getServerSession as getServerSession } from "next-auth"
 import { useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
-import DropTarget from "components/DropTarget"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
 import WatcherSocket from "components/WatcherSocket"
 import { env } from "env/client.mjs"
@@ -81,7 +80,6 @@ const Home: NextPage<{
 					<>
 						<AudioTest />
 						<WatcherSocket />
-						<DropTarget />
 					</>
 				)}
 			</AppState>
