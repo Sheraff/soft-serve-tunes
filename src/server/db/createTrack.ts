@@ -10,7 +10,6 @@ import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
-import { string } from "zod"
 
 // TODO: wrap most/all prisma actions in a try/catch (retryable) and log errors
 
