@@ -293,6 +293,6 @@ declare global {
 export const fileWatcher = globalThis.fileWatcher
 	|| new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)
 
-if (env.NODE_ENV !== "production") {
+// if (env.NODE_ENV !== "production") {
 	globalThis.fileWatcher = fileWatcher
-}
+// }

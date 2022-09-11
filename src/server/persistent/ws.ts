@@ -80,6 +80,6 @@ export const socketServer = globalThis.socketServer
 		port: env.WEBSOCKET_SERVER_PORT,
 	})
 
-if (env.NODE_ENV !== "production") {
+// if (env.NODE_ENV !== "production") {
 	globalThis.socketServer = socketServer
-}
+// }

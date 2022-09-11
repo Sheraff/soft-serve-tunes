@@ -829,6 +829,6 @@ declare global {
 export const lastFm = globalThis.lastFm
 	|| new LastFM()
 
-if (env.NODE_ENV !== "production") {
+// if (env.NODE_ENV !== "production") {
 	globalThis.lastFm = lastFm
-}
+// }

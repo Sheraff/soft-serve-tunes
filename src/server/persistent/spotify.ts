@@ -803,6 +803,6 @@ declare global {
 export const spotify = globalThis.spotify
 	|| new Spotify()
 
-if (env.NODE_ENV !== "production") {
+// if (env.NODE_ENV !== "production") {
 	globalThis.spotify = spotify
-}
+// }
