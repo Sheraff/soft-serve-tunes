@@ -9,6 +9,7 @@ import classNames from "classnames"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue } from "jotai"
+import TrackList from "components/TrackList"
 
 export default forwardRef(function ArtistView({
 	open: _open,
@@ -29,7 +30,7 @@ export default forwardRef(function ArtistView({
 	})
 
 	const [playlistData, setPlaylist] = useAtom(playlist)
-	const playlistSetter = playlistData.type === "album" && playlistData.id === id
+	const playlistSetter = playlistData.type === "artist" && playlistData.id === id
 		? undefined
 		: {type: "artist", id, index: 0} as const
 
@@ -83,6 +84,7 @@ export default forwardRef(function ArtistView({
 	}
 
 	const albums = useDeferredValue(data?.albums)
+	const tracks = useDeferredValue(data?.tracks)
 
 	return (
 		<div
@@ -150,6 +152,12 @@ export default forwardRef(function ArtistView({
 					<AlbumList albums={albums} loading={isLoading} />
 				</div>
 			), [albums, isLoading])}
+			{useMemo(() => tracks && Boolean(tracks.length) && (
+				<div className={styles.section}>
+					<SectionTitle>Tracks</SectionTitle>
+					<TrackList tracks={tracks} />
+				</div>
+			), [tracks])}
 		</div>
 	)
 })

@@ -158,42 +158,70 @@ export const artistRouter = createRouter()
               },
             }
           },
-          tracks: {
-            where: {
-              metaImageId: {
-                not: null,
-              }
-            },
-            take: 1,
-            select: {
-              metaImage: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-            }
-          }
         }
       })
-      let cover = undefined
-      if (artist?.audiodb?.thumb) {
-        cover = artist.audiodb.thumb
-      } else if (artist?.spotify?.image) {
-        cover = artist.spotify.image
-      } else if (artist?.tracks?.[0]?.metaImage) {
-        cover = artist.tracks[0].metaImage
-      }
 
       if (artist) {
         lastFm.findArtist(input.id)
         audiodb.fetchArtist(input.id)
       } else {
         log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
+        return null
       }
+
+      let cover = undefined
+      if (artist.audiodb?.thumb) {
+        cover = artist.audiodb.thumb
+      } else if (artist.spotify?.image) {
+        cover = artist.spotify.image
+      } else {
+        const trackWithImage = await ctx.prisma.track.findFirst({
+          where: {
+            artistId: input.id,
+            metaImageId: { not: null }
+          },
+          select: {
+            metaImage: {
+              select: {
+                id: true,
+                palette: true,
+              }
+            },
+          }
+        })
+        if (trackWithImage) {
+          cover = trackWithImage.metaImage
+        }
+      }
+
+      // extra albums not directly by this artist
+      const albums = await ctx.prisma.album.findMany({
+        where: {
+          AND: {
+            OR: [
+              {artistId: null},
+              {artistId: {not: input.id}},
+            ]
+          },
+          id: {notIn: artist.albums.map(({id}) => id)},
+          tracks: {some: {artistId: input.id}},
+        },
+        select: { id: true }
+      })
+
+      // extra tracks, not in albums
+      const tracks = await ctx.prisma.track.findMany({
+        where: {
+          artistId: input.id,
+          albumId: null,
+        },
+        select: {id: true}
+      })
 
       return {
         ...artist,
+        albums: [...artist.albums, ...albums],
+        tracks,
         cover,
       }
     },
