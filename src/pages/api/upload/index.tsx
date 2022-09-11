@@ -13,6 +13,7 @@ import sanitizeString from "utils/sanitizeString"
 import pathToSearch from "utils/pathToSearch"
 import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
+import { simplifiedName } from "server/db/createTrack"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const session = await getServerSession(req, res, nextAuthOptions);
@@ -131,10 +132,16 @@ async function moveTempFile(origin: string, destination: string) {
 }
 
 function directoryFromMetadata(metadata: IAudioMetadata) {
-	const { artist, album } = metadata.common
+	const { artist, album, albumartist } = metadata.common
+	if (album && albumartist) {
+		const isMultiArtistAlbum = simplifiedName(albumartist) === 'variousartists'
+		if (isMultiArtistAlbum) {
+			return sanitize(album)
+		}
+		return join(sanitize(albumartist), sanitize(album))
+	}
 	if (artist && album) {
-		const proposed = join(sanitize(artist), sanitize(album))
-		return proposed
+		return join(sanitize(artist), sanitize(album))
 	}
 }
 

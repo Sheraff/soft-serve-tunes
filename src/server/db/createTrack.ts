@@ -1,6 +1,6 @@
 import { access, stat } from "node:fs/promises"
 import { basename, extname, relative } from "node:path"
-import { IAudioMetadata, parseFile } from 'music-metadata'
+import { IAudioMetadata, ICommonTagsResult, parseFile } from 'music-metadata'
 import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "server/db/client"
@@ -10,8 +10,7 @@ import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
-
-// TODO: wrap most/all prisma actions in a try/catch (retryable) and log errors
+import retryable from "utils/retryable"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -33,10 +32,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return false // true or false? is this success file exists or failure track wasn't created?
 		} catch {
 			log("info", "info", "fswatcher", `track already exists but file was missing, linking ${relativePath}`)
-			await prisma.file.update({
-				where: { ino: stats.ino },
-				data: { path },
-			})
+			await retryable(() =>
+				prisma.file.update({
+					where: { ino: stats.ino },
+					data: { path },
+				})
+			)
 			log("event", "event", "fswatcher", `linked to existing track ${relativePath}`)
 		}
 		return true
@@ -67,11 +68,10 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			: { hash: '', path: '', palette: '' }
 		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist) || []
 
-		const correctedArtist = metadata.common.artist
-			? await lastFm.correctArtist(metadata.common.artist)
-			: undefined
-		const correctedFeats = []
+		const [correctedArtist, isMultiArtistAlbum] = await getArtist(metadata.common)
+		const correctedFeats: string[] = []
 		for (const feat of feats) {
+			if (!feat) continue
 			const correctedFeat = await lastFm.correctArtist(feat)
 			if (correctedFeat) {
 				correctedFeats.push(correctedFeat)
@@ -89,7 +89,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		const genres = uniqueGenres(metadata.common.genre || [])
 
-		const track = await prisma.track.create({
+		const track = await retryable(() => prisma.track.create({
 			include: {
 				feats: {
 					select: {
@@ -159,12 +159,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 					}))
 				}
 			}
-		})
+		}))
 
 		// update `feats` on secondary artists
 		if (correctedFeats.length) {
 			await Promise.allSettled(track.feats.map(feat => {
-				return prisma.artist.update({
+				return retryable(() => prisma.artist.update({
 					where: {
 						id: feat.id,
 					},
@@ -175,50 +175,20 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 							}
 						}
 					},
-				})
+				}))
 			}))
 		}
 
 		// create album now that we have an artistId
 		if (correctedAlbum) {
-			const create: Prisma.AlbumCreateArgs['data'] = {
+			const artistId = isMultiArtistAlbum ? undefined : track.artistId
+			await linkAlbum(track.id, {
 				name: correctedAlbum,
 				simplified: simplifiedName(correctedAlbum),
-				artistId: track.artistId,
+				artistId,
 				year: metadata.common.year,
 				tracksCount: metadata.common.track.of,
-			}
-			if (track.artistId) {
-				await prisma.track.update({
-					where: {
-						id: track.id,
-					},
-					data: {
-						album: {
-							connectOrCreate: {
-								where: {
-									simplified_artistId: {
-										simplified: simplifiedName(correctedAlbum),
-										artistId: track.artistId
-									}
-								},
-								create
-							}
-						}
-					}
-				})
-			} else {
-				await prisma.track.update({
-					where: {
-						id: track.id,
-					},
-					data: {
-						album: {
-							create
-						}
-					}
-				})
-			}
+			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
 		return track
@@ -246,7 +216,7 @@ export function simplifiedName(name: string) {
 export function uniqueGenres(genres: string[]) {
 	const names = genres
 		.flatMap((genre) => genre
-			.split(',')
+			.split(/\/|,|;/)
 			.map(name => name.trim())
 		)
 	const uniqueSimplifiedNames = new Set<string>()
@@ -262,4 +232,52 @@ export function uniqueGenres(genres: string[]) {
 		return list
 	}, [])
 	return filteredGenres
+}
+
+async function getArtist(common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
+	const isVarious = common.albumartist ? simplifiedName(common.albumartist) === 'variousartists' : false
+	if (common.albumartist && !isVarious) {
+		const foundArtist = await lastFm.correctArtist(common.albumartist)
+		if (foundArtist) return [foundArtist, false]
+	}
+	if (common.artist) {
+		const foundArtist = await lastFm.correctArtist(common.artist)
+		if (foundArtist) return [foundArtist, isVarious]
+	}
+	return [undefined, isVarious]
+}
+
+async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isMultiArtistAlbum: boolean) {
+	if (isMultiArtistAlbum) {
+		const existing = await retryable(() =>prisma.album.findFirst({
+			where: {
+				simplified: create.simplified,
+				artist: null,
+			}
+		}))
+		if (existing) {
+			return retryable(() => prisma.track.update({
+				where: { id },
+				data: { albumId: existing.id }
+			}))
+		}
+	}
+	if (create.artistId) {
+		const {simplified, artistId} = create
+		return retryable(() => prisma.track.update({
+			where: { id },
+			data: {
+				album: {
+					connectOrCreate: {
+						where: {simplified_artistId: { simplified, artistId }},
+						create,
+					}
+				}
+			}
+		}))
+	}
+	return retryable(() => prisma.track.update({
+		where: { id },
+		data: { album: { create }}
+	}))
 }

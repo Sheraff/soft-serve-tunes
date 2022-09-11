@@ -241,7 +241,7 @@ class LastFM {
 			console.log(`error while correcting artist ${artist}`)
 			console.error(e)
 		}
-		return artist
+		return false
 	}
 
 	async #correctTrack(artist: string, track: string) {

@@ -6,12 +6,13 @@ import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
 import extractPaletteFromUint8 from "utils/paletteExtraction"
+import retryable from "./retryable"
 
 export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string) {
 	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
 	const fileName = `${hash}${extension.startsWith('.') ? '' : '.'}${extension}`
 	const imagePath = join('.meta', hash[0], hash[1], hash[2], fileName)
-	const existingImage = await prisma.image.findUnique({ where: { id: hash } })
+	const existingImage = await retryable(() => prisma.image.findUnique({ where: { id: hash } }))
 	let palette = existingImage?.palette || ''
 	if (!existingImage) {
 		const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, imagePath)
