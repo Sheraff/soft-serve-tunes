@@ -13,7 +13,7 @@ import sanitizeString from "utils/sanitizeString"
 import pathToSearch from "utils/pathToSearch"
 import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
-import { simplifiedName } from "server/db/createTrack"
+import { isVariousArtists, notArtistName } from "server/db/createTrack"
 import { prisma } from "server/db/client"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
@@ -151,13 +151,15 @@ async function moveTempFile(origin: string, destination: string) {
 function directoryFromMetadata(metadata: IAudioMetadata) {
 	const { artist, album, albumartist } = metadata.common
 	if (album && albumartist) {
-		const isMultiArtistAlbum = simplifiedName(albumartist) === 'variousartists'
+		const isMultiArtistAlbum = isVariousArtists(albumartist)
 		if (isMultiArtistAlbum) {
 			return sanitize(album)
 		}
-		return join(sanitize(albumartist), sanitize(album))
+		if (!notArtistName(albumartist)) {
+			return join(sanitize(albumartist), sanitize(album))
+		}
 	}
-	if (artist && album) {
+	if (artist && album && !notArtistName(artist)) {
 		return join(sanitize(artist), sanitize(album))
 	}
 }

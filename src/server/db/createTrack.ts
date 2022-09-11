@@ -234,13 +234,32 @@ export function uniqueGenres(genres: string[]) {
 	return filteredGenres
 }
 
+export function isVariousArtists(name: string) {
+	return [
+		'variousartists',
+		'various',
+	].includes(simplifiedName(name))
+}
+
+export function notArtistName(name: string) {
+	return ![
+		'',
+		'variousartists',
+		'various',
+		'unknown',
+		'unknownartist'
+	].includes(simplifiedName(name))
+}
+
 async function getArtist(common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
-	const isVarious = common.albumartist ? simplifiedName(common.albumartist) === 'variousartists' : false
-	if (common.albumartist && !isVarious) {
+	const isVarious = common.albumartist
+		? isVariousArtists(common.albumartist)
+		: false
+	if (common.albumartist && !isVarious && !notArtistName(common.albumartist)) {
 		const foundArtist = await lastFm.correctArtist(common.albumartist)
 		if (foundArtist) return [foundArtist, false]
 	}
-	if (common.artist) {
+	if (common.artist && !notArtistName(common.artist)) {
 		const foundArtist = await lastFm.correctArtist(common.artist)
 		if (foundArtist) return [foundArtist, isVarious]
 	}
