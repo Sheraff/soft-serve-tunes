@@ -1,4 +1,5 @@
 import { env } from "env/client.mjs"
+import retryable from "utils/retryable"
 
 function upload(formData: FormData, onProgress: (progress: number) => void) {
 	const request = new XMLHttpRequest()
@@ -55,9 +56,9 @@ export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 			) {
 				const base = lastBatchStartIndex / list.length
 				const end = (i + 1) / list.length
-				await upload(formData, (progress) => {
+				await retryable(() => upload(formData, (progress) => {
 					onProgress(base + (end - base) * progress)
-				})
+				}))
 				formData = new FormData()
 				payloadSize = 0
 				lastBatchStartIndex = i + 1
