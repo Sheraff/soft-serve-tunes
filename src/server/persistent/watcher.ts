@@ -154,7 +154,7 @@ class MyWatcher {
 				where: { ino: dbIno },
 				select: { trackId: true, id: true },
 			})
-			if (file) {
+			if (file?.trackId) {
 				const track = await prisma.track.delete({
 					where: { id: file.trackId },
 					select: { name: true, id: true },

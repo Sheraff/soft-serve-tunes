@@ -14,6 +14,7 @@ import pathToSearch from "utils/pathToSearch"
 import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { simplifiedName } from "server/db/createTrack"
+import { prisma } from "server/db/client"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const session = await getServerSession(req, res, nextAuthOptions);
@@ -88,6 +89,22 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			const proposed = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, metaDirname, filename)
 			const success = await moveTempFile(upload.filepath, proposed)
 			if (success) {
+				continue
+			}
+			const existing = await prisma.file.findUnique({
+				where: { path: proposed },
+				select: {
+					track: {
+						select: {
+							name: true,
+							album: { select: {name: true}},
+							artist: { select: {name: true}},
+						}
+					}
+				}
+			})
+			if (existing) {
+				log("warn", "stop", "fswatcher", `${proposed} already exists and is associated to track ${existing.track.name} - ${existing.track.album?.name} by ${existing.track.artist?.name}`)
 				continue
 			}
 		}
@@ -177,6 +194,8 @@ function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 			return 'mp4'
 		case codec?.includes('MPEG'):
 			return 'mp3'
+		case codec?.includes('FLAC'):
+			return 'flac'
 		case codec?.includes('AAC'):
 		case codec?.includes('ALAC'):
 		case container?.includes('matroska'):
@@ -184,7 +203,9 @@ function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 		case container?.includes('WAVE') && codec?.includes('PCM'):
 			return 'wav'
 	}
-	return extname(original)
+	const extension = extname(original)
+	const withoutDot = extension.replace(/^\./, '')
+	return withoutDot
 }
 
 function getProgress(i: number, indexes: number[], of: number[]) {
