@@ -401,7 +401,7 @@ class LastFM {
 			}
 			_trackData = await fetchUrls(extraUrls)
 			if (!_trackData) {
-				log("warn", "404", "lastfm", `no result for track ${track.name} by ${track.artist?.name || track.album?.artist?.name} w/ ${urls.length} tries`)
+				log("warn", "404", "lastfm", `no result for track ${track.name} by ${track.artist?.name || track.album?.artist?.name} w/ ${urls.length} tries + ${extraUrls.length} searches`)
 				this.#running.delete(id)
 				return false
 			}
@@ -707,18 +707,46 @@ class LastFM {
 		if (album.artist) {
 			urls.push(makeAlbumUrl({ album: album.name, artist: album.artist.name }))
 		}
-		if (urls.length === 0) {
+		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
+		const fetchUrls = async (urls: URL[]) => {
+			for (const url of urls) {
+				const lastfm = await this.fetch(url, lastFmAlbumSchema)
+				if (lastfm.album && lastfm.album.url) {
+					// no `url` field is usually a sign of poor quality data
+					return lastfm.album
+				} else if (lastfm.album) {
+					log("info", "pass", "lastfm", `discard result for album ${album.name}, found ${lastfm.album.name} but no 'url' field`)
+				}
+			}
+		}
+		albumData = await fetchUrls(urls)
+		if (!albumData) {
 			const url = makeAlbumSearchUrl({ album: album.name })
 			const lastfm = await this.fetch(url, lastFmAlbumSearch)
 			const albumsFound = lastfm.results?.albummatches?.album || []
 			const comparable = (name: string) => sanitizeString(name).toLowerCase().replace(/\s+/g, '')
-			const matchByName = albumsFound.filter(({name}) => {
+			const matchByName = albumsFound.filter(({name, artist}) => {
 				const _name = comparable(name)
 				const _albumName = comparable(album.name)
-				const distance = damLev(_name, _albumName)
-				const refLength = Math.max(_name.length, _albumName.length)
-				const ratio = distance / refLength
-				return ratio < 0.07 || (ratio < 0.5 && distance < 4)
+				if (_name !== _albumName) {
+					const distance = damLev(_name, _albumName)
+					const refLength = Math.max(_name.length, _albumName.length)
+					const ratio = distance / refLength
+					if(!(ratio < 0.07 || (ratio < 0.5 && distance < 4))) {
+						return false
+					}
+				}
+				if (album.artist?.name) {
+					const _artist = comparable(artist)
+					const _artistName = comparable(album.artist.name)
+					if (_artist !== _artistName) {
+						const distance = damLev(_artist, _artistName)
+						const refLength = Math.max(_artist.length, _artistName.length)
+						const ratio = distance / refLength
+						return ratio < 0.07 || (ratio < 0.5 && distance < 4)
+					}
+				}
+				return true
 			})
 			const matchWithMbid = matchByName.filter(({mbid}) => mbid)
 			const match = matchWithMbid[0] || matchByName[0]
@@ -727,26 +755,17 @@ class LastFM {
 				this.#running.delete(id)
 				return false
 			}
+			const extraUrls: URL[] = []
 			if (match.mbid) {
-				urls.push(makeAlbumUrl({ mbid: match.mbid }))
+				extraUrls.push(makeAlbumUrl({ mbid: match.mbid }))
 			}
-			urls.push(makeAlbumUrl({ album: album.name, artist: match.artist }))
-		}
-		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
-		for (const url of urls) {
-			const lastfm = await this.fetch(url, lastFmAlbumSchema)
-			if (lastfm.album && lastfm.album.url) {
-				// no `url` field is usually a sign of poor quality data
-				albumData = lastfm.album
-				break
-			} else if (lastfm.album) {
-				log("info", "pass", "lastfm", `discard result for album ${album.name}, found ${lastfm.album.name} but no 'url' field`)
+			extraUrls.push(makeAlbumUrl({ album: album.name, artist: match.artist }))
+			albumData = await fetchUrls(extraUrls)
+			if (!albumData) {
+				log("warn", "404", "lastfm", `no result for album ${album.name} w/ ${urls.length} tries + ${extraUrls.length} searches`)
+				this.#running.delete(id)
+				return false
 			}
-		}
-		if (!albumData) {
-			log("warn", "404", "lastfm", `no result for album ${album.name} w/ ${urls.length} tries`)
-			this.#running.delete(id)
-			return false
 		}
 		let coverId: string | null = null
 		const image = albumData.image.at(-1)?.["#text"]
