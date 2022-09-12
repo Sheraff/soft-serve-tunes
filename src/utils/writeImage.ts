@@ -74,7 +74,7 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 			console.error(`failed at step ${step} (retry #${retries})`)
 			console.error(e)
 			if (retries < 5) {
-				await new Promise(resolve => setTimeout(resolve, 500 * (retries + 1) ** 2))
+				await new Promise(resolve => setTimeout(resolve, Math.random() * 10 + 500 * (retries + 1) ** 2))
 				return fetchAndWriteImage(url, retries + 1)
 			}
 		}
