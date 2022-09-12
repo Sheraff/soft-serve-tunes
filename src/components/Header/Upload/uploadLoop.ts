@@ -25,14 +25,35 @@ function upload(formData: FormData, onProgress: (progress: number) => void) {
 	return promise
 }
 
+const queuedUploads: {
+	promise: Promise<void> | null
+	total: number
+} = {
+	promise: null,
+	total: 0,
+}
+
 export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 	list: T[],
 	parse: (item: T) => Promise<({size: number, file: File, path: string} | undefined)>,
 	onProgress: (p: number) => void
 ) {
+	const beforeCount = queuedUploads.total
+	const beforePromise = queuedUploads.promise
+
+	let resolve: (() => void) | null = null
+	const promise = queuedUploads.promise
+		? queuedUploads.promise.then(() => new Promise<void>(res => resolve = res))
+		: new Promise<void>(res => resolve = res)
+	queuedUploads.promise = promise
+	queuedUploads.total += list.length
+	if (beforePromise) {
+		await beforePromise
+	}
+
 	let formData = new FormData()
 	let payloadSize = 0
-	let isFirst = true
+	let isFirst = !beforeCount
 	let lastBatchStartIndex = 0
 	try {
 		for (let i = 0; i < list.length; i++) {
@@ -42,8 +63,8 @@ export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 				payloadSize += data.size
 				formData.append("file[]", data.file)
 				formData.append("name[]", data.path)
-				formData.append("index[]", String(i))
-				formData.append("of[]", String(list.length - 1))
+				formData.append("index[]", String(beforeCount + i))
+				formData.append("of[]", String(queuedUploads.total - 1))
 				formData.append("wakeup[]", isFirst ? "wakeup" : "")
 				isFirst = false
 			}
@@ -54,9 +75,9 @@ export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 					&& payloadSize > 0
 				)
 			) {
-				const base = lastBatchStartIndex / list.length
-				const end = (i + 1) / list.length
 				await retryable(() => upload(formData, (progress) => {
+					const base = (lastBatchStartIndex + beforeCount) / queuedUploads.total
+					const end = (i + 1 + beforeCount) / queuedUploads.total
 					onProgress(base + (end - base) * progress)
 				}))
 				formData = new FormData()
@@ -65,5 +86,10 @@ export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 			}
 		}
 	} catch {}
-	onProgress(1)
+	(resolve as unknown as () => void)()
+	if (queuedUploads.promise === promise) {
+		queuedUploads.promise = null
+		queuedUploads.total = 0
+		onProgress(1)
+	}
 }
