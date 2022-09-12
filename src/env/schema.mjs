@@ -18,7 +18,7 @@ export const serverSchema = z.object({
   TWITCH_CLIENT_SECRET: z.string(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
-  ACCOUST_ID_API_KEY: z.string(),
+  ACOUST_ID_API_KEY: z.string(),
   WEBSOCKET_SERVER_PORT: z.string().transform(Number),
   MAIN_DEVICE_WIDTH: z.string().transform(Number),
   MAIN_DEVICE_DENSITY: z.string().transform(Number),

@@ -11,9 +11,9 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - [ ] watcher issues:
   - [ ] not deleting from DB when deleting files manually
   - [ ] not adding to DB when uploader adds files
-- [ ] lost tracks (The longest johns)
-- [ ] many albums created in DB for single album (maroon 5, songs about Jane), because songs have no artist even though lastfm artistCorrection works by hand
-- [ ] duplicate artist created (mickey 3D / mickey 3d) even though lastfm artistCorrection works by hand
+- [ ] how to deal with tracks w/ useless names? (eg. /Sum 41/Unknown Album/13 13 Piste 13.mp3)
+  - => need fingerprinting
+  - src/server/db/createTrack.ts:57
 
 ## Deploy to raspberry
 
