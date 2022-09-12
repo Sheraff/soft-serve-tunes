@@ -8,23 +8,8 @@ import { socketServer } from "server/persistent/ws"
 import lastfmImageToUrl from "utils/lastfmImageToUrl"
 import log from "utils/logger"
 import retryable from "utils/retryable"
-
-// TODO: handle lastfm errors
-/*
-{
-	"message": "Invalid Method - No method with that name in this package",
-	"error": 3
-}
-200 status w/ JSON body error
-- 26: Your API key has been banned
-- 29: Rate Limit Exceeded
-- 16: A Temporary Error Occurred
-- 11: Service Offline
-- 10: Invalid API Token
-- 8: Generic Error
-- 2: Service offline/service Unavailable
-429: Too Many Requests
- */
+import damLev from "components/Header/Search/worker/damLev"
+import { notArtistName } from "server/db/createTrack"
 
 const lastFmErrorSchema = z
 	.object({
@@ -86,6 +71,11 @@ const lastFmArtistSchema = z
 		}).optional(),
 	})
 
+const lastFmImageSchema = z.object({
+	'#text': z.string(),
+	size: z.string(),
+})
+
 const lastFmAlbumSchema = z
 	.object({
 		album: z.object({
@@ -95,10 +85,7 @@ const lastFmAlbumSchema = z
 			mbid: z.string().optional(),
 			url: z.string(),
 			releasedate: z.string().optional().transform(Date),
-			image: z.array(z.object({
-				'#text': z.string(),
-				size: z.string(),
-			})),
+			image: z.array(lastFmImageSchema),
 			listeners: z.string().transform(Number),
 			playcount: z.string().transform(Number),
 			toptags: z.object({
@@ -159,12 +146,43 @@ const lastFmTrackSchema = z
 		}).optional(),
 	})
 
+const lastFmAlbumSearch = z
+	.object({
+		results: z.object({
+			albummatches: z.object({
+				album: z.array(z.object({
+					name: z.string(),
+					artist: z.string(),
+					url: z.string(),
+					image: z.array(lastFmImageSchema),
+					mbid: z.string(),
+				})).optional()
+			}).optional()
+		}).optional()
+	})
+
+const lastFmTrackSearch = z
+	.object({
+		results: z.object({
+			trackmatches: z.object({
+				track: z.array(z.object({
+					name: z.string(),
+					artist: z.string(),
+					url: z.string(),
+					mbid: z.string(),
+				})).optional()
+			}).optional()
+		}).optional()
+	})
+
 type KnownLastFmSchema = 
 	| typeof lastFmCorrectionArtistSchema
 	| typeof lastFmCorrectionTrackSchema
 	| typeof lastFmArtistSchema
 	| typeof lastFmAlbumSchema
 	| typeof lastFmTrackSchema
+	| typeof lastFmAlbumSearch
+	| typeof lastFmTrackSearch
 
 type WaitlistEntry = (() => Promise<void>)
 
@@ -351,31 +369,42 @@ class LastFM {
 			urls.push(makeTrackUrl({ mbid: track.audiodb.strMusicBrainzID }))
 		}
 		if (track.artist) {
-			urls.push(makeTrackUrl({ artist: track.artist.name, track: track.name }))
+			urls.push(makeTrackUrl({ artist: sanitizeString(track.artist.name), track: sanitizeString(track.name) }))
 		}
-		if (track.album?.artist?.name) {
-			urls.push(makeTrackUrl({ artist: track.album.artist.name, track: track.name }))
-		}
-		if (urls.length === 0) {
-			log("warn", "404", "lastfm", `not enough info to look up track ${track.name}`)
-			this.#running.delete(id)
-			return false
+		if (track.album?.artist?.name && !notArtistName(track.album.artist.name)) {
+			urls.push(makeTrackUrl({ artist: sanitizeString(track.album.artist.name), track: sanitizeString(track.name) }))
 		}
 		let _trackData: z.infer<typeof lastFmTrackSchema>['track'] | null = null
-		for (const url of urls) {
-			const lastfm = await this.fetch(url, lastFmTrackSchema)
-			if (lastfm.track && lastfm.track.url) {
-				// no `url` field is usually a sign of poor quality data
-				_trackData = lastfm.track
-				break
-			} else if (lastfm.track) {
-				log("info", "pass", "lastfm", `discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
+		const fetchUrls = async (urls: URL[]) => {
+			for (const url of urls) {
+				const lastfm = await this.fetch(url, lastFmTrackSchema)
+				if (lastfm.track && lastfm.track.url) {
+					// no `url` field is usually a sign of poor quality data
+					return lastfm.track
+				} else if (lastfm.track) {
+					log("info", "pass", "lastfm", `discard result for track ${track.name}, found ${lastfm.track.name} but no 'url' field`)
+				}
 			}
 		}
+		_trackData = await fetchUrls(urls)
 		if (!_trackData) {
-			log("warn", "404", "lastfm", `no result for track ${track.name} w/ ${urls.length} tries`)
-			this.#running.delete(id)
-			return false
+			if (!track.album?.name || !track.artist?.name) {
+				log("warn", "404", "lastfm", `not enough info to look up track ${track.name} by ${track.artist?.name || track.album?.artist?.name}`)
+				this.#running.delete(id)
+				return false
+			}
+			const extraUrls = await this.#searchTrackUrls(track.name, track.album.name, track.artist.name)
+			if (!extraUrls.length) {
+				log("warn", "404", "lastfm", `no lastfm search result for track ${track.name} by ${track.artist?.name || track.album?.artist?.name}`)
+				this.#running.delete(id)
+				return false
+			}
+			_trackData = await fetchUrls(extraUrls)
+			if (!_trackData) {
+				log("warn", "404", "lastfm", `no result for track ${track.name} by ${track.artist?.name || track.album?.artist?.name} w/ ${urls.length} tries`)
+				this.#running.delete(id)
+				return false
+			}
 		}
 
 		const trackData = _trackData
@@ -450,6 +479,45 @@ class LastFM {
 		log("info", "200", "lastfm", `fetched track ${track.name}`)
 		this.#running.delete(id)
 		return true
+	}
+
+	async #searchTrackUrls(trackName: string, albumName: string, artistName: string) {
+		const url = makeTrackSearchUrl({ track: trackName, album: albumName })
+		const lastfm = await this.fetch(url, lastFmTrackSearch)
+		const albumsFound = lastfm.results?.trackmatches?.track || []
+		const comparable = (name: string) => sanitizeString(name).toLowerCase().replace(/\s+/g, '')
+		const matchByName = albumsFound.filter(({name, artist}) => {
+			const _name = comparable(name)
+			const _trackName = comparable(trackName)
+			if (_name !== _trackName) {
+				const distance = damLev(_name, _trackName)
+				const refLength = Math.max(_name.length, _trackName.length)
+				const ratio = distance / refLength
+				if(!(ratio < 0.07 || (ratio < 0.5 && distance < 4))) {
+					return false
+				}
+			}
+			const _artist = comparable(artist)
+			const _artistName = comparable(artistName)
+			if (_artist !== _artistName) {
+				const distance = damLev(_artist, _artistName)
+				const refLength = Math.max(_artist.length, _artistName.length)
+				const ratio = distance / refLength
+				return ratio < 0.07 || (ratio < 0.5 && distance < 4)
+			}
+			return true
+		})
+		const matchWithMbid = matchByName.filter(({mbid}) => mbid)
+		const match = matchWithMbid[0] || matchByName[0]
+		const urls: URL[] = []
+		if (!match) {
+			return urls
+		}
+		if (match.mbid) {
+			urls.push(makeTrackUrl({ mbid: match.mbid }))
+		}
+		urls.push(makeTrackUrl({ track: trackName, artist: match.artist }))
+		return urls
 	}
 
 	async #findArtist(id: string) {
@@ -640,9 +708,29 @@ class LastFM {
 			urls.push(makeAlbumUrl({ album: album.name, artist: album.artist.name }))
 		}
 		if (urls.length === 0) {
-			log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
-			this.#running.delete(id)
-			return false
+			const url = makeAlbumSearchUrl({ album: album.name })
+			const lastfm = await this.fetch(url, lastFmAlbumSearch)
+			const albumsFound = lastfm.results?.albummatches?.album || []
+			const comparable = (name: string) => sanitizeString(name).toLowerCase().replace(/\s+/g, '')
+			const matchByName = albumsFound.filter(({name}) => {
+				const _name = comparable(name)
+				const _albumName = comparable(album.name)
+				const distance = damLev(_name, _albumName)
+				const refLength = Math.max(_name.length, _albumName.length)
+				const ratio = distance / refLength
+				return ratio < 0.07 || (ratio < 0.5 && distance < 4)
+			})
+			const matchWithMbid = matchByName.filter(({mbid}) => mbid)
+			const match = matchWithMbid[0] || matchByName[0]
+			if (!match || !match.artist) {
+				log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
+				this.#running.delete(id)
+				return false
+			}
+			if (match.mbid) {
+				urls.push(makeAlbumUrl({ mbid: match.mbid }))
+			}
+			urls.push(makeAlbumUrl({ album: album.name, artist: match.artist }))
 		}
 		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
 		for (const url of urls) {
@@ -775,9 +863,20 @@ function makeTrackUrl(params: {
 	if ('mbid' in params) {
 		url.searchParams.set('mbid', params.mbid)
 	} else {
-		url.searchParams.set('track', sanitizeString(params.track))
-		url.searchParams.set('artist', sanitizeString(params.artist))
+		url.searchParams.set('track', params.track)
+		url.searchParams.set('artist', params.artist)
 	}
+	return url
+}
+
+function makeTrackSearchUrl(params: {
+	track: string,
+	album: string,
+}) {
+	const url = makeApiUrl()
+	url.searchParams.set('method', 'track.search')
+	url.searchParams.set('track', sanitizeString(params.track) || params.track)
+	url.searchParams.set('album', sanitizeString(params.album) || params.album)
 	return url
 }
 
@@ -792,9 +891,18 @@ function makeAlbumUrl(params: {
 	if ('mbid' in params) {
 		url.searchParams.set('mbid', params.mbid)
 	} else {
-		url.searchParams.set('album', sanitizeString(params.album))
-		url.searchParams.set('artist', sanitizeString(params.artist))
+		url.searchParams.set('album', sanitizeString(params.album) || params.album)
+		url.searchParams.set('artist', sanitizeString(params.artist) || params.artist)
 	}
+	return url
+}
+
+function makeAlbumSearchUrl(params: {
+	album: string,
+}) {
+	const url = makeApiUrl()
+	url.searchParams.set('method', 'album.search')
+	url.searchParams.set('album', sanitizeString(params.album) || params.album)
 	return url
 }
 
@@ -808,7 +916,7 @@ function makeArtistUrl(params: {
 	if ('mbid' in params) {
 		url.searchParams.set('mbid', params.mbid)
 	} else {
-		url.searchParams.set('artist', sanitizeString(params.artist))
+		url.searchParams.set('artist', sanitizeString(params.artist) || params.artist)
 	}
 	return url
 }
