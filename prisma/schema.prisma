@@ -381,8 +381,8 @@ model SpotifyTrack {
   tempo            Float?
   timeSignature    Int?
 
-  trackId String? @unique
-  track   Track?  @relation(fields: [trackId], references: [id])
+  trackId String @unique
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
 }
 
 // Necessary for Next auth

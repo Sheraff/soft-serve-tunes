@@ -183,12 +183,9 @@ class MyWatcher {
 				name: true,
 			},
 		})
+		const orphanedAlbumsIds = orphanedAlbums.map(album => album.id)
 		await prisma.album.deleteMany({
-			where: {
-				id: {
-					in: orphanedAlbums.map(album => album.id),
-				},
-			}
+			where: { id: {in: orphanedAlbumsIds} }
 		})
 		for (const album of orphanedAlbums) {
 			log("event", "event", "fswatcher", `remove album ${album.name} because it wasn't linked to any tracks anymore`)
@@ -205,12 +202,9 @@ class MyWatcher {
 				name: true,
 			},
 		})
+		const orphanedArtistsIds = orphanedArtists.map(artist => artist.id)
 		await prisma.artist.deleteMany({
-			where: {
-				id: {
-					in: orphanedArtists.map(artist => artist.id),
-				},
-			}
+			where: { id: {in: orphanedArtistsIds} }
 		})
 		for (const artist of orphanedArtists) {
 			log("event", "event", "fswatcher", `remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
@@ -230,11 +224,7 @@ class MyWatcher {
 			}
 		})
 		await prisma.genre.deleteMany({
-			where: {
-				id: {
-					in: orphanedGenres.map(genre => genre.id),
-				},
-			}
+			where: {id: {in: orphanedGenres.map(genre => genre.id)}}
 		})
 		for (const genre of orphanedGenres) {
 			log("event", "event", "fswatcher", `remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)

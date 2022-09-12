@@ -406,7 +406,53 @@ class Spotify {
 				const candidate_album_album_type = candidate.album.album_type
 				const candidate_album_release_date = candidate.album.release_date
 				const candidate_album_total_tracks = candidate.album.total_tracks
-				const newTrack = await retryable(async () => {
+
+				const existing = await retryable(() =>
+					prisma.spotifyTrack.findUnique({
+						where: {id: candidate_id},
+						select: {
+							id: true,
+							trackId: true,
+							artist: {
+								select: {
+									id: true,
+									imageId: true,
+									artistId: true,
+									name: true,
+								}
+							},
+							album: {
+								select: {
+									id: true,
+									imageId: true,
+									albumId: true,
+									name: true,
+									artist: {
+										select: {
+											id: true,
+										}
+									}
+								}
+							}
+						}
+					})
+				)
+				if (existing && !existing.trackId) {
+					// this should not happen as schema.prisma defines SpotifyTrack.track as `onDelete: Cascade`
+					await retryable(() => 
+						prisma.spotifyTrack.update({
+							where: {id: candidate_id},
+							data: {
+								track: {
+									connect: {
+										id: track.id,
+									}
+								},
+							}
+						})
+					)
+				}
+				const newTrack = existing || await retryable(async () => {
 					return await prisma.spotifyTrack.create({
 						select: {
 							id: true,

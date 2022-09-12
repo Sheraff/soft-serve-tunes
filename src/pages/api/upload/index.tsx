@@ -145,6 +145,7 @@ async function moveTempFile(origin: string, destination: string) {
 	await mkdir(dirname(destination), {recursive: true})
 	await rename(origin, destination)
 	log("ready", "201", "fswatcher", `uploaded to ${destination}`)
+	fileWatcher.onAdd(destination)
 	return true
 }
 
