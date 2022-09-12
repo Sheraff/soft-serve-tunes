@@ -242,7 +242,7 @@ export function isVariousArtists(name: string) {
 }
 
 export function notArtistName(name: string) {
-	return ![
+	return [
 		'',
 		'variousartists',
 		'various',
@@ -262,6 +262,7 @@ async function getArtist(common: ICommonTagsResult): Promise<[string | undefined
 	if (common.artist && !notArtistName(common.artist)) {
 		const foundArtist = await lastFm.correctArtist(common.artist)
 		if (foundArtist) return [foundArtist, isVarious]
+		return [common.artist, isVarious]
 	}
 	return [undefined, isVarious]
 }

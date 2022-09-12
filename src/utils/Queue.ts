@@ -37,4 +37,8 @@ export default class Queue {
 	next() {
 		return new Promise((resolve) => this.push(resolve))
 	}
+
+	delay(ms = this.rate * 10) {
+		this.queue.unshift(() => new Promise(resolve => setTimeout(resolve, ms)))
+	}
 }

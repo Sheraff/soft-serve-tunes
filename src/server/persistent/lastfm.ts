@@ -9,6 +9,29 @@ import lastfmImageToUrl from "utils/lastfmImageToUrl"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 
+// TODO: handle lastfm errors
+/*
+{
+	"message": "Invalid Method - No method with that name in this package",
+	"error": 3
+}
+200 status w/ JSON body error
+- 26: Your API key has been banned
+- 29: Rate Limit Exceeded
+- 16: A Temporary Error Occurred
+- 11: Service Offline
+- 10: Invalid API Token
+- 8: Generic Error
+- 2: Service offline/service Unavailable
+429: Too Many Requests
+ */
+
+const lastFmErrorSchema = z
+	.object({
+		message: z.string(),
+		error: z.number(),
+	})
+
 const lastFmCorrectionArtistSchema = z
 	.object({
 		corrections: z.union([
@@ -136,17 +159,24 @@ const lastFmTrackSchema = z
 		}).optional(),
 	})
 
+type KnownLastFmSchema = 
+	| typeof lastFmCorrectionArtistSchema
+	| typeof lastFmCorrectionTrackSchema
+	| typeof lastFmArtistSchema
+	| typeof lastFmAlbumSchema
+	| typeof lastFmTrackSchema
+
 type WaitlistEntry = (() => Promise<void>)
 
 class LastFM {
-	static RATE_LIMIT = 100
+	static RATE_LIMIT = 200
 	static STORAGE_LIMIT = 100
 
 	#queue: Queue
 	#waitlist: WaitlistEntry[] = []
 
 	constructor() {
-		this.#queue = new Queue(LastFM.RATE_LIMIT)
+		this.#queue = new Queue(LastFM.RATE_LIMIT, {wait: true})
 	}
 
 	async #processWaitlist() {
@@ -208,17 +238,26 @@ class LastFM {
 		}
 	}
 
-	async fetch(url: URL | string) {
+	async fetch<T extends KnownLastFmSchema>(url: URL | string, schema: T): Promise<z.infer<T>> {
 		const string = url.toString()
 		if (this.#pastResponses.has(string)) {
 			return this.#pastResponses.get(string)
 		}
-		await this.#queue.next()
 		const json = await retryable(async () => {
+			await this.#queue.next()
 			const data = await fetch(url)
 			const json = await data.json()
-			return json
-		})
+			const parsed = z.union([schema, lastFmErrorSchema]).parse(json)
+			if ("error" in parsed) {
+				if (parsed.error === 29 || parsed.error === 11 || parsed.error === 2) {
+					this.#queue.delay()
+				}
+				log("error", parsed.error.toString(), "lastfm", `${url}: ${parsed.message}`)
+				throw new Error(parsed.message)
+			} else {
+				return parsed
+			}
+		}) as z.infer<T>
 		this.#pastResponses.set(string, json)
 		this.#pastRequests.push(string)
 		if (this.#pastRequests.length > LastFM.STORAGE_LIMIT) {
@@ -232,8 +271,7 @@ class LastFM {
 	async #correctArtist(artist: string) {
 		const url = makeArtistCorrectionUrl(sanitizeString(artist))
 		try {
-			const json = await this.fetch(url)
-			const lastfm = lastFmCorrectionArtistSchema.parse(json)
+			const lastfm = await this.fetch(url, lastFmCorrectionArtistSchema)
 			if (typeof lastfm.corrections === "object" && lastfm.corrections?.correction?.artist?.name) {
 				return lastfm.corrections.correction.artist.name
 			}
@@ -247,8 +285,7 @@ class LastFM {
 	async #correctTrack(artist: string, track: string) {
 		const url = makeTrackCorrectionUrl(sanitizeString(artist), sanitizeString(track))
 		try {
-			const json = await this.fetch(url)
-			const lastfm = lastFmCorrectionTrackSchema.parse(json)
+			const lastfm = await this.fetch(url, lastFmCorrectionTrackSchema)
 			if (typeof lastfm.corrections === "object" && lastfm.corrections?.correction?.track?.name) {
 				return lastfm.corrections.correction.track.name
 			}
@@ -326,8 +363,7 @@ class LastFM {
 		}
 		let _trackData: z.infer<typeof lastFmTrackSchema>['track'] | null = null
 		for (const url of urls) {
-			const json = await this.fetch(url)
-			const lastfm = lastFmTrackSchema.parse(json)
+			const lastfm = await this.fetch(url, lastFmTrackSchema)
 			if (lastfm.track && lastfm.track.url) {
 				// no `url` field is usually a sign of poor quality data
 				_trackData = lastfm.track
@@ -464,8 +500,7 @@ class LastFM {
 		urls.push(makeArtistUrl({ artist: artist.name }))
 		let artistData: z.infer<typeof lastFmArtistSchema>['artist'] | null = null
 		for (const url of urls) {
-			const json = await this.fetch(url)
-			const lastfm = lastFmArtistSchema.parse(json)
+			const lastfm = await this.fetch(url, lastFmArtistSchema)
 			if (lastfm.artist && lastfm.artist.url) {
 				// no `url` field is usually a sign of poor quality data
 				artistData = lastfm.artist
@@ -611,8 +646,7 @@ class LastFM {
 		}
 		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
 		for (const url of urls) {
-			const json = await this.fetch(url)
-			const lastfm = lastFmAlbumSchema.parse(json)
+			const lastfm = await this.fetch(url, lastFmAlbumSchema)
 			if (lastfm.album && lastfm.album.url) {
 				// no `url` field is usually a sign of poor quality data
 				albumData = lastfm.album
