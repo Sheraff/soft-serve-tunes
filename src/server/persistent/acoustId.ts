@@ -6,6 +6,8 @@ import { dirname, join, relative } from "node:path"
 import { IAudioMetadata } from "music-metadata"
 import similarStrings from "utils/similarStrings"
 import log from "utils/logger"
+import { prisma } from "server/db/client"
+import retryable from "utils/retryable"
 
 const modulePath = dirname(new URL(import.meta.url).pathname)
 const origin = process.cwd()
@@ -32,6 +34,27 @@ function execFPcalc(file: string): Promise<FPcalcResult> {
 	})
 }
 
+/*
+https://github.com/acoustid/acoustid-server/blob/master/acoustid/api/errors.py
+ERROR_UNKNOWN_FORMAT = 1
+ERROR_MISSING_PARAMETER = 2
+ERROR_INVALID_FINGERPRINT = 3
+ERROR_INVALID_APIKEY = 4
+ERROR_INTERNAL = 5
+ERROR_INVALID_USER_APIKEY = 6
+ERROR_INVALID_UUID = 7
+ERROR_INVALID_DURATION = 8
+ERROR_INVALID_BITRATE = 9
+ERROR_INVALID_FOREIGNID = 10
+ERROR_INVALID_MAX_DURATION_DIFF = 11
+ERROR_NOT_ALLOWED = 12
+ERROR_SERVICE_UNAVAILABLE = 13
+ERROR_TOO_MANY_REQUESTS = 14
+ERROR_INVALID_MUSICBRAINZ_ACCESS_TOKEN = 15
+ERROR_INSECURE_REQUEST = 16
+ERROR_UNKNOWN_APPLICATION = 17
+ERROR_FINGERPRINT_NOT_FOUND = 18
+*/
 const acoustiIdLookupError = z.object({
 	status: z.enum(["error"]),
 	error: z.object({
@@ -47,8 +70,8 @@ const acoustiIdArtistSchema = z.object({
 })
 
 const acoustIdReleasegroupSchema = z.object({
-	type: z.enum(["Album", "Single", "EP", "Other"]),
-	secondarytypes: z.array(z.enum(["Compilation", "Soundtrack", "Live", "Remix", "DJ-mix"])).optional(),
+	type: z.enum(["Album", "Single", "EP", "Other"]).optional(),
+	secondarytypes: z.array(z.enum(["Compilation", "Soundtrack", "Live", "Remix", "DJ-mix", "Interview"])).optional(),
 	id: z.string(),
 	title: z.string(),
 	artists: z.array(acoustiIdArtistSchema).optional(),
@@ -72,32 +95,12 @@ const acoustiIdLookupSchema = z.object({
 })
 
 class AcoustId {
-	static RATE_LIMIT = 500
-	static STORAGE_LIMIT = 100
+	static RATE_LIMIT = 350
 
 	#queue: Queue
 
 	constructor() {
 		this.#queue = new Queue(AcoustId.RATE_LIMIT, { wait: true })
-	}
-
-	#pastRequests: string[] = []
-	#pastResponses = new Map<string, any>()
-
-	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	#purgeStore() {
-		if (!this.#purgeStoreTimeout) {
-			this.#purgeStoreTimeout = setTimeout(() => {
-				this.#purgeStoreTimeout = null
-				if (this.#pastRequests.length > 0) {
-					const key = this.#pastRequests.shift() as string
-					this.#pastResponses.delete(key)
-				}
-				if (this.#pastRequests.length > 0) {
-					this.#purgeStore()
-				}
-			}, 60_000)
-		}
 	}
 
 	async identify(absolutePath: string, metadata: IAudioMetadata) {
@@ -111,41 +114,49 @@ class AcoustId {
 		return execFPcalc(absolutePath)
 	}
 
-	async #identifyFingerprint(fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
-		const url = new URL("/v2/lookup", "https://api.acoustid.org")
-		url.searchParams.append("client", env.ACOUST_ID_API_KEY)
-		url.searchParams.append("format", "json")
-		url.searchParams.append("duration", Math.floor(fpCalcResult.duration).toString())
-		url.searchParams.append("fingerprint", fpCalcResult.fingerprint)
-		// recordings, recordingids, releases, releaseids, releasegroups, releasegroupids, tracks, compress, usermeta, sources
-		const meta = ["recordings", "releasegroups", "compress"].join("+") // the `+` signs mustn't be url encoded
-		const string = `${url}&meta=${meta}`
-		if (this.#pastResponses.has(string)) {
-			return this.#pastResponses.get(string)
+	async #fetch(body: `?${string}`) {
+		const stored = await retryable(() => prisma.acoustidStorage.findUnique({where: {id: body}}))
+		if (stored) {
+			return JSON.parse(stored.data)
 		}
-		// TODO: switch to POST requests
-		const data = await this.#queue.push(() => fetch(string))
+		const data = await this.#queue.push(() => fetch(`https://api.acoustid.org/v2/lookup${body}`))
+		if (data.status !== 200) {
+			if (data.status === 429) {
+				// Too many requests, back-off for a second
+				this.#queue.push(() => new Promise(resolve => setTimeout(resolve, 1000)))
+			}
+			throw new Error(`${data.status} - ${data.statusText}`)
+		}
 		const json = await data.json()
 		const parsed = z.union([acoustiIdLookupError, acoustiIdLookupSchema]).parse(json)
 		if (parsed.status === "error") {
 			log("error", "error", "acoustid", parsed.error.message)
 			throw new Error(parsed.error.message)
 		}
-		this.#pastResponses.set(string, json)
-		this.#pastRequests.push(string)
-		if (this.#pastRequests.length > AcoustId.STORAGE_LIMIT) {
-			const pastString = this.#pastRequests.shift() as string
-			this.#pastResponses.delete(pastString)
-		}
-		this.#purgeStore()
+		retryable(() => prisma.acoustidStorage.create({data: {
+			id: body,
+			data: JSON.stringify(json),
+		}}))
 		return parsed
 	}
 
+	async #identifyFingerprint(fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
+		const searchParams = new URLSearchParams()
+		searchParams.append("client", env.ACOUST_ID_API_KEY)
+		searchParams.append("format", "json")
+		searchParams.append("duration", Math.floor(fpCalcResult.duration).toString())
+		searchParams.append("fingerprint", fpCalcResult.fingerprint)
+		// recordings, recordingids, releases, releaseids, releasegroups, releasegroupids, tracks, compress, usermeta, sources
+		const meta = ["recordings", "releasegroups"].join("+") // the `+` signs mustn't be url encoded
+		return this.#fetch(`?${searchParams}&meta=${meta}`)
+	}
+
 	static TYPE_PRIORITY = {
-		"Album": 0,
-		"EP": 1,
-		"Single": 2,
-		"Other": 3,
+		"Album": 1,
+		"EP": 2,
+		"Single": 3,
+		"Other": 4,
+		"undefined": 5,
 	}
 
 	static SUBTYPE_PRIORITY = {
@@ -154,6 +165,8 @@ class AcoustId {
 		"Compilation": 3,
 		"Remix": 4,
 		"DJ-mix": 5,
+		"Interview": 6,
+		"undefined": 7,
 	}
 
 	#pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
@@ -170,13 +183,14 @@ class AcoustId {
 			return null
 		}
 		const mostConfidentRecordings = results
-			.filter(({score, recordings}) => score === maxScore && recordings)
+			.filter(({score, recordings}) => (score > maxScore - 0.5) && recordings)
 			.flatMap(({recordings}) => recordings) as z.infer<typeof acoustIdRecordingSchema>[]
 		const sameDurationRecordings = metaDuration
 			? mostConfidentRecordings.filter(({title, duration: d}) => title && d && Math.abs(metaDuration - d) < 4)
 			: mostConfidentRecordings.filter(({title}) => title)
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
+			console.log(results)
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
@@ -217,7 +231,9 @@ class AcoustId {
 			if (_aAlbum.type && !_bAlbum.type) return -1
 			if (!_aAlbum.type && _bAlbum.type) return 1
 			if (_aAlbum.type !== _bAlbum.type) {
-				return AcoustId.TYPE_PRIORITY[_aAlbum.type] - AcoustId.TYPE_PRIORITY[_bAlbum.type]
+				const aScore = AcoustId.TYPE_PRIORITY[_aAlbum.type] || AcoustId.TYPE_PRIORITY.undefined
+				const bScore = AcoustId.TYPE_PRIORITY[_bAlbum.type] || AcoustId.TYPE_PRIORITY.undefined
+				return aScore - bScore
 			}
 
 			// sort by increasing album.secondarytypes score
@@ -225,8 +241,8 @@ class AcoustId {
 			const bSubTypes = _bAlbum.secondarytypes || []
 			if (aSubTypes.length === 0 && bSubTypes.length === 0) return 0
 			if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
-			const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + AcoustId.SUBTYPE_PRIORITY[type], 0)
-			const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + AcoustId.SUBTYPE_PRIORITY[type], 0)
+			const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + (AcoustId.SUBTYPE_PRIORITY[type] || AcoustId.SUBTYPE_PRIORITY.undefined), 0)
+			const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + (AcoustId.SUBTYPE_PRIORITY[type] || AcoustId.SUBTYPE_PRIORITY.undefined), 0)
 			if (aSubTypesScore !== bSubTypesScore) {
 				return aSubTypesScore - bSubTypesScore
 			}

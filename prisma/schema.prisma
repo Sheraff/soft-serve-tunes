@@ -385,6 +385,11 @@ model SpotifyTrack {
   track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
 }
 
+model AcoustidStorage {
+  id   String @id
+  data String
+}
+
 // Necessary for Next auth
 model Account {
   id                       String  @id @default(cuid())
