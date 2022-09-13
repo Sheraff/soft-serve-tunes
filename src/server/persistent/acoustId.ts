@@ -48,7 +48,7 @@ const acoustiIdArtistSchema = z.object({
 
 const acoustIdReleasegroupSchema = z.object({
 	type: z.enum(["Album", "Single", "EP", "Other"]),
-	secondarytypes: z.array(z.enum(["Compilation", "Soundtrack", "Live", "Remix"])).optional(),
+	secondarytypes: z.array(z.enum(["Compilation", "Soundtrack", "Live", "Remix", "DJ-mix"])).optional(),
 	id: z.string(),
 	title: z.string(),
 	artists: z.array(acoustiIdArtistSchema).optional(),
@@ -72,7 +72,7 @@ const acoustiIdLookupSchema = z.object({
 })
 
 class AcoustId {
-	static RATE_LIMIT = 350
+	static RATE_LIMIT = 500
 	static STORAGE_LIMIT = 100
 
 	#queue: Queue
@@ -123,8 +123,8 @@ class AcoustId {
 		if (this.#pastResponses.has(string)) {
 			return this.#pastResponses.get(string)
 		}
-		await this.#queue.next()
-		const data = await fetch(string)
+		// TODO: switch to POST requests
+		const data = await this.#queue.push(() => fetch(string))
 		const json = await data.json()
 		const parsed = z.union([acoustiIdLookupError, acoustiIdLookupSchema]).parse(json)
 		if (parsed.status === "error") {
@@ -153,9 +153,14 @@ class AcoustId {
 		"Soundtrack": 2,
 		"Compilation": 3,
 		"Remix": 4,
+		"DJ-mix": 5,
 	}
 
 	#pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
+		if (results.length === 0) {
+			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
+			return null
+		}
 		const metaDuration = metadata.format.duration
 		const metaName = metadata.common.title
 		const metaAlbum = metadata.common.album
@@ -171,7 +176,7 @@ class AcoustId {
 			? mostConfidentRecordings.filter(({title, duration: d}) => title && d && Math.abs(metaDuration - d) < 4)
 			: mostConfidentRecordings.filter(({title}) => title)
 		if (sameDurationRecordings.length === 0) {
-			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs ${mostConfidentRecordings.map(({duration}) => duration).join(', ')}`)
+			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
