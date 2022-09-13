@@ -187,8 +187,8 @@ type KnownLastFmSchema =
 type WaitlistEntry = (() => Promise<void>)
 
 class LastFM {
-	static RATE_LIMIT = 200
-	static STORAGE_LIMIT = 100
+	static RATE_LIMIT = 170
+	static STORAGE_LIMIT = 30
 
 	#queue: Queue
 	#waitlist: WaitlistEntry[] = []

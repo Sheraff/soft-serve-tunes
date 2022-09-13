@@ -158,7 +158,7 @@ function isListRequest(url: SpotifyApiUrl) {
 
 class Spotify {
 	static RATE_LIMIT = 200
-	static STORAGE_LIMIT = 100
+	static STORAGE_LIMIT = 30
 
 	#accessToken: string | null = null
 
