@@ -43,6 +43,10 @@ freebox > box settings > ports >
   chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-darwin
   chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-linux
   ```
+  also, I could not find a self-contained `fpcalc` for linux, so we need to install 250Mo of dependencies (which will include fpcalc itself)
+  ```sh
+  apt-get install libchromaprint-tools
+  ```
 - install `npm i`
 - configure .env music folder
 - build (put pi on a fan, it's gonna heat up) `npm run build`
