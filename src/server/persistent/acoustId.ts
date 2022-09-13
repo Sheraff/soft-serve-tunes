@@ -199,8 +199,9 @@ class AcoustId {
 		"Spokenword": 4,
 		"Remix": 5,
 		"DJ-mix": 6,
-		"Mixtape/Street": 7,
-		"Interview": 8,
+		"Mixtape/Street": 6,
+		"Audiobook": 7,
+		"Interview": 7,
 		"undefined": 9,
 	}
 
@@ -231,13 +232,23 @@ class AcoustId {
 		const maxScore = Math.max(...results.map(({score}) => score))
 		if (maxScore < 0.8) {
 			log("warn", "404", "acoustid", `Fingerprint confidence too low (${maxScore}) for ${metadata.common.title}`)
+			console.log(results)
 			return null
 		}
 		const mostConfidentRecordings = results
 			.filter(({score, recordings}) => (score > maxScore - 0.5) && recordings)
-			.flatMap(({recordings}) => recordings) as z.infer<typeof acoustIdRecordingSchema>[]
+			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as (z.infer<typeof acoustIdRecordingSchema> & {score: number})[]
 		const sameDurationRecordings = metaDuration
-			? mostConfidentRecordings.filter(({title, duration: d}) => title && d && Math.abs(metaDuration - d) < 4)
+			? mostConfidentRecordings.filter(({score, title, duration: d}) => {
+				if (!title || !d) return false
+				const delta = Math.abs(metaDuration - d)
+				if (delta < 3) return true
+				if (score > 0.9 && delta < 5) return true
+				if (score > 0.95 && delta < 7) return true
+				if (score > 0.99 && delta < 10) return true
+				if (score > 0.999 && delta < 20) return true
+				return false
+			})
 			: mostConfidentRecordings.filter(({title}) => title)
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
@@ -246,11 +257,11 @@ class AcoustId {
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
 			const {releasegroups, ...rest} = recording
-			if(!releasegroups || releasegroups.length === 0) {
+			if (!releasegroups || releasegroups.length === 0) {
 				return rest
 			}
 			return releasegroups.map((album) => ({...rest, album}))
-		}) as (Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>})[]
+		}) as (Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number})[]
 		albums.sort((a, b) => {
 			// prefer items w/ more info
 			const aAlbum = a.album
