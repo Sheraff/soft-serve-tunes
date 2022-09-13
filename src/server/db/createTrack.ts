@@ -8,6 +8,7 @@ import { env } from "env/server.mjs"
 import type { PrismaClientInitializationError, PrismaClientKnownRequestError, PrismaClientRustPanicError, PrismaClientUnknownRequestError, PrismaClientValidationError } from "@prisma/client/runtime"
 import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
+import { acoustId } from "server/persistent/acoustId"
 import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
@@ -22,6 +23,10 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	const stats = await stat(path)
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
+	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path }, select: {path: true, count: true}})
+	if (acoustidRetry) {
+		await prisma.fileToCreate.delete(({where: {path}}))
+	}
 	if (existingFile) {
 		if (path === existingFile.path) {
 			return true
@@ -53,39 +58,82 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		return false
 	}
 	const metadata = _metadata as IAudioMetadata
-	const uselessNameRegex = /^[0-9\s]*(track|piste)[0-9\s]*$/i
-	const name = metadata.common.title && !uselessNameRegex.test(metadata.common.title)
-		? metadata.common.title
-		: basename(path, extname(path))
 
-	const position = metadata.common.track.no ?? undefined
-
+	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
+	if (!acoustidRetry || acoustidRetry.count < 10) {
+		try {
+			fingerprinted = await acoustId.identify(path, metadata)
+		} catch (e) {
+			log("warn", "wait", "fswatcher", `could not fingerprint ${relativePath}, trying again later`)
+			console.error(e)
+			await tryAgainLater(path, acoustidRetry?.count)
+			return false
+		}
+	}
+	
 	try {
 		log("info", "info", "fswatcher", `adding new track from file ${relativePath}`)
+		
+		const name = (() => {
+			if (fingerprinted?.title)
+				return fingerprinted.title
+			const uselessNameRegex = /^[0-9\s]*(track|piste)[0-9\s]*$/i
+			if (metadata.common.title && !uselessNameRegex.test(metadata.common.title))
+				return metadata.common.title
+			return basename(path, extname(path))
+		})()
+	
+		const position = metadata.common.track.no ?? undefined
+
 		const imageData = metadata.common.picture?.[0]?.data
 		const { hash, path: imagePath, palette } = imageData
 			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1], `from createTrack ${name}`)
 			: { hash: '', path: '', palette: '' }
-		const feats = metadata.common.artists?.filter(artist => artist !== metadata.common.artist) || []
 
-		const [correctedArtist, isMultiArtistAlbum] = await getArtist(metadata.common)
+		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
+			if (fingerprinted?.artists?.[0]) {
+				const mainName = fingerprinted.artists[0].name
+				const correctedMainName = (await lastFm.correctArtist(mainName)) || mainName
+				if (fingerprinted.album?.artists?.[0]) {
+					if (fingerprinted.album.artists[0].name !== mainName) {
+						return [correctedMainName, true]
+					}
+				}
+				return [correctedMainName, false]
+			}
+			return getArtist(metadata.common)
+		})()
+
+		const feats = (() => {
+			if (fingerprinted?.artists) {
+				return fingerprinted.artists.slice(1).map(({name}) => name)
+			}
+			if (metadata.common.artists) {
+				return metadata.common.artists?.filter(artist => artist !== metadata.common.artist)
+			}
+			return []
+		})()
+
 		const correctedFeats: string[] = []
 		for (const feat of feats) {
 			if (!feat) continue
 			const correctedFeat = await lastFm.correctArtist(feat)
 			if (correctedFeat) {
 				correctedFeats.push(correctedFeat)
+			} else if (fingerprinted?.artists) {
+				correctedFeats.push(feat)
 			}
 		}
 
-		const correctedTrack = correctedArtist && name
-			? await lastFm.correctTrack(correctedArtist, name)
-			: name
+		const correctedTrack = await (async () => {
+			if (correctedArtist && name) {
+				const correctedName = await lastFm.correctTrack(correctedArtist, name)
+				return correctedName || name
+			}
+			return name
+		})()
 
-		const correctedAlbum = metadata.common.album
-		// const correctedAlbum = metadata.common.album && correctedArtist
-		// 	? await correctAlbum(correctedArtist, metadata.common.album, correctedTrack)
-		// 	: undefined
+		const correctedAlbum = fingerprinted?.album?.title || metadata.common.album
 
 		const genres = uniqueGenres(metadata.common.genre || [])
 
@@ -109,7 +157,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						size: stats.size,
 						ino: stats.ino,
 						container: metadata.format.container ?? '*',
-						duration: metadata.format.duration ?? 0,
+						duration: metadata.format.duration ?? fingerprinted?.duration ?? 0,
 						updatedAt: new Date(stats.mtimeMs),
 						createdAt: new Date(stats.ctimeMs),
 						birthTime: new Date(stats.birthtime),
@@ -191,6 +239,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
+		await tryAgainLater()
 		return track
 	} catch (e) {
 		const error = e as PrismaError
@@ -206,6 +255,25 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			console.warn(error)
 			return false
 		}
+	}
+}
+
+let retryTimeout: NodeJS.Timeout | null = null
+async function tryAgainLater(path?: string, count = -1) {
+	if (retryTimeout) clearTimeout(retryTimeout)
+	if (path) {
+		await retryable(() => prisma.fileToCreate.create({data: {path, count: count + 1}}))
+	}
+	const howManyLeft = await prisma.fileToCreate.count()
+	if (howManyLeft) {
+		retryTimeout = setTimeout(async () => {
+			retryTimeout = null
+			const items = await prisma.fileToCreate.findMany()
+			for (const item of items) {
+				log("info", "wait", "fswatcher", `retrying (#${item.count}) to create file ${item.path}`)
+				await createTrack(item.path)
+			}
+		}, 120_000)
 	}
 }
 

@@ -1,4 +1,4 @@
-import { exec } from "node:child_process"
+import { spawn } from "node:child_process"
 import { env } from "env/server.mjs"
 import Queue from "utils/Queue"
 import { z } from "zod"
@@ -21,15 +21,37 @@ type FPcalcResult = {
 function execFPcalc(file: string): Promise<FPcalcResult> {
 	return new Promise((resolve, reject) => {
 		// https://github.com/acoustid/chromaprint/blob/master/src/cmd/fpcalc.cpp
-		exec(`${fpcalc} ${file} -json`, (err, stdout) => {
-			if (err) {
-				reject(err)
+		const cmd = spawn(join(process.cwd(), fpcalc), [file, '-json'])
+
+		let accuData = ''
+		cmd.stdout.on('data', (data) => {
+			accuData+=data
+		})
+
+		let accuErr = ''
+		cmd.stderr.on('data', (data) => {
+			accuErr+=data
+		})
+
+		cmd.on('close', (code) => {
+			if (accuErr) {
+				reject(accuErr)
+			} else {
+				try {
+					const { duration, fingerprint } = JSON.parse(accuData)
+					resolve({
+						duration,
+						fingerprint,
+					})
+				} catch (e) {
+					console.log('error in execFPcalc', file)
+					console.log(fpcalc)
+					console.log(process.cwd())
+					console.log(modulePath)
+					console.log(__dirname)
+					throw e
+				}
 			}
-			const { duration, fingerprint } = JSON.parse(stdout)
-			resolve({
-				duration,
-				fingerprint,
-			})
 		})
 	})
 }
@@ -70,8 +92,8 @@ const acoustiIdArtistSchema = z.object({
 })
 
 const acoustIdReleasegroupSchema = z.object({
-	type: z.enum(["Album", "Single", "EP", "Other"]).optional(),
-	secondarytypes: z.array(z.enum(["Compilation", "Soundtrack", "Live", "Remix", "DJ-mix", "Interview"])).optional(),
+	type: z.string().optional(),
+	secondarytypes: z.array(z.string()).optional(),
 	id: z.string(),
 	title: z.string(),
 	artists: z.array(acoustiIdArtistSchema).optional(),
@@ -104,10 +126,15 @@ class AcoustId {
 	}
 
 	async identify(absolutePath: string, metadata: IAudioMetadata) {
+		log("info", "fetch", "acoustid", `fingerprinting ${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
 		const sorted = this.#pick(data.results, metadata)
-		return sorted?.[0] ? sorted[0] : null
+		const result = sorted?.[0] ? sorted[0] : null
+		if (result) {
+			log("ready", "200", "acoustid", `fingerprint found ${result.title} (${absolutePath})`)
+		}
+		return result
 	}
 
 	async #fingerprintFile(absolutePath: string) {
@@ -117,7 +144,12 @@ class AcoustId {
 	async #fetch(body: `?${string}`) {
 		const stored = await retryable(() => prisma.acoustidStorage.findUnique({where: {id: body}}))
 		if (stored) {
-			return JSON.parse(stored.data)
+			try {
+				return JSON.parse(stored.data)
+			} catch (e) {
+				console.log('error while parsing stored acoustid response', body)
+				throw e
+			}
 		}
 		const data = await this.#queue.push(() => fetch(`https://api.acoustid.org/v2/lookup${body}`))
 		if (data.status !== 200) {
@@ -155,18 +187,37 @@ class AcoustId {
 		"Album": 1,
 		"EP": 2,
 		"Single": 3,
-		"Other": 4,
-		"undefined": 5,
+		"Broadcast": 4,
+		"Other": 5,
+		"undefined": 6,
 	}
 
 	static SUBTYPE_PRIORITY = {
 		"Live": 1,
 		"Soundtrack": 2,
 		"Compilation": 3,
-		"Remix": 4,
-		"DJ-mix": 5,
-		"Interview": 6,
-		"undefined": 7,
+		"Spokenword": 4,
+		"Remix": 5,
+		"DJ-mix": 6,
+		"Mixtape/Street": 7,
+		"Interview": 8,
+		"undefined": 9,
+	}
+
+	#getTypeValue(type: string | undefined): number {
+		if (!type) return AcoustId.TYPE_PRIORITY.undefined
+		// @ts-expect-error -- this is the check
+		if (type in AcoustId.TYPE_PRIORITY) return AcoustId.TYPE_PRIORITY[type]
+		log("warn", "warn", "acoustid", `encountered an unknown TYPE_PRIORITY ${type}`)
+		return AcoustId.TYPE_PRIORITY.undefined
+	}
+	
+	#getSubTypeValue(type: string | undefined): number {
+		if (!type) return AcoustId.SUBTYPE_PRIORITY.undefined
+		// @ts-expect-error -- this is the check
+		if (type in AcoustId.SUBTYPE_PRIORITY) return AcoustId.SUBTYPE_PRIORITY[type]
+		log("warn", "warn", "acoustid", `encountered an unknown SUBTYPE_PRIORITY ${type}`)
+		return AcoustId.SUBTYPE_PRIORITY.undefined
 	}
 
 	#pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
@@ -231,8 +282,8 @@ class AcoustId {
 			if (_aAlbum.type && !_bAlbum.type) return -1
 			if (!_aAlbum.type && _bAlbum.type) return 1
 			if (_aAlbum.type !== _bAlbum.type) {
-				const aScore = AcoustId.TYPE_PRIORITY[_aAlbum.type] || AcoustId.TYPE_PRIORITY.undefined
-				const bScore = AcoustId.TYPE_PRIORITY[_bAlbum.type] || AcoustId.TYPE_PRIORITY.undefined
+				const aScore = this.#getTypeValue(_aAlbum.type)
+				const bScore = this.#getTypeValue(_bAlbum.type)
 				return aScore - bScore
 			}
 
@@ -241,8 +292,8 @@ class AcoustId {
 			const bSubTypes = _bAlbum.secondarytypes || []
 			if (aSubTypes.length === 0 && bSubTypes.length === 0) return 0
 			if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
-			const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + (AcoustId.SUBTYPE_PRIORITY[type] || AcoustId.SUBTYPE_PRIORITY.undefined), 0)
-			const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + (AcoustId.SUBTYPE_PRIORITY[type] || AcoustId.SUBTYPE_PRIORITY.undefined), 0)
+			const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
+			const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
 			if (aSubTypesScore !== bSubTypesScore) {
 				return aSubTypesScore - bSubTypesScore
 			}

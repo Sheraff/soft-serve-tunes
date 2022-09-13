@@ -3,8 +3,8 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { unstable_getServerSession as getServerSession } from "next-auth"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import formidable, { Fields, Files } from "formidable"
-import { mkdir, rename, stat, unlink } from "fs/promises"
-import { basename, dirname, extname, join, sep } from "path"
+import { mkdir, rename, stat, unlink } from "node:fs/promises"
+import { basename, dirname, extname, join, relative, sep } from "node:path"
 import sanitize from "sanitize-filename"
 import { env } from "env/server.mjs"
 import { fileWatcher } from "server/persistent/watcher"
@@ -67,6 +67,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			log("error", "error", "fswatcher", `upload failed to parse metadata out of "${name}"`)
 			continue
 		}
+
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
 			const search = sanitizeString(metadata.common.title || pathToSearch(name))
 			log("info", "wait", "spotify", `upload paused for metadata from ${search}`)
@@ -139,12 +140,12 @@ export const config = {
 async function moveTempFile(origin: string, destination: string) {
 	try {
 		await stat(destination)
-		log("warn", "retry", "fswatcher", `${destination} already exists`)
+		log("warn", "retry", "fswatcher", `"${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, destination)}" already exists`)
 		return false
 	} catch {}
 	await mkdir(dirname(destination), {recursive: true})
 	await rename(origin, destination)
-	log("ready", "201", "fswatcher", `uploaded to ${destination}`)
+	log("ready", "201", "fswatcher", `uploaded to "${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, destination)}"`)
 	fileWatcher.onAdd(destination)
 	return true
 }

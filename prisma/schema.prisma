@@ -390,6 +390,11 @@ model AcoustidStorage {
   data String
 }
 
+model FileToCreate {
+  path  String @id
+  count Int    @default(0)
+}
+
 // Necessary for Next auth
 model Account {
   id                       String  @id @default(cuid())
