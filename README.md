@@ -11,9 +11,6 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - [ ] watcher issues:
   - [ ] not deleting from DB when deleting files manually
   - [ ] not adding to DB when uploader adds files
-- [ ] how to deal with tracks w/ useless names? (eg. /Sum 41/Unknown Album/13 13 Piste 13.mp3)
-  - => need fingerprinting
-  - src/server/db/createTrack.ts:57
 
 ## Deploy to raspberry
 
@@ -40,6 +37,11 @@ freebox > box settings > ports >
 - git clone the project
   ```sh
   git clone https://github.com/Sheraff/soft-serve-tunes.git
+  ```
+- some binaries need chmoding
+  ```sh
+  chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-darwin
+  chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-linux
   ```
 - install `npm i`
 - configure .env music folder

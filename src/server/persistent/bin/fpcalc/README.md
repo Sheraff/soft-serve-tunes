@@ -1,0 +1,1 @@
+fpcalc binaries @ https://github.com/acoustid/chromaprint/releases
