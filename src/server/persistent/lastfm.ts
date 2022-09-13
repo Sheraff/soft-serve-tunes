@@ -8,8 +8,8 @@ import { socketServer } from "server/persistent/ws"
 import lastfmImageToUrl from "utils/lastfmImageToUrl"
 import log from "utils/logger"
 import retryable from "utils/retryable"
-import damLev from "components/Header/Search/worker/damLev"
 import { notArtistName } from "server/db/createTrack"
+import similarStrings from "utils/similarStrings"
 
 const lastFmErrorSchema = z
 	.object({
@@ -485,27 +485,10 @@ class LastFM {
 		const url = makeTrackSearchUrl({ track: trackName, album: albumName })
 		const lastfm = await this.fetch(url, lastFmTrackSearch)
 		const albumsFound = lastfm.results?.trackmatches?.track || []
-		const comparable = (name: string) => sanitizeString(name).toLowerCase().replace(/\s+/g, '')
 		const matchByName = albumsFound.filter(({name, artist}) => {
-			const _name = comparable(name)
-			const _trackName = comparable(trackName)
-			if (_name !== _trackName) {
-				const distance = damLev(_name, _trackName)
-				const refLength = Math.max(_name.length, _trackName.length)
-				const ratio = distance / refLength
-				if(!(ratio < 0.07 || (ratio < 0.5 && distance < 4))) {
-					return false
-				}
-			}
-			const _artist = comparable(artist)
-			const _artistName = comparable(artistName)
-			if (_artist !== _artistName) {
-				const distance = damLev(_artist, _artistName)
-				const refLength = Math.max(_artist.length, _artistName.length)
-				const ratio = distance / refLength
-				return ratio < 0.07 || (ratio < 0.5 && distance < 4)
-			}
-			return true
+			const similarTrackName = similarStrings(name, trackName)
+			if (!similarTrackName) return false
+			return similarStrings(artist, artistName)
 		})
 		const matchWithMbid = matchByName.filter(({mbid}) => mbid)
 		const match = matchWithMbid[0] || matchByName[0]
@@ -724,27 +707,13 @@ class LastFM {
 			const url = makeAlbumSearchUrl({ album: album.name })
 			const lastfm = await this.fetch(url, lastFmAlbumSearch)
 			const albumsFound = lastfm.results?.albummatches?.album || []
-			const comparable = (name: string) => sanitizeString(name).toLowerCase().replace(/\s+/g, '')
 			const matchByName = albumsFound.filter(({name, artist}) => {
-				const _name = comparable(name)
-				const _albumName = comparable(album.name)
-				if (_name !== _albumName) {
-					const distance = damLev(_name, _albumName)
-					const refLength = Math.max(_name.length, _albumName.length)
-					const ratio = distance / refLength
-					if(!(ratio < 0.07 || (ratio < 0.5 && distance < 4))) {
-						return false
-					}
-				}
+				const similarAlbumName = similarStrings(name, album.name)
+				if (!similarAlbumName) return false
+				
 				if (album.artist?.name) {
-					const _artist = comparable(artist)
-					const _artistName = comparable(album.artist.name)
-					if (_artist !== _artistName) {
-						const distance = damLev(_artist, _artistName)
-						const refLength = Math.max(_artist.length, _artistName.length)
-						const ratio = distance / refLength
-						return ratio < 0.07 || (ratio < 0.5 && distance < 4)
-					}
+					const similarArtistName = similarStrings(artist, album.artist.name)
+					return similarArtistName
 				}
 				return true
 			})
