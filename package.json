@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_OPTIONS=--max_old_space_size=768 next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db": "prisma format && prisma generate && prisma db push",
