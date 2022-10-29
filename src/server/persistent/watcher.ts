@@ -23,6 +23,8 @@ class MyWatcher {
 		this.onUnlink = this.onUnlink.bind(this)
 		this.onUnlinkMany = this.onUnlinkMany.bind(this)
 		this.scheduleUnlinkFile = this.scheduleUnlinkFile.bind(this)
+		this.scheduleCleanup = this.scheduleCleanup.bind(this)
+		this.removeFileFromDb = this.removeFileFromDb.bind(this)
 		this.onError = this.onError.bind(this)
 		this.init()
 	}
@@ -157,6 +159,10 @@ class MyWatcher {
 				this.resolveQueue.shift()
 			}
 		}
+		this.scheduleCleanup()
+	}
+
+	scheduleCleanup() {
 		if (this.cleanupTimeoutId) {
 			clearTimeout(this.cleanupTimeoutId)
 		}
@@ -173,27 +179,30 @@ class MyWatcher {
 			})
 			log("event", "event", "fswatcher", `file move ${added} (from ${dirname(relative(dirname(added), removed))})`)
 		} else if (removed) {
-			const dbIno = BigInt(ino)
-			const file = await prisma.file.delete({
-				where: { ino: dbIno },
-				select: { trackId: true, id: true },
-			})
-			if (file?.trackId) {
-				const track = await prisma.track.delete({
-					where: { id: file.trackId },
-					select: { name: true, id: true },
-				})
-				log("event", "event", "fswatcher", `file removed from ${removed}, with associated track ${track.name}`)
-				socketServer.send('watcher:remove', { track })
-			} else {
-				log("error", "error", "fswatcher", `database File entry not found for ${removed} when trying to remove it`)
-			}
+			await this.removeFileFromDb(removed)
 		} else if (added) {
 			log("event", "event", "fswatcher", `file sent to createTrack ${added}`)
 			await createTrack(added)
 			socketServer.send('watcher:add')
 		} else {
 			log("error", "error", "fswatcher", `could not resolve pending for ${ino} file`)
+		}
+	}
+
+	async removeFileFromDb(path: string) {
+		const file = await prisma.file.delete({
+			where: { path },
+			select: { trackId: true, id: true },
+		})
+		if (file?.trackId) {
+			const track = await prisma.track.delete({
+				where: { id: file.trackId },
+				select: { name: true, id: true },
+			})
+			log("event", "event", "fswatcher", `file removed from ${path}, with associated track ${track.name}`)
+			socketServer.send('watcher:remove', { track })
+		} else {
+			log("error", "error", "fswatcher", `database File entry not found for ${path} when trying to remove it`)
 		}
 	}
 

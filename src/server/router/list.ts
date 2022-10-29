@@ -1,9 +1,11 @@
 import { createRouter } from "./context"
 import { socketServer } from "server/persistent/ws"
+import { fileWatcher } from "server/persistent/watcher"
 import type { WebSocket } from 'ws'
 import createTrack from "server/db/createTrack"
 import listFilesFromDir from "server/db/listFilesFromDir"
 import { env } from "env/server.mjs"
+import log from "utils/logger"
 
 const populating: {
   promise: Promise<null | void> | null
@@ -48,7 +50,7 @@ socketServer.registerActor('populate:subscribe', async (ws: WebSocket) => {
 
 export const listRouter = createRouter()
   .mutation("populate", {
-    async resolve() {
+    async resolve({ctx}) {
       if (loadingStatus.populated) {
         return false
       }
@@ -61,6 +63,37 @@ export const listRouter = createRouter()
             for (const file of list) {
               await createTrack(file)
               populating.done++
+            }
+
+            // remove tracks without files
+            try {
+              const orphanTracks = await ctx.prisma.track.findMany({
+                where: {file: {is: null}},
+                select: {id: true, name: true}
+              })
+              for (const track of orphanTracks) {
+                await ctx.prisma.track.delete({
+                  where: { id: track.id },
+                })
+                log("event", "event", "fswatcher", `track ${track.name} removed because no associated file was found`)
+              }
+
+              // remove database records of files that have no filesystem file
+              const dbFiles = await ctx.prisma.file.findMany({
+                where: {path: {notIn: list}}, // WARN: `list` might be huge, if this becomes a problem, iterate (paginated) over all DB files and check for match in the filesystem
+                select: { path: true }
+              })
+              for (const dbFile of dbFiles) {
+                await fileWatcher.removeFileFromDb(dbFile.path)
+              }
+
+              if (dbFiles.length || orphanTracks.length) {
+                fileWatcher.scheduleCleanup()
+              }
+            } catch (e) {
+              // catching error because lack of cleanup shouldn't prevent app from starting up
+              console.error('error depopulating database')
+              console.error(e)
             }
           })
           .then(() => {
