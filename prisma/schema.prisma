@@ -54,7 +54,7 @@ model Track {
 
 model UserTrack {
   id         String    @id
-  track      Track     @relation(fields: [id], references: [id])
+  track      Track     @relation(fields: [id], references: [id], onDelete: Cascade)
   playcount  Int       @default(0)
   favorite   Boolean   @default(false)
   lastListen DateTime?
@@ -118,7 +118,7 @@ model Artist {
 
 model UserArtist {
   id         String    @id
-  artist     Artist    @relation(fields: [id], references: [id])
+  artist     Artist    @relation(fields: [id], references: [id], onDelete: Cascade)
   playcount  Int       @default(0)
   favorite   Int       @default(0)
   lastListen DateTime?
@@ -148,7 +148,7 @@ model Album {
 
 model UserAlbum {
   id         String    @id
-  album      Album     @relation(fields: [id], references: [id])
+  album      Album     @relation(fields: [id], references: [id], onDelete: Cascade)
   playcount  Int       @default(0)
   favorite   Int       @default(0)
   lastListen DateTime?
