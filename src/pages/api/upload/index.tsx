@@ -69,7 +69,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		}
 
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
-			const search = sanitizeString(metadata.common.title || pathToSearch(name))
+			const search = spotify.sanitize(metadata.common.title || pathToSearch(name))
 			log("info", "wait", "spotify", `upload paused for metadata from ${search}`)
 			const response = await spotify.fetch(`search?type=track&q=${search}`)
 			if ('tracks' in response) {

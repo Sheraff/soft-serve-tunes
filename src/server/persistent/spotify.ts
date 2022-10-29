@@ -235,6 +235,15 @@ class Spotify {
 			}
 			return data as SpotifyApiResponse<URL>
 		})
+
+	}
+	
+	/**
+	 * @description Spotify doesn't seem to like for *all* encodable chars to be encoded.
+	 * For example `+` (plus) shouldn't be encoded, and ` ` (space) encoded into a `'+'` doesn't always work
+	 */
+	sanitize(string: string): string {
+		return sanitizeString(string).replace(/&/g, '%26')
 	}
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
@@ -340,7 +349,7 @@ class Spotify {
 			const artistName = track.artist?.name
 			const albumName = track.album?.name
 			const fuzzySearch = !spotifyTrack && !artistName && !albumName && track.file?.path
-				? sanitizeString(pathToSearch(track.file.path))
+				? this.sanitize(pathToSearch(track.file.path))
 				: null
 			if (!spotifyTrack && !artistName && !albumName && !fuzzySearch) {
 				log("warn", "409", "spotify", `not enough information to find track ${track.name}, need better strategy`)
@@ -365,7 +374,7 @@ class Spotify {
 			let changedTrack = false
 			trackCreate: if (!spotifyTrack) {
 				const search = fuzzySearch
-					|| `track:${sanitizeString(track.name)}${artistName ? ` artist:${sanitizeString(artistName)}` : ''}${albumName ? ` album:${sanitizeString(albumName)}` : ''}`
+					|| `track:${this.sanitize(track.name)}${artistName ? ` artist:${this.sanitize(artistName)}` : ''}${albumName ? ` album:${this.sanitize(albumName)}` : ''}`
 				log("info", "fetch", "spotify", `${fuzzySearch ? 'fuzzy ' : ''}search: ${search}`)
 				const trackData = await this.fetch(`search?type=track&q=${search}`)
 				let candidate = ('tracks' in trackData)
@@ -373,7 +382,7 @@ class Spotify {
 					: undefined
 				if (!candidate) {
 					if (artistName && albumName && typeof track.position === 'number') {
-						const search = `artist:${sanitizeString(artistName)} album:${sanitizeString(albumName)}`
+						const search = `artist:${this.sanitize(artistName)} album:${this.sanitize(albumName)}`
 						log("info", "fetch", "spotify", `fallback search: #${track.position} of ${search}`)
 						const albumData = await this.fetch(`search?type=track&q=${search}`)
 						if ('error' in albumData) {
