@@ -64,7 +64,9 @@ export const listRouter = createRouter()
               await createTrack(file)
               populating.done++
             }
-
+            return new Set(list)
+          })
+          .then(async (list) => {
             // remove tracks without files
             try {
               const orphanTracks = await ctx.prisma.track.findMany({
@@ -79,13 +81,22 @@ export const listRouter = createRouter()
               }
 
               // remove database records of files that have no filesystem file
-              const dbFiles = await ctx.prisma.file.findMany({
-                where: {path: {notIn: list}}, // WARN: `list` might be huge, if this becomes a problem, iterate (paginated) over all DB files and check for match in the filesystem
-                select: { path: true }
-              })
-              for (const dbFile of dbFiles) {
-                await fileWatcher.removeFileFromDb(dbFile.path)
-              }
+              const chunkSize = 300
+              let cursor = 0
+              let dbFiles
+              do {
+                dbFiles = await ctx.prisma.file.findMany({
+                  take: chunkSize,
+                  skip: cursor,
+                  select: { path: true },
+                })
+                cursor += chunkSize
+                for (const dbFile of dbFiles) {
+                  if (!list.has(dbFile.path)) {
+                    await fileWatcher.removeFileFromDb(dbFile.path)
+                  }
+                }
+              } while (dbFiles.length === chunkSize)
 
               if (dbFiles.length || orphanTracks.length) {
                 fileWatcher.scheduleCleanup()
