@@ -21,6 +21,8 @@ class MyWatcher {
 		this.rootFolder = rootFolder
 		this.onAdd = this.onAdd.bind(this)
 		this.onUnlink = this.onUnlink.bind(this)
+		this.onUnlinkMany = this.onUnlinkMany.bind(this)
+		this.scheduleUnlinkFile = this.scheduleUnlinkFile.bind(this)
 		this.onError = this.onError.bind(this)
 		this.init()
 	}
@@ -44,9 +46,8 @@ class MyWatcher {
 		})
 		this.watcher.on('add', this.onAdd)
 		this.watcher.on('unlink', this.onUnlink)
+		this.watcher.on('unlinkDir', this.onUnlinkMany)
 		this.watcher.on('error', this.onError)
-		this.watcher.on('unlinkDir', (path) => log("event", "event", "fswatcher", `removing dir "${path}" (unused event)`))
-		this.watcher.on('change', (path) => log("event", "event", "fswatcher", `change "${path}" (unused event)`))
 
 		return new Promise((resolve) => {
 			this.watcher?.once('ready', resolve)
@@ -91,24 +92,40 @@ class MyWatcher {
 		})
 	}
 
+	async onUnlinkMany(partial: string) {
+		const files = await prisma.file.findMany({
+			where: { path: { startsWith: partial } },
+			select: { ino: true, path: true },
+		})
+		if (!files.length) {
+			log("error", "error", "fswatcher", `Directory "${partial}" removed, but no file found in database`)
+			return
+		}
+		files.forEach((file) => this.scheduleUnlinkFile(file))
+	}
+
 	async onUnlink(path: string) {
 		// technically, while this query is running, the entry could be modified by this.resolve, but it's unlikely
 		const file = await prisma.file.findUnique({
 			where: { path },
-			select: { ino: true },
+			select: { ino: true, path: true },
 		})
 		if (!file) {
-			log("error", "error", "fswatcher", `${path} removed, but not found in database`)
+			log("error", "error", "fswatcher", `File "${path}" removed, but not found in database`)
 			return
 		}
+		this.scheduleUnlinkFile(file)
+	}
+
+	scheduleUnlinkFile(file: {ino: bigint, path: string}) {
 		const ino = String(file.ino)
 		const entry = this.pending.get(ino)
 		if (entry) {
-			entry.removed = path
+			entry.removed = file.path
 			return
 		}
 		this.pending.set(ino, {
-			removed: path,
+			removed: file.path,
 			timeout: setTimeout(() => this.enqueueResolve(ino), MyWatcher.DELAY),
 			ino,
 		})
