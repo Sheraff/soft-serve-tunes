@@ -757,9 +757,10 @@ class LastFM {
 			}
 		}
 		const connectingArtist = album.artist?.lastfm?.id
+		const foundConnectingTracks = await findConnectingTracksForAlbum(albumData)
 		const connectingTracks = Array.from(new Set([
 			...album.tracks.map(({ lastfm }) => lastfm?.id),
-			...await findConnectingTracksForAlbum(albumData)
+			...foundConnectingTracks,
 		].filter(Boolean))) as string[]
 		const albumData_mbid = albumData.mbid
 		const albumData_name = albumData.name
