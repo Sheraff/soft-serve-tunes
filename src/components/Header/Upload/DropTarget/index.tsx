@@ -57,10 +57,18 @@ function fileFromFileEntry(fileEntry: FileSystemFileEntry) {
 		.catch(() => null)
 }
 
+function isFile(entry: FileSystemEntry): entry is FileSystemFileEntry {
+	return entry.isFile
+}
+
+function isDirectory(entry: FileSystemEntry): entry is FileSystemDirectoryEntry {
+	return entry.isDirectory
+}
+
 // Drop handler function to get all files
 async function getAllFileEntries(dataTransferItemList: DataTransferItemList) {
-	const fileEntries: FileSystemFileEntry[] = []
-	const queue: (FileSystemEntry | FileSystemDirectoryEntry)[] = []
+	const fileEntries = []
+	const queue: FileSystemEntry[] = []
 	for (const item of dataTransferItemList) {
 		const entry = item.webkitGetAsEntry()
 		if (entry) {
@@ -69,12 +77,11 @@ async function getAllFileEntries(dataTransferItemList: DataTransferItemList) {
 	}
 	let entry
 	while (entry = queue.shift()) {
-		if (entry.isFile) {
-			const file = entry as FileSystemFileEntry
-			fileEntries.push(file)
-		} else if (entry.isDirectory) {
-			const directory = entry as FileSystemDirectoryEntry
-			queue.push(...await readAllDirectoryEntries(directory.createReader()))
+		if (isFile(entry)) {
+			fileEntries.push(entry)
+		} else if (isDirectory(entry)) {
+			const directoryEntries = await readAllDirectoryEntries(entry.createReader())
+			queue.push(...directoryEntries)
 		}
 	}
 	return fileEntries
