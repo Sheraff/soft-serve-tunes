@@ -68,9 +68,9 @@ class MyWatcher {
 	}> = new Map()
 
 	async onAdd(path: string, stats?: Stats) {
-		if(!stats) {
+		if (!stats) {
 			stat(path, (error, stats) => {
-				if(error) {
+				if (error) {
 					log("error", "error", "fswatcher", `could not access file for stats as it was being added ${path}`)
 					return
 				}
@@ -148,7 +148,12 @@ class MyWatcher {
 		if (this.resolveQueue.length === 1) {
 			let nextItem
 			while (nextItem = this.resolveQueue[0]) {
-				await this.resolve(nextItem)
+				try {
+					await this.resolve(nextItem)
+				} catch (e) {
+					// catching because failing to add/remove a file shouldn't fail the entire queue
+					console.error(e)
+				}
 				this.resolveQueue.shift()
 			}
 		}
@@ -184,6 +189,7 @@ class MyWatcher {
 				log("error", "error", "fswatcher", `database File entry not found for ${removed} when trying to remove it`)
 			}
 		} else if (added) {
+			log("event", "event", "fswatcher", `file sent to createTrack ${added}`)
 			await createTrack(added)
 			socketServer.send('watcher:add')
 		} else {
