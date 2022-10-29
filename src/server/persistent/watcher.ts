@@ -45,6 +45,8 @@ class MyWatcher {
 		this.watcher.on('add', this.onAdd)
 		this.watcher.on('unlink', this.onUnlink)
 		this.watcher.on('error', this.onError)
+		this.watcher.on('unlinkDir', (path) => log("event", "event", "fswatcher", `removing dir "${path}" (unused event)`))
+		this.watcher.on('change', (path) => log("event", "event", "fswatcher", `change "${path}" (unused event)`))
 
 		return new Promise((resolve) => {
 			this.watcher?.once('ready', resolve)
