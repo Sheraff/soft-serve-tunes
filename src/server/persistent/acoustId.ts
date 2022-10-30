@@ -279,7 +279,7 @@ class AcoustId {
 			: mostConfidentRecordings.filter(({score}) => score > 0.9)
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
-			console.log(results)
+			console.log(mostConfidentRecordings)
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
