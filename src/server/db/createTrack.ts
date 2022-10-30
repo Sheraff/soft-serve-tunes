@@ -306,6 +306,8 @@ export function isVariousArtists(name: string) {
 	return [
 		'variousartists',
 		'various',
+		'va',
+		'artistesdivers',
 	].includes(simplifiedName(name))
 }
 
@@ -314,6 +316,8 @@ export function notArtistName(name: string) {
 		'',
 		'variousartists',
 		'various',
+		'va',
+		'artistesdivers',
 		'unknown',
 		'unknownartist'
 	].includes(simplifiedName(name))
