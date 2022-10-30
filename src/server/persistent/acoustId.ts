@@ -8,6 +8,7 @@ import similarStrings from "utils/similarStrings"
 import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
+import { notArtistName } from "server/db/createTrack"
 
 const modulePath = dirname(new URL(import.meta.url).pathname)
 const origin = process.cwd()
@@ -126,13 +127,13 @@ class AcoustId {
 	}
 
 	async identify(absolutePath: string, metadata: IAudioMetadata) {
-		log("info", "fetch", "acoustid", `fingerprinting ${metadata.common.title} (${absolutePath})`)
+		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
 		const sorted = this.#pick(data.results, metadata)
 		const result = sorted?.[0] ? sorted[0] : null
 		if (result) {
-			log("ready", "200", "acoustid", `fingerprint found ${result.title} (${absolutePath})`)
+			log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
 		}
 		return result
 	}
@@ -229,6 +230,15 @@ class AcoustId {
 		const metaDuration = metadata.format.duration
 		const metaName = metadata.common.title
 		const metaAlbum = metadata.common.album
+		const metaArtist = metadata.common.artist
+			? !notArtistName(metadata.common.artist)
+				? metadata.common.artist
+				: undefined
+			: undefined
+		const metaArtists = [
+			...(metadata.common.artists || []),
+			...(metadata.common.albumartist || []),
+		].filter((name) => !notArtistName(name))
 		const maxScore = Math.max(...results.map(({score}) => score))
 		if (maxScore < 0.8) {
 			log("warn", "404", "acoustid", `Fingerprint confidence too low (${maxScore}) for ${metadata.common.title}`)
@@ -263,12 +273,23 @@ class AcoustId {
 			return releasegroups.map((album) => ({...rest, album}))
 		}) as (Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number})[]
 		albums.sort((a, b) => {
-			// prefer items w/ more info
+			// prefer items w/ album info
 			const aAlbum = a.album
 			const bAlbum = b.album
 			if (aAlbum && !bAlbum) return -1
 			if (!aAlbum && bAlbum) return 1
 			if (!aAlbum && !bAlbum) return 0
+			const _aAlbum = aAlbum as Exclude<typeof aAlbum, undefined>
+			const _bAlbum = bAlbum as Exclude<typeof bAlbum, undefined>
+
+			// prefer items w/ artist info
+			const aArtists = _aAlbum.artists
+			const bArtists = _bAlbum.artists
+			if (aArtists && !bArtists) return -1
+			if (!aArtists && bArtists) return 1
+			if (!aArtists && !bArtists) return 0
+			const _aArtists = aArtists as Exclude<typeof aArtists, undefined>
+			const _bArtists = bArtists as Exclude<typeof bArtists, undefined>
 
 			// prefer tracks w/ a title that matches file metadata
 			if (metaName && a.title && b.title) { // `.title` will always be defined
@@ -278,8 +299,19 @@ class AcoustId {
 				if (!aIsSimilarTrack && bIsSimilarTrack) return 1
 			}
 
-			const _aAlbum = aAlbum as Exclude<typeof aAlbum, undefined>
-			const _bAlbum = bAlbum as Exclude<typeof bAlbum, undefined>
+			// prefer tracks w/ an artist that matches file metadata
+			if (metaArtist && _aArtists && _bArtists) {
+				const aHasSimilarArtist = _aArtists.some(({name}) => similarStrings(metaArtist, name))
+				const bHasSimilarArtist = _bArtists.some(({name}) => similarStrings(metaArtist, name))
+				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
+				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
+			}
+			if (metaArtists.length && _aArtists && _bArtists) {
+				const aHasSimilarArtist = _aArtists.some(({name}) => metaArtists.some((meta) => similarStrings(meta, name)))
+				const bHasSimilarArtist = _bArtists.some(({name}) => metaArtists.some((meta) => similarStrings(meta, name)))
+				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
+				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
+			}
 
 			// prefer albums w/ a title that matches file metadata
 			if (metaAlbum && _aAlbum.title && _bAlbum.title) {
