@@ -263,7 +263,7 @@ class AcoustId {
 			return null
 		}
 		const mostConfidentRecordings = results
-			.filter(({score, recordings}) => (score > maxScore - 0.5) && recordings)
+			.filter(({score, recordings}) => (score > maxScore - 0.05) && recordings)
 			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as (z.infer<typeof acoustIdRecordingSchema> & {score: number})[]
 		const sameDurationRecordings = (metaDuration && metaDuration > 15) // short duration tracks usually don't have a lot of data from acoustid
 			? mostConfidentRecordings.filter(({score, duration: d}) => {
