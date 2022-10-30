@@ -451,7 +451,7 @@ class LastFM {
 				await prisma.audioDbTrack.updateMany({
 					where: {
 						strMusicBrainzID: mbid,
-						entityId: undefined,
+						entityId: null,
 					},
 					data: { entityId: id },
 				})
@@ -625,7 +625,7 @@ class LastFM {
 				await prisma.audioDbArtist.updateMany({
 					where: {
 						strMusicBrainzID: mbid,
-						entityId: undefined,
+						// entityId: null,
 					},
 					data: { entityId: id },
 				})
@@ -802,7 +802,7 @@ class LastFM {
 				await prisma.audioDbAlbum.updateMany({
 					where: {
 						strMusicBrainzID: mbid,
-						entityId: undefined
+						entityId: null
 					},
 					data: { entityId: id },
 				})

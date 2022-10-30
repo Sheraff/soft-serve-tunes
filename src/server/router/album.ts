@@ -289,7 +289,7 @@ export const albumRouter = createRouter()
         },
         having: {
           NOT: {
-            albumId: undefined,
+            albumId: null
           },
           [trait]: {
             _avg: {

@@ -153,7 +153,7 @@ async function fetchArtist(id: string) {
 		if (audiodbArtists.artists.length === 1) {
 			audiodbArtist = audiodbArtists.artists[0]
 		} else if (artist.lastfm?.mbid) {
-			audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid && artist.lastfm?.mbid === a.strMusicBrainzID)
+			audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid === a.strMusicBrainzID)
 		}
 		if (!audiodbArtist) {
 			log("warn", "409", "audiodb", `Multiple artists found for ${artist.name}`)

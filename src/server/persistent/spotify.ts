@@ -572,7 +572,6 @@ class Spotify {
 						await prisma.spotifyArtist.update({
 							where: {
 								id: newTrackArtistId,
-								artistId: undefined,
 							},
 							data: {
 								artist: {
@@ -591,7 +590,6 @@ class Spotify {
 						await prisma.spotifyAlbum.update({
 							where: {
 								id: newTrackAlbumId,
-								albumId: undefined,
 							},
 							data: {
 								album: {
@@ -768,7 +766,7 @@ class Spotify {
 				const singleChoice = await prisma.artist.findMany({
 					where: {
 						name: artistObject.name,
-						spotify: undefined,
+						spotify: null,
 					},
 					take: 2,
 					select: {
