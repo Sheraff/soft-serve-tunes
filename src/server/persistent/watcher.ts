@@ -195,10 +195,48 @@ class MyWatcher {
 			select: { trackId: true, id: true },
 		})
 		if (file?.trackId) {
-			const track = await prisma.track.delete({
-				where: { id: file.trackId },
-				select: { name: true, id: true },
+			const track = await prisma.track.findUnique({
+				where: {id: file.trackId},
+				select: {
+					name: true,
+					id: true,
+					albumId: true,
+					artistId: true,
+					userData: {
+						select: {
+							playcount: true,
+							favorite: true,
+						}
+					}
+				}
 			})
+			if (!track) {
+				log("error", "error", "fswatcher", `file removed from ${path}, but associated track missing ${file.trackId}`)
+				return
+			}
+			await prisma.$transaction([
+				...(track.userData && track.albumId ? [
+					prisma.album.update({
+						where: {id: track.albumId},
+						data: {userData: {update: {
+							playcount: {decrement: track.userData.playcount},
+							...(track.userData.favorite ? {favorite: {decrement: 1}} : {}),
+						}}}
+					})
+				] : []),
+				...(track.userData && track.artistId ? [
+					prisma.artist.update({
+						where: {id: track.artistId},
+						data: {userData: {update: {
+							playcount: {decrement: track.userData.playcount},
+							...(track.userData.favorite ? {favorite: {decrement: 1}} : {}),
+						}}}
+					})
+				] : []),
+				prisma.track.delete({
+					where: { id: file.trackId },
+				})
+			])
 			log("event", "event", "fswatcher", `file removed from ${path}, with associated track ${track.name}`)
 			socketServer.send('watcher:remove', { track })
 		} else {
