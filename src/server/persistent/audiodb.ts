@@ -105,6 +105,7 @@ async function fetchArtist(id: string) {
 				select: {
 					id: true,
 					name: true,
+					mbid: true,
 					lastfm: {
 						select: {
 							mbid: true,
@@ -116,6 +117,7 @@ async function fetchArtist(id: string) {
 				select: {
 					id: true,
 					name: true,
+					mbid: true,
 					albumId: true,
 					lastfm: {
 						select: {
@@ -191,7 +193,11 @@ async function fetchArtist(id: string) {
 		const audiodbAlbums = z.object({album: z.array(audiodbAlbumSchema)}).parse(albumsJson)
 		for (const audiodbAlbum of audiodbAlbums.album) {
 			try {
-				const entityAlbum = artist.albums.find(a => a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID)
+				const entityAlbum = artist.albums.find(a => (
+					a.mbid && a.mbid === audiodbAlbum.strMusicBrainzID
+				) || (
+					a.lastfm?.mbid && a.lastfm?.mbid === audiodbAlbum.strMusicBrainzID
+				))
 				const imageIds = await keysAndInputToImageIds(audiodbAlbum, ['strAlbumThumb','strAlbumThumbHQ','strAlbumCDart'])
 				await retryable(async () => {
 					await prisma.audioDbAlbum.create({
@@ -219,7 +225,11 @@ async function fetchArtist(id: string) {
 				await Promise.allSettled(audiodbTracks.track.map(async (data) => {
 					const {strGenre, ...audiodbTrack} = data
 					const genres = uniqueGenres(strGenre ? [strGenre] : [])
-					const entityTrack = artist.tracks.find(t => t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID)
+					const entityTrack = artist.tracks.find(t => (
+						t.mbid && t.mbid === audiodbTrack.strMusicBrainzID
+					) || (
+						t.lastfm?.mbid && t.lastfm?.mbid === audiodbTrack.strMusicBrainzID
+					))
 					if (!entityAlbum && !oneAlbumConnection && entityTrack?.albumId) {
 						oneAlbumConnection = entityTrack.albumId
 					}

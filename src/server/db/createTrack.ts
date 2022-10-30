@@ -104,22 +104,22 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return getArtist(metadata.common)
 		})()
 
-		const feats = (() => {
+		const feats: ({name: string, id?: string})[] = (() => {
 			if (fingerprinted?.artists) {
-				return fingerprinted.artists.slice(1).map(({name}) => name)
+				return fingerprinted.artists.slice(1).map(({name, id}) => ({name, id}))
 			}
 			if (metadata.common.artists) {
-				return metadata.common.artists?.filter(artist => artist !== metadata.common.artist)
+				return metadata.common.artists?.filter(artist => artist !== metadata.common.artist).map((name) => ({name}))
 			}
 			return []
 		})()
 
-		const correctedFeats: string[] = []
+		const correctedFeats: ({name: string, id?: string})[] = []
 		for (const feat of feats) {
-			if (!feat) continue
-			const correctedFeat = await lastFm.correctArtist(feat)
+			if (!feat.name) continue
+			const correctedFeat = await lastFm.correctArtist(feat.name)
 			if (correctedFeat) {
-				correctedFeats.push(correctedFeat)
+				correctedFeats.push({name: correctedFeat, id: feat.id})
 			} else if (fingerprinted?.artists) {
 				correctedFeats.push(feat)
 			}
@@ -151,6 +151,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				position,
 				popularity: 0,
 				year: metadata.common.year,
+				mbid: fingerprinted?.id,
 				file: {
 					create: {
 						path: path,
@@ -185,6 +186,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 							create: {
 								name: correctedArtist,
 								simplified: simplifiedName(correctedArtist),
+								mbid: fingerprinted?.artists?.[0]?.id,
 							}
 						}
 					}
@@ -192,11 +194,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				feats: {
 					connectOrCreate: correctedFeats.map(artist => ({
 						where: {
-							simplified: simplifiedName(artist),
+							simplified: simplifiedName(artist.name),
 						},
 						create: {
 							name: artist,
-							simplified: simplifiedName(artist),
+							simplified: simplifiedName(artist.name),
+							mbid: artist.id,
 						}
 					}))
 				},
@@ -236,6 +239,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				artistId,
 				year: metadata.common.year,
 				tracksCount: metadata.common.track.of,
+				mbid: fingerprinted?.album?.id
 			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
@@ -341,7 +345,7 @@ async function getArtist(common: ICommonTagsResult): Promise<[string | undefined
 
 async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isMultiArtistAlbum: boolean) {
 	if (isMultiArtistAlbum) {
-		const existing = await retryable(() =>prisma.album.findFirst({
+		const existing = await retryable(() => prisma.album.findFirst({
 			where: {
 				simplified: create.simplified,
 				artist: null,

@@ -9,6 +9,14 @@ import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
+import { socketServer } from "server/persistent/ws"
+
+/*
+ * VOCABULARY:
+ * - "recording" a recording of a specific track at a specific time (ie. Track)
+ * - "release group" a collection of "recordings" released at a specific time (ie. Album)
+ */
+
 
 const modulePath = dirname(new URL(import.meta.url).pathname)
 const origin = process.cwd()
@@ -184,6 +192,7 @@ class AcoustId {
 		return this.#fetch(`?${searchParams}&meta=${meta}`)
 	}
 
+	// https://musicbrainz.org/doc/Release_Group/Type
 	static TYPE_PRIORITY = {
 		"Album": 1,
 		"EP": 2,
@@ -193,6 +202,7 @@ class AcoustId {
 		"undefined": 6,
 	}
 
+	// https://musicbrainz.org/doc/Release_Group/Type
 	static SUBTYPE_PRIORITY = {
 		"Live": 1,
 		"Soundtrack": 2,
@@ -202,24 +212,31 @@ class AcoustId {
 		"DJ-mix": 6,
 		"Mixtape/Street": 6,
 		"Audiobook": 7,
+		"Audio drama": 7,
 		"Interview": 7,
 		"undefined": 9,
 	}
 
 	#getTypeValue(type: string | undefined): number {
 		if (!type) return AcoustId.TYPE_PRIORITY.undefined
-		// @ts-expect-error -- this is the check
-		if (type in AcoustId.TYPE_PRIORITY) return AcoustId.TYPE_PRIORITY[type]
+		if (this.#isTypeKey(type)) return AcoustId.TYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown TYPE_PRIORITY ${type}`)
 		return AcoustId.TYPE_PRIORITY.undefined
+	}
+
+	#isTypeKey(type: string): type is keyof typeof AcoustId.TYPE_PRIORITY {
+		return AcoustId.TYPE_PRIORITY.hasOwnProperty(type)
 	}
 	
 	#getSubTypeValue(type: string | undefined): number {
 		if (!type) return AcoustId.SUBTYPE_PRIORITY.undefined
-		// @ts-expect-error -- this is the check
-		if (type in AcoustId.SUBTYPE_PRIORITY) return AcoustId.SUBTYPE_PRIORITY[type]
+		if (this.#isSubTypeKey(type)) return AcoustId.SUBTYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown SUBTYPE_PRIORITY ${type}`)
 		return AcoustId.SUBTYPE_PRIORITY.undefined
+	}
+
+	#isSubTypeKey(type: string): type is keyof typeof AcoustId.SUBTYPE_PRIORITY {
+		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
 	#pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {

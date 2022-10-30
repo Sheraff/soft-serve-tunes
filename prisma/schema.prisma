@@ -26,6 +26,7 @@ model Track {
   id          String   @id @default(cuid())
   name        String
   simplified  String
+  mbid        String?  @unique
   artistId    String?
   artist      Artist?  @relation(fields: [artistId], references: [id])
   feats       Artist[] @relation("Featuring")
@@ -101,6 +102,7 @@ model Artist {
   id         String   @id @default(cuid())
   name       String   @unique
   simplified String   @unique
+  mbid       String?  @unique
   tracks     Track[]  @relation
   feats      Track[]  @relation("Featuring")
   createdAt  DateTime @default(now())
@@ -128,6 +130,7 @@ model Album {
   id          String   @id @default(cuid())
   name        String
   simplified  String
+  mbid        String?  @unique
   artistId    String?
   artist      Artist?  @relation(fields: [artistId], references: [id])
   tracksCount Int?

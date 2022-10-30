@@ -325,6 +325,7 @@ class LastFM {
 			where: { id },
 			select: {
 				name: true,
+				mbid: true,
 				lastfm: { select: { id: true } },
 				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
@@ -365,6 +366,9 @@ class LastFM {
 			})
 		))
 		const urls: URL[] = []
+		if (track.mbid) {
+			urls.push(makeTrackUrl({ mbid: track.mbid }))
+		}
 		if (track.audiodb?.strMusicBrainzID) {
 			urls.push(makeTrackUrl({ mbid: track.audiodb.strMusicBrainzID }))
 		}
@@ -512,6 +516,7 @@ class LastFM {
 			where: { id },
 			select: {
 				name: true,
+				mbid: true,
 				lastfm: { select: { id: true } },
 				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
@@ -545,6 +550,9 @@ class LastFM {
 			})
 		))
 		const urls: URL[] = []
+		if (artist.mbid) {
+			urls.push(makeArtistUrl({ mbid: artist.mbid }))
+		}
 		if (artist.audiodb?.strMusicBrainzID) {
 			urls.push(makeArtistUrl({ mbid: artist.audiodb.strMusicBrainzID }))
 		}
@@ -648,6 +656,7 @@ class LastFM {
 			where: { id },
 			select: {
 				name: true,
+				mbid: true,
 				lastfm: { select: { id: true } },
 				lastfmDate: true,
 				audiodb: { select: { strMusicBrainzID: true } },
@@ -684,6 +693,9 @@ class LastFM {
 			})
 		))
 		const urls: URL[] = []
+		if (album.mbid) {
+			urls.push(makeAlbumUrl({ mbid: album.mbid }))
+		}
 		if (album.audiodb?.strMusicBrainzID) {
 			urls.push(makeAlbumUrl({ mbid: album.audiodb.strMusicBrainzID }))
 		}
