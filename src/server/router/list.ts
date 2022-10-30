@@ -67,8 +67,8 @@ export const listRouter = createRouter()
             return new Set(list)
           })
           .then(async (list) => {
-            // remove tracks without files
             try {
+              // remove tracks without files
               const orphanTracks = await ctx.prisma.track.findMany({
                 where: {file: {is: null}},
                 select: {id: true, name: true}
