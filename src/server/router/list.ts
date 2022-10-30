@@ -74,10 +74,12 @@ export const listRouter = createRouter()
                 select: {id: true, name: true}
               })
               for (const track of orphanTracks) {
-                await ctx.prisma.track.delete({
-                  where: { id: track.id },
-                })
-                log("event", "event", "fswatcher", `track ${track.name} removed because no associated file was found`)
+                const deletedTrack = await fileWatcher.removeTrackFromDb(track.id)
+                if (deletedTrack) {
+                  log("event", "event", "fswatcher", `track ${track.name} removed because no associated file was found`)
+                } else {
+                  log("error", "error", "fswatcher", `couldn't delete a file that was just obtained through a prisma query... id#${track.id}`)
+                }
               }
 
               // remove database records of files that have no filesystem file
