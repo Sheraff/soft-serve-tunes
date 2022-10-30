@@ -197,7 +197,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 							simplified: simplifiedName(artist.name),
 						},
 						create: {
-							name: artist,
+							name: artist.name,
 							simplified: simplifiedName(artist.name),
 							mbid: artist.id,
 						}
