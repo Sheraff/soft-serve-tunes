@@ -350,16 +350,27 @@ class AcoustId {
 			// sort by increasing album.secondarytypes score
 			const aSubTypes = _aAlbum.secondarytypes || []
 			const bSubTypes = _bAlbum.secondarytypes || []
-			if (aSubTypes.length === 0 && bSubTypes.length === 0) return 0
-			if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
-			const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
-			const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
-			if (aSubTypesScore !== bSubTypesScore) {
-				return aSubTypesScore - bSubTypesScore
+			if (aSubTypes.length !== 0 || bSubTypes.length !== 0) {
+				if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
+				const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
+				const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
+				if (aSubTypesScore !== bSubTypesScore) {
+					return aSubTypesScore - bSubTypesScore
+				}
+			}
+
+			// avoid "non artists" if confident enough
+			// if neither album is a "Compilation", prefer the one with an actual artist name
+			if (!aSubTypes.includes('Compilation') && !bSubTypes.includes('Compilation') && _aAlbum.artists?.[0] && _bAlbum.artists?.[0]) {
+				const aNotArtist = notArtistName(_aAlbum.artists[0].name)
+				const bNotArtist = notArtistName(_bAlbum.artists[0].name)
+				if (!aNotArtist && bNotArtist) return -1
+				if (aNotArtist && !bNotArtist) return 1
 			}
 
 			return 0
 		})
+		
 		return albums
 	}
 }
