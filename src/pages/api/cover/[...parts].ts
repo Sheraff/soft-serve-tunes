@@ -5,6 +5,7 @@ import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
 import { access } from "node:fs/promises"
+import log from "utils/logger"
 
 const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 
@@ -39,8 +40,10 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
       select: { path: true },
     })
     if (!cover) {
+      log("error", "404", "sharp", `${width}x${width} cover #${id}`)
       return res.status(404).json({ error: "Cover not found" })
     }
+    log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     const transformStream = sharp(originalFilePath)
       .resize(width, width, {
@@ -57,8 +60,10 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     transformStream
       .clone()
       .toFile(exactFilePath)
+      .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
   }
   if (returnStream === null) {
+    log("error", "500", "sharp", `${width}x${width} cover #${cover.path}`)
     return res.status(500).json({ error: "Error transforming image" })
   }
   res

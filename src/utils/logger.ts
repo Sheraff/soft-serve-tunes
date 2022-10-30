@@ -1,6 +1,6 @@
 type Levels = 'ready' | 'event' | 'info' | 'warn' | 'error'
 type Category = string
-type Entity = 'lastfm' | 'spotify' | 'audiodb' | 'fswatcher' | 'trpc' | 'acoustid'
+type Entity = 'lastfm' | 'spotify' | 'audiodb' | 'fswatcher' | 'trpc' | 'acoustid' |'sharp'
 
 const levelColor: {[key in Levels]: string} = {
 	'error': "\x1b[31m",
@@ -17,6 +17,7 @@ const entityColor: {[key in Entity]: string} = {
 	fswatcher: "\x1b[30m\x1b[47m", // white
 	trpc: "\x1b[37m\x1b[46m", // cyan
 	acoustid: "\x1b[37m\x1b[45m", // magenta
+	sharp: "\x1b[37m\x1b[43m", // yellow
 }
 
 const stop = "\x1b[0m"
