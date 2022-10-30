@@ -13,6 +13,15 @@ import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 
+/*
+ISSUES
+
+fails a lot & is slooooow
+prisma.track.update() 
+code: 'P2002',
+meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
+*/
+
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
 	| PrismaClientKnownRequestError
@@ -345,16 +354,16 @@ async function getArtist(common: ICommonTagsResult): Promise<[string | undefined
 
 async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isMultiArtistAlbum: boolean) {
 	if (isMultiArtistAlbum) {
-		const existing = await retryable(() => prisma.album.findFirst({
+		const existingAlbum = await retryable(() => prisma.album.findFirst({
 			where: {
 				simplified: create.simplified,
 				artist: null,
 			}
 		}))
-		if (existing) {
+		if (existingAlbum) {
 			return retryable(() => prisma.track.update({
 				where: { id },
-				data: { albumId: existing.id }
+				data: { albumId: existingAlbum.id }
 			}))
 		}
 	}
