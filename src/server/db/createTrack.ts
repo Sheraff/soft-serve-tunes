@@ -34,7 +34,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		try {
 			await access(existingFile.path, constants.F_OK)
 			log("warn", "warn", "fswatcher", `trying to create a duplicate file, request ignored, keeping ${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path)}`)
-			return false // true or false? is this success file exists or failure track wasn't created?
+			return false // true or false? is this "success file exists" or "failure track wasn't created"?
 		} catch {
 			log("info", "info", "fswatcher", `track already exists but file was missing, linking ${relativePath}`)
 			await retryable(() =>
