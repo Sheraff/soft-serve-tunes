@@ -266,8 +266,8 @@ class AcoustId {
 			.filter(({score, recordings}) => (score > maxScore - 0.5) && recordings)
 			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as (z.infer<typeof acoustIdRecordingSchema> & {score: number})[]
 		const sameDurationRecordings = (metaDuration && metaDuration > 20) // short duration tracks usually don't have a lot of data from acoustid
-			? mostConfidentRecordings.filter(({score, title, duration: d}) => {
-				if (!title || !d) return false
+			? mostConfidentRecordings.filter(({score, duration: d}) => {
+				if (!d) return false
 				const delta = Math.abs(metaDuration - d)
 				if (delta < 3) return true
 				if (score > 0.9 && delta < 5) return true
@@ -276,7 +276,7 @@ class AcoustId {
 				if (score > 0.999 && delta < 20) return true
 				return false
 			})
-			: mostConfidentRecordings.filter(({title, score}) => title && score > 0.9)
+			: mostConfidentRecordings.filter(({score}) => score > 0.9)
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
 			console.log(results)
