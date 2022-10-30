@@ -210,6 +210,7 @@ class AcoustId {
 		"Remix": 5,
 		"DJ-mix": 6,
 		"Mixtape/Street": 6,
+		"Demo": 6,
 		"Audiobook": 7,
 		"Audio drama": 7,
 		"Interview": 7,
