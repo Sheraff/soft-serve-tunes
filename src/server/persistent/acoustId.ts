@@ -9,7 +9,6 @@ import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
-import { socketServer } from "server/persistent/ws"
 
 /*
  * VOCABULARY:
@@ -300,8 +299,8 @@ class AcoustId {
 			const _bAlbum = bAlbum as Exclude<typeof bAlbum, undefined>
 
 			// prefer items w/ artist info
-			const aArtists = _aAlbum.artists
-			const bArtists = _bAlbum.artists
+			const aArtists = a.artists
+			const bArtists = b.artists
 			if (aArtists && !bArtists) return -1
 			if (!aArtists && bArtists) return 1
 			if (!aArtists && !bArtists) return 0
