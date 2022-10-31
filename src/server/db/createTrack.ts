@@ -1,5 +1,5 @@
-import { access, stat } from "node:fs/promises"
-import { basename, extname, relative } from "node:path"
+import { access, stat, readdir } from "node:fs/promises"
+import { basename, extname, dirname, relative } from "node:path"
 import { IAudioMetadata, ICommonTagsResult, parseFile } from 'music-metadata'
 import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
@@ -20,6 +20,10 @@ fails a lot & is slooooow
 prisma.track.update() 
 code: 'P2002',
 meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
+
+
+"mgmt" is sorted as "the management"?
+track Grutu in "Climbing the new lotus" by The Management
 */
 
 type PrismaError = PrismaClientRustPanicError
@@ -66,6 +70,55 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		log("error", "error", "fswatcher", `could not parse metadata out of ${relativePath}, probably not a music file`)
 		return false
 	}
+	// get info from context if missing from _metadata
+	// if (!relativePath.includes('__soft-served')) {
+	// 	const [metaArtist, metaAlbumIsMultiArtist] = await getArtist(_metadata.common)
+	// 	const missingMetaAlbum = !_metadata.common.album
+	// 	const missingMetaArtist = !metaArtist && !metaAlbumIsMultiArtist
+	// 	if (missingMetaAlbum || missingMetaArtist) {
+	// 		const siblingTracks = await prisma.track.findMany({
+	// 			where: {
+	// 				file: { path: { startsWith: dirname(relativePath) }},
+	// 			},
+	// 			select: {
+	// 				mbid: true,
+	// 				artist: { select: { name: true }},
+	// 				album: { select: { name: true }},
+	// 			}
+	// 		})
+	// 		const acoustidRetryCount = acoustidRetry?.count ?? 0
+	// 		if (siblingTracks.length <= 2 && (acoustidRetryCount) <= 2) {
+	// 			await tryAgainLater(path, acoustidRetryCount)
+	// 			return false
+	// 		}
+	// 		if (siblingTracks.length > 2) {
+	// 			const [artists, albums] = siblingTracks.reduce((maps, track) => {
+	// 				const [artists, albums] = maps
+	// 				if (track.artist?.name)
+	// 					artists.set(track.artist.name, (artists.get(track.artist.name) || 0) + 1)
+	// 				if (track.album?.name)
+	// 					albums.set(track.album.name, (albums.get(track.album.name) || 0) + 1)
+	// 				return [artists, albums]
+	// 			}, [new Map<string, number>(), new Map<string, number>()] as const)
+	// 			if (missingMetaAlbum) {
+	// 				const [name, count] = Array.from(albums.entries()).reduce((prev, curr) => {
+	// 					return curr[1] > prev[1] ? curr : prev
+	// 				}, ['', 0] as [string, number])
+	// 				if (name && count > 2) {
+	// 					_metadata.common.album = name
+	// 				}
+	// 			}
+	// 			if (missingMetaArtist) {
+	// 				const [name, count] = Array.from(artists.entries()).reduce((prev, curr) => {
+	// 					return curr[1] > prev[1] ? curr : prev
+	// 				}, ['', 0] as [string, number])
+	// 				if (name && count > 2) {
+	// 					_metadata.common.artist = name
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	const metadata = _metadata as IAudioMetadata
 
 	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
@@ -82,7 +135,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	
 	try {
 		log("info", "info", "fswatcher", `adding new track from file ${relativePath}`)
-		
+
 		const name = (() => {
 			if (fingerprinted?.title)
 				return fingerprinted.title
