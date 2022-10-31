@@ -9,6 +9,8 @@ import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
+import { socketServer } from "server/persistent/ws"
+import MusicBrainz from "server/persistent/musicBrainz"
 
 /*
  * VOCABULARY:
@@ -128,9 +130,11 @@ class AcoustId {
 	static RATE_LIMIT = 350
 
 	#queue: Queue
+	#musicBrainz: MusicBrainz
 
 	constructor() {
 		this.#queue = new Queue(AcoustId.RATE_LIMIT, { wait: true })
+		this.#musicBrainz = new MusicBrainz()
 	}
 
 	async identify(absolutePath: string, metadata: IAudioMetadata) {
@@ -140,6 +144,7 @@ class AcoustId {
 		const sorted = this.#pick(data.results, metadata)
 		const result = sorted?.[0] ? sorted[0] : null
 		if (result) {
+			await this.#musicBrainzValidation(result)
 			log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
 		}
 		return result
@@ -361,7 +366,7 @@ class AcoustId {
 
 			// avoid "non artists" if confident enough
 			// if neither album is a "Compilation", prefer the one with an actual artist name
-			if (!aSubTypes.includes('Compilation') && !bSubTypes.includes('Compilation') && _aAlbum.artists?.[0] && _bAlbum.artists?.[0]) {
+			if (!aSubTypes.includes("Compilation") && !bSubTypes.includes("Compilation") && _aAlbum.artists?.[0] && _bAlbum.artists?.[0]) {
 				const aNotArtist = notArtistName(_aAlbum.artists[0].name)
 				const bNotArtist = notArtistName(_bAlbum.artists[0].name)
 				if (!aNotArtist && bNotArtist) return -1
@@ -370,8 +375,33 @@ class AcoustId {
 
 			return 0
 		})
-		
+		socketServer.send("global:message", {message: albums})
 		return albums
+	}
+
+	async #musicBrainzValidation(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}) {
+		{
+			const {title} = await this.#musicBrainz.fetch('recording', result.id)
+			if (title)
+				result.title = title
+		}
+		if (result.album?.id) {
+			const {title} = await this.#musicBrainz.fetch('release-group', result.album.id)
+			if (title)
+				result.album!.title = title
+		}
+		if (result.artists) {
+			for (const artist of result.artists) {
+				const {name} = await this.#musicBrainz.fetch('artist', artist.id)
+				if (name)
+					artist.name = name
+			}
+		}
+		if (result.album?.artists?.[0]?.id) {
+			const {name} = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
+			if (name)
+				result.album!.artists![0]!.name = name
+		}
 	}
 }
 

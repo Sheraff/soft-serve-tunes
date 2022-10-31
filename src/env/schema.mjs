@@ -19,6 +19,7 @@ export const serverSchema = z.object({
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
   ACOUST_ID_API_KEY: z.string(),
+  MUSIC_BRAINZ_USER_AGENT: z.string(),
   WEBSOCKET_SERVER_PORT: z.string().transform(Number),
   MAIN_DEVICE_WIDTH: z.string().transform(Number),
   MAIN_DEVICE_DENSITY: z.string().transform(Number),

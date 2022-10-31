@@ -22,8 +22,63 @@ code: 'P2002',
 meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
 
 
-"mgmt" is sorted as "the management"?
-track Grutu in "Climbing the new lotus" by The Management
+Track from an artist inside a whole album of another artist
+- track 07 "Guilty" in Yann Tiersen's Amelie, is "Al Bowlly - Guilty"
+{
+    "artists": [
+        {
+            "id": "f747a4ff-d54f-41b1-be56-97abcf1eb688",
+            "name": "Al Bowlly"
+        }
+    ],
+    "duration": 192,
+    "id": "71635479-38a6-476a-a4f8-7e85bc59da77",
+    "title": "Guilty",
+    "score": 0.996769,
+    "album": {
+        "artists": [
+            {
+                "id": "12d432a3-feb0-49b1-a107-d20751880764",
+                "name": "Yann Tiersen"
+            }
+        ],
+        "id": "9635e642-8321-3024-99f2-abe8f6af51f3",
+        "secondarytypes": [
+            "Soundtrack"
+        ],
+        "title": "Le Fabuleux Destin d’Amélie Poulain",
+        "type": "Album"
+    }
+}
+- track 15 "Jorts FTW" in Too Many Zooz' Subway Gawdz, is "Kaskade feat. Too Many Zooz - Jorts FTW"
+{
+    "artists": [
+        {
+            "id": "29ed4a49-fb99-4a5c-8713-609cabe6f34a",
+            "joinphrase": " feat. ",
+            "name": "Kaskade"
+        },
+        {
+            "id": "e44ef539-1ec9-4cb2-bee7-852e84618308",
+            "name": "Too Many Zooz"
+        }
+    ],
+    "duration": 233,
+    "id": "fadad393-e6cd-4102-a0ab-28975da70022",
+    "title": "Jorts FTW",
+    "score": 0.983801,
+    "album": {
+        "artists": [
+            {
+                "id": "e44ef539-1ec9-4cb2-bee7-852e84618308",
+                "name": "Too Many Zooz"
+            }
+        ],
+        "id": "b477de36-357f-42d5-bfe5-dcc7cd4a1485",
+        "title": "Subway Gawdz",
+        "type": "Album"
+    }
+}
 */
 
 type PrismaError = PrismaClientRustPanicError
