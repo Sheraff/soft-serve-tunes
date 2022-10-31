@@ -145,6 +145,7 @@ class AcoustId {
 		const result = sorted?.[0] ? sorted[0] : null
 		if (result) {
 			await this.#musicBrainzValidation(result)
+			await this.#reorderArtist(result, metadata)
 			log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
 		}
 		return result
@@ -252,10 +253,8 @@ class AcoustId {
 		const metaDuration = metadata.format.duration
 		const metaName = metadata.common.title
 		const metaAlbum = metadata.common.album
-		const metaArtist = metadata.common.artist
-			? !notArtistName(metadata.common.artist)
-				? metadata.common.artist
-				: undefined
+		const metaArtist = metadata.common.artist && !notArtistName(metadata.common.artist)
+			? metadata.common.artist
 			: undefined
 		const metaArtists = [
 			...(metadata.common.artists || []),
@@ -379,6 +378,7 @@ class AcoustId {
 		return albums
 	}
 
+	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
 	async #musicBrainzValidation(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}) {
 		{
 			const {title} = await this.#musicBrainz.fetch('recording', result.id)
@@ -401,6 +401,33 @@ class AcoustId {
 			const {name} = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
 			if (name)
 				result.album!.artists![0]!.name = name
+		}
+	}
+
+	// handle cases where there is a single track whose main artist is not that of the rest of the album
+	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: IAudioMetadata) {
+		if (!result.artists || result.artists.length <= 1) {
+			return
+		}
+		const fingerprintArtist = result.album?.artists?.length === 1 && !notArtistName(result.album.artists[0]!.id)
+			? result.album.artists[0]!.id
+			: undefined
+		if (fingerprintArtist) {
+			const index = result.artists.findIndex(({id}) => id === fingerprintArtist)
+			if (index <= 0) return
+			const [main] = result.artists.splice(index, 1)
+			result.artists.unshift(main!)
+			return
+		}
+		const metaArtist = metadata.common.artist && !notArtistName(metadata.common.artist)
+			? metadata.common.artist
+			: undefined
+		if (metaArtist) {
+			const index = result.artists.findIndex(({name}) => similarStrings(name, metaArtist))
+			if (index <= 0) return
+			const [main] = result.artists.splice(index, 1)
+			result.artists.unshift(main!)
+			return
 		}
 	}
 }

@@ -50,35 +50,6 @@ Track from an artist inside a whole album of another artist
         "type": "Album"
     }
 }
-- track 15 "Jorts FTW" in Too Many Zooz' Subway Gawdz, is "Kaskade feat. Too Many Zooz - Jorts FTW"
-{
-    "artists": [
-        {
-            "id": "29ed4a49-fb99-4a5c-8713-609cabe6f34a",
-            "joinphrase": " feat. ",
-            "name": "Kaskade"
-        },
-        {
-            "id": "e44ef539-1ec9-4cb2-bee7-852e84618308",
-            "name": "Too Many Zooz"
-        }
-    ],
-    "duration": 233,
-    "id": "fadad393-e6cd-4102-a0ab-28975da70022",
-    "title": "Jorts FTW",
-    "score": 0.983801,
-    "album": {
-        "artists": [
-            {
-                "id": "e44ef539-1ec9-4cb2-bee7-852e84618308",
-                "name": "Too Many Zooz"
-            }
-        ],
-        "id": "b477de36-357f-42d5-bfe5-dcc7cd4a1485",
-        "title": "Subway Gawdz",
-        "type": "Album"
-    }
-}
 */
 
 type PrismaError = PrismaClientRustPanicError
@@ -347,8 +318,16 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			}))
 		}
 
+		
 		// create album now that we have an artistId
 		if (correctedAlbum) {
+			/*
+			 * TODO: if album artist is not the same as track artist
+			 * && album artist is not multi-artist
+			 * => try and use album artist instead of artist (findable by name?)
+			 * to avoid cases where an album is created in duplicates because a single (few) track
+			 * was from a different artist
+			 */
 			const artistId = isMultiArtistAlbum ? undefined : track.artistId
 			await linkAlbum(track.id, {
 				name: correctedAlbum,
