@@ -388,11 +388,11 @@ class AcoustId {
 			const {title, releases} = await this.#musicBrainz.fetch('recording', result.id)
 			result.title = title
 			const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
-			const tracksCounts = releases.map(({media}) => media[0]!["tracks-count"])
+			const trackCounts = releases.map(({media}) => media[0]!["track-count"])
 			if (positions.length && positions.every(value => value === positions[0]))
 				result.no = positions[0]
-			if (tracksCounts.length && tracksCounts.every(value => value === tracksCounts[0]))
-				result.of = tracksCounts[0]
+			if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
+				result.of = trackCounts[0]
 		}
 		if (result.album?.id) {
 			const {title} = await this.#musicBrainz.fetch('release-group', result.album.id)

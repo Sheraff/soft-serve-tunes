@@ -28,7 +28,7 @@ const musicBrainzRecordingSchema = z.object({
 			tracks: z.array(z.object({
 				position: z.number()
 			})).length(1),
-			"tracks-count": z.number(),
+			"track-count": z.number(),
 		})).length(1)
 	}))
 })
