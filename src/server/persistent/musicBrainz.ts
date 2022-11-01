@@ -3,6 +3,7 @@ import Queue from "utils/Queue"
 import { z } from "zod"
 import log from "utils/logger"
 
+// https://musicbrainz.org/doc/MusicBrainz_API#inc.3D
 
 const musicBrainzErrorSchema = z.object({
 	error: z.string(),
@@ -22,6 +23,14 @@ const musicBrainzArtistSchema = z.object({
 const musicBrainzRecordingSchema = z.object({
 	id: z.string(),
 	title: z.string(),
+	releases: z.array(z.object({
+		media: z.array(z.object({
+			tracks: z.array(z.object({
+				position: z.number()
+			})).length(1),
+			"tracks-count": z.number(),
+		})).length(1)
+	}))
 })
 
 export default class MusicBrainz {
@@ -86,7 +95,11 @@ export default class MusicBrainz {
 
 	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS>(type: T, id: string): Promise<z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
 		const url = `https://musicbrainz.org/ws/2/${type}/${id}`
-		const json = await this.#makeRequest(url)
+		const params = new URLSearchParams()
+		if (type === 'recording') {
+			params.set('inc', 'releases+media')
+		}
+		const json = await this.#makeRequest(`${url}?${params}`)
 		const schema = z.union([
 			musicBrainzErrorSchema,
 			MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[type]

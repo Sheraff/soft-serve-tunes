@@ -15,7 +15,7 @@ import MusicBrainz from "server/persistent/musicBrainz"
 /*
  * VOCABULARY:
  * - "recording" a recording of a specific track at a specific time (ie. Track)
- * - "release group" a collection of "recordings" released at a specific time (ie. Album)
+ * - "release group" ie. Album, which can have multiple releases (eg. clean vs explicit versions, US vs Japan versions, ...)
  */
 
 
@@ -126,6 +126,9 @@ const acoustiIdLookupSchema = z.object({
 	}))
 })
 
+type Result = Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}
+type ValidatedResult = Result & {of?: number, no?: number}
+
 class AcoustId {
 	static RATE_LIMIT = 350
 
@@ -137,17 +140,18 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify(absolutePath: string, metadata: IAudioMetadata) {
+	async identify(absolutePath: string, metadata: IAudioMetadata): Promise<ValidatedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
 		const sorted = this.#pick(data.results, metadata)
-		const result = sorted?.[0] ? sorted[0] : null
-		if (result) {
-			await this.#musicBrainzValidation(result)
-			await this.#reorderArtist(result, metadata)
-			log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
+		if(!sorted?.[0]) {
+			return null
 		}
+		const result = sorted[0]
+		await this.#musicBrainzValidation(result)
+		await this.#reorderArtist(result, metadata)
+		log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
 		return result
 	}
 
@@ -292,7 +296,7 @@ class AcoustId {
 				return rest
 			}
 			return releasegroups.map((album) => ({...rest, album}))
-		}) as (Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number})[]
+		}) as Result[]
 		albums.sort((a, b) => {
 			// prefer items w/ album info
 			const aAlbum = a.album
@@ -379,11 +383,16 @@ class AcoustId {
 	}
 
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
-	async #musicBrainzValidation(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}) {
+	async #musicBrainzValidation(result: ValidatedResult) {
 		{
-			const {title} = await this.#musicBrainz.fetch('recording', result.id)
-			if (title)
-				result.title = title
+			const {title, releases} = await this.#musicBrainz.fetch('recording', result.id)
+			result.title = title
+			const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
+			const tracksCounts = releases.map(({media}) => media[0]!["tracks-count"])
+			if (positions.length && positions.every(value => value === positions[0]))
+				result.no = positions[0]
+			if (tracksCounts.length && tracksCounts.every(value => value === tracksCounts[0]))
+				result.of = tracksCounts[0]
 		}
 		if (result.album?.id) {
 			const {title} = await this.#musicBrainz.fetch('release-group', result.album.id)
