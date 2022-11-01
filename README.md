@@ -4,13 +4,52 @@
 https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-841a-b456408c63e3.mp4
 
 
+![](favicon.png)
 
 ------
 
 ## TODO
-- [ ] watcher issues:
-  - [ ] not deleting from DB when deleting files manually
-  - [ ] not adding to DB when uploader adds files
+- [ ] `linkAlbum` in `createTrack` fails a lot and slowly
+  <details>
+    <summary>prisma.track.update logic issue</summary>
+    <pre>
+    code: 'P2002',
+    meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
+    </pre>
+  </details>
+
+- [ ] Track from an artist inside a whole album of another artist creates a duplicate album
+  <details>
+    <summary>track 07 "Guilty" in Yann Tiersen's Amelie, is "Al Bowlly - Guilty"</summary>
+    <pre>
+  {
+      "artists": [
+          {
+              "id": "f747a4ff-d54f-41b1-be56-97abcf1eb688",
+              "name": "Al Bowlly"
+          }
+      ],
+      "duration": 192,
+      "id": "71635479-38a6-476a-a4f8-7e85bc59da77",
+      "title": "Guilty",
+      "score": 0.996769,
+      "album": {
+          "artists": [
+              {
+                  "id": "12d432a3-feb0-49b1-a107-d20751880764",
+                  "name": "Yann Tiersen"
+              }
+          ],
+          "id": "9635e642-8321-3024-99f2-abe8f6af51f3",
+          "secondarytypes": [
+              "Soundtrack"
+          ],
+          "title": "Le Fabuleux Destin d’Amélie Poulain",
+          "type": "Album"
+      }
+  }
+    </pre>
+  </details>
 
 ## Deploy to raspberry
 
