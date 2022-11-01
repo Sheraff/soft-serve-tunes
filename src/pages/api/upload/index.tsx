@@ -14,6 +14,7 @@ import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { isVariousArtists, notArtistName } from "server/db/createTrack"
 import { prisma } from "server/db/client"
+import { acoustId } from "server/persistent/acoustId"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const session = await getServerSession(req, res, nextAuthOptions);
@@ -65,6 +66,30 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		} catch {
 			log("error", "error", "fswatcher", `upload failed to parse metadata out of "${name}"`)
 			continue
+		}
+
+		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
+			log("info", "wait", "acoustid", `upload paused for metadata on ${name}`)
+			try {
+				const fingerprinted = await acoustId.identify(upload.filepath, metadata)
+				if (fingerprinted) {
+					if (!metadata.common.albumartist && fingerprinted.album?.artists?.[0]?.name)
+						metadata.common.albumartist = fingerprinted.album.artists[0].name
+					if (!metadata.common.artist && fingerprinted.artists?.[0]?.name)
+						metadata.common.artist = fingerprinted.artists[0].name
+					if (!metadata.common.album && fingerprinted.album?.title)
+						metadata.common.album = fingerprinted.album.title
+					if (!metadata.common.title && fingerprinted.title)
+						metadata.common.title = fingerprinted.title
+					if (!metadata.common.track.no && fingerprinted.no)
+						metadata.common.track.no = fingerprinted.no
+					if (!metadata.common.track.of && fingerprinted.of)
+						metadata.common.track.of = fingerprinted.of
+				}
+			} catch (e) {
+				log("warn", "wait", "acoustid", `could not fingerprint ${name}`)
+				console.error(e)
+			}
 		}
 
 		if (!metadata.common.title || !metadata.common.artist || !metadata.common.album) {
