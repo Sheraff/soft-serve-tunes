@@ -63,7 +63,7 @@ const audiodbTrackSchema = z.object({
 
 const running = new Set<string>()
 
-type Endpoint = "search" | "album" | "track"
+type Endpoint = "search" | "artist-mb" | "album" | "track"
 
 async function audiodbFetch(endpoint: Endpoint, ...params: [string, string][]) {
 	const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, 'https://theaudiodb.com')
@@ -99,6 +99,7 @@ async function fetchArtist(id: string) {
 			id: true,
 			name: true,
 			audiodbDate: true,
+			mbid: true,
 			lastfm: {
 				select: {
 					mbid: true,
@@ -147,7 +148,9 @@ async function fetchArtist(id: string) {
 	await queue.next()
 	try {
 		log("info", "fetch", "audiodb", `search: ${artist.name}`)
-		const artistsJson = await audiodbFetch('search', ['s', sanitizeString(artist.name)])
+		const artistsJson = artist.mbid && env.AUDIO_DB_API_KEY !== "2"
+			? await audiodbFetch('artist-mb', ['i', artist.mbid])
+			: await audiodbFetch('search', ['s', sanitizeString(artist.name)])
 		if (!artistsJson.artists || artistsJson.artists.length === 0) {
 			log("warn", "404", "audiodb", `No artist found for ${artist.name}`)
 			running.delete(id)
@@ -157,8 +160,10 @@ async function fetchArtist(id: string) {
 		let audiodbArtist: z.infer<typeof audiodbArtistSchema> | undefined = undefined
 		if (audiodbArtists.artists.length === 1) {
 			audiodbArtist = audiodbArtists.artists[0]
+		} else if (artist.mbid) {
+			audiodbArtist = audiodbArtists.artists.find(a => artist.mbid === a.strMusicBrainzID)
 		} else if (artist.lastfm?.mbid) {
-			audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm?.mbid === a.strMusicBrainzID)
+			audiodbArtist = audiodbArtists.artists.find(a => artist.lastfm!.mbid === a.strMusicBrainzID)
 		}
 		if (!audiodbArtist) {
 			log("warn", "409", "audiodb", `Multiple artists found for ${artist.name}`)
