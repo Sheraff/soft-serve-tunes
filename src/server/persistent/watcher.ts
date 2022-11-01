@@ -11,7 +11,7 @@ import log from "utils/logger"
 type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 
 class MyWatcher {
-	static DELAY = 2_100
+	static DELAY = 3_100
 	static CLEANUP_DELAY = 45_000
 
 	watcher?: chokidar.FSWatcher
@@ -85,7 +85,6 @@ class MyWatcher {
 		const entry = this.pending.get(ino)
 		if (entry) {
 			entry.added = path
-			this.enqueueResolve(ino)
 			return
 		}
 		this.pending.set(ino, {
