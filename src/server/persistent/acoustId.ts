@@ -183,10 +183,14 @@ class AcoustId {
 			log("error", "error", "acoustid", parsed.error.message)
 			throw new Error(parsed.error.message)
 		}
-		retryable(() => prisma.acoustidStorage.create({data: {
-			id: body,
-			data: JSON.stringify(json),
-		}}))
+		retryable(() => prisma.acoustidStorage.upsert({
+			where: { id: body },
+			update: {},
+			create: {
+				id: body,
+				data: JSON.stringify(json),
+			}
+		}))
 		return parsed
 	}
 
