@@ -132,7 +132,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return basename(path, extname(path))
 		})()
 	
-		const position = metadata.common.track.no ?? undefined
+		const position = fingerprinted?.no ?? metadata.common.track.no ?? undefined
 
 		const imageData = metadata.common.picture?.[0]?.data
 		const { hash, path: imagePath, palette } = imageData
@@ -295,7 +295,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				simplified: simplifiedName(correctedAlbum),
 				artistId,
 				year: metadata.common.year,
-				tracksCount: metadata.common.track.of,
+				tracksCount: fingerprinted?.of ?? metadata.common.track.of ?? undefined,
 				mbid: fingerprinted?.album?.id
 			}, isMultiArtistAlbum)
 		}
