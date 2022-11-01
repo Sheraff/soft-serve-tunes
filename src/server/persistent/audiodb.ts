@@ -266,7 +266,8 @@ async function fetchArtist(id: string) {
 				// catching error because if 1 album fails, it shouldn't prevent the other ones to proceed
 			}
 		}
-	} catch (error) {
+	} catch (e) {
+		console.error(e)
 		// catching fo that a running album that errors is still removed from `running`
 		running.delete(id)
 	}
