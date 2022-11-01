@@ -11,7 +11,7 @@ export const serverSchema = z.object({
   NEXTAUTH_SECRET: z.string(),
   NEXTAUTH_URL: z.string().url(),
   LAST_FM_API_KEY: z.string(),
-  AUDIO_DB_API_KEY: z.string(),
+  AUDIO_DB_API_KEY: z.string().optional(),
   SPOTIFY_CLIENT_ID: z.string(),
   SPOTIFY_CLIENT_SECRET: z.string(),
   TWITCH_CLIENT_ID: z.string(),

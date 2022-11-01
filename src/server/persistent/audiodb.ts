@@ -78,6 +78,9 @@ async function audiodbFetch(endpoint: Endpoint, ...params: [string, string][]) {
 }
 
 async function fetchArtist(id: string) {
+	if (!env.AUDIO_DB_API_KEY) {
+		return
+	}
 	const existing = await prisma.audioDbArtist.findUnique({
 		where: { entityId: id },
 	})
