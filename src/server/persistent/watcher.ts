@@ -7,6 +7,7 @@ import { socketServer } from "server/persistent/ws"
 import chokidar from "chokidar"
 import { unlink } from "node:fs/promises"
 import log from "utils/logger"
+import retryable from "utils/retryable"
 
 type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 
@@ -190,10 +191,10 @@ class MyWatcher {
 	}
 
 	async removeFileFromDb(path: string) {
-		const file = await prisma.file.delete({
+		const file = await retryable(() => prisma.file.delete({
 			where: { path },
 			select: { trackId: true, id: true },
-		})
+		}))
 		if (file?.trackId) {
 			const deletedTrack = await this.removeTrackFromDb(file.trackId)
 			if (deletedTrack) {
@@ -225,7 +226,7 @@ class MyWatcher {
 		if (!track) {
 			return track
 		}
-		await prisma.$transaction([
+		await retryable(() => prisma.$transaction([
 			...(track.userData && track.albumId ? [
 				prisma.album.update({
 					where: {id: track.albumId},
@@ -247,7 +248,7 @@ class MyWatcher {
 			prisma.track.delete({
 				where: { id },
 			})
-		])
+		]))
 		socketServer.send('watcher:remove', { track })
 		return track
 	}
