@@ -1,6 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
+import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 
 export const albumRouter = createRouter()
@@ -115,6 +116,7 @@ export const albumRouter = createRouter()
 
       if (album) {
         lastFm.findAlbum(input.id)
+        audioDb.fetchAlbum(input.id)
       } else {
         log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
       }
@@ -225,6 +227,7 @@ export const albumRouter = createRouter()
 
       if (album) {
         lastFm.findAlbum(input.id)
+        audioDb.fetchAlbum(input.id)
       } else {
         log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
       }

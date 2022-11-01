@@ -448,19 +448,6 @@ class LastFM {
 				}
 			})
 		})
-		if (trackData.mbid) {
-			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			const mbid = trackData.mbid
-			await retryable(async () => {
-				await prisma.audioDbTrack.updateMany({
-					where: {
-						strMusicBrainzID: mbid,
-						entityId: null,
-					},
-					data: { entityId: id },
-				})
-			})
-		}
 		const artist = track.artist
 		if (!connectingArtist && artist) {
 			try {
@@ -626,19 +613,6 @@ class LastFM {
 				},
 			})
 		})
-		if (artistData.mbid) {
-			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			const mbid = artistData.mbid
-			await retryable(async () => {
-				await prisma.audioDbArtist.updateMany({
-					where: {
-						strMusicBrainzID: mbid,
-						// entityId: null,
-					},
-					data: { entityId: id },
-				})
-			})
-		}
 		socketServer.send("invalidate:artist", { id })
 		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
 		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
@@ -807,19 +781,6 @@ class LastFM {
 				},
 			})
 		})
-		if (albumData.mbid) {
-			// TODO: (not sure this is true) shouldn't manipulate directly, but enqueue in a persistent/audiodb class to avoid race conditions that make prisma panic
-			const mbid = albumData.mbid
-			await retryable(async () => {
-				await prisma.audioDbAlbum.updateMany({
-					where: {
-						strMusicBrainzID: mbid,
-						entityId: null
-					},
-					data: { entityId: id },
-				})
-			})
-		}
 		socketServer.send("invalidate:album", { id })
 		if (connectingArtist)
 			socketServer.send("invalidate:artist", { id: connectingArtist })

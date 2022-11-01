@@ -46,6 +46,7 @@ model Track {
   audiodb     AudioDbTrack? @relation
   lastfmDate  DateTime?
   spotifyDate DateTime?
+  audiodbDate DateTime?
 
   userData        UserTrack?      @relation
   playlistEntries PlaylistEntry[]
@@ -143,6 +144,7 @@ model Album {
   spotify     SpotifyAlbum? @relation
   lastfmDate  DateTime?
   spotifyDate DateTime?
+  audiodbDate DateTime?
 
   userData UserAlbum? @relation
 
@@ -261,18 +263,15 @@ model AudioDbArtist {
   strArtistBanner    String?
   bannerId           String?
   banner             Image?  @relation(name: "AudioDbArtistBanner", fields: [bannerId], references: [id])
-
-  albums AudioDbAlbum[]
 }
 
 model AudioDbAlbum {
   // https://theaudiodb.com/api/v1/json/2/album.php?i={{album-id}}
-  idAlbum  Int           @id
-  strAlbum String
+  idAlbum  Int     @id
   idArtist Int
-  artist   AudioDbArtist @relation(fields: [idArtist], references: [idArtist], onDelete: Cascade)
-  entityId String?       @unique
-  entity   Album?        @relation(fields: [entityId], references: [id])
+  strAlbum String
+  entityId String? @unique
+  entity   Album?  @relation(fields: [entityId], references: [id])
 
   strMusicBrainzID String?
   strDescriptionEN String?
@@ -299,18 +298,15 @@ model AudioDbAlbum {
   strMusicMozID      String?
   strItunesID        String?
   strAmazonID        String?
-
-  tracks AudioDbTrack[]
 }
 
 model AudioDbTrack {
   // https://theaudiodb.com/api/v1/json/2/track.php?m={{album-id}} (obtains list of track for entire album)
-  idTrack  Int          @id
-  strTrack String
+  idTrack  Int     @id
   idAlbum  Int
-  album    AudioDbAlbum @relation(fields: [idAlbum], references: [idAlbum], onDelete: Cascade)
-  entityId String?      @unique
-  entity   Track?       @relation(fields: [entityId], references: [id])
+  strTrack String
+  entityId String? @unique
+  entity   Track?  @relation(fields: [entityId], references: [id])
 
   intDuration      Int?
   genres           Genre[] @relation
