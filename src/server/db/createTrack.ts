@@ -13,45 +13,6 @@ import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 
-/*
-ISSUES
-
-fails a lot & is slooooow
-prisma.track.update() 
-code: 'P2002',
-meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
-
-
-Track from an artist inside a whole album of another artist
-- track 07 "Guilty" in Yann Tiersen's Amelie, is "Al Bowlly - Guilty"
-{
-    "artists": [
-        {
-            "id": "f747a4ff-d54f-41b1-be56-97abcf1eb688",
-            "name": "Al Bowlly"
-        }
-    ],
-    "duration": 192,
-    "id": "71635479-38a6-476a-a4f8-7e85bc59da77",
-    "title": "Guilty",
-    "score": 0.996769,
-    "album": {
-        "artists": [
-            {
-                "id": "12d432a3-feb0-49b1-a107-d20751880764",
-                "name": "Yann Tiersen"
-            }
-        ],
-        "id": "9635e642-8321-3024-99f2-abe8f6af51f3",
-        "secondarytypes": [
-            "Soundtrack"
-        ],
-        "title": "Le Fabuleux Destin d’Amélie Poulain",
-        "type": "Album"
-    }
-}
-*/
-
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
 	| PrismaClientKnownRequestError
@@ -322,9 +283,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		// create album now that we have an artistId
 		if (correctedAlbum) {
 			/*
-			 * TODO: if album artist is not the same as track artist
-			 * && album artist is not multi-artist
-			 * => try and use album artist instead of artist (findable by name?)
+			 * TODO: if fingerprinted.album.artist is not the same as track.artist
+			 * && !isMultiArtistAlbum
+			 * => try and use album artist instead of artist (findable by mbid)
 			 * to avoid cases where an album is created in duplicates because a single (few) track
 			 * was from a different artist
 			 */
