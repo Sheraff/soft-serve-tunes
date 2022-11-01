@@ -191,6 +191,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				feats: {
 					select: {
 						id: true,
+						mbid: true,
 					}
 				}
 			},
@@ -282,14 +283,16 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		
 		// create album now that we have an artistId
 		if (correctedAlbum) {
-			/*
-			 * TODO: if fingerprinted.album.artist is not the same as track.artist
-			 * && !isMultiArtistAlbum
-			 * => try and use album artist instead of artist (findable by mbid)
-			 * to avoid cases where an album is created in duplicates because a single (few) track
-			 * was from a different artist
-			 */
-			const artistId = isMultiArtistAlbum ? undefined : track.artistId
+			const artistId = await (async () => {
+				// avoid cases where an album is created in duplicates because a single (or a few) track was from a different artist
+				const mainArtistMbidCandidate = fingerprinted?.album?.artists?.[0]?.id
+				if (mainArtistMbidCandidate && fingerprinted?.artists?.[0]?.id !== mainArtistMbidCandidate) {
+					const featAsMainAlbumArtist = track.feats.find(({mbid}) => mbid === mainArtistMbidCandidate)
+					if (featAsMainAlbumArtist?.id)
+						return featAsMainAlbumArtist.id
+				}
+				return isMultiArtistAlbum ? undefined : (track.artistId ?? undefined)
+			})()
 			await linkAlbum(track.id, {
 				name: correctedAlbum,
 				simplified: simplifiedName(correctedAlbum),
