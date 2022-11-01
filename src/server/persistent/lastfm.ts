@@ -464,7 +464,7 @@ class LastFM {
 		const artist = track.artist
 		if (!connectingArtist && artist) {
 			try {
-				await new Promise<void>(resolve => this.#findArtist(artist.id).finally(resolve))
+				await this.#findArtist(artist.id)
 			} catch (e) {
 				// catching so that a track can still send its invalidation signal if the artist fails
 				console.error(e)
@@ -473,7 +473,7 @@ class LastFM {
 		const album = track.album
 		if (!connectingAlbum && album) {
 			try {
-				await new Promise<void>(resolve => this.#findAlbum(album.id).finally(resolve))
+				await this.#findAlbum(album.id)
 			} catch (e) {
 				// catching so that a track can still send its invalidation signal if the album fails
 				console.error(e)
