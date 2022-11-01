@@ -285,11 +285,17 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		if (correctedAlbum) {
 			const artistId = await (async () => {
 				// avoid cases where an album is created in duplicates because a single (or a few) track was from a different artist
-				const mainArtistMbidCandidate = fingerprinted?.album?.artists?.[0]?.id
-				if (mainArtistMbidCandidate && fingerprinted?.artists?.[0]?.id !== mainArtistMbidCandidate) {
-					const featAsMainAlbumArtist = track.feats.find(({mbid}) => mbid === mainArtistMbidCandidate)
+				const mainArtistMbidCandidate = fingerprinted?.album?.artists?.[0]
+				if (mainArtistMbidCandidate && fingerprinted?.artists?.[0]?.id !== mainArtistMbidCandidate.id && !notArtistName(mainArtistMbidCandidate.name)) {
+					const featAsMainAlbumArtist = track.feats.find(({mbid}) => mbid === mainArtistMbidCandidate.id)
 					if (featAsMainAlbumArtist?.id)
 						return featAsMainAlbumArtist.id
+					const existingMainAlbumArtist = await retryable(() => prisma.artist.findFirst({
+						where: {mbid: mainArtistMbidCandidate.id},
+						select: {id: true}
+					}))
+					if (existingMainAlbumArtist)
+						return existingMainAlbumArtist.id
 				}
 				return isMultiArtistAlbum ? undefined : (track.artistId ?? undefined)
 			})()
@@ -316,6 +322,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return createTrack(path, retries + 1)
 		} else {
 			log("error", "error", "fswatcher", `failed to add ${relativePath} after ${retries} retries`)
+			console.log("error keys", ...Array.from(Object.keys(error)))
 			console.warn(error)
 			return false
 		}
