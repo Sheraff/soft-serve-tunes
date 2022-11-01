@@ -18,11 +18,6 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
     </pre>
   </details>
 
-- [ ] AudioDB requests should be made on a per-entity basis and
-  not everything-related-to-an-artist at once.
-  Now that we're using paid api keys, use mbid from acoustid when possible
-  or use search endpoints otherwise
-
 ## Deploy to raspberry
 
 ### update raspbian 
