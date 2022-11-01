@@ -2,6 +2,7 @@ import { createRouter } from "./context"
 import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { spotify } from "server/persistent/spotify"
+import { audioDb } from "server/persistent/audiodb"
 import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { TRPCError } from "@trpc/server"
@@ -75,22 +76,6 @@ export const trackRouter = createRouter()
                   palette: true,
                 }
               },
-              album: {
-                select: {
-                  thumb: {
-                    select: {
-                      id: true,
-                      palette: true,
-                    }
-                  },
-                  thumbHq: {
-                    select: {
-                      id: true,
-                      palette: true,
-                    }
-                  },
-                }
-              },
             }
           },
           spotify: {
@@ -144,12 +129,6 @@ export const trackRouter = createRouter()
       } else if (track.audiodb?.thumb) {
         log("info", "image", "trpc", `track.miniature selected cover from audiodb.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.audiodb.thumb
-      } else if (track.audiodb?.album.thumbHq) {
-        log("info", "image", "trpc", `track.miniature selected cover from audiodb.album.thumbHq for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.audiodb.album.thumbHq
-      } else if (track.audiodb?.album.thumb) {
-        log("info", "image", "trpc", `track.miniature selected cover from audiodb.album.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.audiodb.album.thumb
       } else if (track.lastfm?.album?.cover) {
         log("info", "image", "trpc", `track.miniature selected cover from lastfm.album.cover for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
         cover = track.lastfm.album.cover
@@ -164,6 +143,7 @@ export const trackRouter = createRouter()
       if (track) {
         lastFm.findTrack(input.id)
         spotify.findTrack(input.id)
+        audioDb.fetchTrack(input.id)
       } else {
         log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
       }
