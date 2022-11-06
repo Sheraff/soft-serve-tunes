@@ -59,13 +59,12 @@ export default class MusicBrainz {
 			return cached
 		}
 
-		await this.#queue.next()
-		const response = await fetch(url, {
+		const response = await this.#queue.push(() => fetch(url, {
 			headers: new Headers({
 				"User-Agent": env.MUSIC_BRAINZ_USER_AGENT,
 				"Accept": "application/json"
 			})
-		})
+		}))
 		if (response.status !== 200) {
 			if (response.status === 503) {
 				// Too many requests, back-off for a second

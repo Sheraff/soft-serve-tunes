@@ -194,7 +194,7 @@ class LastFM {
 	#waitlist: WaitlistEntry[] = []
 
 	constructor() {
-		this.#queue = new Queue(LastFM.RATE_LIMIT, {wait: true})
+		this.#queue = new Queue(LastFM.RATE_LIMIT, { wait: true })
 	}
 
 	async #processWaitlist() {
@@ -262,8 +262,7 @@ class LastFM {
 			return this.#pastResponses.get(string)
 		}
 		const json = await retryable(async () => {
-			await this.#queue.next()
-			const data = await fetch(url)
+			const data = await this.#queue.push(() => fetch(url))
 			const json = await data.json()
 			const parsed = z.union([schema, lastFmErrorSchema]).parse(json)
 			if ("error" in parsed) {

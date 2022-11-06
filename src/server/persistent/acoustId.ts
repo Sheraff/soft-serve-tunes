@@ -173,7 +173,7 @@ class AcoustId {
 		if (data.status !== 200) {
 			if (data.status === 429) {
 				// Too many requests, back-off for a second
-				this.#queue.push(() => new Promise(resolve => setTimeout(resolve, 1000)))
+				this.#queue.delay(1000)
 			}
 			throw new Error(`${data.status} - ${data.statusText}`)
 		}
