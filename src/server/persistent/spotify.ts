@@ -179,14 +179,23 @@ class Spotify {
 		this.#queue = new Queue(Spotify.RATE_LIMIT)
 	}
 
-	async #refreshToken(retries = 0) {
+	#refreshing: Promise<void> | null = null
+	async #refreshToken(retries = 0, callback?: () => void) {
 		if (this.#accessToken) {
 			return
 		}
+		if (this.#refreshing && !callback) {
+			return this.#refreshing
+		}
+		let resolve = callback
+		if (!resolve)
+			this.#refreshing = new Promise(r => resolve = r)
 		try {
 			const response = await fetch('https://accounts.spotify.com/api/token', this.#authOptions)
 			const data = await response.json()
 			this.#accessToken = data.access_token
+			this.#refreshing = null
+			resolve!()
 			setTimeout(() => {
 				this.#accessToken = null
 			}, data.expires_in * 1000 - 100)
@@ -194,8 +203,9 @@ class Spotify {
 			if (retries < 3) {
 				const nextRetry = retries + 1
 				await new Promise(resolve => setTimeout(resolve, 2**nextRetry * 100))
-				await this.#refreshToken(nextRetry)
+				await this.#refreshToken(nextRetry, resolve)
 			} else {
+				this.#refreshing = null
 				throw error
 			}
 		}
