@@ -18,6 +18,9 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
     </pre>
   </details>
 
+- [ ] Track no. gets messed up if its info doesn't come from the
+  same source as the album info
+
 ## Deploy to raspberry
 
 ### update raspbian 
