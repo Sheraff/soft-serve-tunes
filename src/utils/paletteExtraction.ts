@@ -11,19 +11,7 @@ type HSLPixel = {
 	lum: number
 }
 
-// function sortByIncreasingContrastRatio([ref, ...colors]: [HSLPixel, ...HSLPixel[]]) {
-// 	colors.sort((a, b) => {
-// 		const contrastRatioA = contrastRatio(ref.lum, a.lum)
-// 		const contrastRatioB = contrastRatio(ref.lum, b.lum)
-// 		return contrastRatioA - contrastRatioB
-// 	})
-// 	return [ref, ...colors]
-// }
-
-// function contrastRatio(lum1: number, lum2: number) {
-// 	const ratio = (lum1 + 0.05) / (lum2 + 0.05)
-// 	return ratio
-// }
+type FourHslPixels = [HSLPixel, HSLPixel, HSLPixel, HSLPixel]
 
 function buildRgb (imageData: Uint8ClampedArray, channels: 3 | 4) {
 	const rgbValues = [] as RGBPixel[]
@@ -39,7 +27,7 @@ function buildRgb (imageData: Uint8ClampedArray, channels: 3 | 4) {
 	return rgbValues
 }
 
-function sortByIncreasingLightnessDifference([ref, ...colors]: [HSLPixel, HSLPixel, HSLPixel, HSLPixel]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+function sortByIncreasingLightnessDifference([ref, ...colors]: FourHslPixels): FourHslPixels {
 	colors.sort((a, b) => {
 		const contrastRatioA = Math.abs(a.l - ref.l)
 		const contrastRatioB = Math.abs(b.l - ref.l)
@@ -48,7 +36,7 @@ function sortByIncreasingLightnessDifference([ref, ...colors]: [HSLPixel, HSLPix
 	return [ref, ...colors]
 }
 
-function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): FourHslPixels {
 	const [a, b, c] = colors
 	if (!a) {
 		const other = first.l > 50
@@ -65,7 +53,64 @@ function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): [HSLP
 	return [first, a, b, c]
 }
 
-function sortSecondariesByColorIntensity([first, a, b, last]: [HSLPixel, HSLPixel, HSLPixel, HSLPixel]): [HSLPixel, HSLPixel, HSLPixel, HSLPixel] {
+function contrastRatio(lum1: number, lum2: number) {
+	const ratio = (lum1 + 0.05) / (lum2 + 0.05)
+	return ratio
+}
+
+function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
+	const maxLum = Math.max(bg.lum, main.lum)
+	const minLum = Math.min(bg.lum, main.lum)
+	const max = maxLum === bg.lum ? bg : main
+	const min = minLum === bg.lum ? bg : main
+	const ratio = contrastRatio(maxLum, minLum)
+
+	if (ratio >= 4) {
+		return [bg, _, __, main]
+	}
+
+	// if the most luminous if significantly lighter than the least luminous, make it even more white
+	const deltaLight = Math.abs(bg.l - main.l)
+	const maxLight = Math.max(bg.l, main.l)
+	if (deltaLight > 10 && max.l === maxLight) {
+		max.l += (100 - max.l) / 2
+		return [bg, _, __, main]
+	}
+
+	// if the most luminous is close to white, make least luminous more black
+	// if the least luminous is close to black, make most luminous more white
+	const deltaSat = Math.abs(bg.s - main.s)
+	if (deltaSat > 10 && max.l >= 80) {
+		min.l -= min.l * 0.75
+		return [bg, _, __, main]
+	}
+	if (deltaSat > 10 && min.l <= 20) {
+		max.l += (100 - max.l) * 0.75
+		return [bg, _, __, main]
+	}
+
+	// fallback:
+	// if most luminous is still not very luminous (overall dark image), make least luminous more white
+	// if least luminous is already very luminous (overall light image), make most luminous more black
+	if (maxLum <= 0.5) {
+		max.l += (1 - max.l) / 2
+	} else if (minLum >= 0.5) {
+		min.l -= min.l / 2
+	} else {
+		max.l += (1 - max.l) / 2
+		min.l -= min.l / 2
+	}
+	return [bg, _, __, main]
+}
+
+function equalHsl(a: HSLPixel, b: HSLPixel): boolean {
+	return a.h === b.h && a.s === b.s && a.l === b.l
+}
+
+function sortSecondariesByColorIntensity([first, a, b, last]: FourHslPixels): FourHslPixels {
+	if (equalHsl(first, a) || equalHsl(b, last) || equalHsl(a, b)) {
+		return [first, a, b, last]
+	}
 	const aSaturation = a.s / 100
 	const bSaturation = b.s / 100
 	const aColorIntensity = 1 - Math.abs(a.l - 50) / 50
@@ -77,6 +122,22 @@ function sortSecondariesByColorIntensity([first, a, b, last]: [HSLPixel, HSLPixe
 	}
 	return [first, a, b, last]
 }
+
+// function sortByGlobalLuminance(allColors: [HSLPixel, number][], palette: FourHslPixels): FourHslPixels {
+// 	const lumSumAndCount = allColors.reduce(([sum, total], [color, count]) => ([
+// 		sum + color.lum * count,
+// 		total + count
+// 	]), [0, 0] as [number, number]) as [number, number]
+// 	const avgLum = lumSumAndCount[0] / lumSumAndCount[1]
+// 	if (
+// 		(avgLum > 0.7 && palette[0].lum < .5)
+// 		|| (avgLum < 0.3 && palette[0].lum > .5)
+// 	) {
+// 		palette.reverse()
+// 	}
+
+// 	return palette
+// }
 
 function extractPalette(values: RGBPixel[]) {
 	const colorCount = values.reduce((prev, curr) => {
@@ -103,28 +164,32 @@ function extractPalette(values: RGBPixel[]) {
 		return prev
 	}, [] as [HSLPixel, number][])
 
-	const mainColors = aggregateSimilar
+	
+	const sortedAggregates = aggregateSimilar
 		.sort((a, b) => b[1] - a[1])
-		.slice(0, 4)
-		.map(([color]) => color) as [HSLPixel, ...HSLPixel[]]
+
+	const mainColors: [HSLPixel, ...HSLPixel[]] = [sortedAggregates[0]![0]]
+	const relevanceThreshold = values.length * 0.0005 // 0.05% of all pixels are this color
+	for (let i = 1; i < sortedAggregates.length; i++) {
+		const [color, count] = sortedAggregates[i]!
+		if (count < relevanceThreshold) {
+			console.log('break for: if (count < relevanceThreshold) {', count, relevanceThreshold)
+			break
+		}
+		mainColors.push(color)
+		if (mainColors.length === 4) {
+			console.log('break for: if (mainColors.length === 4) {')
+			break
+		}
+	}
 
 	const fourColors = minimumFourColors(mainColors)
 	const firstLastContrast = sortByIncreasingLightnessDifference(fourColors)
 	const secondaryIsColorful = sortSecondariesByColorIntensity(firstLastContrast)
+	// const themed = sortByGlobalLuminance(aggregateSimilar, secondaryIsColorful)
+	const palette = minColorRatio(secondaryIsColorful)
 
-	const lumSumAndCount = aggregateSimilar.reduce(([sum, total], [color, count]) => ([
-		sum + color.lum * count,
-		total + count
-	]), [0, 0] as [number, number]) as [number, number]
-	const avgLum = lumSumAndCount[0] / lumSumAndCount[1]
-	if(
-		(avgLum > 0.7 && secondaryIsColorful[0].lum < .5)
-		|| (avgLum < 0.3 && secondaryIsColorful[0].lum > .5)
-	) {
-		secondaryIsColorful.reverse()
-	}
-
-	return secondaryIsColorful
+	return palette
 }
 
 function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) {
