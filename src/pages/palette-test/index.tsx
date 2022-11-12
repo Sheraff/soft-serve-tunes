@@ -14,6 +14,9 @@ const TEST_ALBUM_IDS = [
 		// "cl6vtsh4u337626euy4bdgd2tx1", // snarky puppy "tell your friends": white should be main color (first in order => background main)
 		// "cl6vtmtdo47924euy4n90chfs2", // caravan palace "panic": (maybe) there should be some red in the palette (it's the 5th color, just bad luck, it's fine)
 	"cl9yb7w7n182714dy4dntkxxkf", // yann tiersen "good bye lenin"
+	"cl9yb0hfy60914dy4i4y1iqq5", // ice nine kills
+	"cl9yawbln02444dy4exzc99dp", // birds of prey
+	"cl9yb5rzy146834dy48c7eqnoh", // tzu computer love
 ]
 
 
