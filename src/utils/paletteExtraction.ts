@@ -49,6 +49,12 @@ function sortByIncreasingLightnessDifference([ref, ...colors]: FourHslPixels): F
 	}
 }
 
+/**
+ * @description Fills array of HSL colors to be of length 4
+ * - if only 1 color is provided, a second color (black or white) is added
+ * - if 2 colors are provided, an array of `[a, a, b, b]` is returned
+ * - if 3 colors are provided, an array of `[a, b, c, c]` is returned
+ */
 function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): FourHslPixels {
 	const [a, b, c] = colors
 	if (!a) {
@@ -71,6 +77,10 @@ function contrastRatio(lum1: number, lum2: number) {
 	return ratio
 }
 
+/**
+ * @description Insures a minimum contrast ratio of 4 between first and last
+ * color by manipulating lightness if needed
+ */
 function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 	const maxLum = Math.max(bg.lum, main.lum)
 	const minLum = Math.min(bg.lum, main.lum)
@@ -153,6 +163,7 @@ function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 // }
 
 function extractPalette(values: RGBPixel[]) {
+	// count how many pixels there are of each color
 	const colorCount = values.reduce((prev, curr) => {
 		prev[curr.r + ',' + curr.g + ',' + curr.b] = (prev[curr.r + ',' + curr.g + ',' + curr.b] || 0) + 1
 		return prev
@@ -160,6 +171,7 @@ function extractPalette(values: RGBPixel[]) {
 
 	const byPrevalence = Object.entries(colorCount).sort((a, b) => b[1] - a[1])
 
+	// convert to HSL, keep only significantly different colors
 	const aggregateSimilar = byPrevalence.reduce((prev, [string, count]) => {
 		const [r, g, b] = string.split(',').map(Number) as [number, number, number]
 		const rgb = {r, g, b} as RGBPixel
@@ -177,21 +189,19 @@ function extractPalette(values: RGBPixel[]) {
 		return prev
 	}, [] as [HSLPixel, number][])
 
-	
 	const sortedAggregates = aggregateSimilar
 		.sort((a, b) => b[1] - a[1])
 
+	// filter out colors that don't represent a significant area of the image, keep 4 colors max
 	const mainColors: [HSLPixel, ...HSLPixel[]] = [sortedAggregates[0]![0]]
 	const relevanceThreshold = values.length * 0.0005 // 0.05% of all pixels are this color
 	for (let i = 1; i < sortedAggregates.length; i++) {
 		const [color, count] = sortedAggregates[i]!
 		if (count < relevanceThreshold) {
-			console.log('break for: if (count < relevanceThreshold) {', count, relevanceThreshold)
 			break
 		}
 		mainColors.push(color)
 		if (mainColors.length === 4) {
-			console.log('break for: if (mainColors.length === 4) {')
 			break
 		}
 	}
@@ -206,14 +216,17 @@ function extractPalette(values: RGBPixel[]) {
 }
 
 function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) {
+	// if lightness is similar and close to the extremes (full white or full black), colors are not different
 	const lDiff = Math.abs(color1.l - color2.l)
 	if (lDiff < 10 && (color1.l > 90 || color2.l > 90 || color1.l < 10 || color2.l < 10)) {
 		return false
 	}
+	// if saturation is similar and close to zero (gray), colors are not different
 	const sDiff = Math.abs(color1.s - color2.s)
 	if (sDiff < 10 && (color1.s < 10 || color2.s < 10)) {
 		return false
 	}
+	// if hue is not different enough to compensate for lightness and saturation similarity, colors are not different
 	const hDiff = Math.min(
 		Math.abs(color1.h - color2.h),
 		Math.abs(color1.h + 360 - color2.h),
@@ -222,6 +235,7 @@ function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) 
 	if ((sDiff + lDiff) < 500 / hDiff) {
 		return false
 	}
+	// colors are different if all 3 dimensions add up to a significant distance
 	const diff = hDiff / 360 + sDiff / 100 + lDiff / 100
 	return diff > 0.3
 }
@@ -231,7 +245,7 @@ function channelLuminance(value: number) {
 }
 
 function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
-	// https://www.had2know.org/technology/hsl-rgb-color-converter.html
+	// https://www.had2know.org/technology/hsl-rgb-color-converter.html (from loaded .js, not from explanation)
 	const r = pixel.r / 255
 	const g = pixel.g / 255
 	const b = pixel.b / 255
@@ -259,10 +273,8 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 		h = (0 + (g - b) / delta) / 6
 	} else if (max === g) {
 		h = (2 + (b - r) / delta) / 6
-	} else if (max === b) {
-		h = (4 + (r - g) / delta) / 6
 	} else {
-		h = 0
+		h = (4 + (r - g) / delta) / 6
 	}
 
 	return {
