@@ -18,6 +18,9 @@ const TEST_ALBUM_IDS = [
 	"cl9yawbln02444dy4exzc99dp", // birds of prey
 	"cl9yb5rzy146834dy48c7eqnoh", // tzu computer love
 	"cl9yb0y5c68014dy4hwf2cnch", // metronomy
+	"cl9yb3cwc105394dy4qmndtcpy", // roadrunner united
+	"cl9yb0mj562134dy4re44v5xc", // maroon 5 songs about jane
+	"cl9yb5f6i141014dy43dwiizze", // two door cinema club tourist history
 ]
 
 

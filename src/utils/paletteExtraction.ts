@@ -28,12 +28,25 @@ function buildRgb (imageData: Uint8ClampedArray, channels: 3 | 4) {
 }
 
 function sortByIncreasingLightnessDifference([ref, ...colors]: FourHslPixels): FourHslPixels {
-	colors.sort((a, b) => {
+	// sort by lightness, order is based on distance from first color
+	const [a, b, last] = colors.sort((a, b) => {
 		const contrastRatioA = Math.abs(a.l - ref.l)
 		const contrastRatioB = Math.abs(b.l - ref.l)
 		return contrastRatioA - contrastRatioB
 	})
-	return [ref, ...colors]
+	const lightDelta = ref.l - last.l
+	if (Math.abs(lightDelta) < 20) {
+		return [ref, ...colors]
+	}
+	// if there is a significant difference in lightness between 1st and last, sort middle too
+	const refDark = lightDelta < 0
+	const min = a.l < b.l ? a : b
+	const max = min === b ? a : b
+	if (refDark) {
+		return [ref, min, max, last]
+	} else {
+		return [ref, max, min, last]
+	}
 }
 
 function minimumFourColors([first, ...colors]: [HSLPixel, ...HSLPixel[]]): FourHslPixels {
@@ -103,25 +116,25 @@ function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 	return [bg, _, __, main]
 }
 
-function equalHsl(a: HSLPixel, b: HSLPixel): boolean {
-	return a.h === b.h && a.s === b.s && a.l === b.l
-}
+// function equalHsl(a: HSLPixel, b: HSLPixel): boolean {
+// 	return a.h === b.h && a.s === b.s && a.l === b.l
+// }
 
-function sortSecondariesByColorIntensity([first, a, b, last]: FourHslPixels): FourHslPixels {
-	if (equalHsl(first, a) || equalHsl(b, last) || equalHsl(a, b)) {
-		return [first, a, b, last]
-	}
-	const aSaturation = a.s / 100
-	const bSaturation = b.s / 100
-	const aColorIntensity = 1 - Math.abs(a.l - 50) / 50
-	const bColorIntensity = 1 - Math.abs(b.l - 50) / 50
-	const aScore = aSaturation * aColorIntensity
-	const bScore = bSaturation * bColorIntensity
-	if (aScore * 0.7 > bScore) {
-		return [first, b, a, last]
-	}
-	return [first, a, b, last]
-}
+// function sortSecondariesByColorIntensity([first, a, b, last]: FourHslPixels): FourHslPixels {
+// 	if (equalHsl(first, a) || equalHsl(b, last) || equalHsl(a, b)) {
+// 		return [first, a, b, last]
+// 	}
+// 	const aSaturation = a.s / 100
+// 	const bSaturation = b.s / 100
+// 	const aColorIntensity = 1 - Math.abs(a.l - 50) / 50
+// 	const bColorIntensity = 1 - Math.abs(b.l - 50) / 50
+// 	const aScore = aSaturation * aColorIntensity
+// 	const bScore = bSaturation * bColorIntensity
+// 	if (aScore * 0.7 > bScore) {
+// 		return [first, b, a, last]
+// 	}
+// 	return [first, a, b, last]
+// }
 
 // function sortByGlobalLuminance(allColors: [HSLPixel, number][], palette: FourHslPixels): FourHslPixels {
 // 	const lumSumAndCount = allColors.reduce(([sum, total], [color, count]) => ([
@@ -185,9 +198,9 @@ function extractPalette(values: RGBPixel[]) {
 
 	const fourColors = minimumFourColors(mainColors)
 	const firstLastContrast = sortByIncreasingLightnessDifference(fourColors)
-	const secondaryIsColorful = sortSecondariesByColorIntensity(firstLastContrast)
+	// const secondaryIsColorful = sortSecondariesByColorIntensity(firstLastContrast)
 	// const themed = sortByGlobalLuminance(aggregateSimilar, secondaryIsColorful)
-	const palette = minColorRatio(secondaryIsColorful)
+	const palette = minColorRatio(firstLastContrast)
 
 	return palette
 }
