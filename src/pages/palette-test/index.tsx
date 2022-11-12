@@ -38,22 +38,29 @@ function SingleTest({id}: {id: string}) {
 		const controller = new AbortController()
 		const img = ref.current!
 		img.addEventListener('load', () => {
+			const cut = 0.05
+			const side = 300
 			const canvas = document.createElement('canvas')
-			canvas.height = 300
-			canvas.width = 300
+			canvas.height = side
+			canvas.width = side
 			const context = canvas.getContext('2d')
 			context!.drawImage(
 				img,
-				img.naturalWidth * 0.05,
-				img.naturalHeight * 0.05,
-				img.naturalWidth * 0.9,
-				img.naturalHeight * 0.9,
+				img.naturalWidth * cut,
+				img.naturalHeight * cut,
+				img.naturalWidth * (1 - 2 * cut),
+				img.naturalHeight * (1 - 2 * cut),
 				0,
 				0,
-				300,
-				300
+				side,
+				side
 			)
-			const imgData = context!.getImageData(0, 0, 300, 300)
+			const imgData = context!.getImageData(
+				side * 0,
+				side * 0,
+				side * 1,
+				side * 1,
+			)
 			const buffer = imgData.data
 			const palette = extractPaletteFromUint8(buffer, 4)
 			setPalette(palette)
