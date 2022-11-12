@@ -63,7 +63,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
       .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
   }
   if (returnStream === null) {
-    log("error", "500", "sharp", `${width}x${width} cover #${cover.path}`)
+    log("error", "500", "sharp", `${width}x${width} cover #${id}`)
     return res.status(500).json({ error: "Error transforming image" })
   }
   res

@@ -153,56 +153,45 @@ function channelLuminance(value: number) {
 }
 
 function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
-	// first change range from 0-255 to 0 - 1
+	// https://www.had2know.org/technology/hsl-rgb-color-converter.html
 	const r = pixel.r / 255
 	const g = pixel.g / 255
 	const b = pixel.b / 255
-
 	const max = Math.max(r, g, b)
 	const min = Math.min(r, g, b)
+	const delta = max - min
 
-	const difference = max - min
+	const lum = .2126 * channelLuminance(r) + .7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
 
-	const lightness = (max + min) / 2
+	const l = (max + min) / 2
 
-	const luminance = .2126 * channelLuminance(r) + .7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
-
-	if (difference === 0) {
+	if (delta <= 2 / 255) {
 		return {
 			h: 0,
 			s: 0,
-			l: lightness * 100,
-			lum: luminance,
+			l: l * 100,
+			lum,
 		}
 	}
-	/**
-	 * If Red is max, then Hue = (G-B)/(max-min)
-	 * If Green is max, then Hue = 2.0 + (B-R)/(max-min)
-	 * If Blue is max, then Hue = 4.0 + (R-G)/(max-min)
-	 */
-	let hue = 0
-	const maxColorValue = Math.max(pixel.r, pixel.g, pixel.b);
-	if (maxColorValue === pixel.r) {
-		hue = (g - b) / difference;
-	} else if (maxColorValue === pixel.g) {
-		hue = 2.0 + (b - r) / difference;
-	} else {
-		hue = 4.0 + (g - b) / difference;
-	}
-	hue = Math.round(hue * 60) // convert to degrees
-	if (hue < 0) {
-		hue = hue + 360
-	}
 
-	const saturation = lightness <= 0.5
-		? difference / (max + min)
-		: difference / (2 - max - min)
+	const s = delta / (1 - Math.abs(2 * l - 1))
+
+	let h: number
+	if (max === r) {
+		h = (0 + (g - b) / delta) / 6
+	} else if (max === g) {
+		h = (2 + (b - r) / delta) / 6
+	} else if (max === b) {
+		h = (4 + (r - g) / delta) / 6
+	} else {
+		h = 0
+	}
 
 	return {
-		h: hue,
-		s: saturation * 100,
-		l: lightness * 100,
-		lum: luminance,
+		h: Math.round(360 * h),
+		s: s * 100,
+		l: l * 100,
+		lum,
 	}
 }
 
