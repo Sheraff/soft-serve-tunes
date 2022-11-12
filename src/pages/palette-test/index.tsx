@@ -17,6 +17,7 @@ const TEST_ALBUM_IDS = [
 	"cl9yb0hfy60914dy4i4y1iqq5", // ice nine kills
 	"cl9yawbln02444dy4exzc99dp", // birds of prey
 	"cl9yb5rzy146834dy48c7eqnoh", // tzu computer love
+	"cl9yb0y5c68014dy4hwf2cnch", // metronomy
 ]
 
 
