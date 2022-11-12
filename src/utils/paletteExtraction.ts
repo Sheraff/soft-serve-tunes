@@ -103,8 +103,8 @@ function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 	}
 
 	// fallback:
-	// if most luminous is still not very luminous (overall dark image), make least luminous more white
-	// if least luminous is already very luminous (overall light image), make most luminous more black
+	// if most luminous is still not very luminous (overall dark image), make most luminous more white
+	// if least luminous is already very luminous (overall vibrant image), make least luminous more black
 	if (maxLum <= 0.5) {
 		max.l += (1 - max.l) / 2
 	} else if (minLum >= 0.5) {
