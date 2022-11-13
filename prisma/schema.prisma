@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["extendedWhereUnique"]
 }
 
 datasource db {
@@ -72,9 +73,12 @@ model PlaylistEntry {
 }
 
 model Playlist {
-  id       String          @id @default(cuid())
-  editable Boolean         @default(true)
-  entries  PlaylistEntry[]
+  id         String          @id @default(cuid())
+  editable   Boolean         @default(true)
+  entries    PlaylistEntry[]
+  name       String
+  createdAt  DateTime        @default(now())
+  modifiedAt DateTime        @default(now())
 }
 
 model Image {

@@ -582,6 +582,7 @@ class Spotify {
 						await prisma.spotifyArtist.update({
 							where: {
 								id: newTrackArtistId,
+								artist: null,
 							},
 							data: {
 								artist: {
@@ -600,6 +601,7 @@ class Spotify {
 						await prisma.spotifyAlbum.update({
 							where: {
 								id: newTrackAlbumId,
+								album: null
 							},
 							data: {
 								album: {
@@ -831,7 +833,8 @@ class Spotify {
 				await retryable(async () => {
 					await prisma.spotifyAlbum.update({
 						where: {
-							id: artistId
+							id: artistId,
+							artist: null,
 						},
 						data: {
 							album: {
