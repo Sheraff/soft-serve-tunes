@@ -13,20 +13,6 @@ type HSLPixel = {
 
 type FourHslPixels = [HSLPixel, HSLPixel, HSLPixel, HSLPixel]
 
-function buildRgb (imageData: Uint8ClampedArray, channels: 3 | 4) {
-	const rgbValues = [] as RGBPixel[]
-	for (let i = 0; i < imageData.length - (channels - 1); i += channels) {
-		const rgb = {
-			r: imageData[i] as number,
-			g: imageData[i + 1] as number,
-			b: imageData[i + 2] as number,
-		};
-
-		rgbValues.push(rgb)
-	}
-	return rgbValues
-}
-
 function sortByIncreasingLightnessDifference([ref, ...colors]: FourHslPixels): FourHslPixels {
 	// sort by lightness, order is based on distance from first color
 	const [a, b, last] = colors.sort((a, b) => {
@@ -162,27 +148,36 @@ function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 // 	return palette
 // }
 
-function extractPalette(values: RGBPixel[]) {
+function extractPalette(imageData: Uint8ClampedArray, channels: 3 | 4) {
 	// count how many pixels there are of each color
-	const colorCount = values.reduce((prev, curr) => {
-		prev[curr.r + ',' + curr.g + ',' + curr.b] = (prev[curr.r + ',' + curr.g + ',' + curr.b] || 0) + 1
-		return prev
-	} , {} as {[key: string]: number})
+	const colorCount: {[key: string]: {count: number, hsl: HSLPixel}} = {}
+	for (let i = 0; i < imageData.length - (channels - 1); i += channels) {
+		const r = imageData[i]!
+		const g = imageData[i + 1]!
+		const b = imageData[i + 2]!
+		const key = r + ',' + g + ',' + b
 
-	const byPrevalence = Object.entries(colorCount).sort((a, b) => b[1] - a[1])
+		if (colorCount[key]) {
+			colorCount[key]!.count += 1
+		} else {
+			colorCount[key] = {
+				count: 1,
+				hsl: convertRGBtoHSL({r, g, b})
+			}
+		}
+	}
+
+	const byPrevalence = Object.values(colorCount).sort((a, b) => b.count - a.count)
 
 	// convert to HSL, keep only significantly different colors
-	const aggregateSimilar = byPrevalence.reduce((prev, [string, count]) => {
-		const [r, g, b] = string.split(',').map(Number) as [number, number, number]
-		const rgb = {r, g, b} as RGBPixel
-		const color = convertRGBtoHSL(rgb)
+	const aggregateSimilar = byPrevalence.reduce((prev, {count, hsl}) => {
 		if (prev.length === 0) {
-			prev.push([color, count])
+			prev.push([hsl, count])
 			return prev
 		}
-		const same = prev.find(([c]) => !hslColorsAreSignificantlyDifferent(c, color))
+		const same = prev.find(([c]) => !hslColorsAreSignificantlyDifferent(c, hsl))
 		if (!same) {
-			prev.push([color, count])
+			prev.push([hsl, count])
 		} else {
 			same[1] += count
 		}
@@ -194,7 +189,7 @@ function extractPalette(values: RGBPixel[]) {
 
 	// filter out colors that don't represent a significant area of the image, keep 4 colors max
 	const mainColors: [HSLPixel, ...HSLPixel[]] = [sortedAggregates[0]![0]]
-	const relevanceThreshold = values.length * 0.0005 // 0.05% of all pixels are this color
+	const relevanceThreshold = imageData.length / channels * 0.0005 // 0.05% of all pixels are this color
 	for (let i = 1; i < sortedAggregates.length; i++) {
 		const [color, count] = sortedAggregates[i]!
 		if (count < relevanceThreshold) {
@@ -227,21 +222,18 @@ function hslColorsAreSignificantlyDifferent(color1: HSLPixel, color2: HSLPixel) 
 		return false
 	}
 	// if hue is not different enough to compensate for lightness and saturation similarity, colors are not different
-	const hDiff = Math.min(
-		Math.abs(color1.h - color2.h),
-		Math.abs(color1.h + 360 - color2.h),
-		Math.abs(color1.h - 360 - color2.h)
-	)
+	const angleDiff = Math.abs(color1.h - color2.h)
+	const hDiff = Math.min(angleDiff, 360 - angleDiff)
 	if ((sDiff + lDiff) < 500 / hDiff) {
 		return false
 	}
 	// colors are different if all 3 dimensions add up to a significant distance
-	const diff = hDiff / 360 + sDiff / 100 + lDiff / 100
-	return diff > 0.3
+	const diff = hDiff / 3.6 + sDiff + lDiff
+	return diff > 30
 }
 
 function channelLuminance(value: number) {
-	return value <= .03928 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4);
+	return value <= .03928 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4)
 }
 
 function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
@@ -257,7 +249,7 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 
 	const l = (max + min) / 2
 
-	if (delta <= 2 / 255) {
+	if (delta < 2 / 255) {
 		return {
 			h: 0,
 			s: 0,
@@ -290,8 +282,7 @@ function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = 
 }
 
 export default function extractPaletteFromUint8(data: Uint8ClampedArray, channels: 3 | 4 = 4) {
-	const rgbArray = buildRgb(data, channels)
-	const main = extractPalette(rgbArray)
+	const main = extractPalette(data, channels)
 	const palette = main.map(formatHSL)
 	return palette
 }
