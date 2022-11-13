@@ -4,10 +4,19 @@ import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { inferQueryOutput } from "utils/trpc"
 import { playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import useSlideTrack from "./useSlideTrack"
+import useSlideTrack, { Callbacks } from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
+import PlaylistNextIcon from "icons/playlist_play.svg"
+import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import { useSetAtom } from "jotai"
+import { trpc } from "utils/trpc"
+
+const initialCallbacks = {
+	onLike: () => {},
+	onAdd: () => {},
+	onNext: () => {},
+}
 
 function TrackItem({
 	track,
@@ -47,7 +56,21 @@ function TrackItem({
 
 	const isEmpty = !data?.cover
 
-	useSlideTrack(item, {id: track.id, favorite: data?.userData?.favorite})
+	const {mutate: likeMutation} = trpc.useMutation(["track.like"])
+	const callbacks = useRef<Callbacks>(initialCallbacks)
+	callbacks.current.onLike = () => {
+		likeMutation({
+			id: track.id,
+			toggle: !data?.userData?.favorite,
+		})
+	}
+	callbacks.current.onAdd = () => {
+		console.log('add')
+	}
+	callbacks.current.onNext = () => {
+		console.log('next')
+	}
+	useSlideTrack(item, callbacks)
 
 	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
 
@@ -97,6 +120,10 @@ function TrackItem({
 				</p>
 			</button>
 			<FavoriteIcon className={styles.fav} />
+			<div className={styles.playlist}>
+				<PlaylistNextIcon className={styles.next} />
+				<PlaylistAddIcon className={styles.add} />
+			</div>
 		</div>
 	)
 }

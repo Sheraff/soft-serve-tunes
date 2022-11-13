@@ -1,5 +1,4 @@
-import { RefObject, useEffect, useRef } from "react"
-import { trpc } from "utils/trpc"
+import { RefObject, useEffect } from "react"
 import styles from "./index.module.css"
 
 function getTouchFromId(list: TouchList, id: number) {
@@ -10,22 +9,18 @@ function getTouchFromId(list: TouchList, id: number) {
 	}
 }
 
+const DELAYED_SWITCH_DURATION = 300
+
+export type Callbacks = {
+	onLike: () => void
+	onAdd: () => void
+	onNext: () => void
+}
+
 export default function useSlideTrack(
 	ref: RefObject<HTMLDivElement>,
-	{
-		id,
-		favorite,
-	}: {
-		id: string,
-		favorite?: boolean
-	}
+	callbacks: {current: Callbacks}
 ) {
-	const {mutate: likeMutation} = trpc.useMutation(["track.like"])
-
-	const data = useRef({id, favorite})
-	data.current.id = id
-	data.current.favorite = favorite
-
 	useEffect(() => {
 		const element = ref.current
 		if (!element) return
@@ -33,6 +28,9 @@ export default function useSlideTrack(
 		const {signal} = controller
 		let uxController: AbortController | null = null
 		let animController: AbortController | null = null
+		let switchController: AbortController | null = null
+		let timeoutId: ReturnType<typeof setTimeout> | null = null
+		let triggerSecondaryAction = false
 
 		let isDragging = false
 
@@ -43,18 +41,17 @@ export default function useSlideTrack(
 			animController = controller
 			element.classList.add(styles['like-anim'] as string)
 
-			element.addEventListener('animationend', () => {
+			element.addEventListener('animationend', (e) => {
+				if (e.animationName !== styles['like-slide'] && e.animationName !== styles['dislike-slide']) return
 				element.style.removeProperty('--x')
 				element.classList.remove(styles['like-anim'] as string)
+				element.classList.remove(styles['switch-left'] as string)
 				element.classList.toggle(styles.liked as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
 				animController = null
-				likeMutation({
-					id: data.current.id,
-					toggle: !data.current.favorite,
-				})
-			}, {signal, once: true})
+				callbacks.current.onLike()
+			}, {signal})
 		}
 		
 		function reset() {
@@ -64,13 +61,60 @@ export default function useSlideTrack(
 			animController = controller
 			element.classList.add(styles['reset-anim'] as string)
 
-			element.addEventListener('animationend', () => {
+			element.addEventListener('animationend', (e) => {
+				if (e.animationName !== styles['reset-slide']) return
 				element.style.removeProperty('--x')
 				element.classList.remove(styles['reset-anim'] as string)
+				element.classList.remove(styles['switch-left'] as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
 				animController = null
-			}, {signal, once: true})
+			}, {signal})
+		}
+
+		function delayedSwitch(which: 'left' | 'right' = 'left') {
+			if (!element) return
+
+			triggerSecondaryAction = false
+
+			if (which === 'right') return
+
+			timeoutId = setTimeout(() => {
+				timeoutId = null
+				element.classList.add(styles['switch-left'] as string)
+				const controller = new AbortController()
+				const {signal} = controller
+				switchController = controller
+				element.addEventListener('animationend', (e) => {
+					if (e.animationName !== styles['switch']) return
+					triggerSecondaryAction = true
+					controller.abort()
+					switchController = null
+				}, {signal})
+			}, DELAYED_SWITCH_DURATION)
+		}
+
+		function playlist() {
+			if (!element) return
+			const controller = new AbortController()
+			const {signal} = controller
+			animController = controller
+			element.classList.add(styles['add-anim'] as string)
+
+			element.addEventListener('animationend', (e) => {
+				if (e.animationName !== styles['add-anim-body']) return
+				element.style.removeProperty('--x')
+				element.classList.remove(styles['add-anim'] as string)
+				element.classList.remove(styles['switch-left'] as string)
+				element.classList.remove(styles.will as string)
+				controller.abort()
+				animController = null
+				if (triggerSecondaryAction) {
+					callbacks.current.onAdd()
+				} else {
+					callbacks.current.onNext()
+				}
+			}, {signal})
 		}
 
 		function start(touch: Touch) {
@@ -82,6 +126,10 @@ export default function useSlideTrack(
 			let capture = false
 
 			const end = () => {
+				if (timeoutId) {
+					clearTimeout(timeoutId)
+					timeoutId = null
+				}
 				controller.abort()
 				uxController = null
 				isDragging = false
@@ -103,6 +151,14 @@ export default function useSlideTrack(
 					}
 					element.classList.add(styles.will as string)
 				}
+				const valid = dx > 48 || dx < -48
+				if (valid && !timeoutId) {
+					delayedSwitch(dx > 48 ? 'left' : 'right')
+				}
+				if (!valid && timeoutId) {
+					clearTimeout(timeoutId)
+					timeoutId = null
+				}
 				const r = Math.abs(dx) / 48
 				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
 				element.style.setProperty('--x', `${total}px`)
@@ -119,8 +175,7 @@ export default function useSlideTrack(
 				if (dx < -48) {
 					like()
 				} else if (dx > 48) {
-					// TODO: add to "play next"
-					reset()
+					playlist()
 				} else {
 					reset()
 				}
@@ -138,7 +193,9 @@ export default function useSlideTrack(
 			controller.abort()
 			if (uxController) uxController.abort()
 			if (animController) animController.abort()
+			if (switchController) switchController.abort()
+			if (timeoutId) clearTimeout(timeoutId)
 		}
-	}, [ref, likeMutation])
+	}, [ref, callbacks])
 
 }
