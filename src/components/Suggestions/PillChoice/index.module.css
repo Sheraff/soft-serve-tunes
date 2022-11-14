@@ -16,7 +16,6 @@
 	border: 1px solid currentColor;
 	padding: 8px 4px;
 	text-align: center;
-	overflow: hidden;
 	position: relative;
 }
 
@@ -25,6 +24,7 @@
 	border-bottom-left-radius: 4px;
 	border-right: 0;
 	padding-right: 8px;
+	clip-path: polygon(0 0, calc(100% - 1px) 0, calc(100% - 6px) 100%, 0 100%);
 }
 
 .item:nth-child(even)::after {
@@ -46,15 +46,14 @@
 	border-left: 0;
 	padding-left: 8px;
 	margin-left: -8px;
+	clip-path: polygon(100% 0%, 100% 100%, 1.25px 100%, 6.75px 0%);
 }
 
-.current:nth-child(even) {
-	background: linear-gradient(-90deg, var(--palette-bg-gradient), transparent);
-}
-.current:nth-child(odd) {
-	background: linear-gradient(90deg, var(--palette-bg-gradient), transparent);
+.current {
+	color: var(--palette-primary);
+	background-color: var(--palette-primary);
 }
 
 .current span {
-	color: var(--palette-secondary);
+	color: var(--palette-bg-gradient);
 }
