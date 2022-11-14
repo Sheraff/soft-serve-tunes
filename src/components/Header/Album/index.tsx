@@ -1,4 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { CSSProperties, ForwardedRef, forwardRef, Fragment, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
@@ -121,10 +121,10 @@ export default forwardRef(function AlbumView({
 				<SectionTitle>{data?.name}</SectionTitle>
 				<p className={styles.info}>
 					{infos.map((info, i) => (
-						<>
+						<Fragment key={i}>
 							{i > 0 ? " · " : ""}
 							{info}
-						</>
+						</Fragment>
 					))}
 				</p>
 				{data?.audiodb?.strDescriptionEN && (
