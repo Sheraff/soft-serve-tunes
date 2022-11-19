@@ -14,11 +14,7 @@ import { useSetAtom } from "jotai"
 import { trpc } from "utils/trpc"
 import useDragTrack, { Callbacks as DragCallbacks } from "./useDragTrack"
 
-const initialSlideCallbacks = {
-	onLike: () => {},
-	onAdd: () => {},
-	onNext: () => {},
-}
+const emptyFunction = () => {}
 
 function TrackItem({
 	track,
@@ -61,7 +57,11 @@ function TrackItem({
 	const isEmpty = !data?.cover
 
 	const {mutate: likeMutation} = trpc.useMutation(["track.like"])
-	const callbacks = useRef<SlideCallbacks>(initialSlideCallbacks)
+	const callbacks = useRef<SlideCallbacks>({
+		onLike: emptyFunction,
+		onAdd: emptyFunction,
+		onNext: emptyFunction,
+	})
 	callbacks.current.onLike = () => {
 		likeMutation({
 			id: track.id,
@@ -136,10 +136,6 @@ function TrackItem({
 	)
 }
 
-const initialDragCallbacks = {
-	onDrop: () => {}
-}
-
 export default function TrackList({
 	tracks,
 	current,
@@ -157,7 +153,9 @@ export default function TrackList({
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	const ref = useRef<HTMLUListElement>(null)
-	const callbacks = useRef<DragCallbacks>(initialDragCallbacks)
+	const callbacks = useRef<DragCallbacks>({
+		onDrop: emptyFunction
+	})
 	callbacks.current.onDrop = (from, to) => {
 		onReorder?.(from, to)
 		console.log('reorder tracks', from, to)
