@@ -31,11 +31,13 @@ export default function Palette({
 	return (
 		<Head>
 			<style key="palette-definition">
-				{keys.map((key) => `\n@property ${key} {
-					syntax: '<color>';
-					inherits: true;
-					initial-value: ${(defaultValues)[key as keyof typeof defaultValues]};
-				}`).join('\n')}
+				{keys.map((key, i) => `
+					@property ${key} {
+						syntax: '<color>';
+						inherits: true;
+						initial-value: ${defaultValues[i]};
+					}
+				`).join('')}
 			</style>
 			<style key="palette-values">
 				{`body {\n`}
