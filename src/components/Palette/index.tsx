@@ -42,7 +42,7 @@ export default function Palette({
 				{palette.map((value, i) => `${keys[i]}: ${value};`).join("\n")}
 				{`}\n`}
 			</style>
-			<meta name="theme-color" content={palette[1]} />
+			<meta name="theme-color" content={palette[0]} />
 		</Head>
 	)
 }
