@@ -141,15 +141,25 @@ function Back() {
 	const showHome = useShowHome()
 	useEffect(() => {
 		const controller = new AbortController()
-		addEventListener('popstate', event => {
+		const customNav = () => {
 			if (stack.length) {
 				showHome()
 			} else {
 				setMainView(value => value === "home" ? "suggestions" : "home")
 			}
-			event.preventDefault()
 			history.pushState({}, "just-allow-back-button")
+		}
+		addEventListener('popstate', event => {
+			customNav()
+			event.preventDefault()
 		}, {capture: true, signal: controller.signal})
+		addEventListener('keydown', (event) => {
+			if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey) {
+				event.preventDefault()
+				event.stopPropagation()
+				customNav()
+			}
+		}, {capture: true, passive: false, signal: controller.signal})
 		return () => controller.abort()
 	})
 	return null
