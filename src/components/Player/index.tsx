@@ -93,14 +93,26 @@ export default memo(function Player() {
 		progress,
 	} = useAudio(audio)
 
-	const togglePlay = () => {
+	const togglePlay = useCallback(() => {
 		if (!audio.current) return
 		if (playing) {
 			audio.current.pause()
 		} else {
 			audio.current.play()
 		}
-	}
+	}, [playing])
+
+	useEffect(() => {
+		const controller = new AbortController()
+		window.addEventListener('keydown', (event) => {
+			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey) {
+				event.preventDefault()
+				event.stopPropagation()
+				togglePlay()
+			}
+		}, {capture: true, passive: false, signal: controller.signal})
+		return () => controller.abort()
+	}, [togglePlay])
 
 	const consideredPlayed = playedSeconds > 45 || playedSeconds / totalSeconds > 0.4
 	const {mutate} = trpc.useMutation(["track.playcount"])
