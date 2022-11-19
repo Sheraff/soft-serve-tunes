@@ -11,17 +11,43 @@
 	color: var(--palette-primary);
 }
 
-.head::before {
-	content: '';
+.bg {
 	position: absolute;
 	z-index: 1;
 	inset: 0;
-	background: linear-gradient(to bottom, var(--palette-bg-main) 60%, transparent 100%);
-	height: 150%;
-	opacity: .7;
+	pointer-events: none;
+	height: calc(100% + 8px);
+	mask-image: linear-gradient(
+		to bottom,
+		hsl(0, 0%, 0%) 0%,
+		hsla(0, 0%, 0%, 0.977) 11.8%,
+		hsla(0, 0%, 0%, 0.937) 22.6%,
+		hsla(0, 0%, 0%, 0.883) 32.4%,
+		hsla(0, 0%, 0%, 0.816) 41.2%,
+		hsla(0, 0%, 0%, 0.741) 49.3%,
+		hsla(0, 0%, 0%, 0.658) 56.5%,
+		hsla(0, 0%, 0%, 0.571) 63.1%,
+		hsla(0, 0%, 0%, 0.481) 69%,
+		hsla(0, 0%, 0%, 0.392) 74.4%,
+		hsla(0, 0%, 0%, 0.306) 79.4%,
+		hsla(0, 0%, 0%, 0.225) 84%,
+		hsla(0, 0%, 0%, 0.151) 88.3%,
+		hsla(0, 0%, 0%, 0.087) 92.3%,
+		hsla(0, 0%, 0%, 0.036) 96.2%,
+		hsla(0, 0%, 0%, 0) 100%
+	);
+	
 }
 
-.logout {
+.bg::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	height: 100vh;
+	background: linear-gradient(180deg, var(--palette-bg-gradient) -15%, var(--palette-bg-main) 40%);
+}
+
+.button {
 	height: 20px;
 	width: 20px;
 	font-size: 20px;

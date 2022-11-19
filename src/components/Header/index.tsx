@@ -55,11 +55,12 @@ export default function Header() {
 	return (
 		<>
 			<div className={styles.head}>
-				<button onClick={() => signOut()} className={styles.logout}>
+				<div className={styles.bg} />
+				<button onClick={() => signOut()} className={styles.button}>
 					<LogoutIcon />
 				</button>
-				<Upload className={styles.logout} />
-				<button onClick={onClickMainIcon} className={styles.logout}>
+				<Upload className={styles.button} />
+				<button onClick={onClickMainIcon} className={styles.button}>
 					{showDashboardIcon && <DashboardIcon />}
 					{!showDashboardIcon && <QueueMusicIcon />}
 				</button>
