@@ -43,7 +43,8 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   res.writeHead(206, {
     'Content-Type': content_type,
     'Content-Length': content_length,
-    'Content-Range': content_range
+    'Content-Range': content_range,
+    'Cache-Control': "public, max-age=31536000",
   })
 
   if (range === undefined) {
