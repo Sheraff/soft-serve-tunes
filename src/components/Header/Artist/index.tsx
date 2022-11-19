@@ -10,6 +10,7 @@ import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue } from "jotai"
 import TrackList from "components/TrackList"
+import Head from "next/head"
 
 export default forwardRef(function ArtistView({
 	open: _open,
@@ -98,6 +99,11 @@ export default forwardRef(function ArtistView({
 				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
+			{palette && (
+				<Head>
+					<meta name="theme-color" content={palette['--palette-bg-main']} />
+				</Head>
+			)}
 			<img
 				className={classNames(styles.img, styles.preview)}
 				src={initialImageSrc.current || ""}

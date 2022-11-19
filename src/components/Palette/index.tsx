@@ -8,7 +8,7 @@ const keys = [
 	'--palette-bg-gradient',
 	'--palette-secondary',
 	'--palette-primary',
-]
+] as const
 
 const defaultValues = [
 	'#0d0110',
@@ -17,8 +17,10 @@ const defaultValues = [
 	'#e6dde9',
 ] as PaletteDefinition
 
-export function paletteToCSSProperties(palette: PaletteDefinition): CSSProperties {
-	return Object.fromEntries(keys.map((key, i) => [key, palette[i]]))
+export function paletteToCSSProperties(palette: PaletteDefinition) {
+	return Object.fromEntries(
+		keys.map((key, i) => [key, palette[i]])
+	) as unknown as CSSProperties & {[key in typeof keys[number]]: string}
 }
 
 export default function Palette({
@@ -40,6 +42,7 @@ export default function Palette({
 				{palette.map((value, i) => `${keys[i]}: ${value};`).join("\n")}
 				{`}\n`}
 			</style>
+			<meta name="theme-color" content={palette[1]} />
 		</Head>
 	)
 }
