@@ -6,11 +6,20 @@ import superjson from "superjson";
 import { SessionProvider } from "next-auth/react";
 import "styles/globals.css";
 import Head from "next/head";
+import { useEffect } from "react";
 
 const MyApp: AppType = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
+  useEffect(() => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) =>
+        console.log('Service Worker registration successful with scope: ', registration.scope)
+      )
+      .catch((err) => console.log('Service Worker registration failed: ', err))
+  }, [])
   return (
     <>
       <Head>
