@@ -21,6 +21,11 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - [ ] Track no. gets messed up if its info doesn't come from the
   same source as the album info
 
+## RESOURCES
+- favicon: https://realfavicongenerator.net/
+- maskable icons: https://maskable.app/editor
+- icon: https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
+
 ## Deploy to raspberry
 
 ### update raspbian 
