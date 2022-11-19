@@ -8,6 +8,7 @@ import PrevIcon from "icons/skip_previous.svg"
 import NextIcon from "icons/skip_next.svg"
 import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
 import { trpc } from "utils/trpc"
 import { useAtom, useSetAtom } from "jotai"
@@ -109,6 +110,15 @@ export default memo(function Player() {
 		}
 	}, [mutate, consideredPlayed, item?.id])
 
+	const [online, setOnline] = useState(true)
+	useEffect(() => {
+		setOnline(navigator.onLine)
+		const controller = new AbortController()
+		addEventListener('online', () => setOnline(true), {signal: controller.signal})
+		addEventListener('offline', () => setOnline(false), {signal: controller.signal})
+		return () => controller.abort()
+	}, [])
+
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -126,11 +136,18 @@ export default memo(function Player() {
 				/>
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
-			<div className={styles.ui}>
-				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
-				<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
-				<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
-			</div>
+			{online && (
+				<div className={styles.ui}>
+					<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
+					<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+					<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
+				</div>
+			)}
+			{!online && (
+				<div className={styles.ui}>
+					<OfflineIcon />
+				</div>
+			)}
 			<Audio ref={audio}/>
 			<GlobalPalette />
 			<Notification />
