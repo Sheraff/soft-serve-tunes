@@ -32,7 +32,7 @@ const Home: NextPage<{
 		const controller = new AbortController()
 		let socket: WebSocket | null = null
 		mutate(undefined, {
-			onSuccess: (shouldSubscribe) => {
+			onSuccess(shouldSubscribe) {
 				if (!shouldSubscribe) {
 					setProgress(1)
 					setReady(true)
@@ -54,6 +54,9 @@ const Home: NextPage<{
 						setProgress(data.payload)
 					}
 				}, { signal: controller.signal })
+			},
+			onError() {
+				setReady(true)
 			}
 		})
 		return () => {
@@ -64,7 +67,24 @@ const Home: NextPage<{
 
 	const { data: session } = useSession()
 
-	const loggedIn = ssrLoggedIn || session || !providers
+	const onlineLoggedInState = ssrLoggedIn || session || !providers
+	const [loggedIn, setLoggedIn] = useState(onlineLoggedInState)
+	useEffect(() => {
+		if (navigator.onLine) {
+			setLoggedIn(onlineLoggedInState)
+			localStorage.setItem('offline', 'true')
+		} else {
+			setLoggedIn(localStorage.getItem('offline') === 'true')
+		}
+		const controller = new AbortController()
+		addEventListener('offline', () => {
+			setLoggedIn(localStorage.getItem('offline') === 'true')
+		}, {signal: controller.signal})
+		addEventListener('online', () => {
+			setLoggedIn(onlineLoggedInState)
+		}, {signal: controller.signal})
+		return () => controller.abort()
+	}, [onlineLoggedInState])
 
 	return (
 		<>
