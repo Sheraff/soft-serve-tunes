@@ -3,11 +3,16 @@
 
 const sw = /** @type {ServiceWorkerGlobalScope} */(/** @type {unknown} */(self))
 
-const CACHE_NAME = "soft-serve-tunes"
+const VERSION = 1
+const CACHES = {
+	next: `Next.js - v${VERSION}`,
+	trpc: `tRPC - v${VERSION}`,
+	media: `Media - v${VERSION}`,
+}
 
 sw.addEventListener('install', (event) => {
 	event.waitUntil(
-		caches.open(CACHE_NAME)
+		caches.open(CACHES.next)
 		.then((cache) => cache.add('/'))
 		.then(() => sw.skipWaiting())
 	)
@@ -42,7 +47,7 @@ function trpcUrlToCacheKeys(url) {
  * @param {URL} url 
  */
 async function trpcUrlToCacheValues(url) {
-	const cache = await caches.open(CACHE_NAME)
+	const cache = await caches.open(CACHES.trpc)
 	const cacheKeys = trpcUrlToCacheKeys(url)
 	const body = await Promise.all(cacheKeys.map(async (key) => {
 		const response = await cache.match(key)
@@ -69,7 +74,7 @@ function trpcFetch(event, promise, url) {
 		.then(response => {
 			if (response.status === 200) {
 				const cacheResponse = response.clone()
-				caches.open(CACHE_NAME).then(async (cache) => {
+				caches.open(CACHES.trpc).then(async (cache) => {
 					const cacheKeys = trpcUrlToCacheKeys(url)
 					const data = await cacheResponse.json()
 					const headers = {}
@@ -137,7 +142,7 @@ function resolveCurrentMediaStream() {
 		} while (bytePointer < length)
 		ranges[0] = undefined
 		// store as a single buffer
-		const cache = await caches.open(CACHE_NAME)
+		const cache = await caches.open(CACHES.media)
 		const buffer = dataArray.buffer
 		await cache.put(url, new Response(buffer, {
 			status: 200,
@@ -196,7 +201,7 @@ function audioFetch(event, promise) {
 			const response = await caches.match(event.request.url, {
 				ignoreVary: true,
 				ignoreSearch: true,
-				cacheName: CACHE_NAME,
+				cacheName: CACHES.media,
 			})
 			if (!response) {
 				console.warn('SW: media file not found in cache', event.request.url)
@@ -247,14 +252,14 @@ function defaultFetch(event, promise) {
 		.then(response => {
 			if (response.status === 200) {
 				const cacheResponse = response.clone()
-				caches.open(CACHE_NAME).then(cache => {
+				caches.open(CACHES.next).then(cache => {
 					cache.put(event.request.url, cacheResponse)
 				})
 			}
 			return response
 		})
 		.catch(async () => {
-			const matchedResponse = await caches.match(event.request.url, {cacheName: CACHE_NAME})
+			const matchedResponse = await caches.match(event.request.url, {cacheName: CACHES.next})
 			if (matchedResponse) return matchedResponse
 			console.error('SW: no matched response', event.request.url)
 			return new Response(STATIC_OFFLINE_PAGE, {
@@ -301,7 +306,7 @@ async function messageCheckTrackCache({id}, {source}) {
 	const cache = await caches.match(new URL(`/api/file/${id}`, sw.location.origin), {
 		ignoreVary: true,
 		ignoreSearch: true,
-		cacheName: CACHE_NAME,
+		cacheName: CACHES.media,
 	})
 	source.postMessage({type: 'sw-cached-track', payload: {
 		id,
