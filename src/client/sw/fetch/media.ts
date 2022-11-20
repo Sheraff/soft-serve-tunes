@@ -1,18 +1,17 @@
+/// <reference lib="webworker" />
+import { CACHES } from "../constants"
 
-/** 
- * @type {{
- *   ranges: {
- *     [start: number]: {
- *        end: number
- *        buffer: ArrayBuffer
- *        total: number
- *     } | undefined
- *   }
- *   type: string
- *   url: string
- * }}
- */
-const currentMediaStream = {
+const currentMediaStream: {
+	ranges: {
+	  [start: number]: {
+		 end: number
+		 buffer: ArrayBuffer
+		 total: number
+	  } | undefined
+	}
+	type: string
+	url: string
+  } = {
 	ranges: {},
 	type: '',
 	url: '',
@@ -60,11 +59,7 @@ function resolveCurrentMediaStream() {
 	}, 1_000)
 }
 
-/**
- * @param {FetchEvent} event 
- * @param {Promise<Response>} promise 
- */
-export default function mediaFetch(event, promise) {
+export default function mediaFetch(event: FetchEvent, promise: Promise<Response>) {
 	if (event.request.url !== currentMediaStream.url) {
 		resolveCurrentMediaStream()
 		currentMediaStream.ranges = {}
