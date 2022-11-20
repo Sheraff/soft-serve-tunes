@@ -173,7 +173,7 @@ function audioFetch(event, promise) {
 						const range = response.headers.get('Content-Range')
 						const contentType = response.headers.get('Content-Type')
 						if (!range) return console.warn('SW: abort caching range', event.request.url)
-						const parsed = range.match(/^bytes ([0-9]+)-([0-9]+)\/([0-9]+)/)
+						const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
 						if (!parsed) return console.warn('SW: malformed 206 headers', event.request.url)
 						const [, _start, _end, _total] = parsed
 						const start = Number(_start)
@@ -206,7 +206,7 @@ function audioFetch(event, promise) {
 			if (!range) {
 				return response
 			}
-			const parsed = range.match(/^bytes\=(\d+)\-$/)
+			const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
 			if (!parsed) {
 				console.warn('SW: malformed request')
 				return new Response('', {status: 400})
@@ -216,7 +216,8 @@ function audioFetch(event, promise) {
 				return response
 			}
 			const buffer = await response.arrayBuffer()
-			const end = Math.min(bytePointer + 524288, buffer.byteLength)
+			const requestedEnd = parsed[2] ? Number(parsed[2]) : (bytePointer + 524288)
+			const end = Math.min(requestedEnd, buffer.byteLength)
 			const partial = buffer.slice(bytePointer, end)
 			const result = new Response(partial, {
 				status: 206,
