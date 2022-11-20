@@ -6,22 +6,29 @@ import superjson from "superjson";
 import { SessionProvider } from "next-auth/react";
 import "styles/globals.css";
 import Head from "next/head";
-import { useEffect } from "react";
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register(
+        new URL('../client/sw/sw.ts', import.meta.url),
+        {
+          scope: '/',
+          type: 'module'
+        }
+      )
+      await registration.update()
+      console.log('SW: registered')
+    } catch (e) {
+      console.log('Service Worker registration failed: ', e)
+    }
+  }, {once: true})
+}
 
 const MyApp: AppType = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
-  useEffect(() => {
-    navigator.serviceWorker
-      .register(new URL('../client/sw/sw.ts', import.meta.url), {
-        scope: '/',
-        type: 'module'
-      })
-      .then((registration) => registration.update())
-      .then(() => console.log('Service Worker registration successful'))
-      .catch((err) => console.log('Service Worker registration failed: ', err))
-  }, [])
   return (
     <>
       <Head>
