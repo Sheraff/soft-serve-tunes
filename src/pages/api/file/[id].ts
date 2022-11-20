@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { unstable_getServerSession as getServerSession } from "next-auth"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
-import { createReadStream } from "node:fs"
+import { createReadStream, readFileSync } from "node:fs"
 import { prisma } from "server/db/client"
 import log from "utils/logger"
 
@@ -27,6 +27,16 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   }
   
   const range = req.headers.range
+  // // allow 200 response if no `range: byte=0-` is specified
+  // if (range === undefined) {
+  //   const buffer = readFileSync(file.path)
+  //   res.writeHead(200, {
+  //     'Content-Type': `audio/${file.container}`,
+  //     'Content-Length': file.size,
+  //   })
+  //   res.write(buffer)
+  //   return res.end()
+  // }
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {
