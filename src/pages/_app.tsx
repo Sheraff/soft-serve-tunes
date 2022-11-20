@@ -14,7 +14,10 @@ const MyApp: AppType = ({
 }) => {
   useEffect(() => {
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(new URL('../client/sw/sw.ts', import.meta.url), {
+        scope: '/',
+        type: 'module'
+      })
       .then((registration) => registration.update())
       .then(() => console.log('Service Worker registration successful'))
       .catch((err) => console.log('Service Worker registration failed: ', err))

@@ -27,6 +27,19 @@ export default defineNextConfig({
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+        ],
+      },
+    ]
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/i,
