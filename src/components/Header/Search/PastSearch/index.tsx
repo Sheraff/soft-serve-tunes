@@ -1,8 +1,7 @@
 import classNames from "classnames"
-import { inferQueryOutput } from "utils/trpc"
+import { trpc, type inferQueryOutput } from "utils/trpc"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
 import { startTransition } from "react"
@@ -40,7 +39,7 @@ export default function PastSearch({
 	const showHome = useShowHome()
 
 	const {key, Component} = OPTIONS[type]
-	const {data: entity} = useIndexedTRcpQuery([key, {id}])
+	const {data: entity} = trpc.useQuery([key, {id}])
 
 	const isEmpty = !entity || !('cover' in entity)
 	const src = entity?.cover ? `/api/cover/${entity.cover.id}/${Math.round(56 * 2)}` : undefined

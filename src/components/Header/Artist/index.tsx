@@ -1,5 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { type CSSProperties, type ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
 import { artistView, playlist, useShowHome } from "components/AppContext"
@@ -11,6 +10,7 @@ import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue } from "jotai"
 import TrackList from "components/TrackList"
 import Head from "next/head"
+import { trpc } from "utils/trpc"
 
 export default forwardRef(function ArtistView({
 	open: _open,
@@ -25,7 +25,7 @@ export default forwardRef(function ArtistView({
 	const artist = useAtomValue(artistView)
 	const enabled = Boolean(id && artist.open)
 
-	const {data, isLoading} = useIndexedTRcpQuery(["artist.get", {id}], {
+	const {data, isLoading} = trpc.useQuery(["artist.get", {id}], {
 		enabled,
 		keepPreviousData: true,
 	})

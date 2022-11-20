@@ -13,6 +13,11 @@ import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
 import { loadingStatus } from "server/router/list"
+import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
+import { useAtom } from "jotai"
+import useIsOnline from "client/sw/useIsOnline"
+
+const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
 
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
@@ -67,24 +72,16 @@ const Home: NextPage<{
 
 	const { data: session } = useSession()
 
-	const onlineLoggedInState = ssrLoggedIn || session || !providers
-	const [loggedIn, setLoggedIn] = useState(onlineLoggedInState)
+	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
+	const [offlineLoggedInState, setOfflineLoggedIn] = useAtom(allowOfflineLogin)
+	const isOnline = useIsOnline()
 	useEffect(() => {
-		if (navigator.onLine) {
-			setLoggedIn(onlineLoggedInState)
-			localStorage.setItem('offline', 'true')
-		} else {
-			setLoggedIn(localStorage.getItem('offline') === 'true')
+		if (isOnline) {
+			setOfflineLoggedIn(onlineLoggedInState)
 		}
-		const controller = new AbortController()
-		addEventListener('offline', () => {
-			setLoggedIn(localStorage.getItem('offline') === 'true')
-		}, {signal: controller.signal})
-		addEventListener('online', () => {
-			setLoggedIn(onlineLoggedInState)
-		}, {signal: controller.signal})
-		return () => controller.abort()
-	}, [onlineLoggedInState])
+	}, [onlineLoggedInState, isOnline, setOfflineLoggedIn])
+
+	const loggedIn = isOnline ? onlineLoggedInState : offlineLoggedInState
 
 	return (
 		<>

@@ -1,7 +1,6 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import { inferQueryOutput } from "utils/trpc"
+import { trpc, type inferQueryOutput } from "utils/trpc"
 import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
@@ -16,7 +15,7 @@ function ArtistItem({
 	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = useIndexedTRcpQuery(["artist.miniature", {id: artist.id}])
+	const {data} = trpc.useQuery(["artist.miniature", {id: artist.id}])
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return

@@ -1,5 +1,4 @@
-import { CSSProperties, ForwardedRef, forwardRef, Fragment, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
+import { type CSSProperties, type ForwardedRef, forwardRef, Fragment, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import pluralize from "utils/pluralize"
 import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
@@ -10,6 +9,7 @@ import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import Head from "next/head"
+import { trpc } from "utils/trpc"
 
 export default forwardRef(function AlbumView({
 	open: _open,
@@ -24,7 +24,7 @@ export default forwardRef(function AlbumView({
 	const album = useAtomValue(albumView)
 	const enabled = Boolean(id && album.open)
 
-	const {data} = useIndexedTRcpQuery(["album.get", {id}], {
+	const {data} = trpc.useQuery(["album.get", {id}], {
 		enabled,
 		keepPreviousData: true,
 	})

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { useQueryClient, UseQueryResult } from "react-query"
-import { retrieveQueryFromIndexedDB, storeQueryInIndexedDB } from "./trpc"
 import { inferQueryOutput, inferUseTRPCQueryOptions, trpc } from "utils/trpc"
 import type { inferHandlerInput } from "@trpc/server"
 import type { AppRouter } from "server/router"
+import { retrieveFromIndexedDB, storeInIndexedDB } from "./utils"
 
 type TQuery = keyof AppRouter["_def"]["queries"];
 
@@ -12,9 +12,18 @@ type TPathAndArgs<TRouteKey extends TQuery> = [
 	...args: inferHandlerInput<AppRouter['_def']['queries'][TRouteKey]>
 ]
 
-export default trpc.useQuery
+async function storeQueryInIndexedDB<T>(queryKey: any, result: T) {
+	return storeInIndexedDB("requests", JSON.stringify(queryKey), result)
+}
 
-function useIndexedTRcpQuery<
+async function retrieveQueryFromIndexedDB<T>(queryKey: string): Promise<T | null> {
+	return retrieveFromIndexedDB("requests", queryKey)
+}
+
+/**
+ * @deprecated we'll try and use the Service Worker instead
+ */
+export default function useIndexedTRcpQuery<
 	TRouteKey extends TQuery
 >(
 	pathAndInput: TPathAndArgs<TRouteKey>,

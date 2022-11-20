@@ -1,6 +1,6 @@
 import { useQuery } from "react-query"
 
-export default function useCachedTrack({id, enabled}: {id: string, enabled?: boolean}) {
+export default function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) {
 	const query = useQuery({
 		enabled: Boolean(id) && enabled !== false,
 		queryKey: ['sw-cached-track', id],

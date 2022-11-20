@@ -1,8 +1,8 @@
 let dbPromise: Promise<IDBDatabase> | null = null
 
 const DB_NAME = "soft-serve-tunes"
-const DB_VERSION = 2
-type Stores = "requests" | "pastSearches" | "appState"
+const DB_VERSION = 3
+type Stores = "pastSearches" | "appState"
 
 export function openDB(): Promise<IDBDatabase> {
 	if (dbPromise)
@@ -27,7 +27,7 @@ function onUpgradeNeeded(
 	event: IDBVersionChangeEvent,
 	reject: (reason?: Error) => void
 ) {
-	const db = event.target.result as IDBDatabase
+	const db = event.target!.result as IDBDatabase
 	db.onerror = () => {
 		console.error(`failed to upgrade db`, db.error?.message)
 		reject(db.error)
@@ -35,11 +35,13 @@ function onUpgradeNeeded(
 	}
 
 	if (event.oldVersion < 1) {
-		db.createObjectStore("requests", {keyPath: "key"})
 		db.createObjectStore("pastSearches", {keyPath: "key"})
 	}
 	if (event.oldVersion < 2) {
 		db.createObjectStore("appState", {keyPath: "key"})
+	}
+	if (event.oldVersion < 3) {
+		db.deleteObjectStore("requests")
 	}
 }
 
@@ -113,6 +115,6 @@ export async function deleteFromIndexedDB(storeName: Stores, key: string) {
 			console.error(`failed to delete entity ${key} from indexedDB ${storeName}`, request.error?.message)
 			reject(request.error)
 		}
-		request.onsuccess = () => resolve()
+		request.onsuccess = resolve
 	})
 }

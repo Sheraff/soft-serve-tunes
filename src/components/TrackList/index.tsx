@@ -1,18 +1,16 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import { inferQueryOutput } from "utils/trpc"
+import { type inferQueryOutput, trpc } from "utils/trpc"
 import { playlist, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import useSlideTrack, { Callbacks as SlideCallbacks } from "./useSlideTrack"
+import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
 import PlaylistNextIcon from "icons/playlist_play.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
 import { useSetAtom } from "jotai"
-import { trpc } from "utils/trpc"
-import useDragTrack, { Callbacks as DragCallbacks } from "./useDragTrack"
+import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 
 const emptyFunction = () => {}
 
@@ -32,7 +30,7 @@ function TrackItem({
 	draggable?: boolean
 }) {
 	const item = useRef<HTMLDivElement>(null)
-	const {data} = useIndexedTRcpQuery(["track.miniature", {id: track.id}])
+	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
 
 	const setPlaylist = useSetAtom(playlist)
 	const showHome = useShowHome()

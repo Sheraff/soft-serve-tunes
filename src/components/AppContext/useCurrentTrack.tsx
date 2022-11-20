@@ -1,5 +1,5 @@
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import { useAtomValue } from "jotai"
+import { trpc } from "utils/trpc"
 import { playlist } from "."
 
 function positiveModulo(value: number, modulo: number) {
@@ -12,7 +12,7 @@ function positiveModulo(value: number, modulo: number) {
 export function useCurrentPlaylist() {
 	const {type, id} = useAtomValue(playlist)
 
-	const { data: list} = useIndexedTRcpQuery(["playlist.generate", {type, id}], {
+	const { data: list} = trpc.useQuery(["playlist.generate", {type, id}], {
 		enabled: Boolean(type && id)
 	})
 
@@ -33,7 +33,7 @@ export function useCurrentTrack(offset = 0) {
 export function useCurrentTrackDetails() {
 	const track = useCurrentTrack()
 
-	const { data } = useIndexedTRcpQuery(["track.miniature", {
+	const { data } = trpc.useQuery(["track.miniature", {
 		id: track?.id as string
 	}], {
 		enabled: Boolean(track?.id),

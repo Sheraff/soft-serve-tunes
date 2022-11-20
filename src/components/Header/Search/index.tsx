@@ -1,7 +1,6 @@
-import { CSSProperties, useEffect, useId, useRef, useState } from "react"
+import { type CSSProperties, useEffect, useId, useRef, useState } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import ArtistList from "components/ArtistList"
 import AlbumList from "components/AlbumList"
 import GenreList from "components/GenreList"
@@ -9,6 +8,7 @@ import TrackList from "components/TrackList"
 import PastSearch from "./PastSearch"
 import { usePastSearchesMutation, usePastSearchesQuery } from "client/db/indexedPastSearches"
 import SectionTitle from "atoms/SectionTitle"
+import { trpc } from "utils/trpc"
 
 const defaultArray = [] as never[]
 
@@ -25,10 +25,10 @@ export default function Search({
 	const results = useRef<HTMLOutputElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
-	const {data: tracksRaw} = useIndexedTRcpQuery(["track.searchable"], {enabled})
-	const {data: albumsRaw} = useIndexedTRcpQuery(["album.searchable"], {enabled})
-	const {data: artistsRaw} = useIndexedTRcpQuery(["artist.searchable"], {enabled})
-	const {data: genresRaw} = useIndexedTRcpQuery(["genre.list"], {enabled})
+	const {data: tracksRaw} = trpc.useQuery(["track.searchable"], {enabled})
+	const {data: albumsRaw} = trpc.useQuery(["album.searchable"], {enabled})
+	const {data: artistsRaw} = trpc.useQuery(["artist.searchable"], {enabled})
+	const {data: genresRaw} = trpc.useQuery(["genre.list"], {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])

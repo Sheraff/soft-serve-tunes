@@ -1,6 +1,5 @@
 import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
 import AlbumList from "components/AlbumList"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
@@ -9,6 +8,7 @@ import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import { useAtom } from "jotai"
 import { memo, Suspense, useState } from "react"
+import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
 
@@ -107,7 +107,7 @@ function TracksByTraitSuggestion() {
 			order: option.type,
 		})
 	}
-	const {data: tracks = []} = useIndexedTRcpQuery(["track.by-trait", {trait, order}])
+	const {data: tracks = []} = trpc.useQuery(["track.by-trait", {trait, order}])
 	return (
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "tracks")}</SectionTitle>
@@ -138,7 +138,7 @@ function AlbumsByTraitSuggestion() {
 			order: option.type,
 		})
 	}
-	const {data: albums = [], isLoading} = useIndexedTRcpQuery(["album.by-trait", {trait, order}])
+	const {data: albums = [], isLoading} = trpc.useQuery(["album.by-trait", {trait, order}])
 	return (
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "albums")}</SectionTitle>
@@ -153,13 +153,13 @@ function AlbumsByTraitSuggestion() {
 
 export default memo(function Suggestions(){
 
-	const {data: artistFavs = [], isLoading: artistFavsLoading} = useIndexedTRcpQuery(["artist.most-fav"])
-	const {data: artistRecent = [], isLoading: artistRecentLoading} = useIndexedTRcpQuery(["artist.most-recent-listen"])
-	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = useIndexedTRcpQuery(["artist.least-recent-listen"])
-	const {data: albumFavs = [], isLoading: albumFavsLoading} = useIndexedTRcpQuery(["album.most-fav"])
-	const {data: albumRecent = [], isLoading: albumRecentLoading} = useIndexedTRcpQuery(["album.most-recent-listen"])
-	const {data: albumNewest = [], isLoading: albumNewestLoading} = useIndexedTRcpQuery(["album.most-recent-add"])
-	const {data: genreFavs = []} = useIndexedTRcpQuery(["genre.most-fav"])
+	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.useQuery(["artist.most-fav"])
+	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.useQuery(["artist.most-recent-listen"])
+	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.useQuery(["artist.least-recent-listen"])
+	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.useQuery(["album.most-fav"])
+	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.useQuery(["album.most-recent-listen"])
+	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.useQuery(["album.most-recent-add"])
+	const {data: genreFavs = []} = trpc.useQuery(["genre.most-fav"])
 
 	return (
 		<div className={styles.scrollable}>

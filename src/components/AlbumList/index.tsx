@@ -1,7 +1,6 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
-import useIndexedTRcpQuery from "client/db/useIndexedTRcpQuery"
-import { inferQueryOutput } from "utils/trpc"
+import { type inferQueryOutput, trpc } from "utils/trpc"
 import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
@@ -16,7 +15,7 @@ function AlbumItem({
 	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = useIndexedTRcpQuery(["album.miniature", {id: album.id}])
+	const {data} = trpc.useQuery(["album.miniature", {id: album.id}])
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return
