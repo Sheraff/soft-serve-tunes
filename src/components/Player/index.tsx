@@ -107,7 +107,7 @@ export default memo(function Player() {
 	useEffect(() => {
 		const controller = new AbortController()
 		window.addEventListener('keydown', (event) => {
-			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey) {
+			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && event.target?.tagName !== 'INPUT') {
 				event.preventDefault()
 				event.stopPropagation()
 				togglePlay()
