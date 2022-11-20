@@ -16,6 +16,7 @@ import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCu
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Notification"
+import useCachedTrack from "client/sw/useCachedTrack"
 
 export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
 
@@ -130,6 +131,7 @@ export default memo(function Player() {
 		addEventListener('offline', () => setOnline(false), {signal: controller.signal})
 		return () => controller.abort()
 	}, [])
+	const {data: cached} = useCachedTrack({id: item?.id, enabled: !online})
 
 	return (
 		<div className={styles.main}>
@@ -148,14 +150,14 @@ export default memo(function Player() {
 				/>
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
-			{online && (
+			{(online || cached) && (
 				<div className={styles.ui}>
 					<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
 					<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
 					<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
 				</div>
 			)}
-			{!online && (
+			{(!online && !cached) && (
 				<div className={styles.ui}>
 					<OfflineIcon />
 				</div>
