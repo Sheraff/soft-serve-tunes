@@ -8,8 +8,17 @@
 	text-align: center;
 }
 
-.sliding .span {
+.wrapper {
+	min-width: 100%;
+	width: fit-content;
+}
+
+.sliding .wrapper {
 	animation: slide 30s linear infinite;
+}
+
+.sliding .span {
+	min-width: auto;
 	text-align: left;
 }
 
@@ -19,6 +28,6 @@
 }
 
 @keyframes slide {
-	0%   { transform: translate(0); }
-	100% { transform: translate(-100%); }
+	0%   { transform: translateX(-20px); }
+	100% { transform: translateX(calc(-50% - 20px)); }
 }

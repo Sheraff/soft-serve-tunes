@@ -20,7 +20,7 @@ export default function SlidingText({
 	useEffect(() => {
 		const element = span.current as HTMLDivElement
 		const observer = new ResizeObserver(([entry]) => {
-			if (entry && entry.contentRect.width > (entry.target.parentElement as HTMLElement).offsetWidth) {
+			if (entry && entry.contentRect.width > entry.target.parentElement!.parentElement!.offsetWidth) {
 				setSeparator(true)
 			} else {
 				setSeparator(false)
@@ -58,20 +58,23 @@ export default function SlidingText({
 					</button>
 				</>
 			)}
-			{separator && ' · '}
 		</>
 	)
 
 	return (
 		<div className={classNames(styles.main, className, {[styles.sliding as string]: separator})}>
-			<div className={styles.span} ref={span}>
-				{content}
-			</div>
-			{separator && (
-				<div className={styles.span}>
+			<div className={styles.wrapper}>
+				<div className={styles.span} ref={span}>
 					{content}
 				</div>
-			)}
+				{separator && (
+					<div className={styles.span}>
+						{'· '}
+						{content}
+						{' · '}
+					</div>
+				)}
+			</div>
 		</div>
 	)
 }
