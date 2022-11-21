@@ -102,5 +102,20 @@ export default function WatcherSocket() {
 		}
 	}, [queryClient])
 
+	useEffect(() => {
+		const onOnline = async () => {
+			const registration = await navigator.serviceWorker.ready
+			const target = registration.active
+			if (!target) {
+				return
+			}
+			target.postMessage({type: 'sw-trpc-offline-post'})
+		}
+		addEventListener('online', onOnline)
+		return () => {
+			removeEventListener('online', onOnline)
+		}
+	}, [])
+
 	return null
 }
