@@ -43,24 +43,31 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
       log("error", "404", "sharp", `${width}x${width} cover #${id}`)
       return res.status(404).json({ error: "Cover not found" })
     }
-    log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
-    const transformStream = sharp(originalFilePath)
-      .resize(width, width, {
-        fit: 'cover',
-        withoutEnlargement: true,
-        fastShrinkOnLoad: false,
-      })
-      .toFormat('avif')
-    // respond
-    returnStream = transformStream
-      .clone()
-      .pipe(res)
-    // store
-    transformStream
-      .clone()
-      .toFile(exactFilePath)
-      .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
+    try {
+      await access(originalFilePath, constants.R_OK)
+      log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
+      const transformStream = sharp(originalFilePath)
+        .resize(width, width, {
+          fit: 'cover',
+          withoutEnlargement: true,
+          fastShrinkOnLoad: false,
+        })
+        .toFormat('avif')
+      // respond
+      returnStream = transformStream
+        .clone()
+        .pipe(res)
+      // store
+      transformStream
+        .clone()
+        .toFile(exactFilePath)
+        .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
+    } catch {
+      log("error", "500", "sharp", `no such file: cover #${id} @ ${cover.path}`)
+      removeImageEntry(id)
+      return res.status(404).json({ error: "Cover not found" })
+    }
   }
   if (returnStream === null) {
     log("error", "500", "sharp", `${width}x${width} cover #${id}`)
@@ -71,4 +78,21 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     .setHeader("Content-Type", "image/avif")
     .setHeader("cache-control", "public, max-age=31536000")
   return returnStream
+}
+
+async function removeImageEntry(id: string) {
+  // TODO: this is annoying to do and not exhaustive...
+  // computing which image is associated with any entity should be its own function and store de result in database on the entity itself
+  // so that we can easily re-trigger said computation, and invalidate client caches precisely
+  const image = await prisma.image.delete({
+    where: { id },
+    // select: {
+    //   track: {select: {id: true}},
+    //   lastfmAlbum: {select: {entityId: true}},
+    //   lastfmArtist: {select: {entityId: true}},
+    //   spotifyArtist: {select: {artistId: true}},
+    //   spotifyAlbum: {select: {albumId: true}},
+    // }
+  })
+  log("warn", "500", "sharp", `deleted entry for file: cover #${id}`)
 }
