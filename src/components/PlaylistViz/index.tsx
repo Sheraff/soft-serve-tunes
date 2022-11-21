@@ -1,4 +1,4 @@
-import { usePlaylist, useReorderPlaylist } from "client/db/useMakePlaylist"
+import { usePlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import { playlist } from "components/AppContext"
 import { useCurrentPlaylist } from "components/AppContext/useCurrentTrack"
 import TrackList from "components/TrackList"
@@ -14,24 +14,22 @@ function rotateList<T>(list: T[], index: number) {
 }
 
 export default function PlaylistViz() {
-	const [{index}, setPlaylist] = useAtom(playlist)
+	// const [{index}, setPlaylist] = useAtom(playlist)
 	// const list = useCurrentPlaylist()
-	const {data: list} = usePlaylist()
+	const {data} = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
+	const {setPlaylistIndex} = useSetPlaylistIndex()
 
-	if (!list) return null
-	
-	const current = list[index]?.id
+	if (!data) return null
+	const {tracks, index} = data
+	const current = tracks[index]?.id
 
 	return (
 		<TrackList
-			tracks={list}
+			tracks={tracks}
 			current={current}
 			onClick={(id) => startTransition(() => {
-				setPlaylist(prev => ({
-					...prev,
-					index: list.findIndex((item) => item.id === id)
-				}))
+				setPlaylistIndex(tracks.findIndex((item) => item.id === id))
 			})}
 			orderable
 			onReorder={reorderPlaylist}

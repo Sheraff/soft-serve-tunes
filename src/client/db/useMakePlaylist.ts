@@ -1,13 +1,42 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { type inferHandlerInput } from "@trpc/server"
 import { type AppRouter } from "server/router"
 import { countFromIndexedDB, deleteAllFromIndexedDB, listAllFromIndexedDB, openDB, retrieveFromIndexedDB, storeInIndexedDB, storeListInIndexedDB } from "./utils"
 import { useQuery } from "react-query"
 
-type PlaylistEntry = {
+/**
+ * - store in indexedDB "appState" the index of the playlist
+ * - store in indexedDB "appState" the origin of the playlist (fully local === from artist, album, genre, vs. from online === sqlite saved playlist)
+ * - based on origin
+ *   - if fully local,
+ *     - offer to save playlist (in sqlite)
+ *     - all changes are mirrored into indexedDB "playlist"
+ *     - display name is something default ""
+ *   - if from online,
+ *     - explicit changes are mirrored into sqlite Playlist
+ *     - only "play next" changes aren't
+ *     - display name is user input
+ * 
+ * - exception: automatic playlists (by multi-criteria) aren't editable (also not implemented so not a problem)
+ * 
+ * - TODO "play next": where to add item ?
+ *   assuming current playlist is A, B, C, with A currently playing, let's insert 1, 2, 3
+ *     possible: A, B, C, 1, 2, 3
+ *     possible: A, 3, 2, 1, B, C
+ *     possible: A, 1, 2, 3, B, C
+ */
+
+type PlaylistTrack = Exclude<inferQueryOutput<"playlist.generate">, undefined>[number]
+
+type PlaylistDBEntry = {
 	index: number
-	track: Exclude<inferQueryOutput<"playlist.generate">, undefined>[number]
+	track: PlaylistTrack
+}
+
+type Playlist = {
+	tracks: PlaylistTrack[],
+	index: number
 }
 
 export default function useMakePlaylist() {
@@ -17,9 +46,9 @@ export default function useMakePlaylist() {
 	) => {
 		const list = await trpcClient.fetchQuery(["playlist.generate", params])
 		if (!list) return
-		trpcClient.queryClient.setQueryData<PlaylistEntry['track'][]>(["playlist"], list)
+		trpcClient.queryClient.setQueryData<PlaylistTrack[]>(["playlist"], list)
 		await deleteAllFromIndexedDB("playlist")
-		await storeListInIndexedDB<PlaylistEntry>("playlist", list.map((track, i) => ({
+		await storeListInIndexedDB<PlaylistDBEntry>("playlist", list.map((track, i) => ({
 			key: track.id,
 			result: {
 				index: i,
@@ -30,28 +59,92 @@ export default function useMakePlaylist() {
 }
 
 export function usePlaylist() {
-	return useQuery<PlaylistEntry['track'][]>(["playlist"], {
+	const trpcClient = trpc.useContext()
+	return useQuery<Playlist>(["playlist"], {
 		async queryFn() {
-			const results = await listAllFromIndexedDB<PlaylistEntry>("pastSearches")
-			return results
-				.sort((a, b) => b.index - a.index)
+			const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			if (cache) return cache
+			const results = await listAllFromIndexedDB<PlaylistDBEntry>("playlist")
+			const tracks = results
+				.sort((a, b) => a.index - b.index)
 				.map((item) => item.track)
+			return {
+				tracks,
+				index: 0,
+			}
 		},
 		cacheTime: 0,
 	})
 }
 
+export function useSetPlaylistIndex() {
+	const trpcClient = trpc.useContext()
+	return useMemo(() => ({
+		setPlaylistIndex(index: number) {
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+				if (!playlist) {
+					throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				}
+				const newIndex = index < 0
+					? playlist.tracks.length - 1
+					: index >= playlist.tracks.length
+					? 0
+					: index
+				return {
+					...playlist,
+					index: newIndex,
+				}
+			})
+		},
+		nextPlaylistIndex() {
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+				if (!playlist) {
+					throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				}
+				const newIndex = playlist.index >= playlist.tracks.length
+					? 0
+					: playlist.index + 1
+				return {
+					...playlist,
+					index: newIndex,
+				}
+			})
+		},
+		prevPlaylistIndex() {
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+				if (!playlist) {
+					throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				}
+				const newIndex = playlist.index <= 0
+					? playlist.tracks.length - 1
+					: playlist.index - 1
+				return {
+					...playlist,
+					index: newIndex,
+				}
+			})
+		}
+	}), [trpcClient])
+}
+
 export function useAddToPlaylist() {
 	const trpcClient = trpc.useContext()
-	return useCallback(async (track: PlaylistEntry['track']) => {
+	return useCallback(async (track: PlaylistTrack) => {
 		const index = await countFromIndexedDB("playlist")
-		trpcClient.queryClient.setQueryData<PlaylistEntry['track'][]>(["playlist"], (items) => {
-			if (!items) {
+		const inPlaylist = await retrieveFromIndexedDB<PlaylistDBEntry>("playlist", track.id)
+		if (inPlaylist) {
+			return
+		}
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+			if (!playlist) {
 				throw new Error(`trying to add to "playlist" query, but query doesn't exist yet`)
 			}
-			return [...items, track]
+			return {
+				...playlist,
+				tracks: [...playlist.tracks, track],
+			}
 		})
-		await storeInIndexedDB<PlaylistEntry>("playlist", track.id, {
+		await storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
 			index,
 			track,
 		})
@@ -61,14 +154,17 @@ export function useAddToPlaylist() {
 export function useReorderPlaylist() {
 	const trpcClient = trpc.useContext()
 	return useCallback(async (oldIndex: number, newIndex: number) => {
-		trpcClient.queryClient.setQueryData<PlaylistEntry['track'][]>(["playlist"], (items) => {
-			if (!items) {
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+			if (!playlist) {
 				throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 			}
-			const newItems = [...items]
+			const newItems = [...playlist.tracks]
 			const [item] = newItems.splice(oldIndex, 1)
 			newItems.splice(newIndex, 0, item!)
-			return newItems
+			return {
+				...playlist,
+				tracks: newItems,
+			}
 		})
 		await reorderListInIndexedDB(oldIndex, newIndex)
 	}, [trpcClient])
@@ -91,7 +187,7 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 		cursorRequest.onsuccess = () => {
 			const cursor = cursorRequest.result
 			if (cursor) {
-				const item = cursor.value as PlaylistEntry
+				const item = cursor.value as PlaylistDBEntry
 				if (item.index >= minIndex && item.index <= maxIndex) {
 					if (item.index === oldIndex) {
 						item.index === newIndex

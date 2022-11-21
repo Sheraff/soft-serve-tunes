@@ -167,7 +167,7 @@ export default function TrackList({
 	return (
 		<ul className={styles.main} ref={orderable ? ref : undefined}>
 			{tracks.map((track, i) => (
-				<li className={styles.item} key={i} data-index={i}>
+				<li className={styles.item} key={track.id} data-index={i}>
 					{i <= enableUpTo && (
 						<TrackItem
 							track={track}
