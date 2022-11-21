@@ -1,6 +1,5 @@
-import { memo, startTransition, Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Audio from "./Audio"
-import { playlist } from "components/AppContext"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"
@@ -11,14 +10,14 @@ import PlayIcon from "icons/play_arrow.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
 import { trpc } from "utils/trpc"
-import { useAtom, useSetAtom } from "jotai"
-import { useCurrentPlaylist, useCurrentTrack } from "components/AppContext/useCurrentTrack"
+import { useAtom } from "jotai"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
 import useIsOnline from "client/sw/useIsOnline"
 import Head from "next/head"
+import { useCurrentTrack, useNextTrack, usePlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 
 export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
 
@@ -44,17 +43,11 @@ function RightTimeSlot({
 
 export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
-	const setPlaylist = useSetAtom(playlist)
-	const list = useCurrentPlaylist()
+	const {data: playlist} = usePlaylist()
 	const item = useCurrentTrack()
-	const nextItem = useCurrentTrack(1)
-	
-	const playNext = useCallback(
-		() => startTransition(() => {
-			setPlaylist((value) => ({...value, index: value.index + 1}))
-		}),
-		[setPlaylist]
-	)
+	const nextItem = useNextTrack()
+	const {nextPlaylistIndex: playNext, prevPlaylistIndex} = useSetPlaylistIndex()
+
 	const playPrev = useCallback(
 		() => {
 			if (audio.current && audio.current.currentTime > 10) {
@@ -62,12 +55,11 @@ export default memo(function Player() {
 				audio.current.play()
 				return
 			}
-			startTransition(() => {
-				setPlaylist((value) => ({...value, index: value.index - 1}))
-			})
+			prevPlaylistIndex()
 		},
-		[setPlaylist]
+		[prevPlaylistIndex]
 	)
+
 
 	const [autoPlay, setAutoPlay] = useState(true)
 	useEffect(() => {
@@ -128,6 +120,8 @@ export default memo(function Player() {
 	const online = useIsOnline()
 	const {data: cached} = useCachedTrack({id: item?.id})
 
+	const hasPrevNext = playlist && playlist.tracks.length > 1
+
 	return (
 		<div className={styles.main}>
 			<>
@@ -158,16 +152,16 @@ export default memo(function Player() {
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
-				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
+				<button className={styles.prev} onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
 					{(online || cached) && (
-						<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+						<button className={styles.play} onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
 					)}
 					{(!online && !cached) && (
 						<OfflineIcon />
 					)}
 				</>
-				<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
+				<button className={styles.next} onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
 			</div>
 			<Audio ref={audio}/>
 			<GlobalPalette />

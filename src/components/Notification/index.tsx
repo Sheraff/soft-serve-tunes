@@ -1,11 +1,10 @@
-import { startTransition, useEffect } from "react"
-import { playlist } from "components/AppContext"
-import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
-import { useSetAtom } from "jotai"
+import { useEffect } from "react"
+import { useCurrentTrackDetails, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 
 export default function Notification() {
 	const data = useCurrentTrackDetails()
-	const setPlaylist = useSetAtom(playlist)
+	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
+	const hasData = Boolean(data)
 
 	useEffect(() => {
 		if (!data) return
@@ -21,19 +20,11 @@ export default function Notification() {
 	}, [data])
 
 	useEffect(() => {
-		if(!data) return
+		if(!hasData) return
 
-		navigator.mediaSession.setActionHandler('previoustrack', () => {
-			startTransition(() => {
-				setPlaylist(prev => ({...prev, index: prev.index + 1}))
-			})
-		})
-		navigator.mediaSession.setActionHandler('nexttrack', () => {
-			startTransition(() => {
-				setPlaylist(prev => ({...prev, index: prev.index - 1}))
-			})
-		})
-	}, [setPlaylist, data])
+		navigator.mediaSession.setActionHandler('previoustrack', prevPlaylistIndex)
+		navigator.mediaSession.setActionHandler('nexttrack', nextPlaylistIndex)
+	}, [hasData, prevPlaylistIndex, nextPlaylistIndex])
 
 	return null
 }

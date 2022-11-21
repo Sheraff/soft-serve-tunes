@@ -1,4 +1,4 @@
-import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
+import { useCurrentTrackDetails } from "client/db/useMakePlaylist"
 import Palette from "components/Palette"
 import { useMemo } from "react"
 

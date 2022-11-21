@@ -1,9 +1,9 @@
 import type { UseQueryResult } from "react-query"
 import type { inferQueryOutput } from "utils/trpc"
-import { playlist, useShowHome } from "components/AppContext"
+import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { useSetAtom } from "jotai"
 import { startTransition } from "react"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
 
 export default function GenreList({
 	genres,
@@ -12,7 +12,7 @@ export default function GenreList({
 	genres: UseQueryResult<inferQueryOutput<"genre.list">>["data"]
 	onSelect?: (genre: inferQueryOutput<"genre.list">[number]) => void
 }) {
-	const setPlaylist = useSetAtom(playlist)
+	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
 	return (
 		<ul className={styles.main}>
@@ -24,7 +24,7 @@ export default function GenreList({
 						onClick={() => {
 							startTransition(() => {
 								genre && onSelect?.(genre)
-								setPlaylist({type: "genre", id: genre.id, index: 0})
+								makePlaylist({type: "genre", id: genre.id})
 								showHome("home")
 							})
 						}}

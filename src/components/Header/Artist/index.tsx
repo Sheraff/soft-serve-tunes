@@ -1,16 +1,17 @@
 import { type CSSProperties, type ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
-import { artistView, playlist, useShowHome } from "components/AppContext"
+import { artistView, useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
-import { useAtom, useAtomValue } from "jotai"
+import { useAtomValue } from "jotai"
 import TrackList from "components/TrackList"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
 
 export default forwardRef(function ArtistView({
 	open: _open,
@@ -30,10 +31,7 @@ export default forwardRef(function ArtistView({
 		keepPreviousData: true,
 	})
 
-	const [playlistData, setPlaylist] = useAtom(playlist)
-	const playlistSetter = playlistData.type === "artist" && playlistData.id === id
-		? undefined
-		: {type: "artist", id, index: 0} as const
+	const makePlaylist = useMakePlaylist()
 
 	const showHome = useShowHome()
 
@@ -143,8 +141,7 @@ export default forwardRef(function ArtistView({
 					type="button"
 					onClick={() => {
 						startTransition(() => {
-							if (playlistSetter)
-								setPlaylist(playlistSetter)
+							makePlaylist({type: "artist", id})
 							showHome("home")
 						})
 					}}

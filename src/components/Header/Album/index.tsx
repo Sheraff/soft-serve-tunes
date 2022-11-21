@@ -1,16 +1,16 @@
 import { type CSSProperties, type ForwardedRef, forwardRef, Fragment, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import pluralize from "utils/pluralize"
-import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
+import { albumView, artistView, useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 import TrackList from "components/TrackList"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
-import useMakePlaylist from "client/db/useMakePlaylist"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
 
 export default forwardRef(function AlbumView({
 	open: _open,
@@ -30,11 +30,7 @@ export default forwardRef(function AlbumView({
 		keepPreviousData: true,
 	})
 
-	const [playlistData, setPlaylist] = useAtom(playlist)
 	const makePlaylist = useMakePlaylist()
-	const playlistSetter = playlistData.type === "album" && playlistData.id === id
-		? undefined
-		: {type: "album", id, index: 0} as const
 
 	const showHome = useShowHome()
 	const setArtist = useSetAtom(artistView)
@@ -158,10 +154,7 @@ export default forwardRef(function AlbumView({
 					type="button"
 					onClick={() => {
 						startTransition(() => {
-							if (playlistSetter) {
-								setPlaylist(playlistSetter)
-								makePlaylist(playlistSetter)
-							}
+							makePlaylist({type: "album", id})
 							showHome("home")
 						})
 					}}

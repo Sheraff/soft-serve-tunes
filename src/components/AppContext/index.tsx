@@ -1,6 +1,5 @@
 import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
 import { Suspense, useCallback, useEffect } from "react"
-import asyncPersistedAtom from "./asyncPersistedAtom"
 
 type Panel = "artist" | "album" | "search"
 export const panelStack = atom<Panel[]>([])
@@ -96,19 +95,6 @@ export const searchView = atom(
 
 type MainView = "suggestions" | "home"
 export const mainView = atom<MainView>("suggestions")
-
-
-type Playlist = {
-	type: "track" | "album" | "artist" | "genre"
-	id: string
-	index: number
-}
-
-export const playlist = asyncPersistedAtom<Playlist>("playlist", {
-	type: "album",
-	id: "cl7ackd5z20628354y4a90y4vn7",
-	index: 0,
-})
 
 export function useShowHome() {
 	const setAlbum = useSetAtom(albumView)

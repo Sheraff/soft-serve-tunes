@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
-import { playlist, useShowHome } from "components/AppContext"
+import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
@@ -9,9 +9,8 @@ import PlaylistNextIcon from "icons/playlist_play.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
-import { useSetAtom } from "jotai"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
-import { useAddToPlaylist } from "client/db/useMakePlaylist"
+import { useAddToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 
 const emptyFunction = () => {}
 
@@ -35,7 +34,7 @@ function TrackItem({
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
 
-	const setPlaylist = useSetAtom(playlist)
+	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
 	
 	useEffect(() => {
@@ -97,7 +96,7 @@ function TrackItem({
 						onClick(track.id, track.name)
 					} else {
 						startTransition(() => {
-							setPlaylist({type: "track", id: track.id, index: 0})
+							makePlaylist({type: "track", id: track.id})
 							showHome("home")
 						})
 					}

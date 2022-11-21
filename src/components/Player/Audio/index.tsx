@@ -1,5 +1,5 @@
+import { useCurrentTrack } from "client/db/useMakePlaylist"
 import { ForwardedRef, forwardRef, memo, useState } from "react"
-import { useCurrentTrack } from "components/AppContext/useCurrentTrack"
 
 const Audio = forwardRef(function Audio(_, ref: ForwardedRef<HTMLAudioElement>) {
 	const item = useCurrentTrack()

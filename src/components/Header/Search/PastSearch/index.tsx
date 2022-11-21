@@ -1,10 +1,11 @@
 import classNames from "classnames"
 import { trpc, type inferQueryOutput } from "utils/trpc"
-import { albumView, artistView, playlist, useShowHome } from "components/AppContext"
+import { albumView, artistView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
 import { startTransition } from "react"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
 
 const OPTIONS = {
 	track: {
@@ -35,7 +36,7 @@ export default function PastSearch({
 
 	const setArtist = useSetAtom(artistView)
 	const setAlbum = useSetAtom(albumView)
-	const setPlaylist = useSetAtom(playlist)
+	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
 
 	const {key, Component} = OPTIONS[type]
@@ -51,7 +52,7 @@ export default function PastSearch({
 			onClick={() => {
 				startTransition(() => {
 					if (type === 'track' || type === 'genre') {
-						setPlaylist({type, id, index: 0})
+						makePlaylist({type, id})
 						showHome("home")
 					} else if (type === "album") {
 						setAlbum({id, open: true, name: entity?.name})

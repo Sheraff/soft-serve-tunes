@@ -1,5 +1,5 @@
+import { useCurrentTrackDetails } from "client/db/useMakePlaylist"
 import styles from "./index.module.css"
-import { useCurrentTrackDetails } from "components/AppContext/useCurrentTrack"
 
 export default function Cover() {
 	const data = useCurrentTrackDetails()
