@@ -8,6 +8,19 @@ const STATIC_OFFLINE_PAGE = `
 </body>
 `
 
+let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+async function clearOldCacheFiles() {
+	const cache = await caches.open(CACHES.next)
+	const keys = await cache.keys()
+	for (const key of keys) {
+		const response = await fetch(key, { method: 'HEAD' })
+		if (response.status >= 400 || response.status < 500) {
+			cache.delete(key)
+		}
+	}
+}
+
 export default function defaultFetch(event: FetchEvent, request: Request) {
 	event.respondWith(
 		fetch(request)
@@ -32,4 +45,10 @@ export default function defaultFetch(event: FetchEvent, request: Request) {
 			})
 		})
 	)
+	if (!timeoutId) {
+		timeoutId = setTimeout(() => {
+			timeoutId = null
+			clearOldCacheFiles()
+		}, 10_000)
+	}
 }
