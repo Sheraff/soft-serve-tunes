@@ -165,31 +165,83 @@ export function useSetPlaylistIndex() {
 	}), [trpcClient])
 }
 
-export function useAddToPlaylist() {
+const playNextStack: string[] = []
+
+export function useAddNextToPlaylist() {
 	const trpcClient = trpc.useContext()
 	return useCallback(async (track: PlaylistTrack) => {
-		const index = await countFromIndexedDB("playlist")
-		const inPlaylist = await retrieveFromIndexedDB<PlaylistDBEntry>("playlist", track.id)
-		if (inPlaylist) {
+		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		// playlist doesn't exist, create it with new track as current
+		if (!cache) {
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+				current: track.id,
+				tracks: [track],
+			})
+			await storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
+				index: 0,
+				track,
+			})
 			return
 		}
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
-			if (!playlist) {
-				return {
-					current: track.id,
-					tracks: [track],
-				}
-			}
-			return {
-				...playlist,
-				tracks: [...playlist.tracks, track],
-			}
-		})
+		// playlist already contains track, do nothing
+		if (cache.tracks.some(({id}) => id === track.id)) {
+			return
+		}
+		// playlist is inactive, just add track to the end
+		if (typeof cache.current === 'undefined') {
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+				...cache,
+				tracks: [...cache.tracks, track],
+			})
+			await storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
+				index: cache.tracks.length,
+				track,
+			})
+			return
+		}
+		/**
+		 * add after current, and after other "just added"
+		 * ---
+		 * Explanation of expected behavior:
+		 * assuming current playlist is A, B, C, with A currently playing, 
+		 * if we insert 1, 2, 3
+		 * playlist is now A, 1, 2, 3, B, C
+		 * if currently playing progresses to 1, and we insert another 4
+		 * playlist is now A, 1, 2, 3, 4, B, C
+		 * if currently playing progresses to B, and we insert another 5, 6
+		 * playlist is now A, 1, 2, 3, 4, B, 5, 6, C
+		*/
+		const currentIndex = cache.tracks.findIndex(({id}) => id === cache.current)
+		const {index, isStack} = findEndOfStack(cache.tracks, currentIndex)
+		if (!isStack) {
+			playNextStack.length = 0
+		}
+		playNextStack.push(track.id)
+		trpc: {
+			const newItems = [...cache.tracks]
+			newItems.splice(index, 0, track)
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+				...cache,
+				tracks: newItems,
+			})
+		}
 		await storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
-			index,
+			index: cache.tracks.length,
 			track,
 		})
+		await reorderListInIndexedDB(cache.tracks.length, index)
 	}, [trpcClient])
+}
+
+function findEndOfStack(tracks: Playlist['tracks'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
+	const index = currentIndex + 1
+	if (index === tracks.length) {
+		return {index, isStack}
+	}
+	if (!playNextStack.includes(tracks[index]!.id)) {
+		return {index, isStack}
+	}
+	return findEndOfStack(tracks, index, true)
 }
 
 export function useReorderPlaylist() {

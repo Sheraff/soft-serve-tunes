@@ -10,7 +10,7 @@ import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
-import { useAddToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
+import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 
 const emptyFunction = () => {}
 
@@ -161,7 +161,7 @@ export default function TrackList({
 		onReorder?.(from, to)
 	}
 	useDragTrack(ref, !!orderable, callbacks)
-	const addToPlaylist = useAddToPlaylist()
+	const addNextToPlaylist = useAddNextToPlaylist()
 	return (
 		<ul className={styles.main} ref={orderable ? ref : undefined}>
 			{tracks.map((track, i) => (
@@ -174,7 +174,7 @@ export default function TrackList({
 							onClick={onClick}
 							onSelect={onSelect}
 							draggable={orderable}
-							onNext={addToPlaylist}
+							onNext={addNextToPlaylist}
 						/>
 					)}
 				</li>
