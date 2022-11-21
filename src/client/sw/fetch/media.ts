@@ -39,13 +39,17 @@ function resolveCurrentMediaStream() {
 		let bytePointer = 0
 		do {
 			if (typeof possibleStarts[0] === 'undefined' || possibleStarts[0] > bytePointer) {
-				console.warn('SW: non-continuous range data', url, bytePointer, possibleStarts)
+				if (possibleStarts.length) {
+					console.warn('SW: sparse range data')
+				} else {
+					console.warn('SW: range data missing end of file')
+				}
 				return
 			}
 			bytePointer = possibleStarts[0]
 			const current = ranges[bytePointer]
 			if (!current) {
-				console.warn('SW: internal error during cache creation', url, bytePointer, ranges)
+				console.warn('SW: internal error during cache creation')
 				return
 			}
 			possibleStarts.shift()
