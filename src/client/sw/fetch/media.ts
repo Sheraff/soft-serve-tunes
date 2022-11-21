@@ -68,88 +68,87 @@ function resolveCurrentMediaStream() {
 	}, 1_000)
 }
 
+async function fetchFromServer(event: FetchEvent, request: Request) {
+	const response = await fetch(request)
+	if (response.status === 206) {
+		response.clone()
+			.arrayBuffer()
+			.then((buffer) => {
+				if (!buffer.byteLength) return
+				const range = response.headers.get('Content-Range')
+				const contentType = response.headers.get('Content-Type')
+				if (!range) return console.warn('SW: abort caching range', event.request.url)
+				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
+				if (!parsed) return console.warn('SW: malformed 206 headers', event.request.url)
+				const [, _start, _end, _total] = parsed
+				const start = Number(_start)
+				const end = Number(_end)
+				const total = Number(_total)
+				currentMediaStream.ranges[start] = {
+					end,
+					total,
+					buffer,
+				}
+				if (contentType)
+					currentMediaStream.type = contentType
+				if (end + 1 === total)
+					resolveCurrentMediaStream()
+			})
+	} else if (response.status === 200) {
+		const cacheResponse = response.clone()
+		cacheMediaResponse(event.request.url, cacheResponse)
+	}
+	return response
+}
+
+async function fetchFromCache(event: FetchEvent, request: Request) {
+	const response = await caches.match(event.request.url, {
+		ignoreVary: true,
+		ignoreSearch: true,
+		cacheName: CACHES.media,
+	})
+	if (!response) {
+		return fetchFromServer(event, request)
+	}
+	const range = event.request.headers.get('Range')
+	if (!range) {
+		return response
+	}
+	const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
+	if (!parsed) {
+		console.warn('SW: malformed request')
+		return new Response('', {status: 400})
+	}
+	const bytePointer = Number(parsed[1])
+	if (bytePointer === 0) {
+		return response
+	}
+	const buffer = await response.arrayBuffer()
+	const requestedEnd = parsed[2] ? Number(parsed[2]) : (bytePointer + 524288)
+	const end = Math.min(requestedEnd, buffer.byteLength)
+	const partial = buffer.slice(bytePointer, end)
+	const result = new Response(partial, {
+		status: 206,
+		statusText: 'Partial Content',
+		headers: {
+			'Content-Type': response.headers.get('Content-Type') || 'audio/*',
+			'Content-Range': `bytes ${bytePointer}-${bytePointer + partial.byteLength - 1}/${buffer.byteLength}`,
+			'Content-Length': `${partial.byteLength}`,
+			'Connection': 'keep-alive',
+			'Keep-Alive': 'timeout=5',
+			'Cache-Control': 'public, max-age=31536000',
+			'Date': (new Date()).toUTCString(),
+		}
+	})
+	return result
+}
+
 export default function mediaFetch(event: FetchEvent, request: Request) {
-	const promise = fetch(request)
 	if (event.request.url !== currentMediaStream.url) {
 		resolveCurrentMediaStream()
 		currentMediaStream.ranges = {}
 		currentMediaStream.type = ''
 		currentMediaStream.url = event.request.url
 	}
-	event.respondWith(
-		promise
-		.then(response => {
-			if (response.status === 206) {
-				response.clone()
-					.arrayBuffer()
-					.then((buffer) => {
-						if (!buffer.byteLength) return
-						const range = response.headers.get('Content-Range')
-						const contentType = response.headers.get('Content-Type')
-						if (!range) return console.warn('SW: abort caching range', event.request.url)
-						const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
-						if (!parsed) return console.warn('SW: malformed 206 headers', event.request.url)
-						const [, _start, _end, _total] = parsed
-						const start = Number(_start)
-						const end = Number(_end)
-						const total = Number(_total)
-						currentMediaStream.ranges[start] = {
-							end,
-							total,
-							buffer,
-						}
-						if (contentType)
-							currentMediaStream.type = contentType
-						if (end + 1 === total)
-							resolveCurrentMediaStream()
-					})
-			} else if (response.status === 200) {
-				const cacheResponse = response.clone()
-				cacheMediaResponse(event.request.url, cacheResponse)
-			}
-			return response
-		})
-		.catch(async () => {
-			const response = await caches.match(event.request.url, {
-				ignoreVary: true,
-				ignoreSearch: true,
-				cacheName: CACHES.media,
-			})
-			if (!response) {
-				console.warn('SW: media file not found in cache', event.request.url)
-				return new Response('', {status: 503})
-			}
-			const range = event.request.headers.get('Range')
-			if (!range) {
-				return response
-			}
-			const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
-			if (!parsed) {
-				console.warn('SW: malformed request')
-				return new Response('', {status: 400})
-			}
-			const bytePointer = Number(parsed[1])
-			if (bytePointer === 0) {
-				return response
-			}
-			const buffer = await response.arrayBuffer()
-			const requestedEnd = parsed[2] ? Number(parsed[2]) : (bytePointer + 524288)
-			const end = Math.min(requestedEnd, buffer.byteLength)
-			const partial = buffer.slice(bytePointer, end)
-			const result = new Response(partial, {
-				status: 206,
-				statusText: 'Partial Content',
-				headers: {
-					'Content-Type': response.headers.get('Content-Type') || 'audio/*',
-					'Content-Range': `bytes ${bytePointer}-${bytePointer + partial.byteLength - 1}/${buffer.byteLength}`,
-					'Content-Length': `${partial.byteLength}`,
-					'Connection': 'keep-alive',
-					'Keep-Alive': 'timeout=5',
-					'Cache-Control': 'public, max-age=31536000',
-					'Date': (new Date()).toUTCString(),
-				}
-			})
-			return result
-		})
-	)
+	event.respondWith(fetchFromCache(event, request))
 }
