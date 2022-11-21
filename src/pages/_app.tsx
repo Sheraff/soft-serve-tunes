@@ -6,6 +6,7 @@ import superjson from "superjson";
 import { SessionProvider } from "next-auth/react";
 import "styles/globals.css";
 import Head from "next/head";
+// import { ReactQueryDevtools } from 'react-query/devtools';
 
 if (typeof window !== 'undefined') {
   window.addEventListener('load', async () => {
@@ -39,6 +40,7 @@ const MyApp: AppType = ({
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#b145c7" />
         <meta name="theme-color" content="#300a38" />
       </Head>
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       <SessionProvider session={session}>
         <Component {...pageProps} />
       </SessionProvider>
@@ -74,7 +76,7 @@ export default withTRPC<AppRouter>({
             cacheTime: Infinity,
             retry: 1,
             refetchOnWindowFocus: false,
-            refetchOnMount: false,
+            refetchOnMount: true,
             refetchOnReconnect: false,
           },
         },

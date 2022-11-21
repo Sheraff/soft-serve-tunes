@@ -1,5 +1,6 @@
 import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
+import revalidateSwCache from "client/sw/revalidateSwCache"
 import AlbumList from "components/AlbumList"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
@@ -7,7 +8,7 @@ import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import { useAtom } from "jotai"
-import { memo, Suspense, useState } from "react"
+import { memo, Suspense, useEffect, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
@@ -151,6 +152,28 @@ function AlbumsByTraitSuggestion() {
 	)
 }
 
+let updateSuggestionTimeoutId: ReturnType<typeof setTimeout> | null = null
+const UpdateSuggestions = () => {
+	useEffect(() => {
+		if (updateSuggestionTimeoutId) {
+			clearTimeout(updateSuggestionTimeoutId)
+		}
+		return () => {
+			updateSuggestionTimeoutId = setTimeout(() => {
+				updateSuggestionTimeoutId = null
+				revalidateSwCache("artist.most-fav")
+				revalidateSwCache("artist.most-recent-listen")
+				revalidateSwCache("artist.least-recent-listen")
+				revalidateSwCache("album.most-fav")
+				revalidateSwCache("album.most-recent-listen")
+				revalidateSwCache("album.most-recent-add")
+				revalidateSwCache("genre.most-fav")
+			}, 20_000)
+		}
+	}, [])
+	return null
+}
+
 export default memo(function Suggestions(){
 
 	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.useQuery(["artist.most-fav"])
@@ -163,6 +186,7 @@ export default memo(function Suggestions(){
 
 	return (
 		<div className={styles.scrollable}>
+			<UpdateSuggestions />
 			<div className={styles.main}>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened artists</SectionTitle>

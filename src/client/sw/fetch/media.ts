@@ -68,7 +68,8 @@ function resolveCurrentMediaStream() {
 	}, 1_000)
 }
 
-export default function mediaFetch(event: FetchEvent, promise: Promise<Response>) {
+export default function mediaFetch(event: FetchEvent, request: Request) {
+	const promise = fetch(request)
 	if (event.request.url !== currentMediaStream.url) {
 		resolveCurrentMediaStream()
 		currentMediaStream.ranges = {}

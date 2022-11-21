@@ -8,9 +8,9 @@ const STATIC_OFFLINE_PAGE = `
 </body>
 `
 
-export default function defaultFetch(event: FetchEvent, promise: Promise<Response>) {
+export default function defaultFetch(event: FetchEvent, request: Request) {
 	event.respondWith(
-		promise
+		fetch(request)
 		.then(response => {
 			if (response.status === 200) {
 				const cacheResponse = response.clone()

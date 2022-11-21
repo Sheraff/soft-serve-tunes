@@ -16,12 +16,11 @@ export default function onFetch(event: FetchEvent) {
 		return
 	}
 	
-	const promise = fetch(request)
 	if (url.pathname.startsWith('/api/trpc')) {
-		trpcFetch(event, promise, url)
+		trpcFetch(event, request, url)
 	} else if (url.pathname.startsWith('/api/file')) {
-		mediaFetch(event, promise)
+		mediaFetch(event, request)
 	} else {
-		defaultFetch(event, promise)
+		defaultFetch(event, request)
 	}
 }
