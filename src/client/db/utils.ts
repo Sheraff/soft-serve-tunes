@@ -1,8 +1,8 @@
 let dbPromise: Promise<IDBDatabase> | null = null
 
 const DB_NAME = "soft-serve-tunes"
-const DB_VERSION = 3
-type Stores = "pastSearches" | "appState"
+const DB_VERSION = 4
+type Stores = "pastSearches" | "appState" | "playlist"
 
 export function openDB(): Promise<IDBDatabase> {
 	if (dbPromise)
@@ -43,6 +43,9 @@ function onUpgradeNeeded(
 	if (event.oldVersion < 3) {
 		db.deleteObjectStore("requests")
 	}
+	if (event.oldVersion < 4) {
+		db.createObjectStore("playlist", {keyPath: "key"})
+	}
 }
 
 type QueryStorage<T> = {
@@ -71,6 +74,20 @@ export async function retrieveFromIndexedDB<T>(storeName: Stores, key: string): 
 	})
 }
 
+export async function countFromIndexedDB(storeName: Stores): Promise<number> {
+	const db = await openDB()
+	const tx = db.transaction(storeName)
+	const store = tx.objectStore(storeName)
+	const request = store.count()
+	return new Promise((resolve, reject) => {
+		request.onerror = () => {
+			console.error(`failed to count rows from indexedDB ${storeName}`, request.error?.message)
+			reject(request.error)
+		}
+		request.onsuccess = () => resolve(request.result)
+	})
+}
+
 export async function storeInIndexedDB<T>(storeName: Stores, key: string, result: T) {
 	const db = await openDB()
 	const tx = db.transaction(storeName, "readwrite")
@@ -82,6 +99,20 @@ export async function storeInIndexedDB<T>(storeName: Stores, key: string, result
 	request.onerror = () => {
 		console.error(`failed to store entity ${key} in indexedDB`, request.error?.message)
 	}
+}
+
+export async function storeListInIndexedDB<T>(storeName: Stores, items: {key: string, result: T}[]) {
+	const db = await openDB()
+	const tx = db.transaction(storeName, "readwrite")
+	const store = tx.objectStore(storeName)
+	items.forEach(item => store.put(item))
+	return new Promise((resolve, reject) => {
+		tx.onerror = () => {
+			console.error(`failed to add many items in indexedDB ${storeName}`, tx.error?.message)
+			reject(tx.error)
+		}
+		tx.oncomplete = resolve
+	})
 }
 
 export async function listAllFromIndexedDB<T>(storeName: Stores): Promise<T[]> {
@@ -113,6 +144,20 @@ export async function deleteFromIndexedDB(storeName: Stores, key: string) {
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
 			console.error(`failed to delete entity ${key} from indexedDB ${storeName}`, request.error?.message)
+			reject(request.error)
+		}
+		request.onsuccess = resolve
+	})
+}
+
+export async function deleteAllFromIndexedDB(storeName: Stores) {
+	const db = await openDB()
+	const tx = db.transaction(storeName, "readwrite")
+	const store = tx.objectStore(storeName)
+	const request = store.clear()
+	return new Promise((resolve, reject) => {
+		request.onerror = () => {
+			console.error(`failed to clear store ${storeName} from indexedDB`, request.error?.message)
 			reject(request.error)
 		}
 		request.onsuccess = resolve

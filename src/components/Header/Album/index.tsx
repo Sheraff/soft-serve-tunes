@@ -10,6 +10,7 @@ import SectionTitle from "atoms/SectionTitle"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
+import useMakePlaylist from "client/db/useMakePlaylist"
 
 export default forwardRef(function AlbumView({
 	open: _open,
@@ -30,6 +31,7 @@ export default forwardRef(function AlbumView({
 	})
 
 	const [playlistData, setPlaylist] = useAtom(playlist)
+	const makePlaylist = useMakePlaylist()
 	const playlistSetter = playlistData.type === "album" && playlistData.id === id
 		? undefined
 		: {type: "album", id, index: 0} as const
@@ -156,8 +158,10 @@ export default forwardRef(function AlbumView({
 					type="button"
 					onClick={() => {
 						startTransition(() => {
-							if (playlistSetter)
+							if (playlistSetter) {
 								setPlaylist(playlistSetter)
+								makePlaylist(playlistSetter)
+							}
 							showHome("home")
 						})
 					}}

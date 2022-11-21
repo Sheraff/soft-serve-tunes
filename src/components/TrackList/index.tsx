@@ -11,6 +11,7 @@ import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
 import { useSetAtom } from "jotai"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
+import { useAddToPlaylist } from "client/db/useMakePlaylist"
 
 const emptyFunction = () => {}
 
@@ -21,6 +22,7 @@ function TrackItem({
 	onClick,
 	onSelect,
 	draggable,
+	onNext,
 }: {
 	track: inferQueryOutput<"track.searchable">[number]
 	enableSiblings?: () => void
@@ -28,6 +30,7 @@ function TrackItem({
 	onClick?: (id:string, name:string) => void
 	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
 	draggable?: boolean
+	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
@@ -70,7 +73,8 @@ function TrackItem({
 		console.log('add')
 	}
 	callbacks.current.onNext = () => {
-		console.log('next')
+		if (data)
+			onNext?.(data)
 	}
 	useSlideTrack(item, callbacks)
 
@@ -159,10 +163,11 @@ export default function TrackList({
 		console.log('reorder tracks', from, to)
 	}
 	useDragTrack(ref, !!orderable, callbacks)
+	const addToPlaylist = useAddToPlaylist()
 	return (
 		<ul className={styles.main} ref={orderable ? ref : undefined}>
 			{tracks.map((track, i) => (
-				<li className={styles.item} key={track.id} data-index={i}>
+				<li className={styles.item} key={i} data-index={i}>
 					{i <= enableUpTo && (
 						<TrackItem
 							track={track}
@@ -171,6 +176,7 @@ export default function TrackList({
 							onClick={onClick}
 							onSelect={onSelect}
 							draggable={orderable}
+							onNext={addToPlaylist}
 						/>
 					)}
 				</li>
