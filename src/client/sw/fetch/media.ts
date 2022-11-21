@@ -30,9 +30,9 @@ const currentMediaStream: {
 function resolveCurrentMediaStream() {
 	const {ranges, url, type} = currentMediaStream
 	if (!url) return
+	if (!ranges[0]) return
+	const length = ranges[0].total
 	setTimeout(async () => {
-		if (!ranges[0]) return
-		const length = ranges[0].total
 		// check ranges integrity
 		const dataArray = new Uint8Array(length)
 		const possibleStarts = Array.from(Object.keys(ranges)).map(Number).sort((a, b) => a - b)
