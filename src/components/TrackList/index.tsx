@@ -159,7 +159,6 @@ export default function TrackList({
 	})
 	callbacks.current.onDrop = (from, to) => {
 		onReorder?.(from, to)
-		console.log('reorder tracks', from, to)
 	}
 	useDragTrack(ref, !!orderable, callbacks)
 	const addToPlaylist = useAddToPlaylist()

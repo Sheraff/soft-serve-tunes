@@ -26,7 +26,6 @@ import { useQuery } from "react-query"
  *     possible: A, 3, 2, 1, B, C
  *     possible: A, 1, 2, 3, B, C
  * 
- * - TODO: reordering indexedDB doesn't seem to do anything
  */
 
 type PlaylistTrack = Exclude<inferQueryOutput<"playlist.generate">, undefined>[number]
@@ -232,7 +231,7 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 				const item = cursor.value.result as PlaylistDBEntry
 				if (item.index >= minIndex && item.index <= maxIndex) {
 					if (item.index === oldIndex) {
-						item.index === newIndex
+						item.index = newIndex
 					} else {
 						item.index += direction
 					}
