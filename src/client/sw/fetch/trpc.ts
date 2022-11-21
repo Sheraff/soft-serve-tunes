@@ -51,7 +51,7 @@ async function formatBatchResponses(
 	})
 }
 
-async function trpcUrlToCacheValues(url: URL, allowNetwork = false): Promise<Response> {
+async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = false): Promise<Response> {
 	const cache = await caches.open(CACHES.trpc)
 	const {keys, endpoints, input} = trpcUrlToCacheKeys(url)
 	if (!allowNetwork) {
@@ -81,6 +81,7 @@ async function trpcUrlToCacheValues(url: URL, allowNetwork = false): Promise<Res
 			fetchIndices.forEach((i, j) => cacheResponses[i] = {text: () => JSON.stringify(fetchData[j])})
 		}
 	}
+	fetchFromServer(request, url)
 	return formatBatchResponses(cacheResponses, endpoints)
 }
 
@@ -99,17 +100,20 @@ export function handleTrpcFetchResponse(response: Response, url: URL) {
 	})
 }
 
+function fetchFromServer(request: Request, url: URL) {
+	return fetch(request)
+	.then(response => {
+		if (response.status === 200) {
+			const cacheResponse = response.clone()
+			handleTrpcFetchResponse(cacheResponse, url)
+		}
+		return response
+	})
+}
+
 export default function trpcFetch(event: FetchEvent, request: Request, url: URL) {
 	event.respondWith(
-		trpcUrlToCacheValues(url, true)
-		.catch(() => fetch(request)
-			.then(response => {
-				if (response.status === 200) {
-					const cacheResponse = response.clone()
-					handleTrpcFetchResponse(cacheResponse, url)
-				}
-				return response
-			})
-		)
+		trpcUrlToCacheValues(request, url, true)
+		.catch(() => fetchFromServer(request, url))
 	)
 }
