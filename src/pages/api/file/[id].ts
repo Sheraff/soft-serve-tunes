@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { unstable_getServerSession as getServerSession } from "next-auth"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
-import { createReadStream, readFileSync } from "node:fs"
+import { createReadStream } from "node:fs"
 import { prisma } from "server/db/client"
 import log from "utils/logger"
+import { readFile } from "node:fs/promises"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, nextAuthOptions);
@@ -29,12 +30,14 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const range = req.headers.range
   // allow 200 response if no `range: byte=0-` is specified
   if (range === undefined) {
-    const buffer = readFileSync(file.path)
+    const buffer = await readFile(file.path)
     res.writeHead(200, {
       'Content-Type': `audio/${file.container}`,
       'Content-Length': file.size,
+      'Cache-Control': "public, max-age=31536000",
     })
     res.write(buffer)
+    log("info", "200", `File request was sent in full (${file.path})`)
     return res.end()
   }
   const partials = byteOffsetFromRangeString(range)
