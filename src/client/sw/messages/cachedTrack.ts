@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CACHES } from "../constants"
+import { CACHES } from "../utils/constants"
 
 export default async function messageCheckTrackCache({id}: {id: string}, {source}: ExtendableMessageEvent) {
 	if (!source) return

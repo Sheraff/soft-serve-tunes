@@ -1,5 +1,15 @@
 /// <reference lib="webworker" />
-import { CACHES } from "../constants"
+import { CACHES } from "../utils/constants"
+declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
+
+async function cacheMediaResponse(url: string, response: Response) {
+	const cache = await caches.open(CACHES.media)
+	await cache.put(url, response)
+	const clients = await self.clients.matchAll()
+	clients.forEach((client) =>
+		client.postMessage({type: 'sw-notify-when-track-cached', payload: {url}})
+	)
+}
 
 const currentMediaStream: {
 	ranges: {
@@ -45,9 +55,8 @@ function resolveCurrentMediaStream() {
 		} while (bytePointer < length)
 		ranges[0] = undefined
 		// store as a single buffer
-		const cache = await caches.open(CACHES.media)
 		const buffer = dataArray.buffer
-		await cache.put(url, new Response(buffer, {
+		cacheMediaResponse(url, new Response(buffer, {
 			status: 200,
 			headers: {
 				'Content-Length': String(length),
@@ -93,6 +102,9 @@ export default function mediaFetch(event: FetchEvent, promise: Promise<Response>
 						if (end + 1 === total)
 							resolveCurrentMediaStream()
 					})
+			} else if (response.status === 200) {
+				const cacheResponse = response.clone()
+				cacheMediaResponse(event.request.url, cacheResponse)
 			}
 			return response
 		})

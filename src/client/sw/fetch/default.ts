@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CACHES } from "../constants"
+import { CACHES } from "../utils/constants"
 
 const STATIC_OFFLINE_PAGE = `
 <body>

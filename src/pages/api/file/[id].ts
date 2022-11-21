@@ -27,16 +27,16 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   }
   
   const range = req.headers.range
-  // // allow 200 response if no `range: byte=0-` is specified
-  // if (range === undefined) {
-  //   const buffer = readFileSync(file.path)
-  //   res.writeHead(200, {
-  //     'Content-Type': `audio/${file.container}`,
-  //     'Content-Length': file.size,
-  //   })
-  //   res.write(buffer)
-  //   return res.end()
-  // }
+  // allow 200 response if no `range: byte=0-` is specified
+  if (range === undefined) {
+    const buffer = readFileSync(file.path)
+    res.writeHead(200, {
+      'Content-Type': `audio/${file.container}`,
+      'Content-Length': file.size,
+    })
+    res.write(buffer)
+    return res.end()
+  }
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {

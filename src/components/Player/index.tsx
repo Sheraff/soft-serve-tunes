@@ -18,6 +18,7 @@ import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
 import useIsOnline from "client/sw/useIsOnline"
+import Head from "next/head"
 
 export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
 
@@ -125,16 +126,28 @@ export default memo(function Player() {
 	}, [mutate, consideredPlayed, item?.id])
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id: item?.id, enabled: !online})
+	const {data: cached} = useCachedTrack({id: item?.id})
 
 	return (
 		<div className={styles.main}>
+			<>
+				{online && cached && nextItem && (
+					<Head>
+						<link
+							key={`/api/file/${nextItem.id}`}
+							rel="prefetch"
+							as="audio"
+							href={`/api/file/${nextItem.id}`}
+						/>
+					</Head>
+				)}
+			</>
 			<ProgressInput
 				className={styles.progress}
 				audio={audio}
 				progress={progress}
 				canSetTime={Boolean(item && totalSeconds && !loading)}
-				loading={playing && loading}
+				loading={playing && (loading || (!online && !cached))}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<Suspense fallback={<div className={styles.duration}>{displayTotalTime}</div>}>
@@ -144,20 +157,18 @@ export default memo(function Player() {
 				/>
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
-			<>
-				{(online || cached) && (
-					<div className={styles.ui}>
-						<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
+			<div className={styles.ui}>
+				<button className={styles.prev} onClick={playPrev} disabled={!list?.length || list.length === 1}><PrevIcon /></button>
+				<>
+					{(online || cached) && (
 						<button className={styles.play} onClick={togglePlay}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
-						<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
-					</div>
-				)}
-				{(!online && !cached) && (
-					<div className={styles.ui}>
+					)}
+					{(!online && !cached) && (
 						<OfflineIcon />
-					</div>
-				)}
-			</>
+					)}
+				</>
+				<button className={styles.next} onClick={playNext} disabled={!list?.length || list.length === 1}><NextIcon /></button>
+			</div>
 			<Audio ref={audio}/>
 			<GlobalPalette />
 			<Notification />

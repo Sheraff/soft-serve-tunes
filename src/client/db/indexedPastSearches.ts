@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "react-query"
 import { deleteFromIndexedDB, listAllFromIndexedDB, storeInIndexedDB } from "./utils"
 
-const MAX_ITEMS_COUNT = 20
+const MAX_ITEMS_COUNT = 30
 
 export type PastSearchItem = {
 	type: "track" | "album" | "artist" | "genre"

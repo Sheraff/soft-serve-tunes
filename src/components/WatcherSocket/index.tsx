@@ -4,6 +4,7 @@ import { env } from "env/client.mjs"
 
 export default function WatcherSocket() {
 	const queryClient = useQueryClient()
+
 	useEffect(() => {
 		const controller = new AbortController()
 		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
@@ -59,5 +60,26 @@ export default function WatcherSocket() {
 			socket.close()
 		}
 	}, [queryClient])
+
+	useEffect(() => {
+		const controller = new AbortController()
+		navigator.serviceWorker.ready.then((registration) => {
+			const target = registration.active
+			if (!target) {
+				return
+			}
+			navigator.serviceWorker.addEventListener("message", (event) => {
+				const message = event.data
+				if (message.type === 'sw-notify-when-track-cached') {
+					const id = message.payload.url.split('/').at(-1)
+					queryClient.invalidateQueries(['sw-cached-track', id])
+				}
+			}, {signal: controller.signal})
+		})
+		return () => {
+			controller.abort()
+		}
+	}, [queryClient])
+
 	return null
 }

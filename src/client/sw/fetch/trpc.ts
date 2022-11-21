@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CACHES } from "../constants"
+import { CACHES } from "../utils/constants"
 
 function trpcUrlToCacheKeys(url: URL) {
 	const [,,,parts] = url.pathname.split('/')

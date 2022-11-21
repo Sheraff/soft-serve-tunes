@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { CACHES } from "./constants"
+import { CACHES } from "./utils/constants"
 import onFetch from "./fetch"
 import onMessage from "./messages"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
