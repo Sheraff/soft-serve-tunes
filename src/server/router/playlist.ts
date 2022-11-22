@@ -1,9 +1,7 @@
 import { createRouter } from "./context"
 import { z } from "zod"
+import { type Prisma } from "@prisma/client"
 
-// TODO: find a way to type this
-// if i explicitly type it with : Prisma.TrackFindManyArgs['include']
-// (to get autocompletion while editing `trackInclude`) then tRPC fails to infer the type
 const trackInclude = {
   artist: {
     select: {
@@ -17,7 +15,7 @@ const trackInclude = {
       name: true,
     },
   }
-}
+} satisfies Prisma.TrackFindManyArgs['include']
 
 export const playlistRouter = createRouter()
   .query("generate", {

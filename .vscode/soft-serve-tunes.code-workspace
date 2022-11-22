@@ -33,5 +33,6 @@
 			"toptags",
 			"trpc"
 		],
+		"typescript.tsdk": "node_modules/typescript/lib",
 	}
 }
