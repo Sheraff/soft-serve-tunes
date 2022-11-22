@@ -51,6 +51,7 @@ export const trackRouter = createRouter()
           },
           album: {
             select: {
+              id: true,
               name: true,
               spotify: { select: {image: imageSelect} },
               audiodb: { select: {thumbHq: imageSelect, thumb: imageSelect} },
@@ -59,6 +60,7 @@ export const trackRouter = createRouter()
           },
           artist: {
             select: {
+              id: true,
               name: true,
             }
           },

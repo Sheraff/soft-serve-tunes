@@ -2,11 +2,11 @@ import { useCurrentTrackDetails } from "client/db/useMakePlaylist"
 import styles from "./index.module.css"
 
 export default function Cover() {
-	const data = useCurrentTrackDetails()
+	const track = useCurrentTrackDetails()
 	return (
 		<img
 			className={styles.img}
-			src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
+			src={track?.cover ? `/api/cover/${track.cover.id}` : ""}
 			alt=""
 		/>
 	)
