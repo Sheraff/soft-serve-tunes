@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["extendedWhereUnique"]
+  previewFeatures = ["extendedWhereUnique", "interactiveTransactions"]
 }
 
 datasource db {
@@ -40,7 +40,7 @@ model Track {
   year        Int?
   genres      Genre[]  @relation
   metaImageId String?
-  metaImage   Image?   @relation(fields: [metaImageId], references: [id])
+  metaImage   Image?   @relation(name: "metaImage", fields: [metaImageId], references: [id])
 
   spotify     SpotifyTrack? @relation
   lastfm      LastFmTrack?  @relation
@@ -51,6 +51,8 @@ model Track {
 
   userData        UserTrack?      @relation
   playlistEntries PlaylistEntry[]
+  coverId         String?
+  cover           Image?          @relation(name: "cover", fields: [coverId], references: [id])
 
   @@unique([simplified, artistId, albumId])
 }
@@ -86,7 +88,10 @@ model Image {
   path                   String          @unique
   mimetype               String
   palette                String
-  track                  Track[]         @relation
+  track                  Track[]         @relation(name: "metaImage")
+  trackCover             Track[]         @relation(name: "cover")
+  artistCover            Artist[]        @relation
+  albumCover             Album[]         @relation
   lastfmAlbum            LastFmAlbum[]   @relation
   lastfmArtist           LastFmArtist[]  @relation
   audiodbTrack           AudioDbTrack[]  @relation
@@ -121,6 +126,8 @@ model Artist {
   spotifyDate DateTime?
 
   userData UserArtist? @relation
+  coverId  String?
+  cover    Image?      @relation(fields: [coverId], references: [id])
 }
 
 model UserArtist {
@@ -151,6 +158,8 @@ model Album {
   audiodbDate DateTime?
 
   userData UserAlbum? @relation
+  coverId  String?
+  cover    Image?     @relation(fields: [coverId], references: [id])
 
   @@unique([simplified, artistId])
 }

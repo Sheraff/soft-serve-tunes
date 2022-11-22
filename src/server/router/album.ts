@@ -42,77 +42,20 @@ export const albumRouter = createRouter()
               tracks: true,
             },
           },
-          lastfm: {
-            select: {
-              cover: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              }
-            }
-          },
-          audiodb: {
-            select: {
-              thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-              thumbHq: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-            }
-          },
-          spotify: {
-            select: {
-              image: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-            }
-          },
           artist: {
             select: {
+              id: true,
               name: true,
             }
           },
-          tracks: {
-            where: {
-              metaImageId: {
-                not: null,
-              }
-            },
-            take: 1,
+          cover: {
             select: {
-              metaImage: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
+              id: true,
+              palette: true,
             }
           }
         }
       })
-      let cover = undefined
-      if (album?.spotify?.image) {
-        cover = album.spotify.image
-      } else if (album?.audiodb?.thumbHq) {
-        cover = album.audiodb.thumbHq
-      } else if (album?.audiodb?.thumb) {
-        cover = album.audiodb.thumb
-      } else if (album?.lastfm?.cover) {
-        cover = album.lastfm.cover
-      } else if (album?.tracks?.[0]?.metaImage) {
-        cover = album.tracks[0].metaImage
-      }
 
       if (album) {
         lastFm.findAlbum(input.id)
@@ -121,10 +64,7 @@ export const albumRouter = createRouter()
         log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
       }
 
-      return {
-        ...album,
-        cover,
-      }
+      return album
     }
   })
   .query("get", {
@@ -158,24 +98,18 @@ export const albumRouter = createRouter()
               id: true,
               name: true,
               position: true,
-              metaImage: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              }
+            }
+          },
+          cover: {
+            select: {
+              id: true,
+              palette: true,
             }
           },
           lastfm: {
             select: {
               name: true,
               releasedate: true,
-              cover: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
             }
           },
           audiodb: {
@@ -183,18 +117,6 @@ export const albumRouter = createRouter()
               strAlbum: true,
               intYearReleased: true,
               strDescriptionEN: true,
-              thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-              thumbHq: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
             }
           },
           spotify: {
@@ -202,28 +124,10 @@ export const albumRouter = createRouter()
               name: true,
               totalTracks: true,
               releaseDate: true,
-              image: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
             }
           }
         }
       })
-      let cover = undefined
-      if (album?.spotify?.image) {
-        cover = album.spotify.image
-      } else if (album?.audiodb?.thumbHq) {
-        cover = album.audiodb.thumbHq
-      } else if (album?.audiodb?.thumb) {
-        cover = album.audiodb.thumb
-      } else if (album?.lastfm?.cover) {
-        cover = album.lastfm.cover
-      } else if (album?.tracks?.[0]?.metaImage) {
-        cover = album.tracks[0].metaImage
-      }
 
       if (album) {
         lastFm.findAlbum(input.id)
@@ -232,10 +136,7 @@ export const albumRouter = createRouter()
         log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
       }
 
-      return {
-        ...album,
-        cover,
-      }
+      return album
     },
   })
   .query("most-fav", {

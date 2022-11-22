@@ -12,6 +12,7 @@ import { acoustId } from "server/persistent/acoustId"
 import sanitizeString from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
+import { computeTrackCover } from "./computeCover"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -310,6 +311,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
 		await tryAgainLater()
+		await computeTrackCover(track.id, {album: true, artist: true})
 		return track
 	} catch (e) {
 		const error = e as PrismaError

@@ -35,7 +35,6 @@ export const trackRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      const imageSelect = {select: {id: true, palette: true}}
       const track = await ctx.prisma.track.findUnique({
         where: { id: input.id },
         select: {
@@ -43,7 +42,6 @@ export const trackRouter = createRouter()
           name: true,
           createdAt: true,
           position: true,
-          metaImage: imageSelect,
           userData: {
             select: {
               favorite: true,
@@ -53,9 +51,6 @@ export const trackRouter = createRouter()
             select: {
               id: true,
               name: true,
-              spotify: { select: {image: imageSelect} },
-              audiodb: { select: {thumbHq: imageSelect, thumb: imageSelect} },
-              lastfm: { select: {cover: imageSelect} },
             }
           },
           artist: {
@@ -64,11 +59,16 @@ export const trackRouter = createRouter()
               name: true,
             }
           },
+          cover: {
+            select: {
+              id: true,
+              palette: true,
+            }
+          },
           audiodb: {
             select: {
               intDuration: true,
               intTrackNumber: true,
-              thumb: imageSelect,
             }
           },
           spotify: {
@@ -76,52 +76,16 @@ export const trackRouter = createRouter()
               durationMs: true,
               trackNumber: true,
               discNumber: true,
-              album: {
-                select: {
-                  image: imageSelect,
-                }
-              },
             }
           },
           lastfm: {
             select: {
               duration: true,
-              album: {
-                select: {
-                  cover: imageSelect,
-                }
-              }
             }
           },
         }
       })
       if (!track) return null
-      let cover = undefined
-      if (track?.album?.spotify?.image) {
-        log("info", "image", "trpc", `track.miniature selected cover from track.album.spotify.image for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.album.spotify.image
-      } else if (track?.album?.audiodb?.thumbHq) {
-        log("info", "image", "trpc", `track.miniature selected cover from track.album.audiodb.thumbHq for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.album.audiodb.thumbHq
-      } else if (track?.album?.audiodb?.thumb) {
-        log("info", "image", "trpc", `track.miniature selected cover from track.album.audiodb.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.album.audiodb.thumb
-      } else if (track.spotify?.album?.image) {
-        log("info", "image", "trpc", `track.miniature selected cover from spotify.album for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.spotify.album?.image
-      } else if (track.audiodb?.thumb) {
-        log("info", "image", "trpc", `track.miniature selected cover from audiodb.thumb for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.audiodb.thumb
-      } else if (track.lastfm?.album?.cover) {
-        log("info", "image", "trpc", `track.miniature selected cover from lastfm.album.cover for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.lastfm.album.cover
-      } else if (track.metaImage) {
-        log("info", "image", "trpc", `track.miniature selected cover from track.metaImage for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.metaImage
-      } else if (track?.album?.lastfm?.cover) {
-        log("info", "image", "trpc", `track.miniature selected cover from track.album.lastfm.cover for ${track.name} by ${track.artist?.name} in ${track.album?.name}`)
-        cover = track.album.lastfm.cover
-      }
 
       if (track) {
         lastFm.findTrack(input.id)
@@ -131,7 +95,7 @@ export const trackRouter = createRouter()
         log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
       }
 
-      return {...track, cover}
+      return track
     }
   })
   .mutation("playcount", {

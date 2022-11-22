@@ -314,6 +314,9 @@ class MyWatcher {
 		const orphanedImages = await prisma.image.findMany({
 			where: {
 				track: { none: {} },
+				trackCover: { none: {} },
+				artistCover: { none: {} },
+				albumCover: { none: {} },
 				lastfmAlbum: { none: {} },
 				lastfmArtist: { none: {} },
 				audiodbTrack: { none: {} },

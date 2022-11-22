@@ -9,6 +9,7 @@ import log from "utils/logger"
 import { socketServer } from "server/persistent/ws"
 import retryable from "utils/retryable"
 import { uniqueGenres } from "server/db/createTrack"
+import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -804,7 +805,10 @@ class Spotify {
 						}
 					})
 				})
-				socketServer.send("invalidate:artist", {id: result.id})
+				const artistChangedCover = await computeArtistCover(result.id, {album: true, tracks: true})
+				if (!artistChangedCover) {
+					socketServer.send("invalidate:artist", {id: result.id})
+				}
 				changedTrack = true
 			}
 			albumConnect: if (albumObject && !albumObject.albumId && artistObject?.name) {
@@ -845,12 +849,18 @@ class Spotify {
 						}
 					})
 				})
-				socketServer.send("invalidate:album", {id: result.id})
+				const albumChangedCover = await computeAlbumCover(result.id, {artist: true, tracks: true})
+				if (!albumChangedCover) {
+					socketServer.send("invalidate:album", {id: result.id})
+				}
 				changedTrack = true
 			}
 	
 			if (changedTrack) {
-				socketServer.send("invalidate:track", {id: trackDbId})
+				const trackChangedCover = await computeTrackCover(trackDbId, {album: true, artist: true})
+				if (!trackChangedCover) {
+					socketServer.send("invalidate:track", {id: trackDbId})
+				}
 			}
 		} catch (e) {
 			console.error(e)

@@ -44,61 +44,14 @@ export const artistRouter = createRouter()
               tracks: true,
             },
           },
-          audiodb: {
+          cover: {
             select: {
-              thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-              // cutout: {
-              //   select: {
-              //     id: true,
-              //     palette: true,
-              //   }
-              // },
+              id: true,
+              palette: true,
             }
           },
-          spotify: {
-            select: {
-              image: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-            }
-          },
-          tracks: {
-            where: {
-              metaImageId: {
-                not: null,
-              }
-            },
-            take: 1,
-            select: {
-              metaImage: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
-            }
-          }
         }
       })
-      let cover = undefined
-      // if (artist?.audiodb?.cutout) {
-      //   cover = artist.audiodb.cutout
-      // } else 
-      if (artist?.audiodb?.thumb) {
-        cover = artist.audiodb.thumb
-      } else if (artist?.spotify?.image) {
-        cover = artist.spotify.image
-      } else if (artist?.tracks?.[0]?.metaImage) {
-        cover = artist.tracks[0].metaImage
-      }
 
       if (artist) {
         lastFm.findArtist(input.id)
@@ -107,10 +60,7 @@ export const artistRouter = createRouter()
         log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
       }
 
-      return {
-        ...artist,
-        cover,
-      }
+      return artist
     }
   })
   .query("get", {
@@ -132,16 +82,17 @@ export const artistRouter = createRouter()
           albums: {
             select: {
               id: true,
+              name: true,
             },
+          },
+          cover: {
+            select: {
+              id: true,
+              palette: true,
+            }
           },
           audiodb: {
             select: {
-              thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
               intBornYear: true,
               intFormedYear: true,
               strBiographyEN: true,
@@ -150,12 +101,6 @@ export const artistRouter = createRouter()
           spotify: {
             select: {
               name: true,
-              image: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
             }
           },
         }
@@ -167,31 +112,6 @@ export const artistRouter = createRouter()
       } else {
         log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
         return null
-      }
-
-      let cover = undefined
-      if (artist.audiodb?.thumb) {
-        cover = artist.audiodb.thumb
-      } else if (artist.spotify?.image) {
-        cover = artist.spotify.image
-      } else {
-        const trackWithImage = await ctx.prisma.track.findFirst({
-          where: {
-            artistId: input.id,
-            metaImageId: { not: null }
-          },
-          select: {
-            metaImage: {
-              select: {
-                id: true,
-                palette: true,
-              }
-            },
-          }
-        })
-        if (trackWithImage) {
-          cover = trackWithImage.metaImage
-        }
       }
 
       // extra albums not directly by this artist
@@ -206,7 +126,7 @@ export const artistRouter = createRouter()
           id: {notIn: artist.albums.map(({id}) => id)},
           tracks: {some: {artistId: input.id}},
         },
-        select: { id: true }
+        select: {id: true, name: true}
       })
 
       // extra tracks, not in albums
@@ -215,14 +135,13 @@ export const artistRouter = createRouter()
           artistId: input.id,
           albumId: null,
         },
-        select: {id: true}
+        select: {id: true, name: true}
       })
 
       return {
         ...artist,
         albums: [...artist.albums, ...albums],
         tracks,
-        cover,
       }
     },
   })

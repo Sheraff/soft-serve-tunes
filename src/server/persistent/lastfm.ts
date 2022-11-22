@@ -10,6 +10,7 @@ import log from "utils/logger"
 import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
 import similarStrings from "utils/similarStrings"
+import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 
 const lastFmErrorSchema = z
 	.object({
@@ -465,7 +466,10 @@ class LastFM {
 				console.error(e)
 			}
 		}
-		socketServer.send("invalidate:track", { id })
+		const trackChangedCover = await computeTrackCover(id, {album: true, artist: true})
+		if (!trackChangedCover) {
+			socketServer.send("invalidate:track", { id })
+		}
 		log("info", "200", "lastfm", `fetched track ${track.name}`)
 		this.#running.delete(id)
 		return true
@@ -612,9 +616,24 @@ class LastFM {
 				},
 			})
 		})
-		socketServer.send("invalidate:artist", { id })
-		connectingTracks.forEach(({ id }) => socketServer.send("invalidate:track", { id }))
-		connectingAlbums.forEach(({ id }) => socketServer.send("invalidate:album", { id }))
+		const artistChangedCover = await computeArtistCover(id, {tracks: false, album: false})
+		if (!artistChangedCover) {
+			socketServer.send("invalidate:artist", { id })
+		}
+		Promise.resolve().then(async () => {
+			for (const album of connectingAlbums) {
+				const albumChangedCover = await computeAlbumCover(album.id, {artist: true, tracks: true})
+				if (!albumChangedCover) {
+					socketServer.send("invalidate:album", { id: album.id })
+				}
+			}
+			for (const track of connectingTracks) {
+				const trackChangedCover = await computeTrackCover(track.id, {album: true, artist: true})
+				if (!trackChangedCover) {
+					socketServer.send("invalidate:track", { id: track.id })
+				}
+			}
+		})
 		log("info", "200", "lastfm", `fetched artist ${artist.name}`)
 		this.#running.delete(id)
 		return true
@@ -780,10 +799,24 @@ class LastFM {
 				},
 			})
 		})
-		socketServer.send("invalidate:album", { id })
-		if (connectingArtist)
-			socketServer.send("invalidate:artist", { id: connectingArtist })
-		connectingTracks.forEach((id) => socketServer.send("invalidate:track", { id }))
+		const albumChangedCover = await computeAlbumCover(id, {tracks: false, artist: true})
+		if (!albumChangedCover) {
+			socketServer.send("invalidate:album", { id })
+		}
+		if (connectingArtist) {
+			const artistChangedCover = await computeArtistCover(connectingArtist, {tracks: false, album: false})
+			if (!artistChangedCover) {
+				socketServer.send("invalidate:artist", { id: connectingArtist })
+			}
+		}
+		Promise.resolve().then(async () => {
+			for (const track of connectingTracks) {
+				const trackChangedCover = await computeTrackCover(track, {album: true, artist: true})
+				if (!trackChangedCover) {
+					socketServer.send("invalidate:track", { id: track })
+				}
+			}
+		})
 		log("info", "200", "lastfm", `fetched album ${album.name}`)
 		this.#running.delete(id)
 		return true
