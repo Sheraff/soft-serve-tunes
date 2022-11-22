@@ -301,6 +301,7 @@
 	height: 48px;
 	padding: 0 4px;
 	margin: 0 -4px;
+	order: -1;
 }
 
 .play {
