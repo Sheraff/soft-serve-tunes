@@ -36,7 +36,10 @@ export const playlistRouter = createRouter()
       if (input.type === 'artist') {
         return ctx.prisma.track.findMany({
           where: { artistId: input.id },
-          orderBy: { year: 'desc' },
+          orderBy: [
+            { albumId: 'asc' },
+            { position: 'asc' },
+          ],
           include: trackInclude,
         })
       }

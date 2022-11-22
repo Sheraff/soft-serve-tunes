@@ -36,24 +36,24 @@ export default function WatcherSocket() {
 				if (data.payload?.track) {
 					revalidateSwCache("track.searchable")
 					revalidateSwCache("track.miniature", {id: data.payload.track.id})
-					// revalidateSwCache("playlist.generate", { type: 'track', id: data.payload.track.id })
+					revalidateSwCache("playlist.generate", { type: 'track', id: data.payload.track.id })
 				}
 				if (data.payload?.artist) {
 					revalidateSwCache("artist.searchable")
 					revalidateSwCache("artist.miniature", {id: data.payload.artist.id})
 					revalidateSwCache("artist.get", {id: data.payload.artist.id})
-					// revalidateSwCache("playlist.generate", { type: 'artist', id: data.payload.artist.id })
+					revalidateSwCache("playlist.generate", { type: 'artist', id: data.payload.artist.id })
 				}
 				if (data.payload?.album) {
 					revalidateSwCache("album.searchable")
 					revalidateSwCache("album.miniature", {id: data.payload.album.id})
 					revalidateSwCache("album.get", {id: data.payload.album.id})
-					// revalidateSwCache("playlist.generate", { type: 'album', id: data.payload.album.id })
+					revalidateSwCache("playlist.generate", { type: 'album', id: data.payload.album.id })
 				}
 				if (data.payload?.genre) {
 					revalidateSwCache("genre.list")
 					revalidateSwCache("genre.get", {id: data.payload.genre.id})
-					// revalidateSwCache("playlist.generate", { type: 'genre', id: data.payload.genre.id })
+					revalidateSwCache("playlist.generate", { type: 'genre', id: data.payload.genre.id })
 				}
 			} else if (data.type === "invalidate:track") {
 				console.log("invalidate track", data.payload)
