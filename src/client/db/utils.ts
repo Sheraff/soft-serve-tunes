@@ -41,7 +41,9 @@ function onUpgradeNeeded(
 		db.createObjectStore("appState", {keyPath: "key"})
 	}
 	if (event.oldVersion < 3) {
-		db.deleteObjectStore("requests")
+		if (db.objectStoreNames.contains("pastSearches")) {
+			db.deleteObjectStore("requests")
+		}
 	}
 	if (event.oldVersion < 4) {
 		db.createObjectStore("playlist", {keyPath: "key"})
