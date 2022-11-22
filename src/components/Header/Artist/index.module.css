@@ -9,10 +9,13 @@
 
 	overflow: hidden scroll;
 	width: 100vw;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-column: 1fr;
+	grid-auto-rows: auto;
 	font-size: 10px;
 	padding-bottom: 10px;
+	perspective: 1px;
+	transform-style: preserve-3d;
 
 	will-change: transform, clip-path;
 }
@@ -55,17 +58,19 @@
 }
 
 .img {
+	display: block;
 	width: 100%;
+	max-width: 500px;
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	position: relative;
+	top: calc(-100% + 43px); /* I don't understand perspective math */
 	z-index: 2;
-	position: sticky;
-	top: 0;
+	transform-origin: center top 0;
+	transform: translateZ(-1px) scale(2);
+	grid-area: 1 / 1 / 2 / 2;
 }
 .preview {
-	position: absolute;
-	left: 0;
 	z-index: 1;
 }
 
