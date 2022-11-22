@@ -8,7 +8,6 @@ import { useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
 import WatcherSocket from "components/WatcherSocket"
-import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
@@ -16,6 +15,7 @@ import { loadingStatus } from "server/router/list"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import { useAtom } from "jotai"
 import useIsOnline from "client/sw/useIsOnline"
+import Socket from "client/ws/socket"
 
 const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
 
@@ -35,7 +35,7 @@ const Home: NextPage<{
 	useEffect(() => {
 		if (ready) return
 		const controller = new AbortController()
-		let socket: WebSocket | null = null
+		let socket: Socket | null = null
 		mutate(undefined, {
 			onSuccess(shouldSubscribe) {
 				if (!shouldSubscribe) {
@@ -43,21 +43,18 @@ const Home: NextPage<{
 					setReady(true)
 					return
 				}
-				socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
-				socket.onopen = () => {
-					socket?.send(JSON.stringify({ type: 'populate:subscribe' }))
-				}
-				socket.addEventListener("message", (e) => {
-					const data = JSON.parse(e.data)
-					if (data.type === "populate:done") {
-						console.log("populating library: DONE")
-						setProgress(1)
-						setReady(true)
-						socket?.close()
-					} else if (data.type === "populate:progress") {
-						console.log(`populating library: ${data.payload}%`)
-						setProgress(data.payload)
-					}
+				socket = new Socket()
+				socket.send(JSON.stringify({ type: 'populate:subscribe' }))
+				socket.addEventListener("populate:done", () => {
+					console.log("populating library: DONE")
+					setProgress(1)
+					setReady(true)
+					socket?.close()
+					socket = null
+				}, { signal: controller.signal })
+				socket.addEventListener("populate:progress", ({detail}) => {
+					console.log(`populating library: ${detail}%`)
+					setProgress(detail)
 				}, { signal: controller.signal })
 			},
 			onError() {
@@ -67,6 +64,7 @@ const Home: NextPage<{
 		return () => {
 			controller.abort()
 			socket?.close()
+			socket = null
 		}
 	}, [mutate, setProgress, ready])
 

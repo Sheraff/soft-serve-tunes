@@ -35,7 +35,12 @@ class MyWebSocketServer extends WebSocketServer {
 			// messages
 			ws.on('message', (message) => {
 				try {
-					const {type, payload} = JSON.parse(message.toString())
+					const string = message.toString()
+					if (string === '') {
+						ws.send('')
+						return
+					}
+					const {type, payload} = JSON.parse(string)
 					const actor = this.actors.get(type)
 					if (actor) {
 						actor(ws, payload)
@@ -62,7 +67,7 @@ class MyWebSocketServer extends WebSocketServer {
 				this.alive.set(ws, false)
 				ws.ping()
 			})
-		}, 30000)
+		}, 30_000)
 
 		this.on('close', () => {
 			clearInterval(interval)
