@@ -103,6 +103,7 @@ export default function useSlideTrack(
 			const {signal} = controller
 			animController = controller
 			if (opts.quickSwipeDeleteAnim && !triggerSecondaryAction) {
+				element.style.setProperty('--height', `${element.offsetHeight}px`)
 				element.classList.add(styles['remove-anim'] as string)
 			} else {
 				element.classList.add(styles['add-anim'] as string)
