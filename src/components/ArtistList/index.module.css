@@ -31,10 +31,10 @@
 }
 
 .loading {
-	height: var(--side);
+	height: calc(var(--side) + 26.5px);
 }
 .loading.lines-3 {
-	height: calc(var(--side) * 3);
+	height: calc((var(--side) + 26.5px) * 3);
 }
 
 
