@@ -351,7 +351,9 @@ async function tryAgainLater(path?: string, count = -1) {
 }
 
 export function simplifiedName(name: string) {
-	return sanitizeString(name).toLowerCase().replace(/\s+/g, '')
+	const removeThe = name.replace(/\bthe\b/gi, '').replace(/\s+/g, '')
+	const noEmpty = removeThe || name
+	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, '')
 }
 
 export function uniqueGenres(genres: string[]) {

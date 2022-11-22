@@ -1,13 +1,9 @@
 import damLev from "components/Header/Search/worker/damLev"
-import sanitizeString from "./sanitizeString"
-
-function comparable(name: string) {
-	return sanitizeString(name).toLowerCase().replace(/\s+/g, '')
-}
+import { simplifiedName } from "server/db/createTrack"
 
 export default function similarStrings(a: string, b: string) {
-	const _a = comparable(a)
-	const _b = comparable(b)
+	const _a = simplifiedName(a)
+	const _b = simplifiedName(b)
 
 	if (_a === _b) return true
 
