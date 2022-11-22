@@ -35,6 +35,7 @@ export const trackRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
+      const imageSelect = {select: {id: true, palette: true}}
       const track = await ctx.prisma.track.findUnique({
         where: { id: input.id },
         select: {
@@ -42,12 +43,7 @@ export const trackRouter = createRouter()
           name: true,
           createdAt: true,
           position: true,
-          metaImage: {
-            select: {
-              id: true,
-              palette: true,
-            }
-          },
+          metaImage: imageSelect,
           userData: {
             select: {
               favorite: true,
@@ -56,9 +52,9 @@ export const trackRouter = createRouter()
           album: {
             select: {
               name: true,
-              spotify: { select: {image: true} },
-              audiodb: { select: {thumbHq: true, thumb: true} },
-              lastfm: { select: {cover: true} },
+              spotify: { select: {image: imageSelect} },
+              audiodb: { select: {thumbHq: imageSelect, thumb: imageSelect} },
+              lastfm: { select: {cover: imageSelect} },
             }
           },
           artist: {
@@ -70,12 +66,7 @@ export const trackRouter = createRouter()
             select: {
               intDuration: true,
               intTrackNumber: true,
-              thumb: {
-                select: {
-                  id: true,
-                  palette: true,
-                }
-              },
+              thumb: imageSelect,
             }
           },
           spotify: {
@@ -85,12 +76,7 @@ export const trackRouter = createRouter()
               discNumber: true,
               album: {
                 select: {
-                  image: {
-                    select: {
-                      id: true,
-                      palette: true,
-                    }
-                  },
+                  image: imageSelect,
                 }
               },
             }
@@ -100,12 +86,7 @@ export const trackRouter = createRouter()
               duration: true,
               album: {
                 select: {
-                  cover: {
-                    select: {
-                      id: true,
-                      palette: true,
-                    }
-                  },
+                  cover: imageSelect,
                 }
               }
             }
