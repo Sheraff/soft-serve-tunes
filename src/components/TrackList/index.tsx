@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { startTransition, useEffect, useRef, useState } from "react"
+import { ElementType, startTransition, useEffect, useRef, useState } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
@@ -22,6 +22,8 @@ function TrackItem({
 	onSelect,
 	draggable,
 	onNext,
+	quickSwipeIcon,
+	quickSwipeDeleteAnim,
 }: {
 	track: inferQueryOutput<"track.searchable">[number]
 	enableSiblings?: () => void
@@ -30,6 +32,8 @@ function TrackItem({
 	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
 	draggable?: boolean
 	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
+	quickSwipeIcon?: ElementType
+	quickSwipeDeleteAnim?: boolean
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
@@ -75,9 +79,11 @@ function TrackItem({
 		if (data)
 			onNext?.(data)
 	}
-	useSlideTrack(item, callbacks)
+	useSlideTrack(item, callbacks, {quickSwipeDeleteAnim})
 
 	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
+
+	const NextIcon = quickSwipeIcon || PlaylistNextIcon
 
 	return (
 		<div ref={item} className={classNames(styles.wrapper, {
@@ -130,7 +136,7 @@ function TrackItem({
 			</button>
 			<FavoriteIcon className={styles.fav} />
 			<div className={styles.playlist}>
-				<PlaylistNextIcon className={styles.next} />
+				<NextIcon className={styles.next} />
 				<PlaylistAddIcon className={styles.add} />
 			</div>
 		</div>
@@ -144,6 +150,9 @@ export default function TrackList({
 	onSelect,
 	orderable,
 	onReorder,
+	quickSwipeAction,
+	quickSwipeIcon,
+	quickSwipeDeleteAnim,
 }: {
 	tracks: inferQueryOutput<"track.searchable">
 	current?: string
@@ -151,6 +160,9 @@ export default function TrackList({
 	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 	orderable?: boolean
 	onReorder?: (from: number, to: number) => void
+	quickSwipeAction?: (track: inferQueryOutput<"track.miniature">) => void
+	quickSwipeIcon?: ElementType
+	quickSwipeDeleteAnim?: boolean
 }) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 	const ref = useRef<HTMLUListElement>(null)
@@ -174,7 +186,9 @@ export default function TrackList({
 							onClick={onClick}
 							onSelect={onSelect}
 							draggable={orderable}
-							onNext={addNextToPlaylist}
+							onNext={quickSwipeAction || addNextToPlaylist}
+							quickSwipeIcon={quickSwipeIcon}
+							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
 						/>
 					)}
 				</li>

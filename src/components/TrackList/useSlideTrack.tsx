@@ -19,7 +19,10 @@ export type Callbacks = {
 
 export default function useSlideTrack(
 	ref: RefObject<HTMLDivElement>,
-	callbacks: {current: Callbacks}
+	callbacks: {current: Callbacks},
+	opts: {
+		quickSwipeDeleteAnim?: boolean
+	} = {}
 ) {
 	useEffect(() => {
 		const element = ref.current
@@ -99,12 +102,18 @@ export default function useSlideTrack(
 			const controller = new AbortController()
 			const {signal} = controller
 			animController = controller
-			element.classList.add(styles['add-anim'] as string)
+			if (opts.quickSwipeDeleteAnim && !triggerSecondaryAction) {
+				element.classList.add(styles['remove-anim'] as string)
+			} else {
+				element.classList.add(styles['add-anim'] as string)
+			}
 
 			element.addEventListener('animationend', (e) => {
-				if (e.animationName !== styles['add-anim-body']) return
+				if (e.animationName !== styles['add-anim-body'] && e.animationName !== styles['remove-anim-body']) return
 				element.style.removeProperty('--x')
 				element.classList.remove(styles['add-anim'] as string)
+				// WARNING: not removing the "remove-anim" class only works if the quickSwipeAction callback deletes the item
+				// element.classList.remove(styles['remove-anim'] as string)
 				element.classList.remove(styles['switch-left'] as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()

@@ -202,14 +202,14 @@
 .add-anim .button,
 .add-anim::before,
 .add-anim::after {
-	animation: add-anim-body 700ms ease-in-out;
+	animation: add-anim-body 700ms ease-in-out forwards;
 }
 .add-anim .playlist,
 .add-anim .fav {
-	animation: add-anim-icon 700ms ease-in-out;
+	animation: add-anim-icon 700ms ease-in-out forwards;
 }
 .liked.add-anim .fav {
-	animation: add-anim-icon-liked 700ms ease-in-out;
+	animation: add-anim-icon-liked 700ms ease-in-out forwards;
 }
 @keyframes add-anim-body {
 	0%      { transform: translateX(var(--x)); }
@@ -227,6 +227,31 @@
 	50%     { transform: translateX(100vw); }
 	50.001% { transform: translateX(-100vw); }
 	100%    { transform: translateX(0); }
+}
+
+.remove-anim .button,
+.remove-anim::before,
+.remove-anim::after {
+	animation: remove-anim-body 350ms ease-in forwards;
+}
+.remove-anim .playlist,
+.remove-anim .fav {
+	animation: remove-anim-icon 350ms ease-in forwards;
+}
+.liked.remove-anim .fav {
+	animation: remove-anim-icon-liked 350ms ease-in forwards;
+}
+@keyframes remove-anim-body {
+	0%      { transform: translateX(var(--x)); }
+	100%     { transform: translateX(100vw); }
+}
+@keyframes remove-anim-icon {
+	0%  { transform: translateX(0); opacity: 1; }
+	100% { transform: translateX(100vw); opacity: 0; }
+}
+@keyframes remove-anim-icon-liked {
+	0%      { transform: translateX(0); }
+	100%     { transform: translateX(100vw); }
 }
 
 

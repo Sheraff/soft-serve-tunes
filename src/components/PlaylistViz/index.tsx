@@ -1,11 +1,13 @@
-import { usePlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import TrackList from "components/TrackList"
 import { startTransition } from "react"
+import DeleteIcon from "icons/playlist_remove.svg"
 
 export default function PlaylistViz() {
 	const {data} = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
 	const {setPlaylistIndex} = useSetPlaylistIndex()
+	const deleteFromPlaylist = useRemoveFromPlaylist()
 
 	if (!data) return null
 	const {tracks, current} = data
@@ -19,6 +21,9 @@ export default function PlaylistViz() {
 			})}
 			orderable
 			onReorder={reorderPlaylist}
+			quickSwipeAction={({id}) => deleteFromPlaylist(id)}
+			quickSwipeIcon={DeleteIcon}
+			quickSwipeDeleteAnim
 		/>
 	)
 }

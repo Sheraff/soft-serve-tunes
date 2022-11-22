@@ -295,3 +295,61 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 		tx.oncomplete = resolve
 	})
 }
+
+export function useRemoveFromPlaylist() {
+	const trpcClient = trpc.useContext()
+	return useCallback(async (id: string) => {
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
+			if (!playlist) {
+				throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+			}
+			let newCurrent = playlist.current
+			if (id === playlist.current) {
+				const index = playlist.tracks.findIndex(track => track.id === playlist.current)
+				if (index < playlist.tracks.length - 1) {
+					newCurrent = playlist.tracks[index + 1]!.id
+				} else if (playlist.tracks.length === 1) {
+					newCurrent = undefined
+				} else {
+					newCurrent = playlist.tracks.at(-1)!.id
+				}
+			}
+			const newItems = playlist.tracks.filter(track => track.id !== id)
+			return {
+				...playlist,
+				current: newCurrent,
+				tracks: newItems,
+			}
+		})
+		await deleteFromListInIndexedDB(id)
+	}, [trpcClient])
+}
+
+async function deleteFromListInIndexedDB(id: string) {
+	const db = await openDB()
+	const tx = db.transaction("playlist", "readwrite")
+	const store = tx.objectStore("playlist")
+	const cursorRequest = store.openCursor()
+	return new Promise((resolve, reject) => {
+		cursorRequest.onerror = () => {
+			console.error(`couldn't open cursor on in indexedDB "playlist" to delete item`)
+			reject(tx.error)
+		}
+		let hasDeleted = false
+		cursorRequest.onsuccess = () => {
+			const cursor = cursorRequest.result
+			if (cursor) {
+				const item = cursor.value.result as PlaylistDBEntry
+				if (!hasDeleted && item.track.id === id) {
+					cursor.delete()
+					hasDeleted = true
+				}
+				if (hasDeleted) {
+					store.put({key: cursor.value.key, result: {...item, index: item.index - 1}})
+				}
+				cursor.continue()
+			}
+		}
+		tx.oncomplete = resolve
+	})
+}
