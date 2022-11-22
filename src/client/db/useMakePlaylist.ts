@@ -84,6 +84,37 @@ export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlis
 	})
 }
 
+export function usePlaylistExtractedDetails() {
+	const {data} = usePlaylist(({select: ({tracks}) => {
+		if (!tracks || !tracks.length) return {}
+
+		const counts = tracks.reduce((acc, track) => {
+			if (track.album) {
+				const count = acc.albums.get(track.album.id)
+				if (!count) acc.albums.set(track.album.id, 1)
+				else acc.albums.set(track.album.id, count + 1)
+			}
+			if (track.artist) {
+				const count = acc.artists.get(track.artist.id)
+				if (!count) acc.artists.set(track.artist.id, 1)
+				else acc.artists.set(track.artist.id, count + 1)
+			}
+			return acc
+		}, {
+			albums: new Map<string, number>(),
+			artists: new Map<string, number>(),
+		})
+
+		const albums = Array.from(counts.albums.entries()).sort((a, b) => b[1] - a[1])
+		const artists = Array.from(counts.albums.entries()).sort((a, b) => b[1] - a[1])
+		return {
+			albums: albums.slice(0, 5),
+			artists: artists.slice(0, 5),
+		}
+	}}))
+	return data || {}
+}
+
 export function useCurrentTrack() {
 	const { data } = usePlaylist({select: ({tracks, current}) => tracks.find(({id}) => id === current)})
 	return data
