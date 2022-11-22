@@ -3,6 +3,47 @@ import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
+import { type Prisma, type PrismaClient } from "@prisma/client"
+
+async function albumMiniature(
+  prisma: PrismaClient<Prisma.PrismaClientOptions, never, Prisma.RejectOnNotFound | Prisma.RejectPerOperation | undefined>,
+  id: string,
+) {
+  const album = await prisma.album.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+      _count: {
+        select: {
+          tracks: true,
+        },
+      },
+      artist: {
+        select: {
+          id: true,
+          name: true,
+        }
+      },
+      cover: {
+        select: {
+          id: true,
+          palette: true,
+        }
+      }
+    }
+  })
+
+  if (album) {
+    lastFm.findAlbum(id)
+    audioDb.fetchAlbum(id)
+  } else {
+    log("error", "404", "trpc", `album.miniature looked for unknown album by id ${id}`)
+  }
+
+  return album
+}
 
 export const albumRouter = createRouter()
   .query("searchable", {
@@ -31,40 +72,16 @@ export const albumRouter = createRouter()
         id: z.string(),
       }),
     async resolve({ input, ctx }) {
-      const album = await ctx.prisma.album.findUnique({
-        where: { id: input.id },
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-          _count: {
-            select: {
-              tracks: true,
-            },
-          },
-          artist: {
-            select: {
-              id: true,
-              name: true,
-            }
-          },
-          cover: {
-            select: {
-              id: true,
-              palette: true,
-            }
-          }
-        }
-      })
-
-      if (album) {
-        lastFm.findAlbum(input.id)
-        audioDb.fetchAlbum(input.id)
-      } else {
-        log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
-      }
-
-      return album
+      return albumMiniature(ctx.prisma, input.id)
+    }
+  })
+  .query("miniature-set", {
+    input: z
+      .object({
+        ids: z.array(z.string()),
+      }),
+    async resolve({ input, ctx }) {
+      return Promise.all(input.ids.map(id => albumMiniature(ctx.prisma, id)))
     }
   })
   .query("get", {
