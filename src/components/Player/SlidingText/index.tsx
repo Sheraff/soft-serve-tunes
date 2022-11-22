@@ -20,7 +20,7 @@ export default function SlidingText({
 	useEffect(() => {
 		const element = span.current as HTMLDivElement
 		const observer = new ResizeObserver(([entry]) => {
-			if (entry && entry.contentRect.width > entry.target.parentElement!.parentElement!.offsetWidth) {
+			if (entry && entry.contentRect.width > entry.target.parentElement!.parentElement!.offsetWidth + 2) { // 2px margin to avoid issues
 				setSeparator(true)
 			} else {
 				setSeparator(false)
