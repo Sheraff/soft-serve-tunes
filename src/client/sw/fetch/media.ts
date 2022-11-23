@@ -115,18 +115,15 @@ async function fetchFromCache(event: FetchEvent, request: Request) {
 		return fetchFromServer(event, request)
 	}
 	const range = event.request.headers.get('Range')
-	if (!range) {
-		return response
-	}
-	const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
+	// always respond with a byte range because if we respond with a full 200, <audio> isn't seekable
+	const parsed = range
+		? range.match(/^bytes\=(\d+)-(\d*)/) || [0]
+		: [0]
 	if (!parsed) {
 		console.warn('SW: malformed request')
 		return new Response('', {status: 400})
 	}
-	const bytePointer = Number(parsed[1])
-	if (bytePointer === 0) {
-		return response
-	}
+	const bytePointer = Number(parsed[1] ?? 0)
 	const buffer = await response.arrayBuffer()
 	const requestedEnd = parsed[2] ? Number(parsed[2]) : (bytePointer + 524288)
 	const end = Math.min(requestedEnd, buffer.byteLength)
