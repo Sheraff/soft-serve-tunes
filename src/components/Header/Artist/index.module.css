@@ -11,6 +11,7 @@
 	width: 100vw;
 	display: grid;
 	grid-template-columns: 100vw;
+	grid-template-rows: auto auto 1fr;
 	grid-auto-rows: auto;
 	font-size: 10px;
 	padding-bottom: 10px;
@@ -64,7 +65,7 @@
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	position: relative;
-	top: calc(-100% + 43px); /* I don't understand perspective math */
+	top: calc(-100% + 5px); /* I don't understand perspective math */
 	z-index: 2;
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);
