@@ -5,6 +5,7 @@ import { type AppRouter } from "server/router"
 import {
 	deleteAllFromIndexedDB,
 	listAllFromIndexedDB,
+	modifyInIndexedDB,
 	openDB,
 	retrieveFromIndexedDB,
 	storeInIndexedDB,
@@ -49,6 +50,8 @@ type PlaylistMeta = {
 	/** @description id of currently playing track */
 	current: string | undefined
 	name: string
+	/** @description id of the server-side playlist (if any) */
+	id: string | null
 }
 
 export type Playlist = PlaylistMeta & {
@@ -70,6 +73,7 @@ async function makePlaylist(
 		tracks: list,
 		current: list[0]?.id,
 		name: uniqueName,
+		id: null,
 	})
 	await Promise.all([
 		deleteAllFromIndexedDB("playlist").then(() => (
@@ -84,6 +88,7 @@ async function makePlaylist(
 		storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
 			current: list[0]?.id,
 			name: uniqueName,
+			id: null,
 		}),
 	])
 }
@@ -114,10 +119,9 @@ export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlis
 				.sort((a, b) => a.index - b.index)
 				.map((item) => item.track)
 			return {
-				...(meta || {
-					current: tracks[0]?.id,
-					name: "New Playlist"
-				}),
+				id: meta?.id || null,
+				current: meta?.current || tracks[0]?.id,
+				name: meta?.name || "New Playlist",
 				tracks,
 			}
 		},
@@ -127,7 +131,7 @@ export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlis
 }
 
 export function usePlaylistExtractedDetails() {
-	const {data} = usePlaylist(({select: ({tracks, name}) => {
+	const {data} = usePlaylist(({select: ({tracks, name, id}) => {
 		if (!tracks || !tracks.length) return {}
 
 		const counts = tracks.reduce((acc, track) => {
@@ -152,10 +156,11 @@ export function usePlaylistExtractedDetails() {
 		const albums = Array.from(counts.albums.entries()).sort((a, b) => b[1] - a[1])
 		const artists = Array.from(counts.artists.entries()).sort((a, b) => b[1] - a[1])
 		return {
-			albums: albums.slice(0, 6),
-			artists: artists.slice(0, 6),
+			id,
 			name,
 			length: tracks.length,
+			albums: albums.slice(0, 6),
+			artists: artists.slice(0, 6),
 			moreAlbums: albums.length > 6,
 			moreArtists: artists.length > 6,
 		}
@@ -207,11 +212,10 @@ export function useSetPlaylistIndex() {
 				...playlist,
 				current,
 			})
-			await retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-				.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-					...(meta || {name: playlist.name}),
-					current,
-				}))
+			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				current,
+			}))
 		},
 		async nextPlaylistIndex() {
 			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
@@ -227,11 +231,10 @@ export function useSetPlaylistIndex() {
 				...playlist,
 				current,
 			})
-			await retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-				.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-					...(meta || {name: playlist.name}),
-					current,
-				}))
+			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				current,
+			}))
 		},
 		async prevPlaylistIndex() {
 			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
@@ -247,11 +250,10 @@ export function useSetPlaylistIndex() {
 				...playlist,
 				current,
 			})
-			await retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-				.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-					...(meta || {name: playlist.name}),
-					current,
-				}))
+			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				current,
+			}))
 		}
 	}), [trpcClient])
 }
@@ -274,11 +276,10 @@ export function useAddNextToPlaylist() {
 					...cache,
 					current: track.id,
 				})
-				await retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-					.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-						...(meta || {name: cache.name}),
-						current: track.id,
-					}))
+				await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+					...meta,
+					current: track.id,
+				}))
 			}
 			return
 		}
@@ -298,11 +299,10 @@ export function useAddNextToPlaylist() {
 						return reorderListInIndexedDB(cache.tracks.length, 0)
 					}
 				}),
-				retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-					.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-						...(meta || {name: cache.name}),
-						current: forceCurrent ? track.id : undefined,
-					}))
+				modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+					...meta,
+					current: forceCurrent ? track.id : undefined,
+				})),
 			])
 			
 			return
@@ -341,11 +341,10 @@ export function useAddNextToPlaylist() {
 				index: cache.tracks.length,
 				track,
 			}).then(() => reorderListInIndexedDB(cache.tracks.length, index)),
-			retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-				.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-					...(meta || {name: cache.name}),
-					current: forceCurrent ? track.id : cache.current,
-				}))
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				current: forceCurrent ? track.id : cache.current,
+			})),
 		])
 	}, [trpcClient])
 }
@@ -441,11 +440,10 @@ export function useRemoveFromPlaylist() {
 		})
 		await Promise.all([
 			deleteFromListInIndexedDB(id),
-			retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-				.then((meta) => storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", {
-					...(meta || {name: playlist.name}),
-					current: newCurrent,
-				}))
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				current: newCurrent,
+			})),
 		])
 	}, [trpcClient])
 }
@@ -477,4 +475,20 @@ async function deleteFromListInIndexedDB(id: string) {
 		}
 		tx.oncomplete = resolve
 	})
+}
+
+export async function onPlaylistSaved(
+	trpcClient: ReturnType<typeof trpc.useContext>,
+	id: string | null,
+) {
+	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (data) => {
+		if (!data) {
+			throw new Error(`trying to add ID to "playlist" query, but query doesn't exist yet`)
+		}
+		return {...data, id}
+	})
+	await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+		...meta,
+		id,
+	}))
 }

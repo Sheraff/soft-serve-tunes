@@ -66,12 +66,8 @@ export async function retrieveFromIndexedDB<T>(storeName: Stores, key: string): 
 			reject(request.error)
 		}
 		request.onsuccess = () => {
-			const result = request.result?.result
-			if (result) {
-				resolve(result)
-			} else {
-				resolve(null)
-			}
+			const result = request.result.result
+			resolve(result)
 		}
 	})
 }
@@ -101,6 +97,31 @@ export async function storeInIndexedDB<T>(storeName: Stores, key: string, result
 	request.onerror = () => {
 		console.error(`failed to store entity ${key} in indexedDB`, request.error?.message)
 	}
+}
+
+export async function modifyInIndexedDB<T>(storeName: Stores, key: string, mutate: (result: T) => T) {
+	const db = await openDB()
+	const tx = db.transaction(storeName, "readwrite")
+	const store = tx.objectStore(storeName)
+	return new Promise((resolve, reject) => {
+		tx.onerror = () => {
+			console.error(`failed to modify entity ${key} from indexedDB`, tx.error?.message)
+			reject(tx.error)
+		}
+		tx.oncomplete = resolve
+		
+		const getRequest = store.get(key) as IDBRequest<QueryStorage<T>>
+		getRequest.onsuccess = () => {
+			const result = getRequest.result.result
+			const newResult = mutate(result)
+			const putRequest = store.put({
+				key,
+				result: newResult,
+			})
+			putRequest.onsuccess = resolve
+			putRequest.onerror = reject
+		}
+	})
 }
 
 export async function storeListInIndexedDB<T>(storeName: Stores, items: {key: string, result: T}[]) {

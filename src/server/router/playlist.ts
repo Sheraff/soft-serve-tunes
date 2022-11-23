@@ -138,10 +138,15 @@ export const playlistRouter = createRouter()
       if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
-      const playlist = await ctx.prisma.playlist.delete({
-        where: { id: input.id },
-        select: { id: true },
-      })
+      const [,playlist] = await ctx.prisma.$transaction([
+        ctx.prisma.playlistEntry.deleteMany({
+          where: { playlistId: input.id },
+        }),
+        ctx.prisma.playlist.delete({
+          where: { id: input.id },
+          select: { id: true },
+        }),
+      ])
       socketServer.send('watcher:remove', { playlist })
       return playlist
     }

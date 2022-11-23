@@ -1,12 +1,13 @@
 import SectionTitle from "atoms/SectionTitle"
 import classNames from "classnames"
-import { type Playlist, usePlaylistExtractedDetails } from "client/db/useMakePlaylist"
-import { ElementType, MouseEventHandler, startTransition, useMemo, useState } from "react"
+import { type Playlist, usePlaylistExtractedDetails, onPlaylistSaved } from "client/db/useMakePlaylist"
+import { memo, startTransition, useMemo, useState } from "react"
 import { useQuery } from "react-query"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveIcon from 'icons/library_add.svg'
 import EditIcon from 'icons/edit.svg'
+import SavedIcon from 'icons/library_add_check.svg'
 
 function playlistArtistName(
 	artistData: Array<Exclude<inferQueryOutput<"artist.miniature">, undefined | null>>,
@@ -22,25 +23,8 @@ function playlistArtistName(
 	return ` by ${formatter.format(nameList.concat('others'))}`
 }
 
-function ActionButton({
-	icon: Icon,
-	name,
-	onClick,
-}: {
-	icon: ElementType
-	name: string
-	onClick: MouseEventHandler<HTMLButtonElement>
-}){
-	return (
-		<button type="button" onClick={onClick} className={styles.action}>
-			<Icon className={styles.actionIcon}/>
-			{name}
-		</button>
-	)
-}
-
 export default function Cover() {
-	const {albums, artists, name, length} = usePlaylistExtractedDetails()
+	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
 
 	const trpcClient = trpc.useContext()
 	const {data: albumData = []} = useQuery(["playlist-cover", {ids: (albums?.map(([id]) => id) || [])}], {
@@ -72,30 +56,6 @@ export default function Cover() {
 		[artistData]
 	)
 
-	const {mutate: savePlaylistMutation} = trpc.useMutation(["playlist.save"])
-	const [saving, setSaving] = useState(false)
-	const savePlaylist = () => {
-		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
-		if (!cache) {
-			throw new Error('Trying to save a playlist, but none found in trpc cache')
-		}
-		savePlaylistMutation({
-			name: cache.name,
-			tracks: cache.tracks.map(({id}, index) => ({id, index}))
-		}, {
-			onSuccess(playlist) {
-				trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
-				console.log('success')
-			},
-			onSettled() {
-				setSaving(false)
-				console.log('settled')
-			}
-		})
-	}
-
-	console.log('is saving?', saving)
-
 	return (
 		<>
 			<div className={classNames(styles.main, styles[`count-${albumData.length}`])}>
@@ -116,21 +76,78 @@ export default function Cover() {
 					</button>
 					<p>{`${length ?? 0} track${length > 1 ? 's' : ''}${credits}`}</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => {
-						console.log('saving')
-						setSaving(true)
-						startTransition(() => {
-							savePlaylist()
-						})
-					}}
-					className={styles.action}
-				>
-					<SaveIcon className={styles.actionIcon}/>
-					Save Playlist
-				</button>
+				<SaveButton id={id ?? null} />
 			</div>
 		</>
 	)
 }
+
+const SaveButton = memo(function PureSaveButton({id}: {id: string | null}) {
+	const trpcClient = trpc.useContext()
+	const {mutate: savePlaylistMutation} = trpc.useMutation(["playlist.save"])
+	const {mutate: deletePlaylistMutation} = trpc.useMutation(["playlist.delete"])
+	const [saving, setSaving] = useState(false)
+
+	const savePlaylist = () => {
+		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		if (!cache) {
+			throw new Error('Trying to save a playlist, but none found in trpc cache')
+		}
+		savePlaylistMutation({
+			name: cache.name,
+			tracks: cache.tracks.map(({id}, index) => ({id, index}))
+		}, {
+			onSuccess(playlist) {
+				trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
+				console.log('saved')
+				onPlaylistSaved(trpcClient, playlist.id)
+			},
+			onSettled() {
+				setSaving(false)
+				console.log('after save')
+			}
+		})
+	}
+
+	const deletePlaylist = () => {
+		if (!id) {
+			throw new Error('Trying to delete a playlist, but no ID provided')
+		}
+		deletePlaylistMutation({ id }, {
+			onSuccess() {
+				trpcClient.setQueryData(["playlist.get", {id}], null)
+				console.log('deleted')
+				onPlaylistSaved(trpcClient, null)
+			},
+			onSettled() {
+				setSaving(false)
+				console.log('after delete')
+			}
+		})
+	}
+
+	console.log('is saving/deleting?', saving)
+	return (
+		<button
+			type="button"
+			onClick={() => {
+				console.log('saving/deleting')
+				setSaving(true)
+				startTransition(id ? deletePlaylist : savePlaylist)
+			}}
+			className={styles.action}
+		>
+			{id ? (
+				<>
+					<SavedIcon className={styles.actionIcon}/>
+					Delete Playlist
+				</>
+			) : (
+				<>
+					<SaveIcon className={styles.actionIcon}/>
+					Save Playlist
+				</>
+			)}
+		</button>
+	)
+})
