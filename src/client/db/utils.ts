@@ -66,8 +66,12 @@ export async function retrieveFromIndexedDB<T>(storeName: Stores, key: string): 
 			reject(request.error)
 		}
 		request.onsuccess = () => {
-			const result = request.result.result
-			resolve(result)
+			const result = request.result?.result
+			if (result) {
+				resolve(result)
+			} else {
+				resolve(null)
+			}
 		}
 	})
 }
@@ -112,7 +116,12 @@ export async function modifyInIndexedDB<T>(storeName: Stores, key: string, mutat
 		
 		const getRequest = store.get(key) as IDBRequest<QueryStorage<T>>
 		getRequest.onsuccess = () => {
-			const result = getRequest.result.result
+			const result = getRequest.result?.result
+			if (!result) {
+				const reason = `no record to modify found for entity ${key}`
+				console.error(reason)
+				return reject(reason)
+			}
 			const newResult = mutate(result)
 			const putRequest = store.put({
 				key,

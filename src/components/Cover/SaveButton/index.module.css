@@ -1,0 +1,20 @@
+.main {
+	position: relative;
+	z-index: 2;
+	will-change: transform, opacity;
+}
+.main span {
+	transition: opacity 150ms;
+}
+
+.reappear {
+	animation: 300ms fade-in ease-in-out backwards;
+}
+@keyframes fade-in {
+	0%   { opacity: 0; }
+	100% { opacity: 1; }
+}
+
+.progress span {
+	opacity: 0;
+}

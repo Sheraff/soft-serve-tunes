@@ -57,7 +57,7 @@
 	align-items: center;
 	padding: 0 8px;
 }
-.actionIcon {
+.action > svg {
 	font-size: 24px;
 }
 
