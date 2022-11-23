@@ -147,7 +147,7 @@ export const playlistRouter = createRouter()
           select: { id: true },
         }),
       ])
-      socketServer.send('watcher:remove', { playlist })
+      socketServer.send('watcher:remove-playlist', { playlist })
       return playlist
     }
   })

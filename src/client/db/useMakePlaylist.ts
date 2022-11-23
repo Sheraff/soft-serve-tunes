@@ -31,8 +31,8 @@ import { useQuery } from "react-query"
  * - [x] auto-generate name for playlist based on how it was created (+ check server for existing name and add "#2" if necessary)
  * - [x] save name in "appState"
  * - [x] display name on playlist screen
- * - [ ] add save button, on save prompt user for playlist name, with auto-generated name as prefill
- *     - if a playlist is saved, show "edit name" button next to title,
+ * - [x] add save button, on save prompt user for playlist name, with auto-generated name as prefill
+ *     - [ ] if a playlist is saved, show "edit name" button next to title,
  *       show "delete playlist" button instead of "save playlist"
  * - [ ] create PlaylistList component for search screen / suggestion screen, on click, set playlist
  *     - if replaced playlist was a local-only playlist, store it (in memory only) & add button to "restore previous playlist"
@@ -64,11 +64,12 @@ async function makePlaylist(
 	name: string,
 ) {
 	const playlists = await trpcClient.fetchQuery(["playlist.list"])
-	let appendCount = 0
+	let appendCount = 1
 	let uniqueName: string
 	do {
-		uniqueName = appendCount ? `${name} #${appendCount}` : name
-	} while (appendCount++ && playlists.some(({name}) => name === uniqueName))
+		uniqueName = appendCount > 1 ? `${name} #${appendCount}` : name
+		appendCount += 1
+	} while (playlists.some(({name}) => name === uniqueName))
 	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 		tracks: list,
 		current: list[0]?.id,
