@@ -200,7 +200,7 @@ const playNextStack: string[] = []
 
 export function useAddNextToPlaylist() {
 	const trpcClient = trpc.useContext()
-	return useCallback(async (track: PlaylistTrack) => {
+	return useCallback(async (track: PlaylistTrack, forceCurrent?: boolean) => {
 		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 		// playlist doesn't exist, create it with new track as current
 		if (!cache) {
@@ -216,18 +216,28 @@ export function useAddNextToPlaylist() {
 		}
 		// playlist already contains track, do nothing
 		if (cache.tracks.some(({id}) => id === track.id)) {
+			if (forceCurrent) {
+				trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+					...cache,
+					current: track.id,
+				})
+			}
 			return
 		}
-		// playlist is inactive, just add track to the end
+		// playlist is inactive, just add track to the end (or to the start if `forceCurrent`)
 		if (typeof cache.current === 'undefined') {
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
-				tracks: [...cache.tracks, track],
+				current: forceCurrent ? track.id : undefined,
+				tracks: forceCurrent ? [track, ...cache.tracks] : [...cache.tracks, track],
 			})
 			await storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
 				index: cache.tracks.length,
 				track,
 			})
+			if (forceCurrent) {
+				await reorderListInIndexedDB(cache.tracks.length, 0)
+			}
 			return
 		}
 		/**
@@ -243,7 +253,9 @@ export function useAddNextToPlaylist() {
 		 * playlist is now A, 1, 2, 3, 4, B, 5, 6, C
 		*/
 		const currentIndex = cache.tracks.findIndex(({id}) => id === cache.current)
-		const {index, isStack} = findEndOfStack(cache.tracks, currentIndex)
+		const {index, isStack} = forceCurrent
+			? {index: currentIndex + 1, isStack: true}
+			: findEndOfStack(cache.tracks, currentIndex)
 		if (!isStack) {
 			playNextStack.length = 0
 		}
@@ -253,6 +265,7 @@ export function useAddNextToPlaylist() {
 			newItems.splice(index, 0, track)
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
+				current: forceCurrent ? track.id : cache.current,
 				tracks: newItems,
 			})
 		}

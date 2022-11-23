@@ -38,7 +38,7 @@ function TrackItem({
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
 
-	const makePlaylist = useMakePlaylist()
+	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
 	
 	useEffect(() => {
@@ -102,7 +102,7 @@ function TrackItem({
 						onClick(track.id, track.name)
 					} else {
 						startTransition(() => {
-							makePlaylist({type: "track", id: track.id})
+							addNextToPlaylist(data, true)
 							showHome("home")
 						})
 					}
