@@ -1,12 +1,14 @@
-.main {
-	position: relative;
-	z-index: 2;
-}
 .main svg {
 	will-change: transform, opacity;
 }
 .main span {
 	transition: opacity 150ms;
+}
+
+.save,
+.delete {
+	position: relative;
+	z-index: 2;
 }
 
 .save span,
