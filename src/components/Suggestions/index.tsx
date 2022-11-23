@@ -114,12 +114,13 @@ function TracksByTraitSuggestion() {
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
 	const {data: tracks = []} = trpc.useQuery(["track.by-trait", {trait, order}])
+	const title = moustache(FEATURES[trait][order].description, "tracks")
 	return (
 		<>
-			<SectionTitle>{moustache(FEATURES[trait][order].description, "tracks")}</SectionTitle>
+			<SectionTitle>{title}</SectionTitle>
 			<div className={styles.buttons}>
 				<button type="button" onClick={() => {
-					makePlaylist({type: "by-trait", order, trait})
+					makePlaylist({type: "by-trait", order, trait}, title)
 					showHome("home")
 				}}><PlaylistIcon /></button>
 				<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>

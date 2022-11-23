@@ -1,5 +1,5 @@
 import damLev from "components/Header/Search/worker/damLev"
-import { simplifiedName } from "server/db/createTrack"
+import { simplifiedName } from "./sanitizeString"
 
 export default function similarStrings(a: string, b: string) {
 	const _a = simplifiedName(a)

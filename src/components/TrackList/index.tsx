@@ -10,7 +10,7 @@ import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
-import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
+import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 
 const emptyFunction = () => {}
 

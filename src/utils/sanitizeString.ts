@@ -6,3 +6,9 @@ export default function sanitizeString(string: string) {
 		.replace(/\s+/g, ' ') // concatenate consecutive spaces
 		.trim()
 }
+
+export function simplifiedName(name: string) {
+	const removeThe = name.replace(/\bthe\b/gi, '').replace(/\s+/g, '')
+	const noEmpty = removeThe || name
+	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, '')
+}

@@ -25,7 +25,7 @@ export default function GenreList({
 						onClick={() => {
 							startTransition(() => {
 								genre && onSelect?.(genre)
-								makePlaylist({type: "genre", id: genre.id})
+								makePlaylist({type: "genre", id: genre.id}, genre.name)
 								showHome("home")
 							})
 						}}

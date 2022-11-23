@@ -9,7 +9,7 @@ import type { PrismaClientInitializationError, PrismaClientKnownRequestError, Pr
 import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import { acoustId } from "server/persistent/acoustId"
-import sanitizeString from "utils/sanitizeString"
+import sanitizeString, { simplifiedName } from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeTrackCover } from "./computeCover"
@@ -348,12 +348,6 @@ async function tryAgainLater(path?: string, count = -1) {
 			}
 		}, 120_000)
 	}
-}
-
-export function simplifiedName(name: string) {
-	const removeThe = name.replace(/\bthe\b/gi, '').replace(/\s+/g, '')
-	const noEmpty = removeThe || name
-	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, '')
 }
 
 export function uniqueGenres(genres: string[]) {

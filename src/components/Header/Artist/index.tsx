@@ -140,8 +140,11 @@ export default forwardRef(function ArtistView({
 					className={styles.play}
 					type="button"
 					onClick={() => {
+						const playlistName = !data
+							? "New Playlist"
+							: data.name
 						startTransition(() => {
-							makePlaylist({type: "artist", id})
+							makePlaylist({type: "artist", id}, playlistName)
 							showHome("home")
 						})
 					}}

@@ -153,8 +153,13 @@ export default forwardRef(function AlbumView({
 					className={styles.play}
 					type="button"
 					onClick={() => {
+						const playlistName = !data
+							? "New Playlist"
+							: !data.artist
+							? data.name
+							: `${data.name} by ${data.artist.name}`
 						startTransition(() => {
-							makePlaylist({type: "album", id})
+							makePlaylist({type: "album", id}, playlistName)
 							showHome("home")
 						})
 					}}

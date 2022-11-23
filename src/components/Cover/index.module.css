@@ -1,9 +1,5 @@
 .main {
 	display: grid;
-	min-width: 100vw;
-	min-height: 100vw;
-	max-width: 500px;
-	max-height: 500px;
 	position: relative;
 	z-index: 1;
 	transform-origin: center top 0;
@@ -11,6 +7,10 @@
 	top: calc(-50% - 10px);
 }
 .img {
+	min-width: 100vw;
+	min-height: 100vw;
+	max-width: 500px;
+	max-height: 500px;
 	object-fit: cover;
 	grid-area: 1 / 1 / 1 / 1;
 	width: 100%;
@@ -20,6 +20,12 @@
 .img:not([src]),
 .img[src=""] {
 	visibility: hidden;
+}
+
+.details {
+	background-color: var(--palette-bg-main);
+	padding: 8px;
+	font-size: 10px;
 }
 
 .count-2 .img:nth-child(2) {

@@ -5,7 +5,7 @@ import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
 import { startTransition } from "react"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 
 const OPTIONS = {
 	track: {
@@ -37,6 +37,7 @@ export default function PastSearch({
 	const setArtist = useSetAtom(artistView)
 	const setAlbum = useSetAtom(albumView)
 	const makePlaylist = useMakePlaylist()
+	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
 
 	const {key, Component} = OPTIONS[type]
@@ -51,8 +52,12 @@ export default function PastSearch({
 			className={classNames(styles.main, {[styles.empty as string]: isEmpty})}
 			onClick={() => {
 				startTransition(() => {
-					if (type === 'track' || type === 'genre') {
-						makePlaylist({type, id})
+					if (type === 'track') {
+						if (!entity) return console.warn('PastSearch could not add track to playlist as it was not able to fetch associated data')
+						addNextToPlaylist(entity, true)
+						showHome("home")
+					} else if (type === 'genre') {
+						makePlaylist({type, id}, entity ? entity.name : "New Playlist")
 						showHome("home")
 					} else if (type === "album") {
 						setAlbum({id, open: true, name: entity?.name})
