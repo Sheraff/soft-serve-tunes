@@ -8,17 +8,10 @@ export const artistRouter = createRouter()
   .query("searchable", {
     async resolve({ctx}) {
       return ctx.prisma.artist.findMany({
-        where: {
-          OR: [{
-            tracks: {
-              some: {}
-            },
-          }, {
-            albums: {
-              some: {}
-            }
-          }],
-        },
+        where: { OR: [
+          { tracks: {some: {}} },
+          { albums: {some: {}} },
+        ]},
         select: {
           id: true,
           name: true,
@@ -158,9 +151,15 @@ export const artistRouter = createRouter()
   .query("least-recent-listen", {
     async resolve({ ctx }) {
       const neverListened = await ctx.prisma.artist.findMany({
-        where: { OR: [
-          { userData: {lastListen: null} },
-          { userData: {is: null} },
+        where: { AND: [
+          { OR: [
+            { userData: {lastListen: null} },
+            { userData: {is: null} },
+          ]},
+          { OR: [
+            { tracks: {some: {}} },
+            { albums: {some: {}} },
+          ]}
         ]},
         take: 10,
         select: { id: true, name: true },
@@ -190,6 +189,10 @@ export const artistRouter = createRouter()
   .query("most-recent-add", {
     async resolve({ ctx }) {
       return ctx.prisma.artist.findMany({
+        where: { OR: [
+          { tracks: {some: {}} },
+          { albums: {some: {}} },
+        ]},
         orderBy: { createdAt: "desc" },
         take: 10,
         select: { id: true, name: true },
