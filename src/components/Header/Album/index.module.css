@@ -10,7 +10,7 @@
 	overflow: hidden scroll;
 	width: 100vw;
 	display: grid;
-	grid-column: 1fr;
+	grid-template-columns: 100vw;
 	grid-auto-rows: auto;
 	font-size: 10px;
 	padding-bottom: 10px;
