@@ -120,7 +120,9 @@ function TrackItem({
 					</div>
 				)}
 				{current && (
-					<PlayIcon className={styles.play}/>
+					<div className={styles.play}>
+						<PlayIcon />
+					</div>
 				)}
 				<p className={styles.span}>
 					<span className={styles.name}>

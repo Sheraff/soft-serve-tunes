@@ -308,17 +308,20 @@
 	font-size: 32px;
 	color: var(--palette-primary);
 	position: absolute;
-	left: calc(8px + 48px / 2 - 32px / 2);
-	top: calc(8px + 48px / 2 - 32px / 2);
+	left: calc(8px);
+	top: calc(8px);
+	height: 48px;
+	width: 48px;
+	background-color: hsl(0, 0%, 0%, 0.6);
+	color: hsl(0, 0%, 75%, 0.8);
+	mix-blend-mode: luminosity;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .draggable .play {
-	left: calc(4px + 48px / 2 - 32px / 2 + 20px + 4px);
-}
-
-.current .img,
-.current::before {
-	opacity: 0.3;
+	left: calc(4px + 20px + 4px);
 }
 
 .span {
