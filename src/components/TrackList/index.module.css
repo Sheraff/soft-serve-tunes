@@ -329,8 +329,12 @@
 	font-size: 8px;
 	gap: 2px;
 	padding: 4px;
+	padding-right: 50px;
 	text-align: left;
 	flex-direction: column;
+}
+.draggable .span {
+	padding-right: 42px;
 }
 .name {
 	font-size: 12px;

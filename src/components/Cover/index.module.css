@@ -5,12 +5,14 @@
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);
 	top: calc(-50% - 10px);
-}
-.img {
 	min-width: 100vw;
 	min-height: 100vw;
 	max-width: 500px;
 	max-height: 500px;
+}
+.img {
+	height: 100%;
+	width: 100%;
 	object-fit: cover;
 	grid-area: 1 / 1 / 1 / 1;
 	width: 100%;

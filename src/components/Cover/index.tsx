@@ -8,20 +8,20 @@ import styles from "./index.module.css"
 
 function playlistArtistName(
 	artistData: Array<Exclude<inferQueryOutput<"artist.miniature">, undefined | null>>,
-	moreArtists = false
 ) {
 	const MAX = 3
 	if (artistData.length === 0) return ''
 	if (artistData.length === 1) return ` by ${artistData[0]!.name}`
 	const nameList = artistData.slice(0, MAX).map(({name}) => name)
-	const formatter = new Intl.ListFormat('en-us')
-	const base = ` by ${formatter.format(nameList)}`
-	if (artistData.length <= MAX || !moreArtists) return base
-	return `${base} & others`
+	const formatter = new Intl.ListFormat('en-US', { style: "short" })
+	if (artistData.length <= MAX) {
+		return ` by ${formatter.format(nameList)}`
+	}
+	return ` by ${formatter.format(nameList.concat('others'))}`
 }
 
 export default function Cover() {
-	const {albums, artists, name, length, moreArtists} = usePlaylistExtractedDetails()
+	const {albums, artists, name, length} = usePlaylistExtractedDetails()
 
 	const trpcClient = trpc.useContext()
 	const {data: albumData = []} = useQuery(["playlist-cover", {ids: (albums?.map(([id]) => id) || [])}], {
@@ -34,7 +34,8 @@ export default function Cover() {
 		},
 		select: (data) => {
 			return data.filter(a => a?.cover) as Exclude<typeof data[number], null>[]
-		}
+		},
+		keepPreviousData: true,
 	})
 	const {data: artistData = []} = useQuery(["playlist-artist-data", {ids: (artists?.map(([id]) => id) || [])}], {
 		enabled: Boolean(artists?.length),
@@ -44,9 +45,13 @@ export default function Cover() {
 				trpcClient.fetchQuery(["artist.miniature", {id}])
 			)))
 		},
-		select: (data) => data.filter(a => a) as Exclude<typeof data[number], null>[]
+		select: (data) => data.filter(a => a) as Exclude<typeof data[number], null>[],
+		keepPreviousData: true,
 	})
-	const credits = useMemo(() => playlistArtistName(artistData, moreArtists), [artistData, moreArtists])
+	const credits = useMemo(
+		() => playlistArtistName(artistData),
+		[artistData]
+	)
 
 	return (
 		<>
