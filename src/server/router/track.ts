@@ -8,6 +8,16 @@ import log from "utils/logger"
 import { TRPCError } from "@trpc/server"
 import retryable from "utils/retryable"
 
+export const zTrackTraits = z.union([
+  z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
+  z.literal("energy"), // fast, loud, and noisy
+  z.literal("speechiness"), // talk show, audio book, poetry
+  z.literal("acousticness"),
+  z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
+  z.literal("liveness"), // performed live / studio recording
+  z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
+])
+
 export const trackRouter = createRouter()
   .query("searchable", {
     async resolve({ ctx }) {
@@ -207,15 +217,7 @@ export const trackRouter = createRouter()
   })
   .query("by-trait", {
     input: z.object({
-      trait: z.union([
-        z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
-        z.literal("energy"), // fast, loud, and noisy
-        z.literal("speechiness"), // talk show, audio book, poetry
-        z.literal("acousticness"),
-        z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
-        z.literal("liveness"), // performed live / studio recording
-        z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
-      ]),
+      trait: zTrackTraits,
       order: z.union([
         z.literal("desc"),
         z.literal("asc"),

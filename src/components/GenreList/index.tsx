@@ -4,6 +4,7 @@ import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { startTransition } from "react"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
+import PlaylistIcon from "icons/queue_music.svg"
 
 export default function GenreList({
 	genres,
@@ -29,6 +30,7 @@ export default function GenreList({
 							})
 						}}
 					>
+						<PlaylistIcon className={styles.icon}/>
 						<p className={styles.span}>
 							<span className={styles.name}>{genre.name}</span>
 							<span>{genre._count.tracks} track{genre._count.tracks > 1 ? "s" : ""}</span>

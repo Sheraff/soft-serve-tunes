@@ -1,6 +1,6 @@
 import { createRouter } from "./context"
 import { z } from "zod"
-import { type Prisma } from "@prisma/client"
+import { zTrackTraits } from "./track"
 
 const trackInclude = {
   artist: {
@@ -19,11 +19,20 @@ const trackInclude = {
 
 export const playlistRouter = createRouter()
   .query("generate", {
-    input: z
-      .object({
-        type: z.string().refine((type) => ['track', 'artist', 'album', 'genre'].includes(type)),
+    input: z.union([
+      z.object({
+        type: z.enum(['track', 'artist', 'album', 'genre']),
         id: z.string(),
       }),
+      z.object({
+        type: z.enum(['by-trait']),
+        trait: zTrackTraits,
+        order: z.union([
+          z.literal("desc"),
+          z.literal("asc"),
+        ]),
+      })
+    ]),
     async resolve({ input, ctx }) {
       if (input.type === 'track') {
         return ctx.prisma.track.findMany({
@@ -54,6 +63,13 @@ export const playlistRouter = createRouter()
           include: trackInclude,
         })
       }
+      if (input.type === 'by-trait') {
+        return ctx.prisma.track.findMany({
+          where: { spotify: { [input.trait]: { gt: 0 } } },
+          orderBy: { spotify: { [input.trait]: input.order } },
+          take: 30,
+          include: trackInclude,
+        })
+      }
     },
   })
-

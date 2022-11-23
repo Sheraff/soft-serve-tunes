@@ -12,13 +12,18 @@
 	position: relative;
 	width: 100%;
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	gap: 2px;
 	border-radius: 4px;
 	padding: 4px;
+	padding-left: 6px;
 	background-color: var(--palette-primary);
+	color: var(--palette-bg-main);
 }
-
+.icon {
+	font-size: 16px;
+	flex-shrink: 0;
+	align-self: center;
+}
 .span {
 	position: relative;
 	width: 100%;
@@ -26,10 +31,8 @@
 	display: flex;
 	font-size: 8px;
 	gap: 2px;
-	text-align: center;
 	flex-direction: column;
 	padding: 4px;
-	color: var(--palette-bg-main);
 }
 .name {
 	font-size: 10px;

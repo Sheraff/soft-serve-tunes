@@ -1,12 +1,15 @@
 import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import AlbumList from "components/AlbumList"
+import { useShowHome } from "components/AppContext"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
+import PlaylistIcon from "icons/queue_music.svg"
 import { useAtom } from "jotai"
 import { memo, Suspense, useEffect, useState } from "react"
 import { trpc } from "utils/trpc"
@@ -108,11 +111,19 @@ function TracksByTraitSuggestion() {
 			order: option.type,
 		})
 	}
+	const makePlaylist = useMakePlaylist()
+	const showHome = useShowHome()
 	const {data: tracks = []} = trpc.useQuery(["track.by-trait", {trait, order}])
 	return (
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "tracks")}</SectionTitle>
-			<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			<div className={styles.buttons}>
+				<button type="button" onClick={() => {
+					makePlaylist({type: "by-trait", order, trait})
+					showHome("home")
+				}}><PlaylistIcon /></button>
+				<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			</div>
 			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
@@ -143,7 +154,9 @@ function AlbumsByTraitSuggestion() {
 	return (
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "albums")}</SectionTitle>
-			<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			<div className={styles.buttons}>
+				<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+			</div>
 			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
