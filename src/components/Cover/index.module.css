@@ -33,14 +33,19 @@
 	clip-path: polygon(100% 0, 133.33% 0, 66.66% 100%, 33.33% 100%);
 }
 
-.count-4 .img:nth-child(2){
+.count-4 .img:nth-child(2) {
 	clip-path: polygon(50% 50%, 0 75%, 0 0, 25% 0);
 }
-.count-4 .img:nth-child(3){
+.count-4 .img:nth-child(3) {
 	clip-path: polygon(50% 50%, 75% 100%, 0 100%, 0 75%);
 }
-.count-4 .img:nth-child(4){
+.count-4 .img:nth-child(4) {
 	clip-path: polygon(50% 50%, 100% 25%, 100% 100%, 75% 100%);
+}
+
+.count-5 .img {
+	width: 50%;
+	height: 50%;
 }
 
 .count-5 .img:nth-child(1) {
@@ -49,27 +54,47 @@
 	left: 15%;
 	top: 15%;
 }
-.count-5 .img:nth-child(2){
+.count-5 .img:nth-child(2) {
 	clip-path: polygon(100% 100%, 0% 100%, 0% 70%, 70% 0%, 100% 0%);
-	width: 50%;
-	height: 50%;
 	left: 50%;
 	top: 50%;
 }
-.count-5 .img:nth-child(3){
+.count-5 .img:nth-child(3) {
 	clip-path: polygon(0 0, 30% 0, 100% 70%, 100% 100%, 0 100%);
-	width: 50%;
-	height: 50%;
 	top: 50%;
 }
-.count-5 .img:nth-child(4){
+.count-5 .img:nth-child(4) {
 	clip-path: polygon(0 0, 100% 0, 100% 100%, 70% 100%, 0 30%);
-	width: 50%;
-	height: 50%;
 	left: 50%;
 }
-.count-5 .img:nth-child(5){
+.count-5 .img:nth-child(5) {
 	clip-path: polygon(0 0, 100% 0, 100% 30%, 30% 100%, 0 100%);
+}
+
+.count-6 .img {
 	width: 50%;
 	height: 50%;
+}
+.count-6 .img:nth-child(2) {
+	top: 50%;
+}
+.count-6 .img:nth-child(3) {
+	left: 50%;
+}
+.count-6 .img:nth-child(4) {
+	top: 50%;
+	left: 50%;
+}
+.count-6 .img:nth-child(5) {
+	clip-path: polygon(0 100%, 50% 25%, 100% 100%);
+	top: 33.33%;
+	left: 16.66%;
+	width: 66.66%;
+	height: 66.66%;
+}
+.count-6 .img:nth-child(6) {
+	clip-path: polygon(0 0, 50% 75%, 100% 0);
+	left: 16.66%;
+	width: 66.66%;
+	height: 66.66%;
 }
