@@ -108,8 +108,8 @@ export function usePlaylistExtractedDetails() {
 		const albums = Array.from(counts.albums.entries()).sort((a, b) => b[1] - a[1])
 		const artists = Array.from(counts.albums.entries()).sort((a, b) => b[1] - a[1])
 		return {
-			albums: albums.slice(0, 5),
-			artists: artists.slice(0, 5),
+			albums: albums.slice(0, 6),
+			artists: artists.slice(0, 6),
 		}
 	}}))
 	return data || {}
