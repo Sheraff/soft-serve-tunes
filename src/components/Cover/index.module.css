@@ -27,46 +27,20 @@
 }
 
 .count-3 .img:nth-child(2) {
-	clip-path: polygon(
-		25% 100%, 37.5% 0, 50% 100%,
-		75% 100%, 87.5% 0, 100% 100%
-	)
+	clip-path: polygon(33.33% 0%, 66.66% 0, 0 100%, -33.33% 100%);
 }
 .count-3 .img:nth-child(3) {
-	clip-path: polygon(
-		0 0, 12.5% 100%, 25% 0,
-		50% 0, 62.5% 100%, 75% 0
-	);
+	clip-path: polygon(100% 0, 133.33% 0, 66.66% 100%, 33.33% 100%);
 }
 
 .count-4 .img:nth-child(2){
-	/* clip-path: polygon(0 0, 40% 60%, 0 100%); */
+	clip-path: polygon(50% 50%, 0 75%, 0 0, 25% 0);
 }
 .count-4 .img:nth-child(3){
-	/* clip-path: polygon(0 0, 40% 60%, 100% 10%); */
+	clip-path: polygon(50% 50%, 75% 100%, 0 100%, 0 75%);
 }
 .count-4 .img:nth-child(4){
-	/* clip-path: polygon(100% 10%, 50% 50%, 100% 100%); */
-	/* mix-blend-mode: plus-lighter; */
-	mask-image: linear-gradient(
-		to top,
-		hsla(0, 0%, 0%, 1) 0%,
-		hsla(0, 0%, 0%, 0.987) 12.8%,
-		hsla(0, 0%, 0%, 0.951) 24.2%,
-		hsla(0, 0%, 0%, 0.896) 34.2%,
-		hsla(0, 0%, 0%, 0.825) 43%,
-		hsla(0, 0%, 0%, 0.741) 50.8%,
-		hsla(0, 0%, 0%, 0.648) 57.7%,
-		hsla(0, 0%, 0%, 0.55) 63.7%,
-		hsla(0, 0%, 0%, 0.45) 69.1%,
-		hsla(0, 0%, 0%, 0.352) 74%,
-		hsla(0, 0%, 0%, 0.259) 78.5%,
-		hsla(0, 0%, 0%, 0.175) 82.8%,
-		hsla(0, 0%, 0%, 0.104) 86.9%,
-		hsla(0, 0%, 0%, 0.049) 91.1%,
-		hsla(0, 0%, 0%, 0.013) 95.4%,
-		hsla(0, 0%, 0%, 0) 100%
-	);
+	clip-path: polygon(50% 50%, 100% 25%, 100% 100%, 75% 100%);
 }
 
 .count-5 .img:nth-child(1) {
