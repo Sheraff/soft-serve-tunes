@@ -3,8 +3,12 @@ import { z } from "zod"
 import { zTrackTraits } from "./track"
 import { TRPCError } from "@trpc/server"
 import { socketServer } from "server/persistent/ws"
+import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
+import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 
-const trackInclude = {
+const trackSelect = {
+  id: true,
+  name: true,
   artist: {
     select: {
       id: true,
@@ -17,7 +21,7 @@ const trackInclude = {
       name: true,
     },
   }
-} // satisfies Prisma.TrackFindManyArgs['include']
+} // satisfies Prisma.TrackFindManyArgs['select']
 
 export const playlistRouter = createRouter()
   .query("generate", {
@@ -39,7 +43,7 @@ export const playlistRouter = createRouter()
       if (input.type === 'track') {
         return ctx.prisma.track.findMany({
           where: { id: input.id },
-          include: trackInclude,
+          select: trackSelect,
         })
       }
       if (input.type === 'artist') {
@@ -49,20 +53,20 @@ export const playlistRouter = createRouter()
             { albumId: 'asc' },
             { position: 'asc' },
           ],
-          include: trackInclude,
+          select: trackSelect,
         })
       }
       if (input.type === 'album') {
         return ctx.prisma.track.findMany({
           where: { albumId: input.id },
           orderBy: { position: 'asc' },
-          include: trackInclude,
+          select: trackSelect,
         })
       }
       if (input.type === 'genre') {
         return ctx.prisma.track.findMany({
           where: { genres: { some: { id: input.id } } },
-          include: trackInclude,
+          select: trackSelect,
         })
       }
       if (input.type === 'by-trait') {
@@ -73,14 +77,16 @@ export const playlistRouter = createRouter()
           },
           orderBy: { spotify: { [input.trait]: input.order } },
           take: 30,
-          include: trackInclude,
+          select: trackSelect,
         })
       }
     },
   })
   .query("list", {
     async resolve({ ctx }) {
-      return ctx.prisma.playlist.findMany()
+      return ctx.prisma.playlist.findMany({
+        select: {name: true, id: true}
+      })
     }
   })
   .query("get", {
@@ -88,15 +94,79 @@ export const playlistRouter = createRouter()
       id: z.string()
     }),
     async resolve({ input, ctx }) {
-      return ctx.prisma.playlist.findUnique({
+      const result = await ctx.prisma.playlist.findUnique({
         where: { id: input.id },
         include: {
           tracks: {
-            include: { track: true },
+            include: {track: {select: {
+              id: true,
+              name: true,
+              artist: { select: {
+                id: true,
+                name: true
+              }},
+              album: { select: {
+                id: true,
+                name: true,
+                coverId: true
+              }},
+            }}},
             orderBy: { index: 'asc' },
+          },
+          _count: {
+            select: { tracks: true },
           }
         }
       })
+      if (!result) {
+        return result
+      }
+      const tracks = result.tracks.map(({track}) => track)
+      const {artists, albums} = extractPlaylistCredits(tracks)
+      const description = descriptionFromPlaylistCredits(artists, tracks.length)
+      return {
+        ...result,
+        tracks,
+        artists,
+        albums,
+        description,
+      }
+    }
+  })
+  .query("searchable", {
+    async resolve({ ctx }) {
+      const playlists = await ctx.prisma.playlist.findMany({
+        select: {
+          id: true,
+          name: true,
+          tracks: {
+            select: {
+              track: {
+                select: {
+                  artist: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                }
+              }
+            }
+          }
+        }
+      })
+      const result = playlists.map(playlist => {
+        const artists = new Set<string | undefined>()
+        playlist.tracks.forEach(track => {
+          artists.add(track.track.artist?.name)
+        })
+        artists.delete(undefined)
+        return {
+          id: playlist.id,
+          name: playlist.name,
+          artists: Array.from(artists) as string[],
+        }
+      })
+      return result
     }
   })
   .mutation("save", {
@@ -138,16 +208,50 @@ export const playlistRouter = createRouter()
       if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
-      const [,playlist] = await ctx.prisma.$transaction([
-        ctx.prisma.playlistEntry.deleteMany({
-          where: { playlistId: input.id },
-        }),
-        ctx.prisma.playlist.delete({
+      try {
+        const [,playlist] = await ctx.prisma.$transaction([
+          ctx.prisma.playlistEntry.deleteMany({
+            where: { playlistId: input.id },
+          }),
+          ctx.prisma.playlist.delete({
+            where: { id: input.id },
+            select: { id: true },
+          }),
+        ])
+        socketServer.send('watcher:remove-playlist', { playlist })
+        return playlist
+      } catch (e) {
+        console.warn(e)
+        // at this point the playlist is corrupted, probably because the transaction happened during a bad time for the DB
+        const entries = await ctx.prisma.playlist.findUnique({
+          where: { id: input.id },
+          select: { tracks: { select: { id: true } } }
+        })
+        if (!entries) {
+          console.log("Couldn't recover, the playlist itself doesn't seem to exist anymore")
+          socketServer.send('watcher:remove-playlist', { playlist: {id: input.id } })
+          throw e
+        }
+        for (const entry of entries.tracks) {
+          const exists = await ctx.prisma.playlistEntry.findUnique({
+            where: { id: entry.id }
+          })
+          if (!exists) continue
+          try {
+            await ctx.prisma.playlistEntry.delete({
+              where: { id: entry.id }
+            })
+          } catch (e) {
+            console.warn("this is probably normal, we're trying to recover from the previous warning")
+            console.warn(e)
+          }
+        }
+        const playlist = await ctx.prisma.playlist.delete({
           where: { id: input.id },
           select: { id: true },
-        }),
-      ])
-      socketServer.send('watcher:remove-playlist', { playlist })
-      return playlist
+        })
+        socketServer.send('watcher:remove-playlist', { playlist })
+        return playlist
+      }
     }
   })

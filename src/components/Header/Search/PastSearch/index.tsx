@@ -5,26 +5,52 @@ import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
 import { startTransition } from "react"
-import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
+import { useAddNextToPlaylist, useMakePlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 
 const OPTIONS = {
 	track: {
 		key: "track.miniature",
 		Component: TrackInfo,
+		cover: (e: inferQueryOutput<"track.miniature">) => e?.cover?.id,
 	},
 	album: {
 		key: "album.miniature",
 		Component: AlbumInfo,
+		cover: (e: inferQueryOutput<"album.miniature">) => e?.cover?.id,
 	},
 	artist: {
 		key: "artist.miniature",
 		Component: ArtistInfo,
+		cover: (e: inferQueryOutput<"artist.miniature">) => e?.cover?.id,
 	},
 	genre: {
 		key: "genre.get",
 		Component: GenreInfo,
+		cover: () => false
 	},
+	playlist: {
+		key: "playlist.get",
+		Component: PlaylistInfo,
+		cover: (e: inferQueryOutput<"playlist.get">) => e?.albums.find(a => a.coverId)?.coverId
+	}
 } as const
+
+function trackNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"track.miniature"> {
+	return type === "track"
+}
+function albumNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"album.miniature"> {
+	return type === "album"
+}
+function artistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"artist.miniature"> {
+	return type === "artist"
+}
+function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"genre.get"> {
+	return type === "genre"
+}
+function playlistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"playlist.get"> {
+	return type === "playlist"
+}
+
 
 export default function PastSearch({
 	id,
@@ -37,37 +63,41 @@ export default function PastSearch({
 	const setArtist = useSetAtom(artistView)
 	const setAlbum = useSetAtom(albumView)
 	const makePlaylist = useMakePlaylist()
+	const setPlaylist = useSetPlaylist()
 	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
 
-	const {key, Component} = OPTIONS[type]
+	const {key, Component, cover} = OPTIONS[type]
 	const {data: entity} = trpc.useQuery([key, {id}])
 
-	const isEmpty = !entity || !('cover' in entity)
-	const src = entity?.cover ? `/api/cover/${entity.cover.id}/${Math.round(56 * 2)}` : undefined
+	const coverId = cover(entity)
+	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
 
 	return (
 		<button
 			type="button"
-			className={classNames(styles.main, {[styles.empty as string]: isEmpty})}
+			className={classNames(styles.main, {[styles.empty as string]: !src})}
 			onClick={() => {
 				startTransition(() => {
-					if (type === 'track') {
+					if (trackNarrow(type, entity)) {
 						if (!entity) return console.warn('PastSearch could not add track to playlist as it was not able to fetch associated data')
 						addNextToPlaylist(entity, true)
 						showHome("home")
-					} else if (type === 'genre') {
-						makePlaylist({type, id}, entity ? entity.name : "New Playlist")
+					} else if (genreNarrow(type, entity)) {
+						makePlaylist({type: "genre", id}, entity ? entity.name : "New Playlist")
 						showHome("home")
-					} else if (type === "album") {
+					} else if (albumNarrow(type, entity)) {
 						setAlbum({id, open: true, name: entity?.name})
-					} else if (type === "artist") {
+					} else if (artistNarrow(type, entity)) {
 						setArtist({id, open: true, name: entity?.name})
+					} else if (playlistNarrow(type, entity)) {
+						if (!entity) return console.warn('PastSearch could not start playlist as it was not able to fetch associated data')
+						setPlaylist(entity.name, entity.id, entity.tracks)
 					}
 				})
 			}}
 		>
-			{!isEmpty && (
+			{src && (
 				<img
 					className={styles.img}
 					src={src}
@@ -120,6 +150,15 @@ function TrackInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['track']['key
 function GenreInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['genre']['key']>, null>) {
 	return (
 		<p className={styles.info}>Genre{entity._count?.tracks
+			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
+			: ''
+		}</p>
+	)
+}
+
+function PlaylistInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['playlist']['key']>, null>) {
+	return (
+		<p className={styles.info}>Playlist{entity._count.tracks
 			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
 			: ''
 		}</p>

@@ -9,6 +9,7 @@ import PastSearch from "./PastSearch"
 import { usePastSearchesMutation, usePastSearchesQuery } from "client/db/indexedPastSearches"
 import SectionTitle from "atoms/SectionTitle"
 import { trpc } from "utils/trpc"
+import PlaylistList from "components/PlaylistList"
 
 const defaultArray = [] as never[]
 
@@ -29,11 +30,13 @@ export default function Search({
 	const {data: albumsRaw} = trpc.useQuery(["album.searchable"], {enabled})
 	const {data: artistsRaw} = trpc.useQuery(["artist.searchable"], {enabled})
 	const {data: genresRaw} = trpc.useQuery(["genre.list"], {enabled})
+	const {data: playlistsRaw} = trpc.useQuery(["playlist.searchable"], {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
+	const playlists = useAsyncInputStringDistance(input, playlistsRaw || defaultArray, ["name", "artists"])
 
 	const [showPast, setShowPast] = useState(true)
 
@@ -142,6 +145,15 @@ export default function Search({
 						<GenreList
 							genres={genres.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: 'genre', id})}
+						/>
+					</div>
+				)}
+				{!showPast && Boolean(playlists.length) && (
+					<div>
+						<SectionTitle>Playlists</SectionTitle>
+						<PlaylistList
+							playlists={playlists.slice(0, 6)}
+							onSelect={({id}) => id && onSelect({type: 'playlist', id})}
 						/>
 					</div>
 				)}

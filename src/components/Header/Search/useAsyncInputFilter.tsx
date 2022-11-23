@@ -2,8 +2,21 @@ import { useRef, useState, useEffect, RefObject, useMemo, startTransition } from
 
 type MinimumWorkerDataObject = {name: string, id: string}
 
-function getIn(obj: any, path: string) {
-	return path.split('.').reduce((acc, key) => acc[key] || '', obj)
+type Obj = {
+	[key: string]: Obj | string | Obj[] | string[];
+}
+
+function getIn(obj: Obj | string, [key, ...path]: string[]): string {
+	if (typeof obj === 'string')
+		return obj
+	if (!key)
+		return ''
+	const next = obj[key]
+	if (!next)
+		return ''
+	if (Array.isArray(next))
+		return next.map(branch => getIn(branch, path)).join(' ')
+	return getIn(next, path)
 }
 
 export default function useAsyncInputStringDistance<T extends MinimumWorkerDataObject>(
@@ -21,7 +34,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		for (const item of dataList) {
 			map.set(item.id, item)
 			namedObjects.push({
-				name: keys.map(key => getIn(item, key)).join(' '),
+				name: keys.map(key => getIn(item, key.split('.'))).join(' '),
 				id: item.id,
 			})
 		}

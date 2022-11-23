@@ -27,22 +27,22 @@ function SaveButton({id, className}: {
 
 		const intro = target.animate([
 			{ transform: 'scale(1) rotateY(0)'},
-			{ transform: 'scale(1.4) rotateY(1turn)'},
+			{ transform: 'scale(1.5) rotateY(1turn)'},
 		], { duration: 600, iterations: 1, easing: 'ease-in' })
 		intro.finished.then(() => {
 			target.animate([
-				{ transform: 'scale(1.4)'},
+				{ transform: 'scale(1.5)'},
 				{ transform: 'scale(1.2)'},
 			], { duration: 800, iterations: Infinity, easing: 'linear', direction: 'alternate', composite: 'add' })
 			target.animate([
 				{ transform: 'rotateY(0)'},
 				{ transform: 'rotateY(1turn)'},
 			], { duration: 400, iterations: Infinity, easing: 'linear', composite: 'add' })
-			setTimeout(() => {
-				conditions++
-				onEnd()
-			}, 2_000)
 		})
+		setTimeout(() => {
+			conditions++
+			onEnd()
+		}, 2_500)
 		const onEnd = () => {
 			if (conditions < 2) return
 			const animation = target.animate([
@@ -60,7 +60,9 @@ function SaveButton({id, className}: {
 		startTransition(() => {
 			const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 			if (!cache) {
+				target.getAnimations().forEach(anim => anim.cancel())
 				element.classList.remove(styles.save)
+				setFreezeId(null)
 				throw new Error('Trying to save a playlist, but none found in trpc cache')
 			}
 			savePlaylistMutation({
@@ -102,11 +104,11 @@ function SaveButton({id, className}: {
 				{ transform: 'rotate(65deg)'},
 				{ transform: 'rotate(25deg)'},
 			], { duration: 500, iterations: Infinity, easing: 'ease-in-out', direction: 'alternate' })
-			setTimeout(() => {
-				conditions++
-				onEnd()
-			}, 2_000)
 		})
+		setTimeout(() => {
+			conditions++
+			onEnd()
+		}, 2_300)
 		const onEnd = () => {
 			if (conditions < 2) return
 			const animation = target.animate([
