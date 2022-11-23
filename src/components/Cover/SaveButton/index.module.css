@@ -1,10 +1,21 @@
 .main {
 	position: relative;
 	z-index: 2;
+}
+.main svg {
 	will-change: transform, opacity;
 }
 .main span {
 	transition: opacity 150ms;
+}
+
+.save span,
+.delete span {
+	opacity: 0;
+}
+
+.delete svg {
+	transform-origin: top left;
 }
 
 .reappear {
@@ -13,8 +24,4 @@
 @keyframes fade-in {
 	0%   { opacity: 0; }
 	100% { opacity: 1; }
-}
-
-.progress span {
-	opacity: 0;
 }

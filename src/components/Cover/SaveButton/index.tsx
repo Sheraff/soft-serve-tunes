@@ -4,9 +4,7 @@ import { memo, startTransition, useRef, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveIcon from 'icons/library_add.svg'
-import SavedIcon from 'icons/library_add_check.svg'
-
-type IconState = 'initial' | 'in-progress' | 'failed' | 'saved' | 'deleted'
+import SavedIcon from 'icons/collections_bookmark.svg'
 
 function SaveButton({id, className}: {
 	id: string | null
@@ -17,26 +15,26 @@ function SaveButton({id, className}: {
 	const {mutate: savePlaylistMutation} = trpc.useMutation(["playlist.save"])
 	const {mutate: deletePlaylistMutation} = trpc.useMutation(["playlist.delete"])
 
-	// const [progress, setProgress] = useState<IconState>('initial')
 	const [freezeId, setFreezeId] = useState<boolean | null>(null)
 
 	const savePlaylist = () => {
 		const element = button.current!
-		element.classList.add(styles.progress)
+		element.classList.add(styles.save)
 		element.classList.remove(styles.reappear)
+		const target = element.firstElementChild!
 		setFreezeId(false)
 		let conditions = 0
 
-		const intro = element.animate([
+		const intro = target.animate([
 			{ transform: 'scale(1) rotateY(0)'},
 			{ transform: 'scale(1.4) rotateY(1turn)'},
 		], { duration: 600, iterations: 1, easing: 'ease-in' })
 		intro.finished.then(() => {
-			element.animate([
+			target.animate([
 				{ transform: 'scale(1.4)'},
 				{ transform: 'scale(1.2)'},
 			], { duration: 800, iterations: Infinity, easing: 'linear', direction: 'alternate', composite: 'add' })
-			element.animate([
+			target.animate([
 				{ transform: 'rotateY(0)'},
 				{ transform: 'rotateY(1turn)'},
 			], { duration: 400, iterations: Infinity, easing: 'linear', composite: 'add' })
@@ -47,13 +45,13 @@ function SaveButton({id, className}: {
 		})
 		const onEnd = () => {
 			if (conditions < 2) return
-			const animation = element.animate([
+			const animation = target.animate([
 				{ transform: 'translateY(0)', opacity: 1 },
 				{ transform: 'translateY(-60vh)', opacity: 0 },
 			], { duration: 500, iterations: 1, easing: 'ease-in', composite: 'add' })
 			animation.finished.then(() => {
-				element.getAnimations().forEach(anim => anim.cancel())
-				element.classList.remove(styles.progress)
+				target.getAnimations().forEach(anim => anim.cancel())
+				element.classList.remove(styles.save)
 				element.classList.add(styles.reappear)
 				setFreezeId(null)
 			})
@@ -62,7 +60,7 @@ function SaveButton({id, className}: {
 		startTransition(() => {
 			const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 			if (!cache) {
-				element.classList.remove(styles.progress)
+				element.classList.remove(styles.save)
 				throw new Error('Trying to save a playlist, but none found in trpc cache')
 			}
 			savePlaylistMutation({
@@ -76,8 +74,8 @@ function SaveButton({id, className}: {
 					onEnd()
 				},
 				onError() {
-					element.getAnimations().forEach(anim => anim.cancel())
-					element.classList.remove(styles.progress)
+					target.getAnimations().forEach(anim => anim.cancel())
+					element.classList.remove(styles.save)
 					setFreezeId(null)
 				},
 			})
@@ -89,38 +87,35 @@ function SaveButton({id, className}: {
 			throw new Error('Trying to delete a playlist, but no ID provided')
 		}
 		const element = button.current!
-		element.classList.add(styles.progress)
+		element.classList.add(styles.delete)
 		element.classList.remove(styles.reappear)
+		const target = element.firstElementChild!
 		setFreezeId(true)
 		let conditions = 0
 
-		const intro = element.animate([
-			{ transform: 'scale(1) rotateY(0)'},
-			{ transform: 'scale(1.4) rotateY(1turn)'},
-		], { duration: 600, iterations: 1, easing: 'ease-in' })
+		const intro = target.animate([
+			{ transform: 'rotate(0)'},
+			{ transform: 'rotate(65deg)'},
+		], { duration: 300, iterations: 1, easing: 'ease-in' })
 		intro.finished.then(() => {
-			element.animate([
-				{ transform: 'scale(1.4)'},
-				{ transform: 'scale(1.2)'},
-			], { duration: 800, iterations: Infinity, easing: 'linear', direction: 'alternate', composite: 'add' })
-			element.animate([
-				{ transform: 'rotateY(0)'},
-				{ transform: 'rotateY(1turn)'},
-			], { duration: 400, iterations: Infinity, easing: 'linear', composite: 'add' })
+			target.animate([
+				{ transform: 'rotate(65deg)'},
+				{ transform: 'rotate(25deg)'},
+			], { duration: 500, iterations: Infinity, easing: 'ease-in-out', direction: 'alternate' })
 			setTimeout(() => {
 				conditions++
 				onEnd()
-			}, 1_000)
+			}, 2_000)
 		})
 		const onEnd = () => {
 			if (conditions < 2) return
-			const animation = element.animate([
+			const animation = target.animate([
 				{ transform: 'translateY(0)', opacity: 1 },
 				{ transform: 'translateY(40vh)', opacity: 0 },
 			], { duration: 600, iterations: 1, easing: 'ease-in', composite: 'add' })
 			animation.finished.then(() => {
-				element.getAnimations().forEach(anim => anim.cancel())
-				element.classList.remove(styles.progress)
+				target.getAnimations().forEach(anim => anim.cancel())
+				element.classList.remove(styles.delete)
 				element.classList.add(styles.reappear)
 				setFreezeId(null)
 			})
@@ -134,8 +129,8 @@ function SaveButton({id, className}: {
 					onEnd()
 				},
 				onError() {
-					element.getAnimations().forEach(anim => anim.cancel())
-					element.classList.remove(styles.progress)
+					target.getAnimations().forEach(anim => anim.cancel())
+					element.classList.remove(styles.delete)
 					setFreezeId(null)
 				},
 			})
