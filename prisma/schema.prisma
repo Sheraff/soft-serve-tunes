@@ -67,18 +67,18 @@ model UserTrack {
 
 model PlaylistEntry {
   id         String   @id @default(cuid())
-  order      Int
+  index      Int
   trackId    String
-  track      Track    @relation(fields: [trackId], references: [id])
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   playlistId String
-  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
 }
 
 model Playlist {
   id         String          @id @default(cuid())
   editable   Boolean         @default(true)
-  entries    PlaylistEntry[]
-  name       String
+  tracks     PlaylistEntry[]
+  name       String          @unique
   createdAt  DateTime        @default(now())
   modifiedAt DateTime        @default(now())
 }

@@ -225,7 +225,10 @@ export const trackRouter = createRouter()
     }),
     async resolve({ input, ctx }) {
       return ctx.prisma.track.findMany({
-        where: { spotify: { [input.trait]: { gt: 0 } } },
+        where: {
+          spotify: { [input.trait]: { gt: 0 } },
+          file: { duration: { gt: 30 } },
+        },
         orderBy: { spotify: { [input.trait]: input.order } },
         take: 5,
         include: {

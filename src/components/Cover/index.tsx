@@ -1,10 +1,12 @@
 import SectionTitle from "atoms/SectionTitle"
 import classNames from "classnames"
-import { usePlaylistExtractedDetails } from "client/db/useMakePlaylist"
-import { useMemo } from "react"
+import { type Playlist, usePlaylistExtractedDetails } from "client/db/useMakePlaylist"
+import { ElementType, MouseEventHandler, startTransition, useMemo, useState } from "react"
 import { useQuery } from "react-query"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import styles from "./index.module.css"
+import SaveIcon from 'icons/library_add.svg'
+import EditIcon from 'icons/edit.svg'
 
 function playlistArtistName(
 	artistData: Array<Exclude<inferQueryOutput<"artist.miniature">, undefined | null>>,
@@ -18,6 +20,23 @@ function playlistArtistName(
 		return ` by ${formatter.format(nameList)}`
 	}
 	return ` by ${formatter.format(nameList.concat('others'))}`
+}
+
+function ActionButton({
+	icon: Icon,
+	name,
+	onClick,
+}: {
+	icon: ElementType
+	name: string
+	onClick: MouseEventHandler<HTMLButtonElement>
+}){
+	return (
+		<button type="button" onClick={onClick} className={styles.action}>
+			<Icon className={styles.actionIcon}/>
+			{name}
+		</button>
+	)
 }
 
 export default function Cover() {
@@ -53,6 +72,30 @@ export default function Cover() {
 		[artistData]
 	)
 
+	const {mutate: savePlaylistMutation} = trpc.useMutation(["playlist.save"])
+	const [saving, setSaving] = useState(false)
+	const savePlaylist = () => {
+		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		if (!cache) {
+			throw new Error('Trying to save a playlist, but none found in trpc cache')
+		}
+		savePlaylistMutation({
+			name: cache.name,
+			tracks: cache.tracks.map(({id}, index) => ({id, index}))
+		}, {
+			onSuccess(playlist) {
+				trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
+				console.log('success')
+			},
+			onSettled() {
+				setSaving(false)
+				console.log('settled')
+			}
+		})
+	}
+
+	console.log('is saving?', saving)
+
 	return (
 		<>
 			<div className={classNames(styles.main, styles[`count-${albumData.length}`])}>
@@ -65,9 +108,28 @@ export default function Cover() {
 					/>
 				))}
 			</div>
-			<div className={styles.details}>
-				<SectionTitle>{name}</SectionTitle>
-				<p>{`${length ?? 0} track${length > 1 ? 's' : ''}${credits}`}</p>
+			<div className={styles.panel}>
+				<div className={styles.details}>
+					<button className={styles.titleButton} type="button">
+						<SectionTitle>{name}</SectionTitle>
+						<EditIcon />
+					</button>
+					<p>{`${length ?? 0} track${length > 1 ? 's' : ''}${credits}`}</p>
+				</div>
+				<button
+					type="button"
+					onClick={() => {
+						console.log('saving')
+						setSaving(true)
+						startTransition(() => {
+							savePlaylist()
+						})
+					}}
+					className={styles.action}
+				>
+					<SaveIcon className={styles.actionIcon}/>
+					Save Playlist
+				</button>
 			</div>
 		</>
 	)

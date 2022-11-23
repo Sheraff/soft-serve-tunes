@@ -24,10 +24,41 @@
 	visibility: hidden;
 }
 
+.panel {
+	padding: 0 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
 .details {
-	background-color: var(--palette-bg-main);
-	padding: 8px;
+	flex: 1;
 	font-size: 10px;
+}
+
+.titleButton {
+	margin-bottom: 8px;
+}
+.titleButton > * {
+	display: inline;
+}
+.titleButton svg {
+	font-size: 14px;
+	margin-left: 8px;
+	vertical-align: text-bottom;
+}
+
+.action {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 8px;
+	width: min-content;
+	text-align: center;
+	align-items: center;
+	padding: 0 8px;
+}
+.actionIcon {
+	font-size: 24px;
 }
 
 .count-2 .img:nth-child(2) {

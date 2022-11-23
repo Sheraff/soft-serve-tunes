@@ -3,7 +3,6 @@ import { type inferQueryOutput, trpc } from "utils/trpc"
 import { type inferHandlerInput } from "@trpc/server"
 import { type AppRouter } from "server/router"
 import {
-	countFromIndexedDB,
 	deleteAllFromIndexedDB,
 	listAllFromIndexedDB,
 	openDB,
@@ -12,7 +11,6 @@ import {
 	storeListInIndexedDB,
 } from "./utils"
 import { useQuery } from "react-query"
-import { simplifiedName } from "utils/sanitizeString"
 
 /**
  * - store in indexedDB "appState" the origin of the playlist (fully local === from artist, album, genre, vs. from online === sqlite saved playlist)
@@ -29,11 +27,13 @@ import { simplifiedName } from "utils/sanitizeString"
  * - exception: automatic playlists (by multi-criteria) aren't editable (also not implemented so not a problem)
  * 
  * ACTION PLAN:
- * - auto-generate name for playlist based on how it was created (+ check server for existing name and add "#2" if necessary)
- * - save name in "appState"
- * - display name on playlist screen
- * - add save button, on save prompt user for playlist name, with auto-generated name as prefill
- * - create PlaylistList component for search screen / suggestion screen, on click, set playlist
+ * - [x] auto-generate name for playlist based on how it was created (+ check server for existing name and add "#2" if necessary)
+ * - [x] save name in "appState"
+ * - [x] display name on playlist screen
+ * - [ ] add save button, on save prompt user for playlist name, with auto-generated name as prefill
+ *     - if a playlist is saved, show "edit name" button next to title,
+ *       show "delete playlist" button instead of "save playlist"
+ * - [ ] create PlaylistList component for search screen / suggestion screen, on click, set playlist
  *     - if replaced playlist was a local-only playlist, store it (in memory only) & add button to "restore previous playlist"
  */
 
@@ -51,7 +51,7 @@ type PlaylistMeta = {
 	name: string
 }
 
-type Playlist = PlaylistMeta & {
+export type Playlist = PlaylistMeta & {
 	tracks: PlaylistTrack[]
 }
 
@@ -384,6 +384,8 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 	const minIndex = Math.min(oldIndex, newIndex)
 	const maxIndex = Math.max(oldIndex, newIndex)
 	const direction = oldIndex < newIndex ? -1 : 1
+
+	console.log('reorder indexedDB', oldIndex, newIndex)
 
 	const db = await openDB()
 	const tx = db.transaction("playlist", "readwrite")

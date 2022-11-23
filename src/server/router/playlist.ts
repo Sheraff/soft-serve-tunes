@@ -1,6 +1,8 @@
 import { createRouter } from "./context"
 import { z } from "zod"
 import { zTrackTraits } from "./track"
+import { TRPCError } from "@trpc/server"
+import { socketServer } from "server/persistent/ws"
 
 const trackInclude = {
   artist: {
@@ -65,7 +67,10 @@ export const playlistRouter = createRouter()
       }
       if (input.type === 'by-trait') {
         return ctx.prisma.track.findMany({
-          where: { spotify: { [input.trait]: { gt: 0 } } },
+          where: {
+            spotify: { [input.trait]: { gt: 0 } },
+            file: { duration: { gt: 30 } },
+          },
           orderBy: { spotify: { [input.trait]: input.order } },
           take: 30,
           include: trackInclude,
@@ -76,5 +81,68 @@ export const playlistRouter = createRouter()
   .query("list", {
     async resolve({ ctx }) {
       return ctx.prisma.playlist.findMany()
+    }
+  })
+  .query("get", {
+    input: z.object({
+      id: z.string()
+    }),
+    async resolve({ input, ctx }) {
+      return ctx.prisma.playlist.findUnique({
+        where: { id: input.id },
+        include: {
+          tracks: {
+            include: { track: true },
+            orderBy: { index: 'asc' },
+          }
+        }
+      })
+    }
+  })
+  .mutation("save", {
+    input: z.object({
+      name: z.string(),
+      tracks: z.array(z.object({
+        id: z.string(),
+        index: z.number(),
+      }))
+    }),
+    async resolve({ input, ctx }) {
+      if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+      const playlist = await ctx.prisma.playlist.create({
+        data: {
+          name: input.name,
+          tracks: { create: input.tracks.map(({id, index}) => ({
+            index,
+            trackId: id,
+          }))}
+        },
+        include: {
+          tracks: {
+            include: { track: true },
+            orderBy: { index: 'asc' },
+          }
+        }
+      })
+      socketServer.send("watcher:add-playlist")
+      return playlist
+    }
+  })
+  .mutation("delete", {
+    input: z.object({
+      id: z.string()
+    }),
+    async resolve({ input, ctx }) {
+      if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+      const playlist = await ctx.prisma.playlist.delete({
+        where: { id: input.id },
+        select: { id: true },
+      })
+      socketServer.send('watcher:remove', { playlist })
+      return playlist
     }
   })

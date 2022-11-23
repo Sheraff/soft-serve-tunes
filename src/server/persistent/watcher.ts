@@ -311,6 +311,19 @@ class MyWatcher {
 			log("event", "event", "fswatcher", `remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
 			socketServer.send('watcher:remove', { genre })
 		}
+
+		const orphanedPlaylists = await prisma.playlist.findMany({
+			where: {tracks: {none: {}}},
+			select: {id: true, name: true},
+		})
+		await prisma.playlist.deleteMany({
+			where: {id: {in: orphanedPlaylists.map(playlist => playlist.id)}}
+		})
+		for (const playlist of orphanedPlaylists) {
+			log("event", "event", "fswatcher", `remove playlist ${playlist.name} because it wasn't linked to any tracks anymore`)
+			socketServer.send('watcher:remove', { playlist })
+		}
+
 		const orphanedImages = await prisma.image.findMany({
 			where: {
 				track: { none: {} },

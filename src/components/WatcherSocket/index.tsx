@@ -31,6 +31,9 @@ export default function WatcherSocket() {
 				revalidateSwCache("artist.searchable")
 				revalidateSwCache("album.searchable")
 				revalidateSwCache("genre.list")
+			} else if (data.type === "watcher:add-playlist") {
+				console.log("added playlist")
+				revalidateSwCache("playlist.list")
 			} else if (data.type === "watcher:remove") {
 				console.log("removed", data.payload)
 				if (data.payload?.track) {
@@ -54,6 +57,10 @@ export default function WatcherSocket() {
 					revalidateSwCache("genre.list")
 					revalidateSwCache("genre.get", {id: data.payload.genre.id})
 					revalidateSwCache("playlist.generate", { type: 'genre', id: data.payload.genre.id })
+				}
+				if (data.payload?.playlist) {
+					revalidateSwCache("playlist.list")
+					revalidateSwCache("playlist.get", {id: data.payload.playlist.id})
 				}
 			} else if (data.type === "invalidate:track") {
 				console.log("invalidate track", data.payload)
