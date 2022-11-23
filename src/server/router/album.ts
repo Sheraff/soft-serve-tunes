@@ -161,11 +161,26 @@ export const albumRouter = createRouter()
   })
   .query("most-recent-add", {
     async resolve({ ctx }) {
-      return ctx.prisma.album.findMany({
+      const recent = await ctx.prisma.album.findMany({
+        where: {OR: [
+          { userData: null },
+          { userData: {playcount: {equals: 0} } },
+        ]},
         orderBy: { createdAt: "desc" },
         take: 10,
         select: { id: true, name: true },
       })
+      if (recent.length < 10) {
+        recent.concat(await ctx.prisma.album.findMany({
+          where: {OR: [
+            { userData: {playcount: {gt: 0} } },
+          ]},
+          orderBy: { createdAt: "desc" },
+          take: 10 - recent.length,
+          select: { id: true, name: true },
+        }))
+      }
+      return recent
     }
   })
   .query("by-trait", {
