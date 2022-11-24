@@ -9,7 +9,7 @@ function trpcUrlToCacheKeys(url: URL) {
 	const endpoints = parts.split(',')
 	const inputString = url.searchParams.get('input')
 	const input = inputString
-		? JSON.parse(inputString)
+		? JSON.parse(inputString) as {[key: number]: any}
 		: {}
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)
@@ -70,6 +70,7 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		return array
 	}, [] as number[])
 	if (fetchIndices.length) {
+		// some of the endpoints requested were missing from cache, make a single batched call to fetch them
 		const fetchEndpoints = fetchIndices.map((i) => endpoints[i]).join(',')
 		const fetchInput = fetchIndices.reduce((object, i, j) => {
 			object[j] = input[i]
@@ -84,8 +85,32 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 			const fetchData = await fetchResponse.json()
 			fetchIndices.forEach((i, j) => cacheResponses[i] = {text: () => JSON.stringify(fetchData[j])})
 		}
+		Promise.resolve().then(async () => {
+			// fetch from server to refresh SW cache, some requested endpoints were missing from cache so they've already been fetched
+			const rest = endpoints.reduce((acc, endpoint, i) => {
+				if (fetchIndices.includes(i)) return acc
+				acc.endpoints.push(endpoint)
+				acc.input[acc.endpoints.length - 1] = input[i]
+				return acc
+			}, {
+				endpoints: [],
+				input: {},
+			} as {
+				endpoints: string[],
+				input: {[key: number]: any}
+			})
+			const restUrl = new URL(`/api/trpc/${rest.endpoints.join(',')}`, self.location.origin)
+			restUrl.searchParams.set('batch', '1')
+			restUrl.searchParams.set('input', JSON.stringify(rest.input))
+			const restResponse = await fetch(restUrl)
+			if (restResponse.status === 200) {
+				handleTrpcFetchResponse(restResponse, restUrl)
+			}
+		})
+	} else {
+		// fetch from server to refresh SW cache, no requested endpoint was missing from cache so request them all
+		fetchFromServer(request, url)
 	}
-	fetchFromServer(request, url)
 	return formatBatchResponses(cacheResponses, endpoints)
 }
 
