@@ -98,7 +98,6 @@ export default function WatcherSocket() {
 				backOff = 1
 			}
 			socket.onmessage = (e) => {
-				console.log('message', e)
 				const data = JSON.parse(e.data)
 				onWsMessageData(data)
 			}
