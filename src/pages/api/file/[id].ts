@@ -78,3 +78,8 @@ function byteOffsetFromRangeString(range?: string) {
   return range.replace(/bytes=/, "").split("-");
 }
 
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+}
