@@ -290,13 +290,29 @@ class Spotify {
 		}
 		this.#running.add(trackDbId)
 		try {
+			const datedTrack = await prisma.track.findUnique({
+				where: { id: trackDbId },
+				select: {
+					spotifyDate: true,
+					name: true,
+				}
+			})
+			if (!datedTrack || !datedTrack.name) {
+				log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
+				console.log(trackDbId, datedTrack?.name)
+				this.#running.delete(trackDbId)
+				return
+			}
+			if (datedTrack.spotifyDate && datedTrack.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+				this.#running.delete(trackDbId)
+				return false
+			}
 			const track = await prisma.track.findUnique({
 				where: { id: trackDbId },
 				select: {
 					id: true,
 					name: true,
 					position: true,
-					spotifyDate: true,
 					artist: {
 						select: {
 							id: true,
@@ -345,9 +361,8 @@ class Spotify {
 					}
 				}
 			})
-			if (!track || !track.name) {
-				log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
-				console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
+			if (!track) {
+				log("error", "409", "spotify", `could not find a track we just had a second ago`)
 				this.#running.delete(trackDbId)
 				return
 			}
@@ -367,10 +382,6 @@ class Spotify {
 				console.log(trackDbId, track?.artist?.name, track?.album?.name, track?.name, track?.file?.path)
 				this.#running.delete(trackDbId)
 				return
-			}
-			if (track.spotifyDate && track.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
-				this.#running.delete(trackDbId)
-				return false
 			}
 			await retryable(() => (
 				prisma.track.update({

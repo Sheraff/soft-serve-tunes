@@ -321,6 +321,21 @@ class LastFM {
 			return false
 		}
 		this.#running.add(id)
+		const datedTrack = await prisma.track.findUnique({
+			where: { id },
+			select: {
+				lastfmDate: true,
+			}
+		})
+		if (!datedTrack) {
+			log("error", "404", "lastfm", `failed to find track ${id} in prisma.track`)
+			this.#running.delete(id)
+			return false
+		}
+		if (datedTrack.lastfmDate && datedTrack.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
 		const track = await prisma.track.findUnique({
 			where: { id },
 			select: {
@@ -347,15 +362,11 @@ class LastFM {
 			}
 		})
 		if (!track) {
-			log("error", "404", "lastfm", `failed to find track ${id} in prisma.track`)
+			log("error", "404", "lastfm", `couldn't find track ${id} we had a second ago`)
 			this.#running.delete(id)
 			return false
 		}
 		if (track.lastfm) {
-			this.#running.delete(id)
-			return false
-		}
-		if (track.lastfmDate && track.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
@@ -502,6 +513,21 @@ class LastFM {
 			return false
 		}
 		this.#running.add(id)
+		const datedArtist = await prisma.artist.findUnique({
+			where: { id },
+			select: {
+				lastfmDate: true,
+			}
+		})
+		if (!datedArtist) {
+			log("error", "404", "lastfm", `failed to find artist ${id} in prisma.artist`)
+			this.#running.delete(id)
+			return false
+		}
+		if (datedArtist.lastfmDate && datedArtist.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
 		const artist = await prisma.artist.findUnique({
 			where: { id },
 			select: {
@@ -521,15 +547,11 @@ class LastFM {
 			}
 		})
 		if (!artist) {
-			log("error", "404", "lastfm", `failed to find artist ${id} in prisma.artist`)
+			log("error", "404", "lastfm", `couldn't find artist ${id} we had a second ago`)
 			this.#running.delete(id)
 			return false
 		}
 		if (artist.lastfm) {
-			this.#running.delete(id)
-			return false
-		}
-		if (artist.lastfmDate && artist.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
@@ -644,6 +666,21 @@ class LastFM {
 			return false
 		}
 		this.#running.add(id)
+		const datedAlbum = await prisma.album.findUnique({
+			where: { id },
+			select: {
+				lastfmDate: true,
+			}
+		})
+		if (!datedAlbum) {
+			log("error", "404", "lastfm", `failed to find album ${id} in prisma.album`)
+			this.#running.delete(id)
+			return false
+		}
+		if (datedAlbum.lastfmDate && datedAlbum.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			this.#running.delete(id)
+			return false
+		}
 		const album = await prisma.album.findUnique({
 			where: { id },
 			select: {
@@ -666,15 +703,11 @@ class LastFM {
 			}
 		})
 		if (!album) {
-			log("error", "404", "lastfm", `failed to find album ${id} in prisma.album`)
+			log("error", "404", "lastfm", `couldn't find album ${id} we had a second ago`)
 			this.#running.delete(id)
 			return false
 		}
 		if (album.lastfm) {
-			this.#running.delete(id)
-			return false
-		}
-		if (album.lastfmDate && album.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
