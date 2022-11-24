@@ -10,7 +10,7 @@ function PlaylistItem({
 	controller,
 }: {
 	playlist: {id: string, name: string}
-	onSelect?: (playlist: inferQueryOutput<"playlist.get">) => void
+	onSelect?: (playlist: Exclude<inferQueryOutput<"playlist.get">, null>) => void
 	controller: {switch?: () => void}
 }) {
 	const {data} = trpc.useQuery(["playlist.get", {id: playlist.id}])

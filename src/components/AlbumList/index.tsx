@@ -12,7 +12,7 @@ function AlbumItem({
 }: {
 	album: {id: string, name?: string}
 	enableSiblings?: () => void
-	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
+	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.useQuery(["album.miniature", {id: album.id}])
@@ -84,7 +84,7 @@ export default function AlbumList({
 	loading = false,
 }: {
 	albums: {id: string, name?: string}[]
-	onSelect?: (album: inferQueryOutput<"album.miniature">) => void
+	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
 	scrollable?: boolean
 	lines?: 1 | 2
 	loading?: boolean

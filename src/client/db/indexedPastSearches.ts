@@ -4,7 +4,7 @@ import { deleteFromIndexedDB, listAllFromIndexedDB, storeInIndexedDB } from "./u
 const MAX_ITEMS_COUNT = 30
 
 export type PastSearchItem = {
-	type: "track" | "album" | "artist" | "genre"
+	type: "track" | "album" | "artist" | "genre" | "playlist"
 	id: string
 	key: string
 	timestamp: number

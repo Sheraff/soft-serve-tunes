@@ -12,7 +12,7 @@ function ArtistItem({
 }: {
 	artist: {id: string, name: string}
 	enableSiblings?: () => void
-	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
+	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.useQuery(["artist.miniature", {id: artist.id}])
@@ -84,7 +84,7 @@ export default function ArtistList({
 	loading = false,
 }: {
 	artists: {id: string, name: string}[]
-	onSelect?: (artist: inferQueryOutput<"artist.miniature">) => void
+	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
 	lines?: 1 | 3
 	loading?: boolean
 }) {
