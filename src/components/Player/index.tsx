@@ -134,6 +134,8 @@ export default memo(function Player() {
 							rel="prefetch"
 							as="audio"
 							href={`/api/file/${nextItem.id}`}
+							// @ts-expect-error -- fetchpriority does exist
+							fetchpriority="low"
 						/>
 					</Head>
 				)}

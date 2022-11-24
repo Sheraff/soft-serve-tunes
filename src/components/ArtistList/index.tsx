@@ -14,10 +14,12 @@ function ArtistItem({
 	artist,
 	enableSiblings,
 	onSelect,
+	index,
 }: {
 	artist: ArtistListItem
 	enableSiblings?: () => void
 	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
+	index: number
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.useQuery(["artist.miniature", {id: artist.id}])
@@ -70,6 +72,8 @@ function ArtistItem({
 					<img
 						src={src}
 						alt=""
+						loading={index > 2 ? "lazy" : undefined}
+						decoding={index > 2 ? "async" : undefined}
 					/>
 				</div>
 			)}
@@ -110,6 +114,7 @@ export default function ArtistList({
 								artist={artist}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 								onSelect={onSelect}
+								index={i}
 							/>
 						)}
 					</li>

@@ -29,6 +29,7 @@ function TrackItem({
 	onNext,
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
+	index,
 }: {
 	track: TrackListItem
 	enableSiblings?: () => void
@@ -39,6 +40,7 @@ function TrackItem({
 	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
+	index: number
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
@@ -122,6 +124,8 @@ function TrackItem({
 						<img
 							src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2)}`}
 							alt=""
+							loading={index > 4 ? "lazy" : undefined}
+							decoding={index > 4 ? "async" : undefined}
 						/>
 					</div>
 				)}
@@ -200,6 +204,7 @@ export default function TrackList({
 							onNext={quickSwipeAction || addNextToPlaylist}
 							quickSwipeIcon={quickSwipeIcon}
 							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
+							index={i}
 						/>
 					)}
 				</li>

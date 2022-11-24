@@ -14,10 +14,12 @@ function AlbumItem({
 	album,
 	enableSiblings,
 	onSelect,
+	index,
 }: {
 	album: AlbumListItem
 	enableSiblings?: () => void
 	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
+	index: number
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.useQuery(["album.miniature", {id: album.id}])
@@ -70,6 +72,8 @@ function AlbumItem({
 				<img
 					src={src}
 					alt=""
+					loading={index > 1 ? "lazy" : undefined}
+					decoding={index > 1 ? "async" : undefined}
 				/>
 			)}
 			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
@@ -116,6 +120,7 @@ export default function AlbumList({
 								album={album}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 								onSelect={onSelect}
+								index={i}
 							/>
 						)}
 					</li>

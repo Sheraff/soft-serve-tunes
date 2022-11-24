@@ -1,17 +1,18 @@
 import { useSetPlaylist } from 'client/db/useMakePlaylist'
 import { useShowHome } from 'components/AppContext'
-import { startTransition, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { startTransition } from 'react'
 import { type inferQueryOutput, trpc } from 'utils/trpc'
 import styles from './index.module.css'
 
 function PlaylistItem({
 	playlist,
 	onSelect,
-	controller,
+	index,
 }: {
 	playlist: {id: string, name: string}
 	onSelect?: (playlist: Exclude<inferQueryOutput<"playlist.get">, null>) => void
 	controller: {switch?: () => void}
+	index: number
 }) {
 	const {data} = trpc.useQuery(["playlist.get", {id: playlist.id}])
 
@@ -21,26 +22,6 @@ function PlaylistItem({
 	const covers = data?.albums
 		.filter(({coverId}) => coverId)
 		|| []
-
-	const [coverIndex, setCoverIndex] = useState(0)
-	const [prevIndex, setPrevIndex] = useState(0)
-	controller.switch = () => {
-		setPrevIndex(coverIndex)
-		setCoverIndex(Math.floor(Math.random() * covers.length))
-	}
-
-	const mainImg = useRef<HTMLImageElement>(null)
-	useLayoutEffect(() => {
-		if(!mainImg.current) return
-		mainImg.current.getAnimations().forEach(a => a.cancel())
-		mainImg.current.animate([
-			{opacity: 1},
-			{opacity: 0},
-		], {
-			duration: 2_500,
-			fill: 'forwards'
-		})
-	}, [prevIndex])
 
 	return (
 		<button
@@ -55,21 +36,14 @@ function PlaylistItem({
 				})
 			}}
 		>
-			{covers.length > 0 && (
+			{covers[0] && (
 				<img
 					className={styles.img}
-					src={`/api/cover/${covers[coverIndex]!.coverId}/${Math.round(174.5 * 2)}`}
+					src={`/api/cover/${covers[0].coverId}/${Math.round(174.5 * 2)}`}
 					alt=""
-					key="base"
-				/>
-			)}
-			{covers.length > 0 && (
-				<img
-					ref={mainImg}
-					className={styles.img}
-					src={`/api/cover/${covers[prevIndex]!.coverId}/${Math.round(174.5 * 2)}`}
-					alt=""
-					key="overlay"
+					key={covers[0].coverId}
+					loading={index > 2 ? "lazy" : undefined}
+					decoding={index > 2 ? "async" : undefined}
 				/>
 			)}
 			<p className={styles.text} key="text">
@@ -87,21 +61,6 @@ export default function PlaylistList({
 	playlists: {id: string, name: string}[]
 	onSelect?: Parameters<typeof PlaylistItem>[0]['onSelect']
 }) {
-	const controllers = useRef<{switch?: () => void}[]>()
-	if (!controllers.current) {
-		controllers.current = playlists.map(() => ({}))
-	}
-
-	useEffect(() => {
-		const intervalId = setInterval(() => {
-			const rand = Math.floor(Math.random() * playlists.length)
-			controllers.current![rand]?.switch?.()
-		}, 3_000)
-		return () => {
-			clearInterval(intervalId)
-		}
-	}, [playlists.length])
-
 	return (
 		<ul className={styles.list}>
 			{playlists.map((playlist, i) => (
@@ -109,7 +68,7 @@ export default function PlaylistList({
 					<PlaylistItem
 						playlist={playlist}
 						onSelect={onSelect}
-						controller={controllers.current![i]!}
+						index={i}
 					/>
 				</li>
 			))}
