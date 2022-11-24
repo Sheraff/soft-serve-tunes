@@ -130,7 +130,7 @@ class AudioDb {
 
 		if (!artist) return
 		if (artist.audiodb) return
-		if (artist.audiodbDate && artist.audiodbDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
+		if (artist.audiodbDate && artist.audiodbDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
 
 		await retryable(() => (
 			prisma.artist.update({
@@ -228,7 +228,7 @@ class AudioDb {
 
 		if (!album) return
 		if (album.audiodb) return
-		if (album.audiodbDate && album.audiodbDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
+		if (album.audiodbDate && album.audiodbDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
 
 		await retryable(() => (
 			prisma.album.update({
@@ -323,7 +323,7 @@ class AudioDb {
 
 		if (!track) return
 		if (track.audiodb) return
-		if (track.audiodbDate && track.audiodbDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
+		if (track.audiodbDate && track.audiodbDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) return
 
 		await retryable(() => (
 			prisma.track.update({

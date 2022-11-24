@@ -332,7 +332,7 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		if (datedTrack.lastfmDate && datedTrack.lastfmDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+		if (datedTrack.lastfmDate && datedTrack.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
@@ -524,7 +524,7 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		if (datedArtist.lastfmDate && datedArtist.lastfmDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+		if (datedArtist.lastfmDate && datedArtist.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
@@ -677,7 +677,7 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		if (datedAlbum.lastfmDate && datedAlbum.lastfmDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+		if (datedAlbum.lastfmDate && datedAlbum.lastfmDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 			this.#running.delete(id)
 			return false
 		}
