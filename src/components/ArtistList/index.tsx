@@ -5,12 +5,17 @@ import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
 
+type ArtistListItem = {
+	id: string
+	name: string
+}
+
 function ArtistItem({
 	artist,
 	enableSiblings,
 	onSelect,
 }: {
-	artist: {id: string, name: string}
+	artist: ArtistListItem
 	enableSiblings?: () => void
 	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
 }) {
@@ -83,7 +88,7 @@ export default function ArtistList({
 	lines = 3,
 	loading = false,
 }: {
-	artists: {id: string, name: string}[]
+	artists: ArtistListItem[]
 	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
 	lines?: 1 | 3
 	loading?: boolean

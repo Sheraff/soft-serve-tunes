@@ -5,12 +5,17 @@ import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
 
+type AlbumListItem = {
+	id: string
+	name?: string
+}
+
 function AlbumItem({
 	album,
 	enableSiblings,
 	onSelect,
 }: {
-	album: {id: string, name?: string}
+	album: AlbumListItem
 	enableSiblings?: () => void
 	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
 }) {
@@ -83,7 +88,7 @@ export default function AlbumList({
 	lines = 2,
 	loading = false,
 }: {
-	albums: {id: string, name?: string}[]
+	albums: AlbumListItem[]
 	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
 	scrollable?: boolean
 	lines?: 1 | 2
@@ -98,7 +103,12 @@ export default function AlbumList({
 
 	return (
 		<div className={classNames(styles.wrapper, {[styles.scrollable as string]: scrollable})} ref={ref}>
-			<ul className={classNames(styles.main, styles[`lines-${lines}`], {[styles.loading]: loading})}>
+			<ul className={
+				classNames(styles.main, {
+					[styles.loading]: loading,
+					[styles['lines-2']]: lines === 2,
+				})
+			}>
 				{albums.map((album, i) => (
 					<li className={styles.item} key={album.id}>
 						{i <= enableUpTo && (
