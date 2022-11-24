@@ -225,6 +225,13 @@ export const playlistRouter = createRouter()
           id: z.string(),
         }),
       }),
+      z.object({
+        id: z.string(),
+        type: z.enum(["rename"]),
+        params: z.object({
+          name: z.string(),
+        }),
+      }),
     ]),
     async resolve({ input, ctx }) {
       if (input.type === "reorder") {
@@ -252,6 +259,10 @@ export const playlistRouter = createRouter()
               }
             })
           }
+          await tx.playlist.update({
+            where: { id: input.id },
+            data: { modifiedAt: new Date().toISOString() },
+          })
         })
       } else if (input.type === "remove-track") {
         await ctx.prisma.$transaction(async (tx) => {
@@ -284,6 +295,10 @@ export const playlistRouter = createRouter()
               data: { index: entry.index - 1 },
             })
           }
+          await tx.playlist.update({
+            where: { id: input.id },
+            data: { modifiedAt: new Date().toISOString() },
+          })
         })
       } else if (input.type === "add-track") {
         await ctx.prisma.$transaction(async (tx) => {
@@ -307,6 +322,18 @@ export const playlistRouter = createRouter()
               trackId: input.params.id,
             }
           })
+          await tx.playlist.update({
+            where: { id: input.id },
+            data: { modifiedAt: new Date().toISOString() },
+          })
+        })
+      } else if (input.type === "rename") {
+        await ctx.prisma.playlist.update({
+          where: { id: input.id },
+          data: {
+            name: input.params.name,
+            modifiedAt: new Date().toISOString(),
+          },
         })
       }
       socketServer.send('invalidate:playlist', { id: input.id })
