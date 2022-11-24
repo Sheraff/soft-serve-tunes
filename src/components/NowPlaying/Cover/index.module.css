@@ -35,18 +35,6 @@
 	font-size: 10px;
 }
 
-.titleButton {
-	margin-bottom: 8px;
-}
-.titleButton > * {
-	display: inline;
-}
-.titleButton svg {
-	font-size: 14px;
-	margin-left: 8px;
-	vertical-align: text-bottom;
-}
-
 .action {
 	display: flex;
 	flex-direction: column;

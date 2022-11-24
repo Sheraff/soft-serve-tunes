@@ -1,13 +1,12 @@
-import SectionTitle from "atoms/SectionTitle"
 import classNames from "classnames"
 import { usePlaylistExtractedDetails } from "client/db/useMakePlaylist"
-import { useMemo } from "react"
+import { useMemo, useRef } from "react"
 import { useQuery } from "react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
-import EditIcon from 'icons/edit.svg'
 import SaveButton from "./SaveButton"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
+import EditableTitle from "atoms/SectionTitle/EditableTitle"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
@@ -40,6 +39,11 @@ export default function Cover() {
 	
 	const description = useMemo(() => descriptionFromPlaylistCredits(artistData, length), [artistData, length])
 
+	const onTitleEdit = useRef<(newName: string) => void>(() => {})
+	onTitleEdit.current = (newName) => {
+		console.log(newName, id)
+	}
+
 	return (
 		<>
 			<div className={classNames(styles.main, styles[`count-${albumData.length}`])}>
@@ -54,10 +58,7 @@ export default function Cover() {
 			</div>
 			<div className={styles.panel}>
 				<div className={styles.details}>
-					<button className={styles.titleButton} type="button">
-						<SectionTitle>{name}</SectionTitle>
-						<EditIcon />
-					</button>
+					<EditableTitle name={name} onEditEnd={onTitleEdit} />
 					<p>{description}</p>
 				</div>
 				<SaveButton id={id ?? null} className={styles.action} />

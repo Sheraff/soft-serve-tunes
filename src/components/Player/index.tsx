@@ -102,7 +102,9 @@ export default memo(function Player() {
 		window.addEventListener('keydown', (event) => {
 			// @ts-expect-error -- it's fine if tagName doesn't exist, the value will just be undefined and it works
 			const tagName = event.target?.tagName as string | undefined
-			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && tagName !== 'INPUT') {
+			// @ts-expect-error -- it's fine if contentEditable doesn't exist, the value will just be undefined and it works
+			const editable = event.target?.contentEditable as string | undefined
+			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && tagName !== 'INPUT' && editable !== 'true') {
 				event.preventDefault()
 				event.stopPropagation()
 				togglePlay()

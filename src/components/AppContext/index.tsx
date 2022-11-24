@@ -143,7 +143,9 @@ function Back() {
 			event.preventDefault()
 		}, {capture: true, signal: controller.signal})
 		window.addEventListener('keydown', (event) => {
-			if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey) {
+			// @ts-expect-error -- it's fine if contentEditable doesn't exist, the value will just be undefined and it works
+			const editable = event.target?.contentEditable as string | undefined
+			if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && editable !== 'true') {
 				event.preventDefault()
 				event.stopPropagation()
 				customNav()

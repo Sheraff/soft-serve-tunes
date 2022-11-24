@@ -1,4 +1,17 @@
 .main {
 	font-size: 18px;
 	margin-bottom: 8px;
+	outline: none;
+}
+
+.editable {
+	margin-bottom: 8px;
+}
+.editable > * {
+	display: inline;
+}
+.editable svg {
+	font-size: 14px;
+	margin-left: 8px;
+	vertical-align: text-bottom;
 }
