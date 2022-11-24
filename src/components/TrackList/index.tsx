@@ -187,7 +187,9 @@ export default function TrackList({
 	useDragTrack(ref, !!orderable, callbacks)
 	const addNextToPlaylist = useAddNextToPlaylist()
 
-	const deferredTracks = useDeferredValue(tracks)
+	const staticOrderable = useRef(orderable)
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
+	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
 
 	return (
 		<ul className={styles.main} ref={orderable ? ref : undefined}>
