@@ -399,11 +399,20 @@ class AudioDb {
 			return
 		}
 		if (existingConnection) {
-			log("warn", "500", "audiodb", `
-				AudioDb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
-				However it has no associated entity (actual Track)
-				Will not associate data: ${data.strTrack} idTrack#${data.idTrack}
-			`)
+			try {
+				await retryable(() => prisma.audioDbTrack.update({
+					where: {idTrack: data.idTrack},
+					data: {
+						entityId: id
+					}
+				}))
+				log("event", "yeet", "audiodb", "This seems to be the solution to our duplicate IDs.")
+			} catch (e) {
+				console.error(new Error(`
+					audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
+					it already existed, so we tried to connect it to the track, but this seems to fail too (${data.strTrack} idTrack#${data.idTrack})
+				`, {cause: e}))
+			}
 			return
 		}
 		const genres = uniqueGenres(strGenre ? [strGenre] : [])
