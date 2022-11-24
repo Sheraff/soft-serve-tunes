@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, RefObject, useMemo, startTransition } from "react"
+import { useRef, useState, useEffect, type RefObject, useMemo, startTransition } from "react"
 
 type MinimumWorkerDataObject = {name: string, id: string}
 

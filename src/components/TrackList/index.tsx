@@ -29,7 +29,7 @@ function TrackItem({
 	enableSiblings?: () => void
 	current?: boolean
 	onClick?: (id:string, name:string) => void
-	onSelect?: (track: inferQueryOutput<"track.miniature">) => void
+	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 	draggable?: boolean
 	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
 	quickSwipeIcon?: ElementType
