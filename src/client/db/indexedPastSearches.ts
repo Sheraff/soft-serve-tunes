@@ -45,3 +45,18 @@ export function usePastSearchesMutation() {
 		}
 	})
 }
+
+export function useRemoveFromPastSearches() {
+	const queryClient = useQueryClient()
+	return useMutation(["pastSearches"], {
+		async mutationFn({id}: Pick<PastSearchItem, "id">) {
+			return deleteFromIndexedDB("pastSearches", id)
+		},
+		onSuccess(_, {id}) {
+			queryClient.setQueryData<PastSearchItem[]>(["pastSearches"], (list) => {
+				if (!list) return []
+				return list.filter(item => item.id !== id)
+			})
+		}
+	})
+}

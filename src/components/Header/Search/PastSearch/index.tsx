@@ -6,32 +6,33 @@ import pluralize from "utils/pluralize"
 import { useSetAtom } from "jotai"
 import { startTransition } from "react"
 import { useAddNextToPlaylist, useMakePlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
+import { useRemoveFromPastSearches } from "client/db/indexedPastSearches"
 
 const OPTIONS = {
 	track: {
 		key: "track.miniature",
 		Component: TrackInfo,
-		cover: (e: inferQueryOutput<"track.miniature">) => e?.cover?.id,
+		cover: (e?: inferQueryOutput<"track.miniature">) => e?.cover?.id,
 	},
 	album: {
 		key: "album.miniature",
 		Component: AlbumInfo,
-		cover: (e: inferQueryOutput<"album.miniature">) => e?.cover?.id,
+		cover: (e?: inferQueryOutput<"album.miniature">) => e?.cover?.id,
 	},
 	artist: {
 		key: "artist.miniature",
 		Component: ArtistInfo,
-		cover: (e: inferQueryOutput<"artist.miniature">) => e?.cover?.id,
+		cover: (e?: inferQueryOutput<"artist.miniature">) => e?.cover?.id,
 	},
 	genre: {
 		key: "genre.get",
 		Component: GenreInfo,
-		cover: () => false
+		cover: () => undefined
 	},
 	playlist: {
 		key: "playlist.get",
 		Component: PlaylistInfo,
-		cover: (e: inferQueryOutput<"playlist.get">) => e?.albums.find(a => a.coverId)?.coverId
+		cover: (e?: inferQueryOutput<"playlist.get">) => e?.albums.find(a => a.coverId)?.coverId
 	}
 } as const
 
@@ -66,9 +67,15 @@ export default function PastSearch({
 	const setPlaylist = useSetPlaylist()
 	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
+	const {mutate: deletePastSearch} = useRemoveFromPastSearches()
 
 	const {key, Component, cover} = OPTIONS[type]
-	const {data: entity} = trpc.useQuery([key, {id}])
+	const {data: entity} = trpc.useQuery([key, {id}], {
+		onSettled(data) {
+			if (data) return
+			deletePastSearch({id})
+		}
+	})
 
 	const coverId = cover(entity)
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
@@ -76,7 +83,14 @@ export default function PastSearch({
 	return (
 		<button
 			type="button"
-			className={classNames(styles.main, {[styles.empty as string]: !src})}
+			className={classNames(
+				styles.main,
+				{
+					[styles.empty]: !src,
+					[styles.list]: type === "playlist" || type === "genre",
+					[styles.artist]: type === "artist",
+				}
+			)}
 			onClick={() => {
 				startTransition(() => {
 					if (trackNarrow(type, entity)) {
