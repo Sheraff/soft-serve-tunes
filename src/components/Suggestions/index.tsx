@@ -7,6 +7,7 @@ import { useShowHome } from "components/AppContext"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
+import PlaylistList from "components/PlaylistList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import PlaylistIcon from "icons/queue_music.svg"
@@ -197,6 +198,11 @@ export default memo(function Suggestions(){
 	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.useQuery(["album.most-recent-listen"])
 	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.useQuery(["album.most-recent-add"])
 	const {data: genreFavs = []} = trpc.useQuery(["genre.most-fav"])
+	const {data: playlists = []} = trpc.useQuery(["playlist.list"], {
+		select(playlists) {
+			return playlists.slice(0, 4)
+		}
+	})
 
 	return (
 		<div className={styles.scrollable}>
@@ -223,6 +229,12 @@ export default memo(function Suggestions(){
 					<SectionTitle>Favorite artists</SectionTitle>
 					<ArtistList artists={artistFavs} lines={1} loading={artistFavsLoading} />
 				</div>
+				{playlists.length && (
+					<div className={styles.section}>
+						<SectionTitle>Recent playlists</SectionTitle>
+						<PlaylistList playlists={playlists}/>
+					</div>
+				)}
 				<div className={styles.section}>
 					<Suspense>
 						<TracksByTraitSuggestion />

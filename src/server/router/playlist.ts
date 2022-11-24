@@ -126,7 +126,14 @@ export const playlistRouter = createRouter()
   .query("list", {
     async resolve({ ctx }) {
       return ctx.prisma.playlist.findMany({
-        select: {name: true, id: true}
+        select: {
+          name: true,
+          id: true,
+          modifiedAt: true,
+        },
+        orderBy: {
+          modifiedAt: "asc"
+        }
       })
     }
   })
