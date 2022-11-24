@@ -12,6 +12,7 @@ import TrackList from "components/TrackList"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
+import PlaylistList from "components/PlaylistList"
 
 export default forwardRef(function ArtistView({
 	open: _open,
@@ -84,6 +85,7 @@ export default forwardRef(function ArtistView({
 
 	const albums = useDeferredValue(data?.albums)
 	const tracks = useDeferredValue(data?.tracks)
+	const playlists = useDeferredValue(data?.playlists)
 
 	return (
 		<div
@@ -164,6 +166,12 @@ export default forwardRef(function ArtistView({
 					<TrackList tracks={tracks} />
 				</div>
 			), [tracks])}
+			{useMemo(() => playlists && Boolean(playlists.length) && (
+				<div className={styles.section}>
+					<SectionTitle>Playlists</SectionTitle>
+					<PlaylistList playlists={playlists} />
+				</div>
+			), [playlists])}
 		</div>
 	)
 })

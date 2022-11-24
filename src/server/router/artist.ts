@@ -131,10 +131,19 @@ export const artistRouter = createRouter()
         select: {id: true, name: true}
       })
 
+      // playlists featuring this artist
+      const playlists = await ctx.prisma.playlist.findMany({
+        where: {
+          tracks: {some: {track: {artistId: input.id}}}
+        },
+        select: {id: true, name: true}
+      })
+
       return {
         ...artist,
         albums: [...artist.albums, ...albums],
         tracks,
+        playlists,
       }
     },
   })
