@@ -359,8 +359,9 @@ class MyWatcher {
 					where: { id: image.id },
 				})
 				removeCount++
-			} catch {
+			} catch (e) {
 				failCount++
+				console.error(new Error(`error while removing image ${image.path}`, {cause: e}))
 			}
 		}
 		if (removeCount > 0) {

@@ -406,7 +406,6 @@ class AudioDb {
 						entityId: id
 					}
 				}))
-				log("event", "yeet", "audiodb", "This seems to be the solution to our duplicate IDs.")
 			} catch (e) {
 				console.error(new Error(`
 					audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
