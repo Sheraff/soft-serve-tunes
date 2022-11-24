@@ -36,7 +36,7 @@ async function formatBatchResponses(
 				"id": null,
 				"error": {
 					"json": {
-						"message": `[{"code": "invalid_type","expected": "object","received": "undefined","path": [],"message": "Required"}]`,
+						"message": `This is a fake TRPCError`,
 						"code": -32600,
 						"data": {
 							"code": "BAD_REQUEST",
@@ -80,10 +80,12 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		fetchUrl.searchParams.set('batch', '1')
 		fetchUrl.searchParams.set('input', JSON.stringify(fetchInput))
 		const fetchResponse = await fetch(fetchUrl)
-		if (fetchResponse.status === 200) {
+		if (fetchResponse.status === 200 || fetchResponse.status === 207) {
 			handleTrpcFetchResponse(fetchResponse.clone(), fetchUrl)
 			const fetchData = await fetchResponse.json()
 			fetchIndices.forEach((i, j) => cacheResponses[i] = {text: () => JSON.stringify(fetchData[j])})
+		} else if (fetchResponse.status > 200 && fetchResponse.status < 300) {
+			console.warn('SW: unexpected 2xx response status', fetchResponse)
 		}
 		Promise.resolve().then(async () => {
 			// fetch from server to refresh SW cache, some requested endpoints were missing from cache so they've already been fetched
@@ -103,8 +105,10 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 			restUrl.searchParams.set('batch', '1')
 			restUrl.searchParams.set('input', JSON.stringify(rest.input))
 			const restResponse = await fetch(restUrl)
-			if (restResponse.status === 200) {
+			if (restResponse.status === 200 || restResponse.status === 207) {
 				handleTrpcFetchResponse(restResponse, restUrl)
+			} else if (restResponse.status > 200 && restResponse.status < 300) {
+				console.warn('SW: unexpected 2xx response status', restResponse)
 			}
 		})
 	} else {
@@ -123,18 +127,26 @@ export function handleTrpcFetchResponse(response: Response, url: URL) {
 		if (contentType) headers.set('Content-Type', contentType)
 		const date = response.headers.get('Date')
 		if (date) headers.set('Date', date)
-		return Promise.all(keys.map((key, i) => 
-			cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
-		))
+		return Promise.all(keys.map((key, i) => {
+			if ('result' in data[i]) {
+				return cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
+			} else if ('error' in data[i]) {
+				console.error(new Error(data[i].error.json.message))
+			} else {
+				console.error('SW: unknown trpc response format', data[i])
+			}
+		}))
 	})
 }
 
 function fetchFromServer(request: Request, url: URL) {
 	return fetch(request)
 	.then(response => {
-		if (response.status === 200) {
+		if (response.status === 200 || response.status === 207) {
 			const cacheResponse = response.clone()
 			handleTrpcFetchResponse(cacheResponse, url)
+		} else if (response.status > 200 && response.status < 300) {
+			console.warn('SW: unexpected 2xx response status', response)
 		}
 		return response
 	})

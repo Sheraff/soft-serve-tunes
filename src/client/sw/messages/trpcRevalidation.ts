@@ -31,7 +31,7 @@ function processBatch() {
 	url.searchParams.set('input', JSON.stringify(input))
 
 	fetch(url).then(async response => {
-		if (response.status === 200) {
+		if (response.status === 200 || response.status === 207) {
 			await handleTrpcFetchResponse(response, url)
 			const clients = await self.clients.matchAll()
 			clients.forEach(client => {
