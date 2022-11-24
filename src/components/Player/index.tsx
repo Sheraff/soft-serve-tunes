@@ -100,7 +100,9 @@ export default memo(function Player() {
 	useEffect(() => {
 		const controller = new AbortController()
 		window.addEventListener('keydown', (event) => {
-			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && event.target?.tagName !== 'INPUT') {
+			// @ts-expect-error -- it's fine if tagName doesn't exist, the value will just be undefined and it works
+			const tagName = event.target?.tagName as string | undefined
+			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && tagName !== 'INPUT') {
 				event.preventDefault()
 				event.stopPropagation()
 				togglePlay()
@@ -152,16 +154,16 @@ export default memo(function Player() {
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
-				<button className={styles.prev} onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
+				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
 					{(online || cached) && (
-						<button className={styles.play} onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
 					)}
 					{(!online && !cached) && (
 						<OfflineIcon />
 					)}
 				</>
-				<button className={styles.next} onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
+				<button onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
 			</div>
 			<Audio ref={audio}/>
 			<GlobalPalette />

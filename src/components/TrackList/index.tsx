@@ -14,6 +14,11 @@ import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 
 const emptyFunction = () => {}
 
+type TrackListItem = {
+	id: string
+	name: string
+}
+
 function TrackItem({
 	track,
 	enableSiblings,
@@ -25,7 +30,7 @@ function TrackItem({
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
 }: {
-	track: inferQueryOutput<"track.searchable">[number]
+	track: TrackListItem
 	enableSiblings?: () => void
 	current?: boolean
 	onClick?: (id:string, name:string) => void
@@ -87,24 +92,25 @@ function TrackItem({
 
 	return (
 		<div ref={item} className={classNames(styles.wrapper, {
-			[styles.liked as string]: data?.userData?.favorite,
-			[styles.draggable as string]: draggable,
+			[styles.liked]: data?.userData?.favorite,
+			[styles.draggable]: draggable,
 		})}>
 			<button
 				className={classNames(styles.button, {
-					[styles.empty as string]: isEmpty,
-					[styles.current as string]: current,
+					[styles.empty]: isEmpty,
 				})}
 				type="button"
 				onClick={() => {
 					data && onSelect?.(data)
 					if (onClick) {
 						onClick(track.id, track.name)
-					} else {
+					} else if (data) {
 						startTransition(() => {
 							addNextToPlaylist(data, true)
 							showHome("home")
 						})
+					} else {
+						console.error('Tried to add track to playlist, but data was not loaded yet')
 					}
 				}}
 			>
@@ -156,13 +162,13 @@ export default function TrackList({
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
 }: {
-	tracks: inferQueryOutput<"track.searchable">
+	tracks: TrackListItem[]
 	current?: string
 	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
 	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 	orderable?: boolean
 	onReorder?: (from: number, to: number) => void
-	quickSwipeAction?: (track: inferQueryOutput<"track.miniature">) => void
+	quickSwipeAction?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 }) {

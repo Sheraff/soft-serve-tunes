@@ -77,6 +77,7 @@ export default function PastSearch({
 		}
 	})
 
+	// @ts-expect-error -- I'm too lazy to type this... it's only fine as long as this component remains very simple
 	const coverId = cover(entity)
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
 
@@ -122,6 +123,7 @@ export default function PastSearch({
 				{entity && (
 					<>
 						<p className={styles.name}>{entity.name}</p>
+						{/* @ts-expect-error -- I'm too lazy to type this... it's only fine as long as this component remains very simple */}
 						<Component {...entity} />
 					</>
 				)}

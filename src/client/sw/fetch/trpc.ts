@@ -3,9 +3,13 @@ import { CACHES } from "../utils/constants"
 
 function trpcUrlToCacheKeys(url: URL) {
 	const [,,,parts] = url.pathname.split('/')
+	if (!parts) {
+		throw new Error ('function called on the wrong url, no trpc endpoints found')
+	}
 	const endpoints = parts.split(',')
-	const input = url.searchParams.has('input')
-		? JSON.parse(url.searchParams.get('input'))
+	const inputString = url.searchParams.get('input')
+	const input = inputString
+		? JSON.parse(inputString)
 		: {}
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)

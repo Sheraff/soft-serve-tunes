@@ -213,7 +213,7 @@ class LastFM {
 	}
 
 	async correctArtist(artist: string) {
-		const promise = new Promise<string>(resolve => this.#waitlist.push(() => this.#correctArtist(artist).then(resolve)))
+		const promise = new Promise<string | false>(resolve => this.#waitlist.push(() => this.#correctArtist(artist).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}

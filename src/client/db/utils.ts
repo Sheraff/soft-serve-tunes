@@ -9,7 +9,10 @@ export function openDB(): Promise<IDBDatabase> {
 		return dbPromise
 	const promise = new Promise<IDBDatabase>(async (resolve, reject) => {
 		const openRequest = await indexedDB.open(DB_NAME, DB_VERSION)
-		openRequest.onupgradeneeded = (event) => onUpgradeNeeded(event, reject)
+		openRequest.onupgradeneeded = (event) => onUpgradeNeeded(
+			event as Parameters<typeof onUpgradeNeeded>[0],
+			reject
+		)
 		openRequest.onsuccess = () => {
 			resolve(openRequest.result)
 		}
@@ -24,13 +27,14 @@ export function openDB(): Promise<IDBDatabase> {
 }
 
 function onUpgradeNeeded(
-	event: IDBVersionChangeEvent,
+	event: IDBVersionChangeEvent & {target: {result: IDBDatabase}},
 	reject: (reason?: Error) => void
 ) {
-	const db = event.target!.result as IDBDatabase
+	const db = event.target.result
 	db.onerror = () => {
-		console.error(`failed to upgrade db`, db.error?.message)
-		reject(db.error)
+		const dbWithError = db as IDBDatabase & {error: Error}
+		console.error(`failed to upgrade db`, dbWithError.error.message)
+		reject(dbWithError.error)
 		dbPromise = null
 	}
 

@@ -22,7 +22,7 @@ const _artistView = atom<ArtistView>({
 })
 export const artistView = atom(
 	(get) => get(_artistView),
-	(get, set, value: ArtistView | ((prev: ArtistView, get) => ArtistView | undefined)) => {
+	(get, set, value: ArtistView | ((prev: ArtistView, get: any) => ArtistView | undefined)) => {
 		const newView = typeof value === "function"
 			? value(get(_artistView), get)
 			: value
@@ -55,7 +55,7 @@ const _albumView = atom<AlbumView>({
 })
 export const albumView = atom(
 	(get) => get(_albumView),
-	(get, set, value: AlbumView | ((prev: AlbumView, get) => AlbumView | undefined)) => {
+	(get, set, value: AlbumView | ((prev: AlbumView, get: any) => AlbumView | undefined)) => {
 		const newView = typeof value === "function"
 			? value(get(_albumView), get)
 			: value
@@ -78,7 +78,7 @@ const _searchView = atom<SearchView>({
 })
 export const searchView = atom(
 	(get) => get(_searchView),
-	(get, set, value: SearchView | ((prev: SearchView, get) => SearchView | undefined)) => {
+	(get, set, value: SearchView | ((prev: SearchView, get: any) => SearchView | undefined)) => {
 		const newView = typeof value === "function"
 			? value(get(_searchView), get)
 			: value
@@ -103,7 +103,10 @@ export function useShowHome() {
 	const setMainView = useSetAtom(mainView)
 
 	return useCallback((which?: MainView) => {
-		const close = (name: Panel) => (prev, get) => {
+		const close = <P extends Panel>(name: P) => (
+			prev: P extends "album" ? AlbumView : P extends "artist" ? ArtistView : SearchView,
+			get: any
+		) => {
 			const stack = get(panelStack)
 			if(!stack.includes(name)) return undefined
 			return {...prev, open: false}
@@ -139,7 +142,7 @@ function Back() {
 			customNav()
 			event.preventDefault()
 		}, {capture: true, signal: controller.signal})
-		addEventListener('keydown', (event) => {
+		window.addEventListener('keydown', (event) => {
 			if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey) {
 				event.preventDefault()
 				event.stopPropagation()

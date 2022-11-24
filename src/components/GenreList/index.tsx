@@ -1,17 +1,21 @@
-import type { UseQueryResult } from "react-query"
-import type { inferQueryOutput } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { startTransition } from "react"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import PlaylistIcon from "icons/queue_music.svg"
 
+type GenreListItem = {
+	id: string
+	name: string
+	_count: { tracks: number }
+}
+
 export default function GenreList({
 	genres,
 	onSelect,
 }: {
-	genres: UseQueryResult<inferQueryOutput<"genre.list">>["data"]
-	onSelect?: (genre: inferQueryOutput<"genre.list">[number]) => void
+	genres: GenreListItem[]
+	onSelect?: (genre: GenreListItem) => void
 }) {
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()

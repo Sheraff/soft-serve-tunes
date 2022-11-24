@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server"
 import { socketServer } from "server/persistent/ws"
 import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
+import { prisma } from "server/db/client"
 
 const trackSelect = {
   id: true,
@@ -22,6 +23,46 @@ const trackSelect = {
     },
   }
 } // satisfies Prisma.TrackFindManyArgs['select']
+
+async function getResolve(id: string) {
+  const result = await prisma.playlist.findUnique({
+    where: { id },
+    include: {
+      tracks: {
+        include: {track: {select: {
+          id: true,
+          name: true,
+          artist: { select: {
+            id: true,
+            name: true
+          }},
+          album: { select: {
+            id: true,
+            name: true,
+            coverId: true
+          }},
+        }}},
+        orderBy: { index: 'asc' },
+      },
+      _count: {
+        select: { tracks: true },
+      }
+    }
+  })
+  if (!result) {
+    return result
+  }
+  const tracks = result.tracks.map(({track}) => track)
+  const {artists, albums} = extractPlaylistCredits(tracks)
+  const description = descriptionFromPlaylistCredits(artists, tracks.length)
+  return {
+    ...result,
+    tracks,
+    artists,
+    albums,
+    description,
+  }
+}
 
 export const playlistRouter = createRouter()
   .query("generate", {
@@ -93,44 +134,8 @@ export const playlistRouter = createRouter()
     input: z.object({
       id: z.string()
     }),
-    async resolve({ input, ctx }) {
-      const result = await ctx.prisma.playlist.findUnique({
-        where: { id: input.id },
-        include: {
-          tracks: {
-            include: {track: {select: {
-              id: true,
-              name: true,
-              artist: { select: {
-                id: true,
-                name: true
-              }},
-              album: { select: {
-                id: true,
-                name: true,
-                coverId: true
-              }},
-            }}},
-            orderBy: { index: 'asc' },
-          },
-          _count: {
-            select: { tracks: true },
-          }
-        }
-      })
-      if (!result) {
-        return result
-      }
-      const tracks = result.tracks.map(({track}) => track)
-      const {artists, albums} = extractPlaylistCredits(tracks)
-      const description = descriptionFromPlaylistCredits(artists, tracks.length)
-      return {
-        ...result,
-        tracks,
-        artists,
-        albums,
-        description,
-      }
+    resolve({ input }) {
+      return getResolve(input.id)
     }
   })
   .query("searchable", {
@@ -187,17 +192,12 @@ export const playlistRouter = createRouter()
           tracks: { create: input.tracks.map(({id, index}) => ({
             index,
             trackId: id,
-          }))}
+          }))},
         },
-        include: {
-          tracks: {
-            include: { track: true },
-            orderBy: { index: 'asc' },
-          }
-        }
+        select: {id: true},
       })
       socketServer.send("watcher:add-playlist")
-      return playlist
+      return getResolve(playlist.id)
     }
   })
   .mutation("delete", {

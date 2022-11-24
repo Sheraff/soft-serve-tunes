@@ -76,6 +76,7 @@ export default function WatcherSocket() {
 				revalidateSwCache("artist.miniature", {id: data.payload.id})
 				revalidateSwCache("artist.get", {id: data.payload.id})
 			} else if (data.type === "global:message") {
+				// @ts-expect-error -- web socket messages aren't typed
 				console[data.payload?.level || 'log'](data.payload.message)
 			}
 		}, {signal: controller.signal})

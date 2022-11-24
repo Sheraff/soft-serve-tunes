@@ -6,7 +6,8 @@ export default function useCachedTrack({id, enabled}: {id?: string, enabled?: bo
 		queryKey: ['sw-cached-track', id],
 		queryFn({ signal }) {
 			const controller = new AbortController()
-			signal.onabort = () => controller.abort()
+			// signal will always be defined on browsers that support it, and I only care about modern browsers
+			signal!.onabort = () => controller.abort()
 			return new Promise(async (resolve, reject) => {
 				const registration = await navigator.serviceWorker.ready
 				const target = registration.active

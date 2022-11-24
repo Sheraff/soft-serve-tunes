@@ -3,7 +3,11 @@ import { prisma } from "server/db/client"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 
 async function computeCoversByTrackEntrypoint(id: string) {
-	await computeTrackCover(id, {tracks: true, artist: true, album: true})
+	await computeTrackCover(id, {
+		// tracks: true,
+		artist: true,
+		album: true,
+	})
 }
 
 async function act() {

@@ -100,8 +100,8 @@ const Home: NextPage<{
 					</>
 				)}
 			</AppState>
-			{!loggedIn && (
-				<SignIn providers={providers} />
+			{!loggedIn && isOnline && (
+				<SignIn providers={providers!} />
 			)}
 		</>
 	)

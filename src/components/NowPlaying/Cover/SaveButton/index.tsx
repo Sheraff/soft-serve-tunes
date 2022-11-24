@@ -70,6 +70,9 @@ function SaveButton({id, className}: {
 				tracks: cache.tracks.map(({id}, index) => ({id, index}))
 			}, {
 				onSuccess(playlist) {
+					if (!playlist) {
+						throw new Error('Trying to save a playlist, but mutation returned null')
+					}
 					trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
 					onPlaylistSaved(trpcClient, playlist.id)
 					conditions++
