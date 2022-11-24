@@ -39,6 +39,8 @@ function processBatch() {
 					client.postMessage({type: 'sw-trpc-invalidation', payload})
 				)
 			})
+		} else {
+			console.warn('SW: failed trpc revalidation', response.status, response.statusText, url)
 		}
 	})
 }
