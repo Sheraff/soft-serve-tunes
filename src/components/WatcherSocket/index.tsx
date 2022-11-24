@@ -34,9 +34,11 @@ export default function WatcherSocket() {
 			} else if (data.type === "watcher:add-playlist") {
 				console.log("added playlist")
 				revalidateSwCache("playlist.list")
+				revalidateSwCache("playlist.searchable")
 			} else if (data.type === "watcher:remove-playlist") {
 				console.log("removed playlist")
 				revalidateSwCache("playlist.list")
+				revalidateSwCache("playlist.searchable")
 				revalidateSwCache("playlist.get", { id: data.payload.id })
 			} else if (data.type === "watcher:remove") {
 				console.log("removed", data.payload)
