@@ -416,7 +416,7 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 	const cursorRequest = store.openCursor()
 	return new Promise((resolve, reject) => {
 		cursorRequest.onerror = () => {
-			console.error(`couldn't open cursor on in indexedDB "playlist" to reorder list`)
+			console.error(new Error(`couldn't open cursor on in indexedDB "playlist" to reorder list`, {cause: tx.error}))
 			reject(tx.error)
 		}
 		cursorRequest.onsuccess = () => {
@@ -489,7 +489,7 @@ async function deleteFromListInIndexedDB(id: string) {
 	const cursorRequest = store.openCursor()
 	return new Promise((resolve, reject) => {
 		cursorRequest.onerror = () => {
-			console.error(`couldn't open cursor on in indexedDB "playlist" to delete item`)
+			console.error(new Error(`couldn't open cursor on in indexedDB "playlist" to delete item`, {cause: tx.error}))
 			reject(tx.error)
 		}
 		let hasDeleted = false

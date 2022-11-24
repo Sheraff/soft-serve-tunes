@@ -105,8 +105,7 @@ export const listRouter = createRouter()
               }
             } catch (e) {
               // catching error because lack of cleanup shouldn't prevent app from starting up
-              console.error('error depopulating database')
-              console.error(e)
+              console.error(new Error('error depopulating database', {cause: e}))
             }
           })
           .then(() => {

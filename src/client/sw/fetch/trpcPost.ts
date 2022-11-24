@@ -11,7 +11,7 @@ export async function retryPostOnOnline() {
 			await fetch(requests[0])
 			requests.shift()
 		} catch (e) {
-			console.warn('SW: error with delayed POST request', e)
+			console.warn(new Error('SW: error with delayed POST request', {cause: e}))
 			processing = false
 			return
 		}

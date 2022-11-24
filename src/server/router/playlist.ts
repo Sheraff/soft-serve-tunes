@@ -384,7 +384,7 @@ export const playlistRouter = createRouter()
         }
         if (!tracks) {
           const reason = "Couldn't recover, the playlist itself doesn't seem to exist anymore and we can't find the playlistEntries anymore"
-          console.log()
+          console.log(reason)
           socketServer.send('watcher:remove-playlist', { playlist: { id: input.id } })
           throw new TRPCError({
             message: reason,
@@ -401,8 +401,7 @@ export const playlistRouter = createRouter()
               where: { id: entry.id }
             })
           } catch (e) {
-            console.warn("this is probably normal, we're trying to recover from the previous warning")
-            console.warn(e)
+            console.warn(new Error("this is probably normal, we're trying to recover from the previous warning", {cause: e}))
           }
         }
         try {

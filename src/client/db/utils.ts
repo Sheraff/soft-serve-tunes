@@ -17,7 +17,7 @@ export function openDB(): Promise<IDBDatabase> {
 			resolve(openRequest.result)
 		}
 		openRequest.onerror = () => {
-			console.error(`failed to open db`, openRequest.error?.message)
+			console.error(new Error(`failed to open db`, {cause: openRequest.error}))
 			reject(openRequest.error)
 			dbPromise = null
 		}
@@ -33,7 +33,7 @@ function onUpgradeNeeded(
 	const db = event.target.result
 	db.onerror = () => {
 		const dbWithError = db as IDBDatabase & {error: Error}
-		console.error(`failed to upgrade db`, dbWithError.error.message)
+		console.error(new Error(`failed to upgrade db`, {cause: dbWithError.error}))
 		reject(dbWithError.error)
 		dbPromise = null
 	}
@@ -66,7 +66,7 @@ export async function retrieveFromIndexedDB<T>(storeName: Stores, key: string): 
 	const request = store.get(key) as IDBRequest<QueryStorage<T>>
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to retrieve entity ${key} from indexedDB`, request.error?.message)
+			console.error(new Error(`failed to retrieve entity ${key} from indexedDB`, {cause: request.error}))
 			reject(request.error)
 		}
 		request.onsuccess = () => {
@@ -87,7 +87,7 @@ export async function countFromIndexedDB(storeName: Stores): Promise<number> {
 	const request = store.count()
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to count rows from indexedDB ${storeName}`, request.error?.message)
+			console.error(new Error(`failed to count rows from indexedDB ${storeName}`, {cause: request.error}))
 			reject(request.error)
 		}
 		request.onsuccess = () => resolve(request.result)
@@ -103,7 +103,7 @@ export async function storeInIndexedDB<T>(storeName: Stores, key: string, result
 		result,
 	})
 	request.onerror = () => {
-		console.error(`failed to store entity ${key} in indexedDB`, request.error?.message)
+		console.error(new Error(`failed to store entity ${key} in indexedDB`, {cause: request.error}))
 	}
 }
 
@@ -113,7 +113,7 @@ export async function modifyInIndexedDB<T>(storeName: Stores, key: string, mutat
 	const store = tx.objectStore(storeName)
 	return new Promise((resolve, reject) => {
 		tx.onerror = () => {
-			console.error(`failed to modify entity ${key} from indexedDB`, tx.error?.message)
+			console.error(new Error(`failed to modify entity ${key} from indexedDB`, {cause: tx.error}))
 			reject(tx.error)
 		}
 		tx.oncomplete = resolve
@@ -144,7 +144,7 @@ export async function storeListInIndexedDB<T>(storeName: Stores, items: {key: st
 	items.forEach(item => store.put(item))
 	return new Promise((resolve, reject) => {
 		tx.onerror = () => {
-			console.error(`failed to add many items in indexedDB ${storeName}`, tx.error?.message)
+			console.error(new Error(`failed to add many items in indexedDB ${storeName}`, {cause: tx.error}))
 			reject(tx.error)
 		}
 		tx.oncomplete = resolve
@@ -158,7 +158,7 @@ export async function listAllFromIndexedDB<T>(storeName: Stores): Promise<T[]> {
 	const request = store.getAll() as IDBRequest<QueryStorage<T>[]>
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to retrieve entities from indexedDB ${storeName}`, request.error?.message)
+			console.error(new Error(`failed to retrieve entities from indexedDB ${storeName}`, {cause: request.error}))
 			reject(request.error)
 		}
 		request.onsuccess = () => {
@@ -179,7 +179,7 @@ export async function deleteFromIndexedDB(storeName: Stores, key: string) {
 	const request = store.delete(key)
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to delete entity ${key} from indexedDB ${storeName}`, request.error?.message)
+			console.error(new Error(`failed to delete entity ${key} from indexedDB ${storeName}`, {cause: request.error}))
 			reject(request.error)
 		}
 		request.onsuccess = resolve
@@ -193,7 +193,7 @@ export async function deleteAllFromIndexedDB(storeName: Stores) {
 	const request = store.clear()
 	return new Promise((resolve, reject) => {
 		request.onerror = () => {
-			console.error(`failed to clear store ${storeName} from indexedDB`, request.error?.message)
+			console.error(new Error(`failed to clear store ${storeName} from indexedDB`, {cause: request.error}))
 			reject(request.error)
 		}
 		request.onsuccess = resolve

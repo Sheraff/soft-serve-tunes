@@ -33,10 +33,10 @@ export default function defaultFetch(event: FetchEvent, request: Request) {
 			}
 			return response
 		})
-		.catch(async () => {
+		.catch(async (e) => {
 			const matchedResponse = await caches.match(event.request.url, {cacheName: CACHES.next})
 			if (matchedResponse) return matchedResponse
-			console.error('SW: no matched response', event.request.url)
+			console.error(new Error(`SW: no matched response for ${event.request.url}`, {cause: e}))
 			return new Response(STATIC_OFFLINE_PAGE, {
 				status: 200,
 				headers: {

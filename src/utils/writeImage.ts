@@ -23,8 +23,7 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 			}
 			writeFile(fullPath, buffer, { flag: 'wx' }, (error) => {
 				if (error && error.code !== 'EEXIST') {
-					console.error('Error writing image', extension, url)
-					console.error(error)
+					console.error(new Error(`Error writing image: ${extension}, ${url}`, {cause: error}))
 				}
 			})
 		})
@@ -36,8 +35,7 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 				console.warn('Could not extract palette', extension, url)
 			}
 		} catch (error) {
-			console.error('Error extracting palette', extension, url)
-			console.error(error)
+			console.error(new Error(`Error extracting palette: ${extension}, ${url}`, {cause: error}))
 		}
 	}
 	return {
@@ -70,9 +68,7 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 				...result,
 			}
 		} catch (e) {
-			console.error('Could not fetch image', url)
-			console.error(`failed at step ${step} (retry #${retries})`)
-			console.error(e)
+			console.error(new Error(`Could not fetch image @${url}. Failed at step ${step} (retry #${retries}). Will retry=${retries < 5}`, {cause: e}))
 			if (retries < 5) {
 				await new Promise(resolve => setTimeout(resolve, Math.random() * 10 + 500 * (retries + 1) ** 2))
 				return fetchAndWriteImage(url, retries + 1)
