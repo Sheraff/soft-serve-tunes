@@ -200,6 +200,119 @@ export const playlistRouter = createRouter()
       return getResolve(playlist.id)
     }
   })
+  .mutation("modify", {
+    input: z.union([
+      z.object({
+        id: z.string(),
+        type: z.enum(["reorder"]),
+        params: z.object({
+          from: z.number(),
+          to: z.number(),
+        }),
+      }),
+      z.object({
+        id: z.string(),
+        type: z.enum(["add-track"]),
+        params: z.object({
+          id: z.string(),
+          index: z.number(),
+        }),
+      }),
+      z.object({
+        id: z.string(),
+        type: z.enum(["remove-track"]),
+        params: z.object({
+          id: z.string(),
+        }),
+      }),
+    ]),
+    async resolve({ input, ctx }) {
+      if (input.type === "reorder") {
+        const min = Math.min(input.params.from, input.params.to)
+        const max = Math.max(input.params.from, input.params.to)
+        const direction = input.params.from < input.params.to ? -1 : 1
+        await ctx.prisma.$transaction(async (tx) => {
+          const entries = await tx.playlistEntry.findMany({
+            where: {
+              playlistId: input.id,
+              index: {
+                gte: min,
+                lte: max,
+              },
+            },
+            select: {id: true, index: true},
+          })
+          for (const entry of entries) {
+            await tx.playlistEntry.update({
+              where: {id: entry.id},
+              data: {
+                index: entry.index === input.params.from
+                  ? input.params.to
+                  : entry.index + direction
+              }
+            })
+          }
+        })
+      } else if (input.type === "remove-track") {
+        await ctx.prisma.$transaction(async (tx) => {
+          const [entry] = await tx.playlistEntry.findMany({
+            where: {
+              playlistId: input.id,
+              trackId: input.params.id
+            },
+            select: {index: true, id: true}
+          })
+          if (!entry) {
+            throw new TRPCError({
+              message: `Couldn't locate playlist entry to delete: track ${input.params.id} in playlist ${input.id}`,
+              code: "NOT_FOUND"
+            })
+          }
+          await tx.playlistEntry.delete({
+            where: {id: entry.id}
+          })
+          const entries = await tx.playlistEntry.findMany({
+            where: {
+              playlistId: input.id,
+              index: {gte: entry.index},
+            },
+            select: {id: true, index: true},
+          })
+          for (const entry of entries) {
+            await tx.playlistEntry.update({
+              where: { id: entry.id },
+              data: { index: entry.index - 1 },
+            })
+          }
+        })
+      } else if (input.type === "add-track") {
+        await ctx.prisma.$transaction(async (tx) => {
+          const entries = await tx.playlistEntry.findMany({
+            where: {
+              playlistId: input.id,
+              index: {gte: input.params.index},
+            },
+            select: {id: true, index: true},
+          })
+          for (const entry of entries) {
+            await tx.playlistEntry.update({
+              where: { id: entry.id },
+              data: { index: entry.index + 1 },
+            })
+          }
+          await tx.playlistEntry.create({
+            data: {
+              index: input.params.index,
+              playlistId: input.id,
+              trackId: input.params.id,
+            }
+          })
+        })
+      }
+      socketServer.send('invalidate:playlist', { id: input.id })
+      // return getResolve(input.id)
+    }
+  })
   .mutation("delete", {
     input: z.object({
       id: z.string()

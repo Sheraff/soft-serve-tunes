@@ -72,6 +72,8 @@ model PlaylistEntry {
   track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   playlistId String
   playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  @@unique([trackId, playlistId])
 }
 
 model Playlist {

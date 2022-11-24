@@ -108,6 +108,7 @@ export default function PastSearch({
 					} else if (playlistNarrow(type, entity)) {
 						if (!entity) return console.warn('PastSearch could not start playlist as it was not able to fetch associated data')
 						setPlaylist(entity.name, entity.id, entity.tracks)
+						showHome("home")
 					}
 				})
 			}}

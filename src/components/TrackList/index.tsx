@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { ElementType, startTransition, useEffect, useRef, useState } from "react"
+import { ElementType, startTransition, useDeferredValue, useEffect, useRef, useState } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
@@ -182,9 +182,12 @@ export default function TrackList({
 	}
 	useDragTrack(ref, !!orderable, callbacks)
 	const addNextToPlaylist = useAddNextToPlaylist()
+
+	const deferredTracks = useDeferredValue(tracks)
+
 	return (
 		<ul className={styles.main} ref={orderable ? ref : undefined}>
-			{tracks.map((track, i) => (
+			{deferredTracks.map((track, i) => (
 				<li className={styles.item} key={track.id} data-index={i}>
 					{i <= enableUpTo && (
 						<TrackItem

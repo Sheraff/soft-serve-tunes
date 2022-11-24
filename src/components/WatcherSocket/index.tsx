@@ -75,6 +75,10 @@ export default function WatcherSocket() {
 				console.log("invalidate artist", data.payload)
 				revalidateSwCache("artist.miniature", {id: data.payload.id})
 				revalidateSwCache("artist.get", {id: data.payload.id})
+			} else if (data.type === "invalidate:playlist") {
+				console.log("invalidate playlist", data.payload)
+				revalidateSwCache("playlist.get", {id: data.payload.id})
+				revalidateSwCache("playlist.searchable")
 			} else if (data.type === "global:message") {
 				// @ts-expect-error -- web socket messages aren't typed
 				console[data.payload?.level || 'log'](data.payload.message)

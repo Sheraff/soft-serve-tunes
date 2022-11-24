@@ -257,6 +257,7 @@ const playNextStack: string[] = []
 
 export function useAddNextToPlaylist() {
 	const trpcClient = trpc.useContext()
+	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
 	return useCallback(async (track: PlaylistTrack, forceCurrent?: boolean) => {
 		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 		// playlist doesn't exist, create it with new track as current
@@ -299,6 +300,16 @@ export function useAddNextToPlaylist() {
 					current: forceCurrent ? track.id : undefined,
 				})),
 			])
+			if (cache.id) {
+				await mutateAsync({
+					id: cache.id,
+					type: "add-track",
+					params: {
+						id: track.id,
+						index: forceCurrent ? 0 : cache.tracks.length,
+					}
+				})
+			}
 			
 			return
 		}
@@ -341,7 +352,17 @@ export function useAddNextToPlaylist() {
 				current: forceCurrent ? track.id : cache.current,
 			})),
 		])
-	}, [trpcClient])
+		if (cache.id) {
+			await mutateAsync({
+				id: cache.id,
+				type: "add-track",
+				params: {
+					id: track.id,
+					index,
+				}
+			})
+		}
+	}, [trpcClient, mutateAsync])
 }
 
 function findEndOfStack(tracks: Playlist['tracks'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
@@ -357,29 +378,37 @@ function findEndOfStack(tracks: Playlist['tracks'], currentIndex: number, isStac
 
 export function useReorderPlaylist() {
 	const trpcClient = trpc.useContext()
+	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
 	return useCallback(async (oldIndex: number, newIndex: number) => {
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (playlist) => {
-			if (!playlist) {
-				throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
-			}
-			const newItems = [...playlist.tracks]
-			const [item] = newItems.splice(oldIndex, 1)
-			newItems.splice(newIndex, 0, item!)
-			return {
-				...playlist,
-				tracks: newItems,
-			}
+		const playlist = trpcClient.queryClient.getQueryData<Playlist>(['playlist'])
+		if (!playlist) {
+			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+		}
+		const newItems = [...playlist.tracks]
+		const [item] = newItems.splice(oldIndex, 1)
+		newItems.splice(newIndex, 0, item!)
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			...playlist,
+			tracks: newItems,
 		})
 		await reorderListInIndexedDB(oldIndex, newIndex)
-	}, [trpcClient])
+		if (playlist.id) {
+			await mutateAsync({
+				id: playlist.id,
+				type: "reorder",
+				params: {
+					from: oldIndex,
+					to: newIndex,
+				}
+			})
+		}
+	}, [trpcClient, mutateAsync])
 }
 
 async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 	const minIndex = Math.min(oldIndex, newIndex)
 	const maxIndex = Math.max(oldIndex, newIndex)
 	const direction = oldIndex < newIndex ? -1 : 1
-
-	console.log('reorder indexedDB', oldIndex, newIndex)
 
 	const db = await openDB()
 	const tx = db.transaction("playlist", "readwrite")
@@ -411,6 +440,7 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 
 export function useRemoveFromPlaylist() {
 	const trpcClient = trpc.useContext()
+	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
 	return useCallback(async (id: string) => {
 		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
@@ -440,7 +470,16 @@ export function useRemoveFromPlaylist() {
 				current: newCurrent,
 			})),
 		])
-	}, [trpcClient])
+		if (playlist.id) {
+			await mutateAsync({
+				id: playlist.id,
+				type: "remove-track",
+				params: {
+					id,
+				}
+			})
+		}
+	}, [trpcClient, mutateAsync])
 }
 
 async function deleteFromListInIndexedDB(id: string) {
