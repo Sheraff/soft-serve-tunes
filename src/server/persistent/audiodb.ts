@@ -378,6 +378,34 @@ class AudioDb {
 		}
 
 		const {strGenre, ...data} = audiodbTrack
+		const existingConnection = await prisma.audioDbTrack.findUnique({
+			where: {idTrack: data.idTrack},
+			select: {
+				entity: { select: {
+					id: true,
+					// TODO: all the info below should be removed, it's only temporary until I can debug why there are duplicate audioDbTracks
+					name: true,
+					artist: { select: { name: true } },
+					album: { select: { name: true } },
+				}}
+			}
+		})
+		if (existingConnection && existingConnection.entity) {
+			log("warn", "500", "audiodb", `
+				AudioDb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
+				but another track is already associated with the data found ("${existingConnection.entity.name}" in "${existingConnection.entity.album?.name}" by "${existingConnection.entity.artist?.name}")
+				Will not associate data: ${data.strTrack} idTrack#${data.idTrack}
+			`)
+			return
+		}
+		if (existingConnection) {
+			log("warn", "500", "audiodb", `
+				AudioDb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
+				However it has no associated entity (actual Track)
+				Will not associate data: ${data.strTrack} idTrack#${data.idTrack}
+			`)
+			return
+		}
 		const genres = uniqueGenres(strGenre ? [strGenre] : [])
 		const imageIds = await keysAndInputToImageIds(data, ['strTrackThumb'])
 		await retryable(async () => prisma.audioDbTrack.create({
