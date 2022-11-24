@@ -336,16 +336,35 @@ export const playlistRouter = createRouter()
       } catch (e) {
         console.warn(e)
         // at this point the playlist is corrupted, probably because the transaction happened during a bad time for the DB
-        const entries = await ctx.prisma.playlist.findUnique({
-          where: { id: input.id },
-          select: { tracks: { select: { id: true } } }
-        })
-        if (!entries) {
-          console.log("Couldn't recover, the playlist itself doesn't seem to exist anymore")
-          socketServer.send('watcher:remove-playlist', { playlist: {id: input.id } })
-          throw e
+        let tracks: {id: string}[] | null = null
+        try {
+          const entries = await ctx.prisma.playlist.findUnique({
+            where: { id: input.id },
+            select: { tracks: { select: { id: true } } }
+          })
+          if (entries) {
+            tracks = entries.tracks
+          }
+        } catch {}
+        if (!tracks) {
+          try {
+            const entries = await ctx.prisma.playlistEntry.findMany({
+              where: { playlistId: input.id },
+              select: { id: true }
+            })
+            tracks = entries
+          } catch {}
         }
-        for (const entry of entries.tracks) {
+        if (!tracks) {
+          const reason = "Couldn't recover, the playlist itself doesn't seem to exist anymore and we can't find the playlistEntries anymore"
+          console.log()
+          socketServer.send('watcher:remove-playlist', { playlist: { id: input.id } })
+          throw new TRPCError({
+            message: reason,
+            code: "INTERNAL_SERVER_ERROR",
+          })
+        }
+        for (const entry of tracks) {
           const exists = await ctx.prisma.playlistEntry.findUnique({
             where: { id: entry.id }
           })
@@ -359,10 +378,12 @@ export const playlistRouter = createRouter()
             console.warn(e)
           }
         }
-        const playlist = await ctx.prisma.playlist.delete({
-          where: { id: input.id },
-          select: { id: true },
-        })
+        try {
+          await ctx.prisma.playlist.delete({
+            where: { id: input.id },
+          })
+        } catch {}
+        const playlist = { id: input.id }
         socketServer.send('watcher:remove-playlist', { playlist })
         return playlist
       }
