@@ -18,6 +18,8 @@ function processBatch() {
 	batch.timeoutId = null
 	batch.items = []
 
+	if (items.length === 0) return
+
 	const {endpoints, input} = items.reduce((params, item, i) => {
 		params.endpoints.push(item.key)
 		params.input[i] = item.params

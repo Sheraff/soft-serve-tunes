@@ -87,30 +87,32 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		} else if (fetchResponse.status > 200 && fetchResponse.status < 300) {
 			console.warn('SW: unexpected 2xx response status', fetchResponse)
 		}
-		Promise.resolve().then(async () => {
+		if (fetchIndices.length < endpoints.length) {
 			// fetch from server to refresh SW cache, some requested endpoints were missing from cache so they've already been fetched
-			const rest = endpoints.reduce((acc, endpoint, i) => {
-				if (fetchIndices.includes(i)) return acc
-				acc.endpoints.push(endpoint)
-				acc.input[acc.endpoints.length - 1] = input[i]
-				return acc
-			}, {
-				endpoints: [],
-				input: {},
-			} as {
-				endpoints: string[],
-				input: {[key: number]: any}
+			Promise.resolve().then(async () => {
+				const rest = endpoints.reduce((acc, endpoint, i) => {
+					if (fetchIndices.includes(i)) return acc
+					acc.endpoints.push(endpoint)
+					acc.input[acc.endpoints.length - 1] = input[i]
+					return acc
+				}, {
+					endpoints: [],
+					input: {},
+				} as {
+					endpoints: string[],
+					input: {[key: number]: any}
+				})
+				const restUrl = new URL(`/api/trpc/${rest.endpoints.join(',')}`, self.location.origin)
+				restUrl.searchParams.set('batch', '1')
+				restUrl.searchParams.set('input', JSON.stringify(rest.input))
+				const restResponse = await fetch(restUrl)
+				if (restResponse.status === 200 || restResponse.status === 207) {
+					handleTrpcFetchResponse(restResponse, restUrl)
+				} else if (restResponse.status > 200 && restResponse.status < 300) {
+					console.warn('SW: unexpected 2xx response status', restResponse)
+				}
 			})
-			const restUrl = new URL(`/api/trpc/${rest.endpoints.join(',')}`, self.location.origin)
-			restUrl.searchParams.set('batch', '1')
-			restUrl.searchParams.set('input', JSON.stringify(rest.input))
-			const restResponse = await fetch(restUrl)
-			if (restResponse.status === 200 || restResponse.status === 207) {
-				handleTrpcFetchResponse(restResponse, restUrl)
-			} else if (restResponse.status > 200 && restResponse.status < 300) {
-				console.warn('SW: unexpected 2xx response status', restResponse)
-			}
-		})
+		}
 	} else {
 		// fetch from server to refresh SW cache, no requested endpoint was missing from cache so request them all
 		fetchFromServer(request, url)
