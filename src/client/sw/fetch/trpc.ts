@@ -4,7 +4,7 @@ import { CACHES } from "../utils/constants"
 function trpcUrlToCacheKeys(url: URL) {
 	const [,,,parts] = url.pathname.split('/')
 	if (!parts) {
-		throw new Error ('function called on the wrong url, no trpc endpoints found')
+		throw new Error (`function called on the wrong url, no trpc endpoints found @${url}`)
 	}
 	const endpoints = parts.split(',')
 	const inputString = url.searchParams.get('input')
