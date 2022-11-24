@@ -1,7 +1,7 @@
 .backdrop {
 	position: fixed;
 	inset: 0;
-	z-index: 2;
+	z-index: 20;
 	backdrop-filter: blur(3px);
 }
 .backdrop::before {
@@ -9,7 +9,7 @@
 	position: fixed;
 	inset: 0;
 	z-index: -1;
-	background-color: var(--palette-bg-gradient);
+	background-color: var(--palette-bg-main);
 	animation: fade-in 200ms ease-out forwards;
 }
 @keyframes fade-in {
@@ -26,7 +26,7 @@
 	width: calc(100vw - 32px);
 	max-height: calc(100vh - 32px);
 	padding: 8px;
-	background-color: var(--palette-bg-main);
+	/* background-color: var(--palette-bg-main); */
 	color: var(--palette-primary);
 	border-radius: 4px;
 	overflow: hidden auto;
@@ -46,7 +46,7 @@
 	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 8px;
-	background-color: var(--palette-bg-main);
+	/* background-color: var(--palette-bg-main); */
 }
 
 .close {
@@ -54,4 +54,5 @@
 	padding: 8px;
 	margin: -8px;
 	display: flex;
+	display: none;
 }
