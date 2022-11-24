@@ -45,10 +45,27 @@
 .ui {
 	grid-area: ui;
 	display: flex;
-	justify-content: space-evenly;
+	justify-content: space-around;
 	font-size: 20px;
 }
 
 .ui button {
 	display: flex;
+}
+
+.ui button.enabled {
+	position: relative;
+	color: var(--palette-secondary);
+}
+
+.ui button.enabled::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	height: 4px;
+	width: 4px;
+	border-radius: 50%;
+	background-color: currentColor;
+	transform: translateX(-50%);
 }

@@ -1,7 +1,11 @@
-import { useEffect } from "react"
+import { type RefObject, useEffect } from "react"
 import { useCurrentTrackDetails, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 
-export default function Notification() {
+export default function Notification({
+	audio
+}: {
+	audio: RefObject<HTMLAudioElement>
+}) {
 	const data = useCurrentTrackDetails()
 	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
 	const hasData = Boolean(data)
@@ -21,10 +25,9 @@ export default function Notification() {
 
 	useEffect(() => {
 		if(!hasData) return
-
-		navigator.mediaSession.setActionHandler('previoustrack', prevPlaylistIndex)
-		navigator.mediaSession.setActionHandler('nexttrack', nextPlaylistIndex)
-	}, [hasData, prevPlaylistIndex, nextPlaylistIndex])
+		navigator.mediaSession.setActionHandler('previoustrack', () => prevPlaylistIndex(audio))
+		navigator.mediaSession.setActionHandler('nexttrack', () => nextPlaylistIndex(audio))
+	}, [hasData, prevPlaylistIndex, nextPlaylistIndex, audio])
 
 	return null
 }

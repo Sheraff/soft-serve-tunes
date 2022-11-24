@@ -16,10 +16,20 @@ import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
 import useIsOnline from "client/sw/useIsOnline"
-import Head from "next/head"
-import { useCurrentTrack, useNextTrack, usePlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { useCurrentTrack, usePlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import ShuffleIcon from 'icons/shuffle.svg'
+import RepeatIcon from 'icons/repeat.svg'
+import RepeatOneIcon from 'icons/repeat_one.svg'
+import NextTrack from "./NextTrack"
 
 export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
+export const shuffle = asyncPersistedAtom<boolean>("shuffle", false)
+/**
+ * 0: false
+ * 1: repeat all
+ * 2: repeat one
+ */
+export const repeat = asyncPersistedAtom<0 | 1 | 2>("repeat", 0)
 
 function RightTimeSlot({
 	displayRemainingTime,
@@ -45,7 +55,6 @@ export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 	const {data: playlist} = usePlaylist()
 	const item = useCurrentTrack()
-	const nextItem = useNextTrack()
 	const {nextPlaylistIndex: playNext, prevPlaylistIndex} = useSetPlaylistIndex()
 
 	const playPrev = useCallback(
@@ -59,23 +68,6 @@ export default memo(function Player() {
 		},
 		[prevPlaylistIndex]
 	)
-
-
-	const [autoPlay, setAutoPlay] = useState(true)
-	useEffect(() => {
-		const element = audio.current
-		if (!element) return
-		const controller = new AbortController()
-		element.addEventListener("ended", () => {
-			if (nextItem) {
-				element.setAttribute("autoplay", "true")
-				element.src = `/api/file/${nextItem.id}`
-				element.load()
-			}
-			playNext()
-		}, {signal: controller.signal})
-		return () => controller.abort()
-	}, [autoPlay, playNext, nextItem])
 
 	const {
 		playing,
@@ -126,22 +118,11 @@ export default memo(function Player() {
 
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
+	const [isShuffle, setIsShuffle] = useAtom(shuffle)
+	const [repeatType, setRepeatType] = useAtom(repeat)
+
 	return (
 		<div className={styles.main}>
-			<>
-				{online && cached && nextItem && (
-					<Head>
-						<link
-							key={`/api/file/${nextItem.id}`}
-							rel="prefetch"
-							as="audio"
-							href={`/api/file/${nextItem.id}`}
-							// @ts-expect-error -- fetchpriority does exist
-							fetchpriority="low"
-						/>
-					</Head>
-				)}
-			</>
 			<ProgressInput
 				className={styles.progress}
 				audio={audio}
@@ -158,6 +139,14 @@ export default memo(function Player() {
 			</Suspense>
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
+				<Suspense fallback={<button><ShuffleIcon /></button>}>
+					<button
+						className={isShuffle ? styles.enabled : undefined}
+						onClick={() => setIsShuffle(a => !a)}
+					>
+						<ShuffleIcon />
+					</button>
+				</Suspense>
 				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
 					{(online || cached) && (
@@ -167,11 +156,23 @@ export default memo(function Player() {
 						<OfflineIcon />
 					)}
 				</>
-				<button onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
+				<button onClick={() => playNext(audio)} disabled={!hasPrevNext}><NextIcon /></button>
+				<Suspense fallback={<button><RepeatIcon /></button>}>
+					<button
+						className={repeatType ? styles.enabled : undefined}
+						onClick={() => {
+							const nextRepeatType = (repeatType + 1) % 3 as 0 | 1 | 2
+							setRepeatType(nextRepeatType)
+						}}
+					>
+						{repeatType === 2 ? <RepeatOneIcon /> : <RepeatIcon />}
+					</button>
+				</Suspense>
 			</div>
 			<Audio ref={audio}/>
 			<GlobalPalette />
-			<Notification />
+			<Notification audio={audio} />
+			<NextTrack audio={audio} id={item?.id}/>
 		</div>
 	)
 })

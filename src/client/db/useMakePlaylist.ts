@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react"
+import { type RefObject, useCallback, useMemo } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { type inferHandlerInput } from "@trpc/server"
 import { type AppRouter } from "server/router"
@@ -13,6 +13,8 @@ import {
 } from "./utils"
 import { useQuery } from "react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
+import { useAtomValue } from "jotai"
+import { repeat } from "components/Player"
 
 /**
  * TODO: 
@@ -156,9 +158,12 @@ export function useCurrentTrack() {
 }
 
 export function useNextTrack() {
+	const repeatType = useAtomValue(repeat)
 	const { data } = usePlaylist({select: ({tracks, current}) => {
+		if (repeatType === 2) return undefined
 		const index = tracks.findIndex(({id}) => id === current)
 		if (index < 0) return undefined
+		if (repeatType === 0 && index >= tracks.length - 1) return undefined
 		return tracks[index >= tracks.length - 1 ? 0 : (index + 1)]
 	}})
 	return data
@@ -199,15 +204,27 @@ export function useSetPlaylistIndex() {
 				current,
 			}))
 		},
-		async nextPlaylistIndex() {
+		async nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
+			const repeatType = repeat.getValue()
+			if (repeatType === 2) {
+				if (audio.current) {
+					audio.current.currentTime = 0
+					audio.current.play()
+				}
+				return
+			}
 			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
 			const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
-			const newIndex = index >= playlist.tracks.length
+			if (repeatType === 0 && index >= playlist.tracks.length - 1) {
+				return
+			}
+			const newIndex = index >= playlist.tracks.length - 1
 				? 0
 				: index + 1
+			
 			const current = playlist.tracks[newIndex]!.id
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
