@@ -303,7 +303,7 @@ class Spotify {
 				this.#running.delete(trackDbId)
 				return
 			}
-			if (datedTrack.spotifyDate && datedTrack.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+			if (datedTrack.spotifyDate && datedTrack.spotifyDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 				this.#running.delete(trackDbId)
 				return false
 			}
@@ -633,7 +633,7 @@ class Spotify {
 			}
 			albumFill: if (albumObject && !albumObject.imageId) {
 				if (!albumImageData) {
-					if (track.album?.spotifyDate && track.album.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+					if (track.album?.spotifyDate && track.album.spotifyDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 						break albumFill
 					}
 					if (track.album) {
@@ -684,7 +684,7 @@ class Spotify {
 				changedTrack = true
 			}
 			artistFill: if (artistObject && !artistObject.imageId) {
-				if (track.artist?.spotifyDate && track.artist.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
+				if (track.artist?.spotifyDate && track.artist.spotifyDate.getTime() < new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
 					break artistFill
 				}
 				if (track.artist) {
