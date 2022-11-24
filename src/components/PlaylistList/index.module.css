@@ -6,6 +6,10 @@
 	position: relative;
 	z-index: 0;
 	width: 100%;
+	height: 96px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .img {
@@ -21,8 +25,8 @@
 	font-size: 8px;
 	display: flex;
 	flex-direction: column;
+	width: calc(100vw - 144px);
 	gap: 4px;
-	padding: 32px;
 	color: hsl(0, 0%, 83%);
 	mix-blend-mode: luminosity;
 }
@@ -39,6 +43,5 @@
 }
 
 .desc {
-	max-width: 250px;
 	line-height: 1.4;
 }
