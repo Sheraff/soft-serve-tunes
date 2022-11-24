@@ -124,7 +124,7 @@ export const trackRouter = createRouter()
       }))
       if (!track) return
 
-      await retryable(() => ctx.prisma.$transaction([
+      await ctx.prisma.$transaction([
         ctx.prisma.track.update({
           where: { id: input.id },
           data: { userData: { upsert: {
@@ -150,7 +150,7 @@ export const trackRouter = createRouter()
             }}}
           })
         ] : []),
-      ]))
+      ])
 
       socketServer.send("invalidate:track", {id: input.id})
       if (track.albumId)
@@ -178,7 +178,7 @@ export const trackRouter = createRouter()
       const kind = input.toggle ? 'increment' : 'decrement'
       const init = input.toggle ? 1 : 0
       const {albumId, artistId} = track
-      await retryable(() => ctx.prisma.$transaction([
+      await ctx.prisma.$transaction([
         ctx.prisma.track.update({
           where: { id: input.id },
           data: { userData: { upsert: {
@@ -204,7 +204,7 @@ export const trackRouter = createRouter()
             }}}
           })
         ] : []),
-      ]))
+      ])
 
       socketServer.send("invalidate:track", {id: input.id})
       if (albumId)

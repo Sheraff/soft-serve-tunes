@@ -226,7 +226,7 @@ class MyWatcher {
 		if (!track) {
 			return track
 		}
-		await retryable(() => prisma.$transaction([
+		await prisma.$transaction([
 			...(track.userData && track.albumId ? [
 				prisma.album.update({
 					where: {id: track.albumId},
@@ -248,7 +248,7 @@ class MyWatcher {
 			prisma.track.delete({
 				where: { id },
 			})
-		]))
+		])
 		socketServer.send('watcher:remove', { track })
 		return track
 	}
