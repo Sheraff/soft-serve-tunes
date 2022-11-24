@@ -6,6 +6,7 @@ import { socketServer } from "server/persistent/ws"
 import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 import { prisma } from "server/db/client"
+import retryable from "utils/retryable"
 
 const trackSelect = {
   id: true,
@@ -335,13 +336,13 @@ export const playlistRouter = createRouter()
           })
         })
       } else if (input.type === "rename") {
-        await ctx.prisma.playlist.update({
+        await retryable(() => ctx.prisma.playlist.update({
           where: { id: input.id },
           data: {
             name: input.params.name,
             modifiedAt: new Date().toISOString(),
           },
-        })
+        }))
       }
       socketServer.send('invalidate:playlist', { id: input.id })
       // return getResolve(input.id)

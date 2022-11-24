@@ -35,7 +35,6 @@ export default function EditableTitle({
 		}
 
 		const onEnd = () => {
-			console.log('end')
 			setEditing(false)
 			onEditEnd.current(element.innerText)
 		}

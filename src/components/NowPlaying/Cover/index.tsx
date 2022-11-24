@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { usePlaylistExtractedDetails } from "client/db/useMakePlaylist"
+import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
 import { useMemo, useRef } from "react"
 import { useQuery } from "react-query"
 import { trpc } from "utils/trpc"
@@ -7,6 +7,7 @@ import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
+import SectionTitle from "atoms/SectionTitle"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
@@ -40,8 +41,9 @@ export default function Cover() {
 	const description = useMemo(() => descriptionFromPlaylistCredits(artistData, length), [artistData, length])
 
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})
+	const renamePlaylist = useRenamePlaylist()
 	onTitleEdit.current = (newName) => {
-		console.log(newName, id)
+		renamePlaylist(id!, newName)
 	}
 
 	return (
@@ -58,7 +60,12 @@ export default function Cover() {
 			</div>
 			<div className={styles.panel}>
 				<div className={styles.details}>
-					<EditableTitle name={name} onEditEnd={onTitleEdit} />
+					{id && (
+						<EditableTitle name={name} onEditEnd={onTitleEdit} />
+					)}
+					{!id && (
+						<SectionTitle>{name}</SectionTitle>
+					)}
 					<p>{description}</p>
 				</div>
 				<SaveButton id={id ?? null} className={styles.action} />

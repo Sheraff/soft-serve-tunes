@@ -15,28 +15,10 @@ import { useQuery } from "react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
 
 /**
- * - store in indexedDB "appState" the origin of the playlist (fully local === from artist, album, genre, vs. from online === sqlite saved playlist)
- * - based on origin
- *   - if fully local,
- *     - offer to save playlist (in sqlite)
- *     - all changes are mirrored into indexedDB "playlist"
- *     - display name is something default ""
- *   - if from online,
- *     - explicit changes are mirrored into sqlite Playlist
- *     - only "play next" changes aren't
- *     - display name is user input
- * 
+ * TODO: 
  * - exception: automatic playlists (by multi-criteria) aren't editable (also not implemented so not a problem)
- * 
- * ACTION PLAN:
- * - [x] auto-generate name for playlist based on how it was created (+ check server for existing name and add "#2" if necessary)
- * - [x] save name in "appState"
- * - [x] display name on playlist screen
- * - [x] add save button, on save prompt user for playlist name, with auto-generated name as prefill
- *     - [ ] if a playlist is saved, show "edit name" button next to title,
- *       show "delete playlist" button instead of "save playlist"
- * - [ ] create PlaylistList component for search screen / suggestion screen, on click, set playlist
- *     - if replaced playlist was a local-only playlist, store it (in memory only) & add button to "restore previous playlist"
+ * - on playlist creation, if replaced playlist was a local-only playlist, store it (in memory only) & add button to "restore previous playlist"
+ * - I'm not sure it's useful that a playlist name must be unique, maybe remove all that logic
  */
 
 type PlaylistTrack = Exclude<inferQueryOutput<"playlist.generate">, undefined>[number]
@@ -51,7 +33,7 @@ type PlaylistMeta = {
 	/** @description id of currently playing track */
 	current: string | undefined
 	name: string
-	/** @description id of the server-side playlist (if any) */
+	/** @description id of the server-side playlist (an id is only assigned when the playlist is saved) */
 	id: string | null
 }
 
@@ -92,11 +74,7 @@ export function useSetPlaylist() {
 	}, [trpcClient])
 }
 
-async function makePlaylist(
-	trpcClient: ReturnType<typeof trpc.useContext>,
-	list: PlaylistTrack[],
-	name: string,
-) {
+async function uniqueNameFromName(trpcClient: ReturnType<typeof trpc.useContext>, name: string) {
 	const playlists = await trpcClient.fetchQuery(["playlist.list"])
 	let appendCount = 1
 	let uniqueName: string
@@ -104,6 +82,15 @@ async function makePlaylist(
 		uniqueName = appendCount > 1 ? `${name} #${appendCount}` : name
 		appendCount += 1
 	} while (playlists.some(({name}) => name === uniqueName))
+	return uniqueName
+}
+
+async function makePlaylist(
+	trpcClient: ReturnType<typeof trpc.useContext>,
+	list: PlaylistTrack[],
+	name: string,
+) {
+	const uniqueName = await uniqueNameFromName(trpcClient, name)
 	await setPlaylist(trpcClient, uniqueName, null, list[0]?.id, list)
 }
 
@@ -510,6 +497,28 @@ async function deleteFromListInIndexedDB(id: string) {
 		tx.oncomplete = resolve
 	})
 }
+
+export function useRenamePlaylist() {
+	const trpcClient = trpc.useContext()
+	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	return useCallback(async (id: string, name: string) => {
+		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		if (!playlist) {
+			throw new Error(`trying to rename "playlist" query, but query doesn't exist yet`)
+		}
+		const uniqueName = await uniqueNameFromName(trpcClient, name)
+		// @ts-expect-error -- hey if it wasn't there before, it's okay that it's not here now
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
+		trpcClient.setQueryData(["playlist.get", {id}], (a) => a ? ({...a, name: uniqueName}) : null)
+		await mutateAsync({
+			id,
+			type: "rename",
+			params: {
+				name: uniqueName
+			}
+		})
+	}, [trpcClient, mutateAsync])
+	}
 
 export async function onPlaylistSaved(
 	trpcClient: ReturnType<typeof trpc.useContext>,
