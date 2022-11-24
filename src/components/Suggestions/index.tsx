@@ -229,7 +229,7 @@ export default memo(function Suggestions(){
 					<SectionTitle>Favorite artists</SectionTitle>
 					<ArtistList artists={artistFavs} lines={1} loading={artistFavsLoading} />
 				</div>
-				{playlists.length && (
+				{playlists.length > 0 && (
 					<div className={styles.section}>
 						<SectionTitle>Recent playlists</SectionTitle>
 						<PlaylistList playlists={playlists}/>
