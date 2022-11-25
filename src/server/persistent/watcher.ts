@@ -184,7 +184,6 @@ class MyWatcher {
 		} else if (added) {
 			log("event", "event", "fswatcher", `file sent to createTrack ${added}`)
 			await createTrack(added)
-			socketServer.send('watcher:add')
 		} else {
 			log("error", "error", "fswatcher", `could not resolve pending for ${ino} file`)
 		}

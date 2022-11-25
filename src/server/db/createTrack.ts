@@ -9,10 +9,11 @@ import type { PrismaClientInitializationError, PrismaClientKnownRequestError, Pr
 import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import { acoustId } from "server/persistent/acoustId"
-import sanitizeString, { simplifiedName } from "utils/sanitizeString"
+import { simplifiedName } from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeTrackCover } from "./computeCover"
+import { socketServer } from "server/persistent/ws"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -310,8 +311,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
-		await tryAgainLater()
 		await computeTrackCover(track.id, {album: true, artist: true})
+		socketServer.send('watcher:add', {id: track.id, albumId: track.albumId, artistId: track.artistId})
+		await tryAgainLater()
 		return track
 	} catch (e) {
 		const error = e as PrismaError
