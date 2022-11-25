@@ -1,3 +1,5 @@
+import { env } from "env/server.mjs"
+
 type Levels = 'ready' | 'event' | 'info' | 'warn' | 'error'
 type Category = string
 type Entity = 'lastfm' | 'spotify' | 'audiodb' | 'fswatcher' | 'trpc' | 'acoustid' |'sharp'
@@ -33,26 +35,36 @@ export function log(level: Levels, category: Category, entity: Entity, message: 
 export default function log(...args: [string] | [Entity, string] | [Levels, Category, string] | [Levels, Category, Entity, string]): void {
 	switch (args.length) {
 		case 1: {
-			console.log(args[0])
+			console.log(cleanString(args[0]))
 			return
 		}
 		case 2: {
 			const entityArg = args[0] as Entity
-			console.log(`${entityColor[entityArg]} ${entityArg} ${stop} ${args[1]}`)
+			console.log(cleanString(`${entityColor[entityArg]} ${entityArg} ${stop} ${args[1]}`))
 			return
 		}
 		case 3: {
 			const levelArg = args[0] as Levels
 			const categoryArg = args[1] as Category
-			console.log(`${levelColor[levelArg]}${categoryArg}${spaces(categoryArg)}${stop} - ${args[2]}`)
+			console.log(cleanString(`${levelColor[levelArg]}${categoryArg}${spaces(categoryArg)}${stop} - ${args[2]}`))
 			return
 		}
 		case 4: {
 			const levelArg = args[0] as Levels
 			const categoryArg = args[1] as Category
 			const entityArg = args[2] as Entity
-			console.log(`${levelColor[levelArg]}${categoryArg}${spaces(categoryArg)}${stop} - ${entityColor[entityArg]} ${entityArg} ${stop} ${args[3]}`)
+			console.log(cleanString(`${levelColor[levelArg]}${categoryArg}${spaces(categoryArg)}${stop} - ${entityColor[entityArg]} ${entityArg} ${stop} ${args[3]}`))
 			return
 		}
 	}
+}
+
+function cleanString(string: string) {
+	const clean1 = string
+		.replaceAll(env.LAST_FM_API_KEY, '[[LAST_FM_API_KEY]]')
+		.replaceAll(env.ACOUST_ID_API_KEY, '[[ACOUST_ID_API_KEY]]')
+	if (!env.AUDIO_DB_API_KEY)
+		return clean1
+	return clean1
+		.replaceAll(env.AUDIO_DB_API_KEY, '[[AUDIO_DB_API_KEY]]')
 }
