@@ -2,16 +2,15 @@
 	font-size: 12px;
 	grid-area: foot;
 	z-index: 1;
-	column-gap: 1em;
-	row-gap: 8px;
+	gap: 1em;
 	background: var(--palette-bg-main);
 	width: 100vw;
 	padding:
 		10px
 		max(10px, env(safe-area-inset-right))
-		max(12px, env(safe-area-inset-bottom))
+		max(14px, env(safe-area-inset-bottom))
 		max(10px, env(safe-area-inset-left));
-	box-shadow: 0 0 10px var(--palette-bg-gradient);
+	box-shadow: 0 0 8px var(--palette-bg-gradient);
 
 	display: grid;
 	grid-template-areas:
