@@ -336,6 +336,12 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
+		await retryable(() => (
+			prisma.track.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const track = await prisma.track.findUnique({
 			where: { id },
 			select: {
@@ -370,12 +376,6 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		await retryable(() => (
-			prisma.track.update({
-				where: { id },
-				data: { lastfmDate: new Date().toISOString() },
-			})
-		))
 		const urls: URL[] = []
 		if (track.mbid) {
 			urls.push(makeTrackUrl({ mbid: track.mbid }))
@@ -528,6 +528,12 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
+		await retryable(() => (
+			prisma.artist.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const artist = await prisma.artist.findUnique({
 			where: { id },
 			select: {
@@ -555,12 +561,6 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		await retryable(() => (
-			prisma.artist.update({
-				where: { id },
-				data: { lastfmDate: new Date().toISOString() },
-			})
-		))
 		const urls: URL[] = []
 		if (artist.mbid) {
 			urls.push(makeArtistUrl({ mbid: artist.mbid }))
@@ -681,6 +681,12 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
+		await retryable(() => (
+			prisma.album.update({
+				where: { id },
+				data: { lastfmDate: new Date().toISOString() },
+			})
+		))
 		const album = await prisma.album.findUnique({
 			where: { id },
 			select: {
@@ -711,12 +717,6 @@ class LastFM {
 			this.#running.delete(id)
 			return false
 		}
-		await retryable(() => (
-			prisma.album.update({
-				where: { id },
-				data: { lastfmDate: new Date().toISOString() },
-			})
-		))
 		const urls: URL[] = []
 		if (album.mbid) {
 			urls.push(makeAlbumUrl({ mbid: album.mbid }))

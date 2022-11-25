@@ -307,6 +307,12 @@ class Spotify {
 				this.#running.delete(trackDbId)
 				return false
 			}
+			await retryable(() => (
+				prisma.track.update({
+					where: { id: trackDbId },
+					data: { spotifyDate: new Date().toISOString() },
+				})
+			))
 			const track = await prisma.track.findUnique({
 				where: { id: trackDbId },
 				select: {
@@ -383,12 +389,6 @@ class Spotify {
 				this.#running.delete(trackDbId)
 				return
 			}
-			await retryable(() => (
-				prisma.track.update({
-					where: { id: trackDbId },
-					data: { spotifyDate: new Date().toISOString() },
-				})
-			))
 			let artistObject = spotifyTrack?.artist
 			let albumObject = spotifyTrack?.album
 			let albumImageData
