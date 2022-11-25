@@ -70,12 +70,12 @@ function onWsMessageData(data: any) {
 		revalidateSwCache("playlist.get", {id: data.payload.id})
 		revalidateSwCache("playlist.searchable")
 	} else if (data.type === "invalidate:listen-count") {
-		console.log("invalidate listen count")
+		console.log("invalidate listen counts")
 		revalidateSwCache("artist.most-recent-listen")
 		revalidateSwCache("artist.least-recent-listen")
 		revalidateSwCache("album.most-recent-listen")
 	} else if (data.type === "invalidate:likes") {
-		console.log("invalidate like  count")
+		console.log("invalidate like counts")
 		revalidateSwCache("artist.most-fav")
 		revalidateSwCache("album.most-fav")
 		revalidateSwCache("genre.most-fav")

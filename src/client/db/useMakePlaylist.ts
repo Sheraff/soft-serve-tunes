@@ -15,6 +15,7 @@ import { useQuery } from "react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
 import { useAtomValue } from "jotai"
 import { repeat } from "components/Player"
+import generateUniqueName from "utils/generateUniqueName"
 
 /**
  * TODO: 
@@ -78,13 +79,7 @@ export function useSetPlaylist() {
 
 async function uniqueNameFromName(trpcClient: ReturnType<typeof trpc.useContext>, name: string) {
 	const playlists = await trpcClient.fetchQuery(["playlist.list"])
-	let appendCount = 1
-	let uniqueName: string
-	do {
-		uniqueName = appendCount > 1 ? `${name} #${appendCount}` : name
-		appendCount += 1
-	} while (playlists.some(({name}) => name === uniqueName))
-	return uniqueName
+	return generateUniqueName(name, playlists)
 }
 
 async function makePlaylist(

@@ -7,6 +7,7 @@ import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
+import generateUniqueName from "utils/generateUniqueName"
 
 const trackSelect = {
   id: true,
@@ -194,9 +195,13 @@ export const playlistRouter = createRouter()
       if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
+      const playlists = await ctx.prisma.playlist.findMany({
+        select: { name: true }
+      })
+      const name = generateUniqueName(input.name, playlists)
       const playlist = await ctx.prisma.playlist.create({
         data: {
-          name: input.name,
+          name,
           tracks: { create: input.tracks.map(({id, index}) => ({
             index,
             trackId: id,
@@ -336,10 +341,15 @@ export const playlistRouter = createRouter()
           })
         })
       } else if (input.type === "rename") {
+        const playlists = await ctx.prisma.playlist.findMany({
+          where: { id: { not: input.id } },
+          select: { name: true },
+        })
+        const name = generateUniqueName(input.params.name, playlists)
         await retryable(() => ctx.prisma.playlist.update({
           where: { id: input.id },
           data: {
-            name: input.params.name,
+            name,
             modifiedAt: new Date().toISOString(),
           },
         }))
