@@ -357,6 +357,9 @@ async function tryAgainLater(path?: string, count = -1) {
 	}
 }
 
+const USELESS_GENRES = [
+	"other"
+]
 export function uniqueGenres(genres: string[]) {
 	const names = genres
 		.flatMap((genre) => genre
@@ -369,7 +372,7 @@ export function uniqueGenres(genres: string[]) {
 		name: string
 	}[]>((list, name) => {
 		const simplified = simplifiedName(name)
-		if (!uniqueSimplifiedNames.has(simplified)) {
+		if (!uniqueSimplifiedNames.has(simplified) && !USELESS_GENRES.includes(simplified)) {
 			uniqueSimplifiedNames.add(simplified)
 			list.push({ simplified, name })
 		}
