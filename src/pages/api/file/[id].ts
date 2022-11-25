@@ -75,7 +75,7 @@ function byteOffsetFromRangeString(range?: string) {
   if (range === undefined) {
     return [0]
   }
-  return range.replace(/bytes=/, "").split("-");
+  return range.replace(/bytes=/, "").split("-")
 }
 
 export const config = {

@@ -28,12 +28,10 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const width = Math.round(dimension ? Number(dimension) : deviceWidth)
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
 
-  let returnStream: ReadStream | NextApiResponse | null = null
+  let returnStream: ({pipe: (res: NextApiResponse) => NextApiResponse}) | null = null
   try {
     await access(exactFilePath, constants.R_OK)
-    const exactStream = createReadStream(exactFilePath)
-    exactStream.pipe(res)
-    returnStream = exactStream
+    returnStream = createReadStream(exactFilePath)
   } catch {
     const cover = await prisma.image.findUnique({
       where: { id },
@@ -55,9 +53,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
         })
         .toFormat('avif')
       // respond
-      returnStream = transformStream
-        .clone()
-        .pipe(res)
+      returnStream = transformStream.clone()
       // store
       transformStream
         .clone()
@@ -73,11 +69,16 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     log("error", "500", "sharp", `${width}x${width} cover #${id}`)
     return res.status(500).json({ error: "Error transforming image" })
   }
+
   res
-    .status(200)
     .setHeader("Content-Type", "image/avif")
-    .setHeader("cache-control", "public, max-age=31536000")
+    .setHeader("Cache-Control", "public, max-age=31536000")
   return returnStream
+    .pipe(res)
+    .on('error', (error: NodeJS.ErrnoException) => {
+      res.status(500).json({ error })
+      res.end()
+    })
 }
 
 async function removeImageEntry(id: string) {
