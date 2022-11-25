@@ -5,7 +5,7 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 
 ![](favicon.png)
 
-![PWA architecture drawio](https://user-images.githubusercontent.com/1325721/204022107-ec63c230-fd37-4247-bf6c-69a98b04ff02.svg)
+![](architecture.svg)
 
 ------
 
