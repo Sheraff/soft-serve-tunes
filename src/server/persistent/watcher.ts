@@ -219,6 +219,13 @@ class MyWatcher {
 						playcount: true,
 						favorite: true,
 					}
+				},
+				playlistEntries: {
+					select: {
+						id: true,
+						playlistId: true,
+						index: true,
+					}
 				}
 			}
 		})
@@ -243,6 +250,23 @@ class MyWatcher {
 						...(track.userData.favorite ? {favorite: {decrement: 1}} : {}),
 					}}}
 				})
+			] : []),
+			...(track.playlistEntries.length ? [
+				prisma.playlistEntry.deleteMany({
+					where: { id: {in: track.playlistEntries.map(({id}) => id)} },
+				}),
+				...track.playlistEntries.map((entry) => (
+					prisma.playlistEntry.updateMany({
+						where: {
+							playlistId: entry.playlistId,
+							index: {gte: entry.index}
+						},
+						data: {index: {decrement: 1}}
+					})
+				)),
+				prisma.playlist.deleteMany({
+					where: {tracks: {none: {}}}
+				}),
 			] : []),
 			prisma.track.delete({
 				where: { id },
