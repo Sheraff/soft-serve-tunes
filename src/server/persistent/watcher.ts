@@ -354,7 +354,13 @@ class MyWatcher {
 		let failCount = 0
 		for (const image of orphanedImages) {
 			try {
-				await unlink(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path))
+				try {
+					await unlink(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path))
+				} catch (e) {
+					if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+						throw e
+					}
+				}
 				await prisma.image.delete({
 					where: { id: image.id },
 				})
