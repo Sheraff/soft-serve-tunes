@@ -535,15 +535,21 @@ export function useRenamePlaylist() {
 export async function onPlaylistSaved(
 	trpcClient: ReturnType<typeof trpc.useContext>,
 	id: string | null,
+	name: string | null,
 ) {
 	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (data) => {
 		if (!data) {
 			throw new Error(`trying to add ID to "playlist" query, but query doesn't exist yet`)
 		}
-		return {...data, id}
+		return {
+			...data,
+			id,
+			name: name ?? data.name,
+		}
 	})
 	await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 		...meta,
 		id,
+		name: name ?? meta.name,
 	}))
 }

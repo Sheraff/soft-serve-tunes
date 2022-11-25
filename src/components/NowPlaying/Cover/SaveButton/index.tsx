@@ -74,7 +74,7 @@ function SaveButton({id, className}: {
 						throw new Error('Trying to save a playlist, but mutation returned null')
 					}
 					trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
-					onPlaylistSaved(trpcClient, playlist.id)
+					onPlaylistSaved(trpcClient, playlist.id, playlist.name)
 					conditions++
 					onEnd()
 				},
@@ -129,7 +129,7 @@ function SaveButton({id, className}: {
 			deletePlaylistMutation({ id }, {
 				onSuccess() {
 					trpcClient.setQueryData(["playlist.get", {id}], null)
-					onPlaylistSaved(trpcClient, null)
+					onPlaylistSaved(trpcClient, null, null)
 					conditions++
 					onEnd()
 				},
