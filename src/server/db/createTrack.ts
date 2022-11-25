@@ -353,7 +353,7 @@ async function tryAgainLater(path?: string, count = -1) {
 export function uniqueGenres(genres: string[]) {
 	const names = genres
 		.flatMap((genre) => genre
-			.split(/\/|,|;/)
+			.split(/\/|,|;|\|/)
 			.map(name => name.trim())
 		)
 	const uniqueSimplifiedNames = new Set<string>()
