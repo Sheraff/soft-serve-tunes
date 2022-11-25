@@ -11,7 +11,7 @@
     "postinstall": "prisma generate",
     "db": "prisma format && prisma generate && prisma db push",
     "format": "prisma format",
-    "spawn": "pm2 start npm --time --name soft-serve-tunes -- start"
+    "spawn": "pm2 start npm --time --name soft-serve-tunes -- start && curl http://localhost:3000 -I"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.4",
