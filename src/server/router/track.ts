@@ -157,6 +157,8 @@ export const trackRouter = createRouter()
         socketServer.send("invalidate:album", {id: track.albumId})
       if (track.artistId)
         socketServer.send("invalidate:artist", {id: track.artistId})
+      if (track.albumId || track.artistId)
+        socketServer.send("invalidate:listen-count")
     }
   })
   .mutation("like", {
@@ -211,6 +213,7 @@ export const trackRouter = createRouter()
         socketServer.send("invalidate:album", {id: albumId})
       if (artistId)
         socketServer.send("invalidate:artist", {id: artistId})
+      socketServer.send("invalidate:likes")
 
       return track
     }

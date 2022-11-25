@@ -284,6 +284,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		
 		// create album now that we have an artistId
+		let linkedAlbum: Awaited<ReturnType<typeof linkAlbum>> | null = null
 		if (correctedAlbum) {
 			const artistId = await (async () => {
 				// avoid cases where an album is created in duplicates because a single (or a few) track was from a different artist
@@ -301,7 +302,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				}
 				return isMultiArtistAlbum ? undefined : (track.artistId ?? undefined)
 			})()
-			await linkAlbum(track.id, {
+			linkedAlbum = await linkAlbum(track.id, {
 				name: correctedAlbum,
 				simplified: simplifiedName(correctedAlbum),
 				artistId,
@@ -312,7 +313,11 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
 		await computeTrackCover(track.id, {album: true, artist: true})
-		socketServer.send('watcher:add', {id: track.id, albumId: track.albumId, artistId: track.artistId})
+		socketServer.send('watcher:add', {
+			id: track.id,
+			albumId: track.albumId || linkedAlbum?.albumId,
+			artistId: track.artistId,
+		})
 		await tryAgainLater()
 		return track
 	} catch (e) {
@@ -421,7 +426,8 @@ async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isM
 		if (existingAlbum) {
 			return retryable(() => prisma.track.update({
 				where: { id },
-				data: { albumId: existingAlbum.id }
+				data: { albumId: existingAlbum.id },
+				select: { albumId: true },
 			}))
 		}
 	}
@@ -436,11 +442,13 @@ async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isM
 						create,
 					}
 				}
-			}
+			},
+			select: { albumId: true },
 		}))
 	}
 	return retryable(() => prisma.track.update({
 		where: { id },
-		data: { album: { create }}
+		data: { album: { create }},
+		select: { albumId: true },
 	}))
 }

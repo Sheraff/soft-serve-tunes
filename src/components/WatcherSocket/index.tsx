@@ -19,6 +19,7 @@ function onWsMessageData(data: any) {
 			revalidateSwCache("album.miniature", {id: data.payload.albumId})
 			revalidateSwCache("album.get", {id: data.payload.albumId})
 			revalidateSwCache("playlist.generate", { type: 'album', id: data.payload.albumId })
+			revalidateSwCache("album.most-recent-add")
 		}
 	} else if (data.type === "watcher:add-playlist") {
 		console.log("added playlist")
@@ -68,6 +69,16 @@ function onWsMessageData(data: any) {
 		console.log("invalidate playlist", data.payload)
 		revalidateSwCache("playlist.get", {id: data.payload.id})
 		revalidateSwCache("playlist.searchable")
+	} else if (data.type === "invalidate:listen-count") {
+		console.log("invalidate listen count")
+		revalidateSwCache("artist.most-recent-listen")
+		revalidateSwCache("artist.least-recent-listen")
+		revalidateSwCache("album.most-recent-listen")
+	} else if (data.type === "invalidate:likes") {
+		console.log("invalidate like  count")
+		revalidateSwCache("artist.most-fav")
+		revalidateSwCache("album.most-fav")
+		revalidateSwCache("genre.most-fav")
 	} else if (data.type === "global:message") {
 		// @ts-expect-error -- web socket messages aren't typed
 		console[data.payload?.level || 'log'](data.payload.message)
