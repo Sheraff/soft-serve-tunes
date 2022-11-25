@@ -299,7 +299,6 @@ class Spotify {
 			})
 			if (!datedTrack || !datedTrack.name) {
 				log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
-				console.log(trackDbId, datedTrack?.name)
 				this.#running.delete(trackDbId)
 				return
 			}
