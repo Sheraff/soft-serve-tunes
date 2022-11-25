@@ -294,8 +294,7 @@ class LastFM {
 				return lastfm.corrections.correction.artist.name
 			}
 		} catch (e) {
-			console.log(`error while correcting artist ${artist}`)
-			console.error(e)
+			console.error(new Error(`error while correcting artist ${artist}`, {cause: e}))
 		}
 		return false
 	}
@@ -308,8 +307,7 @@ class LastFM {
 				return lastfm.corrections.correction.track.name
 			}
 		} catch (e) {
-			console.log(`error while correcting track ${track} by ${artist}`)
-			console.error(e)
+			console.error(new Error(`error while correcting track ${track} by ${artist}`, {cause: e}))
 		}
 		return track
 	}
