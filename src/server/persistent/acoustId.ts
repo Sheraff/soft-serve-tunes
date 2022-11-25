@@ -290,6 +290,9 @@ class AcoustId {
 				return false
 			})
 			: mostConfidentRecordings.filter(({score}) => score > 0.9)
+		// at this point, there moght be a way to salvage some "non viable matches" with a single call to musicbrainz
+		// https://musicbrainz.org/ws/2/recording/6c8b500f-b188-4b55-9a1f-be85377d370b?fmt=json&inc=releases+artist-credits+media
+		// this would give track.name, album, artist, album.artist, track.duration, track.count, track.position
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
 			console.log(mostConfidentRecordings)
