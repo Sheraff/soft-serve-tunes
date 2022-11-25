@@ -18,7 +18,11 @@ export default function Notification({
 			artist: data.artist?.name,
 			album: data.album?.name,
 			...(data.cover?.id ? {artwork: [
-				{ src: `/api/cover/${data.cover.id}`, type: "image/avif" },
+				{
+					src: `/api/cover/${data.cover.id}`,
+					type: "image/avif",
+					sizes: `786x786`,
+				},
 			]} : {}),
 		})
 	}, [data])

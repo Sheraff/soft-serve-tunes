@@ -3,6 +3,7 @@ import useIsOnline from "client/sw/useIsOnline"
 import Head from "next/head"
 import { memo, useEffect, type RefObject } from "react"
 import useCachedTrack from "client/sw/useCachedTrack"
+import { trpc } from "utils/trpc"
 
 export default memo(function NextTrack({
 	audio,
@@ -32,19 +33,35 @@ export default memo(function NextTrack({
 		return () => controller.abort()
 	}, [audio, nextPlaylistIndex, nextItem])
 
-	if (!online || !cached || !nextItem) {
+	const enabled = Boolean(online && cached && nextItem)
+
+	const { data } = trpc.useQuery(["track.miniature", {
+		id: nextItem?.id as string
+	}], { enabled })
+
+	if (!enabled) {
 		return null
 	}
 	return (
 		<Head>
 			<link
-				key={`/api/file/${nextItem.id}`}
+				key={`/api/file/${nextItem!.id}`}
 				rel="prefetch"
 				as="audio"
-				href={`/api/file/${nextItem.id}`}
+				href={`/api/file/${nextItem!.id}`}
 				// @ts-expect-error -- fetchpriority does exist
 				fetchpriority="low"
 			/>
+			{Boolean(data?.cover?.id) && (
+				<link
+					key={`/api/cover/${data?.cover?.id}`}
+					rel="prefetch"
+					as="image"
+					href={`/api/cover/${data?.cover?.id}`}
+					// @ts-expect-error -- fetchpriority does exist
+					fetchpriority="low"
+				/>
+			)}
 		</Head>
 	)
 })

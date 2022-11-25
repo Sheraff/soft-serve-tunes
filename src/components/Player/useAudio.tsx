@@ -56,6 +56,11 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			const {duration, src} = element
 			if (!Number.isNaN(duration) && (src === currentSrc)) {
 				setTotalSeconds(duration)
+				navigator.mediaSession.setPositionState({
+					duration: element.duration,
+					playbackRate: element.playbackRate,
+					position: element.currentTime,
+				})
 			}
 		}
 
