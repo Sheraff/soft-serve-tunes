@@ -286,6 +286,7 @@ class AcoustId {
 				if (score > 0.95 && delta < 7) return true
 				if (score > 0.99 && delta < 10) return true
 				if (score > 0.999 && delta < 20) return true
+				if (score > 0.9999) return true
 				return false
 			})
 			: mostConfidentRecordings.filter(({score}) => score > 0.9)
