@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { constants, createReadStream, ReadStream } from "node:fs"
+import { constants, createReadStream } from "node:fs"
 import { join } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
