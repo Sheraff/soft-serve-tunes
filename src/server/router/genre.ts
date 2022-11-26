@@ -20,10 +20,15 @@ export async function recursiveSubGenres<
   trackSet: Set<string> = new Set()
 ) {
   genreSet.add(id)
+  const tracksArg = args || {select: {id: true}}
   const data = await prisma.genre.findUnique({
     where: { id },
     select: {
-      tracks: args || {select: {id: true}},
+      tracks: tracksArg,
+      audiodbTracks: {
+        ...('where' in tracksArg ? {where: {entity: tracksArg.where}} : {}),
+        select: { entity: { select: tracksArg.select } }
+      },
       subgenres: {
         select: {id: true},
         where: nonEmptyGenreWhere,
@@ -31,10 +36,16 @@ export async function recursiveSubGenres<
     }
   }) as null | {
     tracks: Prisma.TrackGetPayload<TrackArgs>[]
+    audiodbTracks: {entity: Prisma.TrackGetPayload<TrackArgs> | null}[]
     subgenres: {id: string}[]
   } // TS needs a little help here since it kept crashing or thinking `data` was Genre or even any.
   if (!data) return {tracks, genreSet}
-  data.tracks.forEach(track => {
+  const audiodbTracks = data.audiodbTracks.reduce<Prisma.TrackGetPayload<TrackArgs>[]>((array, {entity}) => {
+    if (entity) array.push(entity)
+    return array
+  }, [])
+  const allTracks = data.tracks.concat(audiodbTracks)
+  allTracks.forEach(track => {
     if (!trackSet.has(track.id)) {
       tracks.push(track)
       trackSet.add(track.id)

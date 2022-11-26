@@ -27,6 +27,7 @@ const GENRES_MAP = new Map([
 	["rockfunk", "funk rock"],
 	["altrock", "alternative rock"],
 	["alternative", "alternative rock"],
+	["indie", "indie rock"],
 	["rnb", "r&b"],
 ])
 const GENRE_REPLACERS = [
