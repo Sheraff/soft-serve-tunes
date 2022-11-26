@@ -354,7 +354,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return createTrack(path, retries + 1)
 		} else {
 			log("error", "error", "fswatcher", `failed to add ${relativePath} after ${retries} retries`)
-			console.log("error keys", ...Array.from(Object.keys(error)))
+			console.log("error keys", ...Array.from(Object.keys(error))) // code, clientVersion, meta
+			// P2002 => Unique constraint failed on the fields (prisma.track.update / target: [ 'simplified', 'artistId', 'albumId' ])
 			console.warn(error)
 			return false
 		}
