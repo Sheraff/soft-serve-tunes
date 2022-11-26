@@ -118,6 +118,7 @@ model Artist {
   feats      Track[]  @relation("Featuring")
   createdAt  DateTime @default(now())
   albums     Album[]  @relation
+  genres     Genre[]  @relation
 
   lastfm      LastFmArtist?  @relation
   audiodb     AudioDbArtist? @relation
@@ -150,6 +151,7 @@ model Album {
   createdAt   DateTime @default(now())
   tracks      Track[]  @relation
   year        Int?
+  genres      Genre[]  @relation
 
   lastfm      LastFmAlbum?  @relation
   audiodb     AudioDbAlbum? @relation
@@ -178,6 +180,8 @@ model Genre {
   name           String          @unique
   simplified     String          @unique
   tracks         Track[]         @relation
+  artists        Artist[]        @relation
+  albums         Album[]         @relation
   spotifyArtists SpotifyArtist[] @relation
   audiodbTracks  AudioDbTrack[]  @relation
   subgenres      Genre[]         @relation("LinkedGenre")

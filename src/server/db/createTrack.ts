@@ -186,7 +186,14 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		const correctedAlbum = fingerprinted?.album?.title || metadata.common.album
 
-		const genres = cleanGenreList(metadata.common.genre || [])
+		const baseGenres = []
+		if (metadata.common.genre) baseGenres.push(...metadata.common.genre)
+		if (fingerprinted?.genres) baseGenres.push(...fingerprinted.genres.map(({name}) => name))
+		const genres = cleanGenreList(baseGenres)
+
+		const baseArtistGenres = []
+		if (fingerprinted?.artists?.[0]?.genres) baseArtistGenres.push(...fingerprinted.artists[0].genres.map(({name}) => name))
+		const artistGenres = cleanGenreList(baseArtistGenres)
 
 		const track = await retryable(() => prisma.track.create({
 			include: {
@@ -238,6 +245,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 								name: correctedArtist,
 								simplified: simplifiedName(correctedArtist),
 								mbid: fingerprinted?.artists?.[0]?.id,
+								genres: {
+									connectOrCreate: artistGenres.map(({name, simplified}) => ({
+										where: { simplified },
+										create: { name, simplified }
+									}))
+								}
 							}
 						}
 					}
@@ -301,13 +314,24 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				}
 				return isMultiArtistAlbum ? undefined : (track.artistId ?? undefined)
 			})()
+
+			const baseAlbumGenres = []
+			if (fingerprinted?.album?.genres) baseAlbumGenres.push(...fingerprinted.album.genres.map(({name}) => name))
+			const albumGenres = cleanGenreList(baseAlbumGenres)
+			
 			linkedAlbum = await linkAlbum(track.id, {
 				name: correctedAlbum,
 				simplified: simplifiedName(correctedAlbum),
 				artistId,
 				year: metadata.common.year,
 				tracksCount: fingerprinted?.of ?? metadata.common.track.of ?? undefined,
-				mbid: fingerprinted?.album?.id
+				mbid: fingerprinted?.album?.id,
+				genres: {
+					connectOrCreate: albumGenres.map(({name, simplified}) => ({
+						where: { simplified },
+						create: { name, simplified }
+					}))
+				}
 			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)

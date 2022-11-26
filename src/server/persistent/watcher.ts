@@ -317,6 +317,8 @@ class MyWatcher {
 		const orphanedGenres = await prisma.genre.findMany({
 			where: {
 				tracks: { none: {} },
+				artists: { none: {} },
+				albums: { none: {} },
 				subgenres: { none: {} },
 				supgenres: { none: {} },
 				spotifyArtists: { none: {} },

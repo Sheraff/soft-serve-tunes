@@ -10,14 +10,20 @@ const musicBrainzErrorSchema = z.object({
 	help: z.string(),
 })
 
+const musicBrainzGenreSchema = z.object({
+	name: z.string()
+})
+
 const musicBrainzReleaseGroupSchema = z.object({
 	id: z.string(),
 	title: z.string(),
+	genres: z.array(musicBrainzGenreSchema),
 })
 
 const musicBrainzArtistSchema = z.object({
 	id: z.string(),
 	name: z.string(),
+	genres: z.array(musicBrainzGenreSchema),
 })
 
 const musicBrainzRecordingSchema = z.object({
@@ -30,7 +36,8 @@ const musicBrainzRecordingSchema = z.object({
 			})).length(1),
 			"track-count": z.number(),
 		})).length(1)
-	}))
+	})),
+	genres: z.array(musicBrainzGenreSchema),
 })
 
 export default class MusicBrainz {
@@ -96,7 +103,9 @@ export default class MusicBrainz {
 		const url = `https://musicbrainz.org/ws/2/${type}/${id}`
 		const params = new URLSearchParams()
 		if (type === 'recording') {
-			params.set('inc', 'releases+media')
+			params.set('inc', 'releases+media+genres')
+		} else {
+			params.set('inc', 'genres')
 		}
 		const json = await this.#makeRequest(`${url}?${params}`)
 		const schema = z.union([

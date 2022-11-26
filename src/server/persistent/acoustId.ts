@@ -128,6 +128,12 @@ const acoustiIdLookupSchema = z.object({
 
 type Result = Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}
 type ValidatedResult = Result & {of?: number, no?: number}
+type AugmentedResult = Omit<ValidatedResult, 'artists'> 
+	& {genres?: {name: string}[]}
+	& {
+		artists?: (Exclude<ValidatedResult['artists'], undefined>[number] & {genres?: {name: string}[]})[]
+		album?: Omit<Exclude<ValidatedResult['album'], undefined>, 'artists'> & {genres?: {name: string}[]} & {artists?: (Exclude<Exclude<ValidatedResult['album'], undefined>['artists'], undefined>[number] & {genres?: {name: string}[]})[]}
+	}
 
 class AcoustId {
 	static RATE_LIMIT = 350
@@ -140,7 +146,7 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify(absolutePath: string, metadata: IAudioMetadata): Promise<ValidatedResult | null> {
+	async identify(absolutePath: string, metadata: IAudioMetadata): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
@@ -149,10 +155,10 @@ class AcoustId {
 			return null
 		}
 		const result = sorted[0]
-		await this.#musicBrainzValidation(result)
-		await this.#reorderArtist(result, metadata)
-		log("ready", "200", "acoustid", `"${result.title}" by ${result.artists?.[0]?.name} in ${result?.album?.title} (${absolutePath})`)
-		return result
+		const augmented = await this.#musicBrainzValidation(result)
+		await this.#reorderArtist(augmented, metadata)
+		log("ready", "200", "acoustid", `"${augmented.title}" by ${augmented.artists?.[0]?.name} in ${augmented?.album?.title} (${absolutePath})`)
+		return augmented
 	}
 
 	async #fingerprintFile(absolutePath: string) {
@@ -290,7 +296,7 @@ class AcoustId {
 				return false
 			})
 			: mostConfidentRecordings.filter(({score}) => score > 0.9)
-		// at this point, there moght be a way to salvage some "non viable matches" with a single call to musicbrainz
+		// at this point, there might be a way to salvage some "non viable matches" with a single call to musicbrainz
 		// https://musicbrainz.org/ws/2/recording/6c8b500f-b188-4b55-9a1f-be85377d370b?fmt=json&inc=releases+artist-credits+media
 		// this would give track.name, album, artist, album.artist, track.duration, track.count, track.position
 		if (sameDurationRecordings.length === 0) {
@@ -391,9 +397,9 @@ class AcoustId {
 	}
 
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
-	async #musicBrainzValidation(result: ValidatedResult) {
+	async #musicBrainzValidation(result: AugmentedResult): Promise<AugmentedResult> {
 		{
-			const {title, releases} = await this.#musicBrainz.fetch('recording', result.id)
+			const {title, releases, genres} = await this.#musicBrainz.fetch('recording', result.id)
 			result.title = title
 			const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
 			const trackCounts = releases.map(({media}) => media[0]!["track-count"])
@@ -401,24 +407,29 @@ class AcoustId {
 				result.no = positions[0]
 			if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
 				result.of = trackCounts[0]
+			result.genres = genres
 		}
 		if (result.album?.id) {
-			const {title} = await this.#musicBrainz.fetch('release-group', result.album.id)
+			const {title, genres} = await this.#musicBrainz.fetch('release-group', result.album.id)
 			if (title)
 				result.album!.title = title
+			result.album!.genres = genres
 		}
 		if (result.artists) {
 			for (const artist of result.artists) {
-				const {name} = await this.#musicBrainz.fetch('artist', artist.id)
+				const {name, genres} = await this.#musicBrainz.fetch('artist', artist.id)
 				if (name)
 					artist.name = name
+				artist.genres = genres
 			}
 		}
 		if (result.album?.artists?.[0]?.id) {
-			const {name} = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
+			const {name, genres} = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
 			if (name)
 				result.album!.artists![0]!.name = name
+			result.album!.artists![0]!.genres = genres
 		}
+		return result
 	}
 
 	// handle cases where there is a single track whose main artist is not that of the rest of the album
