@@ -5,6 +5,8 @@ import { createReadStream } from "node:fs"
 import { prisma } from "server/db/client"
 import log from "utils/logger"
 import { readFile } from "node:fs/promises"
+import { env } from "env/server.mjs"
+import { relative } from "node:path"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, nextAuthOptions);
@@ -37,13 +39,13 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
       'Cache-Control': "public, max-age=31536000",
     })
     res.write(buffer)
-    log("info", "200", `File request was sent in full (${file.path})`)
+    log("info", "200", `File request was sent in full (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
     return res.end()
   }
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {
-    log("error", "416", `File request for range is out of bounds (${file.path})`)
+    log("error", "416", `File request for range is out of bounds (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
     return res.status(416).json({error: "Invalid range"})
   }
   const end = partials[1]
@@ -61,11 +63,11 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   })
 
   if (range === undefined) {
-    log("info", "206", `File request for range responded with available range (${file.path})`)
+    log("info", "206", `File request for range responded with available range (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
     return res.end()
   }
 
-  log("info", "206", `File request for range is streaming (${file.path})`)
+  log("info", "206", `File request for range is streaming (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
   const readStream = createReadStream(file.path, {start, end, highWaterMark: 512*1024})
   readStream.pipe(res)
 }
