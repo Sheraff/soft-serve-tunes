@@ -98,7 +98,7 @@ const acoustiIdLookupError = z.object({
 const acoustiIdArtistSchema = z.object({
 	id: z.string(),
 	name: z.string(),
-	joinphrase: z.string().optional()
+	// joinphrase: z.string().optional()
 })
 
 const acoustIdReleasegroupSchema = z.object({
@@ -285,7 +285,7 @@ class AcoustId {
 			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as (z.infer<typeof acoustIdRecordingSchema> & {score: number})[]
 		const sameDurationRecordings = (metaDuration && metaDuration > 15) // short duration tracks usually don't have a lot of data from acoustid
 			? mostConfidentRecordings.filter(({score, duration: d}) => {
-				if (!d) return false
+				if (!d) return false // maybe return true if score > 0.9999
 				const delta = Math.abs(metaDuration - d)
 				if (delta < 3) return true
 				if (score > 0.9 && delta < 5) return true
@@ -299,6 +299,13 @@ class AcoustId {
 		// at this point, there might be a way to salvage some "non viable matches" with a single call to musicbrainz
 		// https://musicbrainz.org/ws/2/recording/6c8b500f-b188-4b55-9a1f-be85377d370b?fmt=json&inc=releases+artist-credits+media
 		// this would give track.name, album, artist, album.artist, track.duration, track.count, track.position
+		// don't do this for score too low
+		// don't do this for empty array of results
+		/**
+		 * fetch -  acoustid  Intentional Dweeb (/Users/Flo/Music/Empty/MEUTE/Taumel/12 Intentional Dweeb.flac)
+		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 224.8593537414966 vs []
+		 * [ { id: 'b5726e26-6241-4bf5-904d-22c6dcdeecb5', score: 1 } ]
+		 */
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
 			console.log(mostConfidentRecordings)
