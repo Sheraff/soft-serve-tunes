@@ -33,7 +33,7 @@ const GENRES_MAP = new Map([
 const GENRE_REPLACERS = [
 	["hip-hop", "hip hop"],
 	["'n'", '&'],
-	[/\balt\b/, "alternative"],
+	[/\balt\b/g, "alternative"],
 ] as const
 
 export function cleanGenreList(genres: string[]) {
