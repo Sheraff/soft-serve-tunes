@@ -8,6 +8,7 @@ import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlayl
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
+import { recursiveSubGenres } from "./genre"
 
 const trackSelect = {
   id: true,
@@ -24,7 +25,7 @@ const trackSelect = {
       name: true,
     },
   }
-} // satisfies Prisma.TrackFindManyArgs['select']
+} as const // satisfies Prisma.TrackFindManyArgs['select']
 
 async function getResolve(id: string) {
   const result = await prisma.playlist.findUnique({
@@ -107,10 +108,8 @@ export const playlistRouter = createRouter()
         })
       }
       if (input.type === 'genre') {
-        return ctx.prisma.track.findMany({
-          where: { genres: { some: { id: input.id } } },
-          select: trackSelect,
-        })
+        const data = await recursiveSubGenres(input.id, {select: trackSelect})
+        return data.tracks
       }
       if (input.type === 'by-trait') {
         return ctx.prisma.track.findMany({

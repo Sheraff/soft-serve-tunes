@@ -7,13 +7,9 @@ const MB_GENRE_HIERARCHY = {
 	"fusion of": "supgenres",
 	"subgenres": "subgenres",
 	"subgenre of": "supgenres",
-	"influenced genres": "subgenres",
-	"influenced by": "supgenres",
+	// "influenced genres": "subgenres",
+	// "influenced by": "supgenres",
 } as const
-
-// check audioDbTrack for genres
-// check spotifyArtist for genres
-// get genres from musicbrainz (during acoustid fingerprint)
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 	const origin = await fetch("https://musicbrainz.org/genres")

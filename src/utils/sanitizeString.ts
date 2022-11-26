@@ -26,11 +26,13 @@ const GENRES_MAP = new Map([
 	["frenchsoundtrack", "soundtrack"],
 	["rockfunk", "funk rock"],
 	["altrock", "alternative rock"],
+	["alternative", "alternative rock"],
 	["rnb", "r&b"],
 ])
 const GENRE_REPLACERS = [
 	["hip-hop", "hip hop"],
 	["'n'", '&'],
+	[/\balt\b/, "alternative"],
 ] as const
 
 export function cleanGenreList(genres: string[]) {

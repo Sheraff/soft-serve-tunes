@@ -51,6 +51,7 @@ function onWsMessageData(data: any) {
 		}
 		if (data.payload?.genre) {
 			revalidateSwCache("genre.list")
+			revalidateSwCache("genre.miniature", {id: data.payload.genre.id})
 			revalidateSwCache("genre.get", {id: data.payload.genre.id})
 			revalidateSwCache("playlist.generate", { type: 'genre', id: data.payload.genre.id })
 		}

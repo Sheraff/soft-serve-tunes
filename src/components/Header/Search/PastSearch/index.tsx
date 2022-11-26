@@ -25,7 +25,7 @@ const OPTIONS = {
 		cover: (e?: inferQueryOutput<"artist.miniature">) => e?.cover?.id,
 	},
 	genre: {
-		key: "genre.get",
+		key: "genre.miniature",
 		Component: GenreInfo,
 		cover: () => undefined
 	},
@@ -45,7 +45,7 @@ function albumNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQu
 function artistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"artist.miniature"> {
 	return type === "artist"
 }
-function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"genre.get"> {
+function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"genre.miniature"> {
 	return type === "genre"
 }
 function playlistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"playlist.get"> {
