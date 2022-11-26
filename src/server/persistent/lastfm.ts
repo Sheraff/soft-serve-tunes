@@ -461,7 +461,7 @@ class LastFM {
 		if (!trackChangedCover) {
 			socketServer.send("invalidate:track", { id })
 		}
-		log("info", "200", "lastfm", `fetched track ${track.name}`)
+		log("ready", "200", "lastfm", `fetched track ${track.name}`)
 		this.#running.delete(id)
 		return true
 	}
@@ -626,7 +626,7 @@ class LastFM {
 				}
 			}
 		})
-		log("info", "200", "lastfm", `fetched artist ${artist.name}`)
+		log("ready", "200", "lastfm", `fetched artist ${artist.name}`)
 		this.#running.delete(id)
 		return true
 	}
@@ -808,7 +808,7 @@ class LastFM {
 				}
 			}
 		})
-		log("info", "200", "lastfm", `fetched album ${album.name}`)
+		log("ready", "200", "lastfm", `fetched album ${album.name}`)
 		this.#running.delete(id)
 		return true
 	}

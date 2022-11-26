@@ -437,36 +437,34 @@ class Spotify {
 				const candidate_album_total_tracks = candidate.album.total_tracks
 				const candidate_album_popularity = candidate.album.popularity
 
-				const existing = await retryable(() =>
-					prisma.spotifyTrack.findUnique({
-						where: {id: candidate_id},
-						select: {
-							id: true,
-							trackId: true,
-							artist: {
-								select: {
-									id: true,
-									imageId: true,
-									artistId: true,
-									name: true,
-								}
-							},
-							album: {
-								select: {
-									id: true,
-									imageId: true,
-									albumId: true,
-									name: true,
-									artist: {
-										select: {
-											id: true,
-										}
+				const existing = await retryable(() => prisma.spotifyTrack.findUnique({
+					where: {id: candidate_id},
+					select: {
+						id: true,
+						trackId: true,
+						artist: {
+							select: {
+								id: true,
+								imageId: true,
+								artistId: true,
+								name: true,
+							}
+						},
+						album: {
+							select: {
+								id: true,
+								imageId: true,
+								albumId: true,
+								name: true,
+								artist: {
+									select: {
+										id: true,
 									}
 								}
 							}
 						}
-					})
-				)
+					}
+				}))
 				if (existing && !existing.trackId) {
 					// this should not happen as schema.prisma defines SpotifyTrack.track as `onDelete: Cascade`
 					await retryable(() => 
@@ -587,6 +585,9 @@ class Spotify {
 						}
 					})
 				})
+				if (!existing) {
+					log("ready", "200", "spotify", `fetched track ${candidate_name}`)
+				}
 				if (track.artist?.id && newTrack.artist?.id) {
 					const newTrackArtistId = newTrack.artist.id
 					const trackArtistId = track.artist.id
@@ -682,6 +683,7 @@ class Spotify {
 					})
 				}
 				changedTrack = true
+				log("ready", "200", "spotify", `fetched album ${albumObject.name}`)
 			}
 			artistFill: if (artistObject && !artistObject.imageId) {
 				if (track.artist?.spotifyDate && track.artist.spotifyDate.getTime() > new Date().getTime() - env.DAYS_BETWEEN_REFETCH) {
@@ -756,6 +758,7 @@ class Spotify {
 					})
 				}
 				changedTrack = true
+				log("ready", "200", "spotify", `fetched artist ${artistObject.name}`)
 			}
 			featuresFill: if (!spotifyTrack?.tempo && spotifyTrackId) {
 				const featuresData = await this.fetch(`audio-features/${spotifyTrackId}`)
@@ -785,6 +788,7 @@ class Spotify {
 					})
 				})
 				changedTrack = true
+				log("ready", "200", "spotify", `fetched track features ${track.name}`)
 			}
 			artistConnect: if (artistObject && !artistObject.artistId) {
 				const singleChoice = await prisma.artist.findMany({
@@ -872,7 +876,9 @@ class Spotify {
 				if (!trackChangedCover) {
 					socketServer.send("invalidate:track", {id: trackDbId})
 				}
+				log("ready", "200", "spotify", `did all of the things for track ${track.name}`)
 			}
+
 		} catch (e) {
 			console.error(e)
 		}

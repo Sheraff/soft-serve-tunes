@@ -196,6 +196,7 @@ class AudioDb {
 			})
 		)
 		socketServer.send("invalidate:artist", {id: id})
+		log("ready", "200", "audiodb", `fetched artist ${audiodbArtist.strArtist}`)
 	}
 
 	#runningAlbums = new Set<string>()
@@ -290,6 +291,7 @@ class AudioDb {
 			})
 		)
 		socketServer.send("invalidate:album", {id})
+		log("ready", "200", "audiodb", `fetched album ${audiodbAlbum.strAlbum}`)
 	}
 
 	#runningTracks = new Set<string>()
@@ -429,6 +431,7 @@ class AudioDb {
 			},
 		}))
 		socketServer.send("invalidate:track", {id})
+		log("ready", "200", "audiodb", `fetched track ${data.strTrack}`)
 	}
 }
 
