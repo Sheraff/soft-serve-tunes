@@ -63,12 +63,6 @@ const lastFmArtistSchema = z
 				listeners: z.string().transform(Number),
 				playcount: z.string().transform(Number),
 			}),
-			tags: z.object({
-				tag: z.array(z.object({
-					name: z.string(),
-					url: z.string(),
-				})),
-			}),
 		}).optional(),
 	})
 
@@ -430,7 +424,6 @@ class LastFM {
 		const trackData_mbid = trackData.mbid
 		const trackData_name = trackData.name
 		const trackData_url = trackData.url
-		const trackData_toptags_tag = trackData.toptags.tag
 		await retryable(async () => {
 			await prisma.lastFmTrack.create({
 				data: {
@@ -443,17 +436,6 @@ class LastFM {
 					mbid: trackData_mbid,
 					name: trackData_name,
 					url: trackData_url,
-					tags: {
-						connectOrCreate: trackData_toptags_tag
-							.filter(tag => tag.url)
-							.map(tag => ({
-								where: { url: tag.url },
-								create: {
-									name: tag.name,
-									url: tag.url,
-								}
-							}))
-					},
 				}
 			})
 		})
@@ -610,7 +592,6 @@ class LastFM {
 		const artistData_stats_listeners = artistData.stats.listeners
 		const artistData_stats_playcount = artistData.stats.playcount
 		const artistData_url = artistData.url
-		const artistData_tags_tag = artistData.tags.tag
 		await retryable(async () => {
 			await prisma.lastFmArtist.create({
 				data: {
@@ -622,15 +603,6 @@ class LastFM {
 					listeners: artistData_stats_listeners,
 					playcount: artistData_stats_playcount,
 					url: artistData_url,
-					tags: {
-						connectOrCreate: artistData_tags_tag.map(tag => ({
-							where: { url: tag.url },
-							create: {
-								name: tag.name,
-								url: tag.url,
-							}
-						}))
-					},
 					coverUrl: image,
 					coverId,
 				},
@@ -802,7 +774,6 @@ class LastFM {
 		const albumData_listeners = albumData.listeners
 		const albumData_playcount = albumData.playcount
 		const albumData_url = albumData.url
-		const albumData_toptags = albumData.toptags
 		await retryable(async () => {
 			await prisma.lastFmAlbum.create({
 				data: {
@@ -814,17 +785,6 @@ class LastFM {
 					listeners: albumData_listeners,
 					playcount: albumData_playcount,
 					url: albumData_url,
-					...(albumData_toptags?.tag.length ? {
-						tags: {
-							connectOrCreate: albumData_toptags.tag.map(tag => ({
-								where: { url: tag.url },
-								create: {
-									name: tag.name,
-									url: tag.url,
-								}
-							}))
-						}
-					} : {}),
 					coverUrl: image,
 					coverId,
 				},

@@ -34,7 +34,6 @@ model Track {
   albumId     String?
   album       Album?   @relation(fields: [albumId], references: [id])
   position    Int?
-  popularity  Int?
   createdAt   DateTime @default(now())
   file        File?    @relation
   year        Int?
@@ -194,7 +193,6 @@ model LastFmTrack {
   album     LastFmAlbum?  @relation(fields: [albumId], references: [id])
   artistId  String?
   artist    LastFmArtist? @relation(fields: [artistId], references: [id])
-  tags      LastFmTag[]
   duration  Int
   listeners Int
   playcount Int
@@ -211,7 +209,6 @@ model LastFmAlbum {
   artistId    String?
   artist      LastFmArtist? @relation(fields: [artistId], references: [id])
   mbid        String?
-  tags        LastFmTag[]
   name        String
   releasedate DateTime?
   listeners   Int
@@ -229,22 +226,12 @@ model LastFmArtist {
   tracks    LastFmTrack[]
   albums    LastFmAlbum[]
   mbid      String?
-  tags      LastFmTag[]
   name      String
   listeners Int
   playcount Int
   coverUrl  String?
   coverId   String?
   cover     Image?        @relation(fields: [coverId], references: [id])
-}
-
-model LastFmTag {
-  id      String         @id @default(cuid())
-  url     String         @unique
-  name    String         @unique
-  tracks  LastFmTrack[]
-  artists LastFmArtist[]
-  albums  LastFmAlbum[]
 }
 
 model AudioDbArtist {

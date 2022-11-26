@@ -3,12 +3,11 @@ import Queue from "utils/Queue"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import { fetchAndWriteImage } from "utils/writeImage"
-import sanitizeString from "utils/sanitizeString"
+import sanitizeString, { cleanGenreList } from "utils/sanitizeString"
 import pathToSearch from "utils/pathToSearch"
 import log from "utils/logger"
 import { socketServer } from "server/persistent/ws"
 import retryable from "utils/retryable"
-import { uniqueGenres } from "server/db/createTrack"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 
 const imageSchema = z.object({
@@ -436,6 +435,7 @@ class Spotify {
 				const candidate_album_album_type = candidate.album.album_type
 				const candidate_album_release_date = candidate.album.release_date
 				const candidate_album_total_tracks = candidate.album.total_tracks
+				const candidate_album_popularity = candidate.album.popularity
 
 				const existing = await retryable(() =>
 					prisma.spotifyTrack.findUnique({
@@ -556,6 +556,7 @@ class Spotify {
 										albumType: candidate_album_album_type,
 										releaseDate: candidate_album_release_date,
 										totalTracks: candidate_album_total_tracks,
+										popularity: candidate_album_popularity,
 										...(candidateArtist ? { artist: {
 											connectOrCreate: {
 												where: {
@@ -726,7 +727,7 @@ class Spotify {
 									},
 									popularity,
 									genres: {
-										connectOrCreate: uniqueGenres(artistData.genres || []).map(({name, simplified}) => ({
+										connectOrCreate: cleanGenreList(artistData.genres || []).map(({name, simplified}) => ({
 											where: { simplified },
 											create: { name, simplified }
 										}))
@@ -745,7 +746,7 @@ class Spotify {
 							data: {
 								popularity: artistData.popularity,
 								genres: {
-									connectOrCreate: uniqueGenres(artistData.genres || []).map(({name, simplified}) => ({
+									connectOrCreate: cleanGenreList(artistData.genres || []).map(({name, simplified}) => ({
 										where: { simplified },
 										create: { name, simplified }
 									}))

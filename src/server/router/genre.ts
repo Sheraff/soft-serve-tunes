@@ -26,9 +26,10 @@ export const genreRouter = createRouter()
     async resolve({ ctx }) {
       return ctx.prisma.genre.findMany({
         where: {
-          tracks: {
-            some: {}
-          }
+          OR: [
+            {tracks: {some: {}}},
+            {subgenres: {some: {tracks: {some: {}}}}}
+          ]
         },
         orderBy: {
           name: "asc",

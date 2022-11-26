@@ -1,6 +1,6 @@
 import { access, stat, readdir } from "node:fs/promises"
 import { basename, extname, dirname, relative } from "node:path"
-import { IAudioMetadata, ICommonTagsResult, parseFile } from 'music-metadata'
+import { IAudioMetadata, ICommonTagsResult, parseFile, selectCover } from 'music-metadata'
 import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "server/db/client"
@@ -9,7 +9,7 @@ import type { PrismaClientInitializationError, PrismaClientKnownRequestError, Pr
 import { constants } from "node:fs"
 import { lastFm } from "server/persistent/lastfm"
 import { acoustId } from "server/persistent/acoustId"
-import { simplifiedName } from "utils/sanitizeString"
+import { cleanGenreList, simplifiedName } from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeTrackCover } from "./computeCover"
@@ -51,7 +51,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	}
 	let _metadata: IAudioMetadata | undefined
 	try {
-		_metadata = await parseFile(path)
+		_metadata = await parseFile(path, {duration: true})
 		if (!_metadata) {
 			throw new Error("No metadata")
 		}
@@ -136,9 +136,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	
 		const position = fingerprinted?.no ?? metadata.common.track.no ?? undefined
 
-		const imageData = metadata.common.picture?.[0]?.data
-		const { hash, path: imagePath, palette } = imageData
-			? await writeImage(Buffer.from(imageData), metadata.common.picture?.[0]?.format?.split('/')?.[1], `from createTrack ${name}`)
+		const selectedCover = selectCover(metadata.common.picture)
+		const { hash, path: imagePath, palette } = selectedCover
+			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split('/')[1], `from createTrack ${name}`)
 			: { hash: '', path: '', palette: '' }
 
 		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
@@ -186,7 +186,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		const correctedAlbum = fingerprinted?.album?.title || metadata.common.album
 
-		const genres = uniqueGenres(metadata.common.genre || [])
+		const genres = cleanGenreList(metadata.common.genre || [])
 
 		const track = await retryable(() => prisma.track.create({
 			include: {
@@ -201,7 +201,6 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				name: correctedTrack,
 				simplified: simplifiedName(correctedTrack),
 				position,
-				popularity: 0,
 				year: metadata.common.year,
 				mbid: fingerprinted?.id,
 				file: {
@@ -355,30 +354,6 @@ async function tryAgainLater(path?: string, count = -1) {
 			}
 		}, 120_000)
 	}
-}
-
-const USELESS_GENRES = [
-	"other"
-]
-export function uniqueGenres(genres: string[]) {
-	const names = genres
-		.flatMap((genre) => genre
-			.split(/\/|,|;|\|/)
-			.map(name => name.trim())
-		)
-	const uniqueSimplifiedNames = new Set<string>()
-	const filteredGenres = names.reduce<{
-		simplified: string
-		name: string
-	}[]>((list, name) => {
-		const simplified = simplifiedName(name)
-		if (!uniqueSimplifiedNames.has(simplified) && !USELESS_GENRES.includes(simplified)) {
-			uniqueSimplifiedNames.add(simplified)
-			list.push({ simplified, name })
-		}
-		return list
-	}, [])
-	return filteredGenres
 }
 
 export function isVariousArtists(name: string) {

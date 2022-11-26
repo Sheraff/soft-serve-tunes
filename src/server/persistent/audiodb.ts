@@ -3,11 +3,10 @@ import { env } from "env/server.mjs"
 import { z } from "zod"
 import { fetchAndWriteImage } from "utils/writeImage"
 import Queue from "utils/Queue"
-import sanitizeString from "utils/sanitizeString"
+import sanitizeString, { cleanGenreList } from "utils/sanitizeString"
 import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
-import { uniqueGenres } from "server/db/createTrack"
 
 const audiodbArtistSchema = z.object({artists:
 	z.array(z.object({
@@ -414,7 +413,7 @@ class AudioDb {
 			}
 			return
 		}
-		const genres = uniqueGenres(strGenre ? [strGenre] : [])
+		const genres = cleanGenreList(strGenre ? [strGenre] : [])
 		const imageIds = await keysAndInputToImageIds(data, ['strTrackThumb'])
 		await retryable(async () => prisma.audioDbTrack.create({
 			data: {
