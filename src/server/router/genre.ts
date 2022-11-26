@@ -6,7 +6,7 @@ import { type Prisma } from "@prisma/client"
 const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs['where'], undefined> = {
   OR: [
     {tracks: {some: {}}},
-    {subgenres: {some: {tracks: {some: {}}}}}
+    {subgenres: {some: {}}}
   ]
 }
 
@@ -90,6 +90,27 @@ function extendFromRecursive<
   }
 }
 
+async function recursiveNonEmpty(id: string, genreSet: Set<string> = new Set()) {
+  genreSet.add(id)
+  const data = await prisma.genre.findUnique({
+    where: { id },
+    select: {
+      tracks: {take: 1},
+      subgenres: {
+        select: {id: true},
+        where: nonEmptyGenreWhere,
+      },
+    }
+  })
+  if (!data) return false
+  if (data.tracks.length) return true
+  for (const sub of data.subgenres) {
+    const res = await recursiveNonEmpty(sub.id, genreSet)
+    if (res) return true
+  }
+  return false
+}
+
 export const genreRouter = createRouter()
   .query("miniature", {
     input: z
@@ -146,11 +167,17 @@ export const genreRouter = createRouter()
   })
   .query("list", {
     async resolve({ ctx }) {
-      return await ctx.prisma.genre.findMany({
+      const seed = await ctx.prisma.genre.findMany({
         where: nonEmptyGenreWhere,
         orderBy: { name: "asc" },
         select: { name: true, id: true }
       })
+      const keep: Array<typeof seed[number]> = []
+      for (const genre of seed) {
+        if (await recursiveNonEmpty(genre.id))
+          keep.push(genre)
+      }
+      return keep
     }
   })
   .query("most-fav", {
