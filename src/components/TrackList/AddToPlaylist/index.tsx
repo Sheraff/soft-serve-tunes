@@ -2,6 +2,7 @@ import Dialog from "atoms/Dialog"
 import { useAddToPlaylist } from "client/db/useMakePlaylist"
 import { startTransition } from "react"
 import { trpc } from "utils/trpc"
+import styles from "./index.module.css"
 
 export default function AddToPlaylist({
 	item,
@@ -19,21 +20,25 @@ export default function AddToPlaylist({
 				<p>No playlists were created yet</p>
 			)}
 			{hasSomePlaylsts && (
-				data!.map((playlist) => (
-					<button
-						key={playlist.id}
-						type="button"
-						onClick={() => {
-							if (!item) return
-							setItem(null)
-							startTransition(() => {
-								addToPlaylist(playlist.id, item)
-							})
-						}}
-					>
-						{playlist.name}
-					</button>
-				))
+				<ul>
+					{data!.map((playlist) => (
+						<li key={playlist.id}>
+							<button
+								className={styles.button}
+								type="button"
+								onClick={() => {
+									if (!item) return
+									setItem(null)
+									startTransition(() => {
+										addToPlaylist(playlist.id, item)
+									})
+								}}
+							>
+								{playlist.name}
+							</button>
+						</li>
+					))}
+				</ul>
 			)}
 		</Dialog>
 	)
