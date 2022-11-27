@@ -5,15 +5,18 @@ import styles from "./index.module.css"
 export default function EditableTitle({
 	name,
 	onEditEnd,
+	onEditStart,
 }: {
 	name?: string
 	onEditEnd: {current: (newName: string) => void}
+	onEditStart?: {current: () => void}
 }) {
 	const [editing, setEditing] = useState(false)
 
 	const ref = useRef<HTMLHeadingElement>(null)
 	const onStart = () => {
 		setEditing(true)
+		onEditStart?.current()
 	}
 
 	useEffect(() => {

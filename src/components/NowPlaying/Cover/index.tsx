@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
-import { Fragment, useMemo, useRef } from "react"
+import { Fragment, useMemo, useRef, useState } from "react"
 import { useQuery } from "react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -64,10 +64,16 @@ export default function Cover() {
 		])
 	}, [artistData, length, setArtist])
 
+	const [editing, setEditing] = useState(false)
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})
 	const renamePlaylist = useRenamePlaylist()
 	onTitleEdit.current = (newName) => {
-		renamePlaylist(id!, newName)
+		setEditing(false)
+		renamePlaylist(id!, newName.trim())
+	}
+	const onTitleEditStart = useRef<() => void>(() => {})
+	onTitleEditStart.current = () => {
+		setEditing(true)
 	}
 
 	return (
@@ -82,10 +88,10 @@ export default function Cover() {
 					/>
 				))}
 			</div>
-			<div className={styles.panel}>
+			<div className={classNames(styles.panel, {[styles.editing]: editing})}>
 				<div className={styles.details}>
 					{id && (
-						<EditableTitle name={name} onEditEnd={onTitleEdit} />
+						<EditableTitle name={name} onEditEnd={onTitleEdit} onEditStart={onTitleEditStart} />
 					)}
 					{!id && (
 						<SectionTitle>{name}</SectionTitle>
