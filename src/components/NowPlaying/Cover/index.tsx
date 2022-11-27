@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
-import { useMemo, useRef } from "react"
+import { Fragment, useMemo, useRef } from "react"
 import { useQuery } from "react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -8,6 +8,8 @@ import SaveButton from "./SaveButton"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
 import SectionTitle from "atoms/SectionTitle"
+import { artistView } from "components/AppContext"
+import { useSetAtom } from "jotai"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
@@ -38,7 +40,29 @@ export default function Cover() {
 		keepPreviousData: true,
 	})
 	
-	const description = useMemo(() => descriptionFromPlaylistCredits(artistData, length), [artistData, length])
+	const setArtist = useSetAtom(artistView)
+	const description = useMemo(() => {
+		const string = descriptionFromPlaylistCredits(artistData, length, true)
+		const parts = string.split("{{name}}")
+		return parts.flatMap((part, i) => [
+			<Fragment key={i}>{part}</Fragment>,
+			i === parts.length - 1
+				? null
+				: (
+					<button
+						key={artistData[i]!.id}
+						type="button"
+						onClick={() => setArtist({
+							id: artistData[i]!.id,
+							name: artistData[i]!.name,
+							open: true,
+						})}
+					>
+						{artistData[i]!.name}
+					</button>
+				)
+		])
+	}, [artistData, length, setArtist])
 
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})
 	const renamePlaylist = useRenamePlaylist()
