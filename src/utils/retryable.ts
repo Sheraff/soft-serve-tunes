@@ -50,7 +50,7 @@ export default async function retryable<T>(callback: () => (Promise<T> | T), tri
 			const code = typeof e === 'object' ? ` code:${e.code}` : ''
 			const keys = typeof e === 'object' ? ` keys[${Object.keys(e).join(',')}]` : ''
 			console.warn(new Error(`Error in retryable${code}${keys}, will retry #${tries}`, {cause: e}))
-			await new Promise(resolve => setTimeout(resolve, Math.random() * 15 + 1000 * 2**tries))
+			await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 1000 * 2**tries))
 			const result = await retryable(callback, tries + 1, originalError || e)
 			return result
 		} else {
