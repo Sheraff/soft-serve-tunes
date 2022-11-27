@@ -4,7 +4,7 @@ import Head from "next/head"
 import { useSession, getProviders } from "next-auth/react"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import { unstable_getServerSession as getServerSession } from "next-auth"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
 import WatcherSocket from "components/WatcherSocket"
@@ -95,7 +95,9 @@ const Home: NextPage<{
 			<AppState>
 				{ready && loggedIn && (
 					<>
-						<AudioTest />
+						<Suspense>
+							<AudioTest />
+						</Suspense>
 						<WatcherSocket />
 					</>
 				)}

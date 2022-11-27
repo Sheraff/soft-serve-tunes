@@ -1,6 +1,4 @@
 import styles from "./AudioTest.module.css"
-import Cover from "components/NowPlaying/Cover"
-import PlaylistViz from "components/NowPlaying"
 import Player from "components/Player"
 import Header from "components/Header"
 import { mainView } from "components/AppContext"
@@ -14,14 +12,18 @@ export default function AudioTest() {
 	const main = useAtomValue(mainView)
 	return (
 		<div className={styles.container}>
-			<Header/>
+			<Suspense>
+				<Header/>
+			</Suspense>
 			{main === "home" && (
 				<Suspense>
 					<NowPlaying />
 				</Suspense>
 			)}
 			{main === "suggestions" && (
-				<Suggestions />
+				<Suspense>
+					<Suggestions />
+				</Suspense>
 			)}
 			<Suspense>
 				<Player />
