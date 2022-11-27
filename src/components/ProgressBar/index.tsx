@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { Dispatch, SetStateAction, useState } from "react"
+import { type Dispatch, type SetStateAction, useState } from "react"
 import styles from "./index.module.css"
 
 let singletonSetProgress: Dispatch<SetStateAction<number>> | null = null
