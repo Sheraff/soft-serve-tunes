@@ -6,7 +6,7 @@ function playlistArtistName(
 ) {
 	const MAX = 3
 	if (artistData.length === 0) return ''
-	if (artistData.length === 1) return ` by ${artistData[0]!.name}`
+	if (artistData.length === 1) return handlebars ? ` by {{name}}` : ` by ${artistData[0]!.name}`
 	const nameList = artistData.slice(0, MAX).map(({name}) => {
 		if (handlebars)
 			return "{{name}}"
