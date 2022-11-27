@@ -65,7 +65,7 @@
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	position: relative;
-	top: calc(-100% + 4px); /* I don't understand perspective math */
+	top: calc(-50vh);
 	z-index: 2;
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);
