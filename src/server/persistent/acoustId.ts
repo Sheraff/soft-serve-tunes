@@ -278,13 +278,18 @@ class AcoustId {
 		].filter((name) => !notArtistName(name))
 		const maxScore = Math.max(...results.map(({score}) => score))
 		if (maxScore < 0.8) {
-			log("warn", "404", "acoustid", `Fingerprint confidence too low (${maxScore}) for ${metadata.common.title}`)
+			log("warn", "404", "acoustid", `Fingerprint confidence too low (${maxScore}) for ${metaName}`)
 			console.log(results)
 			return null
 		}
 		const candidates = results
 			.filter(({score, recordings}) => (score > maxScore - 0.05) && recordings)
 			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as Candidate[]
+
+		if (candidates.length === 0) {
+			log("warn", "404", "acoustid", `Fingerprint did not retrieve enough data for ${metaName}`)
+			return null
+		}
 		/*
 		 * Fix the top results that need fixing.
 		 * This will allow us to still have useful data for results that look like:
@@ -316,8 +321,8 @@ class AcoustId {
 				if (
 					candidate.score > 0.9
 					&& candidate.title && metaName && simplifiedName(candidate.title) === simplifiedName(metaName)
-					&& candidate.artists?.[0] && metaArtist && simplifiedName(candidate.artists[0].name) === simplifiedName(metaArtist)
-					&& candidate.releasegroups?.[0] && metaAlbum && simplifiedName(candidate.releasegroups[0].title) === simplifiedName(metaAlbum)
+					&& candidate.artists && metaArtist && candidate.artists.some(artist => simplifiedName(artist.name) === simplifiedName(metaArtist))
+					&& candidate.releasegroups && metaAlbum && candidate.releasegroups.some(album => simplifiedName(album.title) === simplifiedName(metaAlbum))
 				) {
 					return true
 				}
@@ -339,24 +344,15 @@ class AcoustId {
 			})
 			: confidentCandidates.filter(({score}) => score > 0.9)
 
-		/*
-		musicbrainz: https://musicbrainz.org/ws/2/recording/773a661c-bf8b-476b-b066-e01f622e4bf0?inc=releases%2Bmedia%2Bgenres%2Bartist-credits%2Brelease-groups&fmt=json
-		metadata: "the way you wear your head", "Nada Surf", "Let Go"
-		404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 204.90448979591838 vs [192, 192]
-		[
-			{
-				duration: 192,
-				releasegroups: [ [Object], [Object], [Object], [Object], [Object], [Object], [Object] ],
-				title: 'The Way You Wear Your Head',
-				id: '773a661c-bf8b-476b-b066-e01f622e4bf0',
-				artists: [ [Object] ],
-				score: 0.965783
-			},
-		*/
-
 		if (sameDurationRecordings.length === 0) {
-			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${confidentCandidates.map(({duration}) => duration).join(', ')}]`)
-			console.log(confidentCandidates)
+			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't fit file metadata for ${metaName}`)
+			confidentCandidates.forEach(candidate => (
+				console.log({
+					...candidate,
+					releasegroups: candidate.releasegroups?.map(({title}) => title).join(' --- '),
+					artists: candidate.artists?.map(({name}) => name).join(' --- ')
+				})
+			))
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
