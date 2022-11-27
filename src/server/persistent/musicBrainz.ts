@@ -23,19 +23,32 @@ const musicBrainzReleaseGroupSchema = z.object({
 const musicBrainzArtistSchema = z.object({
 	id: z.string(),
 	name: z.string(),
-	genres: z.array(musicBrainzGenreSchema),
+	genres: z.array(musicBrainzGenreSchema).optional(),
 })
 
 const musicBrainzRecordingSchema = z.object({
 	id: z.string(),
 	title: z.string(),
+	length: z.union([z.number(), z.null()]),
 	releases: z.array(z.object({
 		media: z.array(z.object({
 			tracks: z.array(z.object({
 				position: z.number()
 			})).length(1),
 			"track-count": z.number(),
-		})).length(1)
+		})).length(1),
+		"release-group": z.object({
+			id: z.string(),
+			title: z.string(),
+			"primary-type": z.union([z.string(), z.null()]),
+			"secondary-types": z.array(z.string()),
+			"artist-credit": z.array(z.object({
+				artist: musicBrainzArtistSchema,
+			})),
+		}),
+	})),
+	"artist-credit": z.array(z.object({
+		artist: musicBrainzArtistSchema,
 	})),
 	genres: z.array(musicBrainzGenreSchema),
 })
@@ -73,6 +86,9 @@ export default class MusicBrainz {
 			})
 		}))
 		if (response.status !== 200) {
+			if (response.status === 404) {
+				return undefined
+			}
 			if (response.status === 503) {
 				// Too many requests, back-off for a second
 				this.#queue.delay(2_000)
@@ -99,15 +115,18 @@ export default class MusicBrainz {
 		return json as unknown
 	}
 
-	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS>(type: T, id: string): Promise<z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
+	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS>(type: T, id: string): Promise<undefined | z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
 		const url = `https://musicbrainz.org/ws/2/${type}/${id}`
 		const params = new URLSearchParams()
 		if (type === 'recording') {
-			params.set('inc', 'releases+media+genres')
+			params.set('inc', 'releases+media+genres+artist-credits+release-groups')
 		} else {
 			params.set('inc', 'genres')
 		}
 		const json = await this.#makeRequest(`${url}?${params}`)
+		if (typeof json === "undefined") {
+			return undefined
+		}
 		const schema = z.union([
 			musicBrainzErrorSchema,
 			MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[type]

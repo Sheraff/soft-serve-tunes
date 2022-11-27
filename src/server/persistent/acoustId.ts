@@ -11,6 +11,7 @@ import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
 import { socketServer } from "server/persistent/ws"
 import MusicBrainz from "server/persistent/musicBrainz"
+import { simplifiedName } from "utils/sanitizeString"
 
 /*
  * VOCABULARY:
@@ -126,7 +127,8 @@ const acoustiIdLookupSchema = z.object({
 	}))
 })
 
-type Result = Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}
+type Candidate = z.infer<typeof acoustIdRecordingSchema> & {score: number}
+type Result = Omit<Candidate, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>}
 type ValidatedResult = Result & {of?: number, no?: number}
 type AugmentedResult = Omit<ValidatedResult, 'artists'> 
 	& {genres?: {name: string}[]}
@@ -150,7 +152,7 @@ class AcoustId {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
-		const sorted = this.#pick(data.results, metadata)
+		const sorted = await this.#pick(data.results, metadata)
 		if(!sorted?.[0]) {
 			return null
 		}
@@ -259,7 +261,7 @@ class AcoustId {
 		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	#pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
+	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
 		if (results.length === 0) {
 			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
 			return null
@@ -280,62 +282,81 @@ class AcoustId {
 			console.log(results)
 			return null
 		}
-		const mostConfidentRecordings = results
+		const candidates = results
 			.filter(({score, recordings}) => (score > maxScore - 0.05) && recordings)
-			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as (z.infer<typeof acoustIdRecordingSchema> & {score: number})[]
+			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as Candidate[]
+		/*
+		 * Fix the top results that need fixing.
+		 * This will allow us to still have useful data for results that look like:
+		 * { id: '89022cad-fc08-439e-b07a-c5319d230999', score: 0.940533 }
+		 * 
+		 * The request made to musicbrainz for this step is the same we would have done
+		 * anyway at the musicBrainzValidation step, and it is cached so it won't be re-fired.
+		 * However, here, we do it for more than a single result, which is why we only do it
+		 * for a few of the top results.
+		 */
+		const confidentCandidates = candidates.sort((a, b) => b.score - a.score)
+		for (let i = 0; i < Math.min(2, confidentCandidates.length); i++) {
+			const candidate = confidentCandidates[i]
+			if (!candidate) continue
+			if (candidate.score <= 0.9) continue
+			if (!candidate.title || !candidate.artists || !candidate.releasegroups || !candidate.duration) {
+				confidentCandidates[i] = await this.#musicBrainzComplete(candidate)
+			}
+		}
 		const sameDurationRecordings = (metaDuration && metaDuration > 15) // short duration tracks usually don't have a lot of data from acoustid
-			? mostConfidentRecordings.filter(({score, duration: d}) => {
-				if (!d) return false // maybe return true if score > 0.9999
-				const delta = Math.abs(metaDuration - d)
+			? confidentCandidates.filter((candidate) => {
+				if (candidate.score > 0.9999) return true
+				/**
+				 * Some results are correct in everything but the duration, and we don't really
+				 * use the duration data anyway, it's just a proxy for accuracy of results.
+				 * So we first test whether *everything* is correct, before falling back to
+				 * checking against duration
+				 */
+				if (
+					candidate.score > 0.9
+					&& candidate.title && metaName && simplifiedName(candidate.title) === simplifiedName(metaName)
+					&& candidate.artists?.[0] && metaArtist && simplifiedName(candidate.artists[0].name) === simplifiedName(metaArtist)
+					&& candidate.releasegroups?.[0] && metaAlbum && simplifiedName(candidate.releasegroups[0].title) === simplifiedName(metaAlbum)
+				) {
+					return true
+				}
+				if (!candidate.duration) {
+					return false
+				}
+				/**
+				 * Duration seems to be a good proxy for accuracy of results
+				 * so the closed to the original duration the result is, the lower
+				 * the confidence score needs to be to be considered a match
+				 */
+				const delta = Math.abs(metaDuration - candidate.duration)
 				if (delta < 3) return true
-				if (score > 0.9 && delta < 5) return true
-				if (score > 0.95 && delta < 7) return true
-				if (score > 0.99 && delta < 10) return true
-				if (score > 0.999 && delta < 20) return true
-				if (score > 0.9999) return true
+				if (candidate.score > 0.9 && delta < 5) return true
+				if (candidate.score > 0.95 && delta < 7) return true
+				if (candidate.score > 0.99 && delta < 10) return true
+				if (candidate.score > 0.999 && delta < 20) return true
 				return false
 			})
-			: mostConfidentRecordings.filter(({score}) => score > 0.9)
-		// at this point, there might be a way to salvage some "non viable matches" with a single call to musicbrainz
-		// https://musicbrainz.org/ws/2/recording/6c8b500f-b188-4b55-9a1f-be85377d370b?fmt=json&inc=releases+artist-credits+media
-		// this would give track.name, album, artist, album.artist, track.duration, track.count, track.position
-		// don't do this for score too low
-		// don't do this for empty array of results
-		// it might be that this type of data is returned for very recent releases (or maybe it's not about being recent
-		// but just that from now on acoustid will only provide this type of answers)
-		/**
-		 * fetch -  acoustid  Intentional Dweeb (/Users/Flo/Music/Empty/MEUTE/Taumel/12 Intentional Dweeb.flac)
-		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 224.8593537414966 vs []
-		 * [ { id: 'b5726e26-6241-4bf5-904d-22c6dcdeecb5', score: 1 } ]
-		 * 
-		 * fetch -  acoustid  Memento Mori (feat. Killstation) (/home/pi/Music/Polyphia/Remember That You Will Die/06 Memento Mori (feat. Killstation).mp3)
-		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 164.1795918367347 vs [, ]
-		 * [
-		 *   { id: '89022cad-fc08-439e-b07a-c5319d230999', score: 0.940533 },
-		 *   { id: 'd69e4c70-94d4-41e6-a987-7ffbd8df0960', score: 0.940533 }
-		 * ]
-		 */
+			: confidentCandidates.filter(({score}) => score > 0.9)
 
-		// maybe we could still accept a mismatch in duration if all other info are identical to those from metadata?
-		// currently, when we reject all answers, we end up proceeding with info from metadata anyway... might as well
-		// have more useful info from musicbrainz in that case (linked genres, mbid, count & position, ...)
-		/**
-		 * fetch -  acoustid  Montego Bay Spleen (/home/pi/Music/St. Germain/Tourist/02 Montego Bay Spleen.mp3)
-		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 372.8457142857143 vs [341]
-		 * [
-		 *   {
-		 *     duration: 341,
-		 *     releasegroups: [ [Object], [Object] ],
-		 *     title: 'Montego Bay Spleen',
-		 *     id: '86af445d-c9f9-44af-8db0-320c964a5523',
-		 *     artists: [ [Object] ],
-		 *     score: 0.973892
-		 *   }
-		 * ]
-		 */
+		/*
+		musicbrainz: https://musicbrainz.org/ws/2/recording/773a661c-bf8b-476b-b066-e01f622e4bf0?inc=releases%2Bmedia%2Bgenres%2Bartist-credits%2Brelease-groups&fmt=json
+		metadata: "the way you wear your head", "Nada Surf", "Let Go"
+		404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 204.90448979591838 vs [192, 192]
+		[
+			{
+				duration: 192,
+				releasegroups: [ [Object], [Object], [Object], [Object], [Object], [Object], [Object] ],
+				title: 'The Way You Wear Your Head',
+				id: '773a661c-bf8b-476b-b066-e01f622e4bf0',
+				artists: [ [Object] ],
+				score: 0.965783
+			},
+		*/
+
 		if (sameDurationRecordings.length === 0) {
-			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
-			console.log(mostConfidentRecordings)
+			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${confidentCandidates.map(({duration}) => duration).join(', ')}]`)
+			console.log(confidentCandidates)
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
@@ -430,38 +451,84 @@ class AcoustId {
 		return albums
 	}
 
+	async #musicBrainzComplete(result: Candidate): Promise<Candidate> {
+		const data = await this.#musicBrainz.fetch('recording', result.id)
+		if (!data) return result
+		result.title = data.title
+		if (!result.releasegroups) {
+			result.releasegroups = []
+		}
+		data.releases.forEach(release => {
+			result.releasegroups!.unshift({
+				id: release["release-group"].id,
+				title: release["release-group"].title,
+				artists: release["release-group"]["artist-credit"].map(({artist}) => ({
+					id: artist.id,
+					name: artist.name,
+				})),
+				secondarytypes: release["release-group"]["secondary-types"],
+				type: release["release-group"]["primary-type"] || undefined,
+			})
+		})
+		if (!result.artists) {
+			result.artists = []
+		}
+		data["artist-credit"].forEach(credit => {
+			result.artists!.unshift({
+				id: credit.artist.id,
+				name: credit.artist.name,
+			})
+		})
+		if (data.length) {
+			result.duration = data.length / 1000
+		}
+		return result
+	}
+
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
 	async #musicBrainzValidation(result: AugmentedResult): Promise<AugmentedResult> {
 		{
-			const {title, releases, genres} = await this.#musicBrainz.fetch('recording', result.id)
-			result.title = title
-			const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
-			const trackCounts = releases.map(({media}) => media[0]!["track-count"])
-			if (positions.length && positions.every(value => value === positions[0]))
-				result.no = positions[0]
-			if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
-				result.of = trackCounts[0]
-			result.genres = genres
+			const data = await this.#musicBrainz.fetch('recording', result.id)
+			if (data) {
+				const {title, releases, genres} = data
+				result.title = title
+				const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
+				const trackCounts = releases.map(({media}) => media[0]!["track-count"])
+				if (positions.length && positions.every(value => value === positions[0]))
+					result.no = positions[0]
+				if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
+					result.of = trackCounts[0]
+				result.genres = genres
+			}
 		}
 		if (result.album?.id) {
-			const {title, genres} = await this.#musicBrainz.fetch('release-group', result.album.id)
-			if (title)
-				result.album!.title = title
-			result.album!.genres = genres
+			const data = await this.#musicBrainz.fetch('release-group', result.album.id)
+			if (data) {
+				const {title, genres} = data
+				if (title)
+					result.album!.title = title
+				result.album!.genres = genres
+			}
 		}
 		if (result.artists) {
 			for (const artist of result.artists) {
-				const {name, genres} = await this.#musicBrainz.fetch('artist', artist.id)
-				if (name)
-					artist.name = name
-				artist.genres = genres
+				const data = await this.#musicBrainz.fetch('artist', artist.id)
+				if (data) {
+					const {name, genres} = data
+					if (name)
+						artist.name = name
+					artist.genres = genres
+				}
 			}
 		}
 		if (result.album?.artists?.[0]?.id) {
-			const {name, genres} = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
-			if (name)
-				result.album!.artists![0]!.name = name
-			result.album!.artists![0]!.genres = genres
+			const data = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
+			if (data) {
+				const {name, genres} = data
+				if (name)
+					result.album!.artists![0]!.name = name
+				result.album!.artists![0]!.genres = genres
+			}
 		}
 		return result
 	}
