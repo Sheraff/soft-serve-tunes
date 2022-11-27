@@ -69,6 +69,7 @@ function onWsMessageData(data: any) {
 	} else if (data.type === "invalidate:playlist") {
 		console.log("invalidate playlist", data.payload)
 		revalidateSwCache("playlist.get", {id: data.payload.id})
+		revalidateSwCache("playlist.list")
 		revalidateSwCache("playlist.searchable")
 	} else if (data.type === "invalidate:listen-count") {
 		console.log("invalidate listen counts")
