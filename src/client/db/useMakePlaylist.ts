@@ -288,6 +288,62 @@ export function useSetPlaylistIndex() {
 	}), [trpcClient])
 }
 
+export function useAddToPlaylist() {
+	const trpcClient = trpc.useContext()
+	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	return useCallback(async (playlistId: string, track: {id: string}) => {
+		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const isCurrent = playlistId === cache?.id
+		if (!isCurrent) {
+			return mutateAsync({
+				type: "add-track",
+				id: playlistId,
+				params: {id: track.id},
+			})
+		}
+		if (cache.order.some((id) => id === track.id)) {
+			// playlist already contains track
+			return
+		}
+		const fullTrack = trpcClient.getQueryData(["track.miniature", {id: track.id}])
+		if (!fullTrack) {
+			console.error(`We shouldn't be able to be here, adding a track to a playlist should only happen from the track, so it must be in the trpc cache`)
+			return
+		}
+		const newTracks = [...cache.tracks, fullTrack]
+		const newOrder = !shuffle.getValue()
+			? [...cache.order, fullTrack.id]
+			: [
+				...(cache.current ? [cache.current] : []),
+				...shuffleArray([
+					...cache.order.filter((id) => id !== cache.current),
+					fullTrack.id,
+				])
+			]
+		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			...cache,
+			tracks: newTracks,
+			order: newOrder,
+		})
+		await Promise.all([
+			storeInIndexedDB<PlaylistDBEntry>("playlist", fullTrack.id, {
+				index: cache.tracks.length,
+				track: fullTrack,
+			}),
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				order: newOrder,
+			})),
+		])
+		return mutateAsync({
+			type: "add-track",
+			id: playlistId,
+			params: {id: fullTrack.id},
+		})
+
+	}, [trpcClient, mutateAsync])
+}
+
 const playNextStack: string[] = []
 
 export function useAddNextToPlaylist() {

@@ -227,7 +227,7 @@ export const playlistRouter = createRouter()
         type: z.enum(["add-track"]),
         params: z.object({
           id: z.string(),
-          index: z.number(),
+          index: z.number().optional(),
         }),
       }),
       z.object({
@@ -313,32 +313,60 @@ export const playlistRouter = createRouter()
           })
         })
       } else if (input.type === "add-track") {
-        await ctx.prisma.$transaction(async (tx) => {
-          const entries = await tx.playlistEntry.findMany({
-            where: {
-              playlistId: input.id,
-              index: {gte: input.params.index},
-            },
-            select: {id: true, index: true},
-          })
-          for (const entry of entries) {
-            await tx.playlistEntry.update({
-              where: { id: entry.id },
-              data: { index: entry.index + 1 },
+        if (typeof input.params.index === "number") {
+          await ctx.prisma.$transaction(async (tx) => {
+            const entries = await tx.playlistEntry.findMany({
+              where: {
+                playlistId: input.id,
+                index: {gte: input.params.index},
+              },
+              select: {id: true, index: true},
             })
-          }
-          await tx.playlistEntry.create({
-            data: {
-              index: input.params.index,
-              playlistId: input.id,
-              trackId: input.params.id,
+            for (const entry of entries) {
+              await tx.playlistEntry.update({
+                where: { id: entry.id },
+                data: { index: entry.index + 1 },
+              })
             }
+            await tx.playlistEntry.create({
+              data: {
+                index: input.params.index!,
+                playlistId: input.id,
+                trackId: input.params.id,
+              }
+            })
+            await tx.playlist.update({
+              where: { id: input.id },
+              data: { modifiedAt: new Date().toISOString() },
+            })
           })
-          await tx.playlist.update({
-            where: { id: input.id },
-            data: { modifiedAt: new Date().toISOString() },
+        } else {
+          await ctx.prisma.$transaction(async (tx) => {
+            const [last] = await tx.playlistEntry.findMany({
+              where: { playlistId: input.id },
+              orderBy: { index: "desc" },
+              take: 1,
+              select: {index: true},
+            })
+            if (!last) {
+              throw new TRPCError({
+                message: `playlist ${input.id} not found during add-track w/o params.index`,
+                code: 'NOT_FOUND',
+              })
+            }
+            await tx.playlistEntry.create({
+              data: {
+                index: last.index + 1,
+                playlistId: input.id,
+                trackId: input.params.id,
+              }
+            })
+            await tx.playlist.update({
+              where: { id: input.id },
+              data: { modifiedAt: new Date().toISOString() },
+            })
           })
-        })
+        }
       } else if (input.type === "rename") {
         const playlists = await ctx.prisma.playlist.findMany({
           where: { id: { not: input.id } },

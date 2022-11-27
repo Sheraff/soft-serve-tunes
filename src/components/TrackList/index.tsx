@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { ElementType, startTransition, useDeferredValue, useEffect, useRef, useState } from "react"
+import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
@@ -11,6 +11,7 @@ import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
+import AddToPlaylist from "./AddToPlaylist"
 
 const emptyFunction = () => {}
 
@@ -26,6 +27,7 @@ function TrackItem({
 	onClick,
 	onSelect,
 	draggable,
+	onAdd,
 	onNext,
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
@@ -37,6 +39,7 @@ function TrackItem({
 	onClick?: (id:string, name:string) => void
 	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
 	draggable?: boolean
+	onAdd?: (track: TrackListItem) => void
 	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
@@ -80,7 +83,7 @@ function TrackItem({
 		})
 	}
 	callbacks.current.onAdd = () => {
-		console.log('add')
+		onAdd?.(track)
 	}
 	callbacks.current.onNext = () => {
 		if (data)
@@ -191,32 +194,38 @@ export default function TrackList({
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
 	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
 
+	const [itemToAdd, setItemToAdd] = useState<TrackListItem | null>(null)
+
 	return (
-		<ul className={styles.main} ref={orderable ? ref : undefined}>
-			{deferredTracks.map((track, i) => (
-				<li
-					className={classNames(styles.item, {
-						[styles.unloaded]: i > enableUpTo
-					})}
-					key={track.id}
-					data-index={i}
-				>
-					{i <= enableUpTo && (
-						<TrackItem
-							track={track}
-							enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
-							current={current === track.id}
-							onClick={onClick}
-							onSelect={onSelect}
-							draggable={orderable}
-							onNext={quickSwipeAction || addNextToPlaylist}
-							quickSwipeIcon={quickSwipeIcon}
-							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
-							index={i}
-						/>
-					)}
-				</li>
-			))}
-		</ul>
+		<>
+			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
+			<ul className={styles.main} ref={orderable ? ref : undefined}>
+				{deferredTracks.map((track, i) => (
+					<li
+						className={classNames(styles.item, {
+							[styles.unloaded]: i > enableUpTo
+						})}
+						key={track.id}
+						data-index={i}
+					>
+						{i <= enableUpTo && (
+							<TrackItem
+								track={track}
+								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								current={current === track.id}
+								onClick={onClick}
+								onSelect={onSelect}
+								draggable={orderable}
+								onAdd={setItemToAdd}
+								onNext={quickSwipeAction || addNextToPlaylist}
+								quickSwipeIcon={quickSwipeIcon}
+								quickSwipeDeleteAnim={quickSwipeDeleteAnim}
+								index={i}
+							/>
+						)}
+					</li>
+				))}
+			</ul>
+		</>
 	)
 }

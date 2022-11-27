@@ -105,6 +105,7 @@ const Home: NextPage<{
 			{!loggedIn && isOnline && (
 				<SignIn providers={providers!} />
 			)}
+			<div id="modal" />
 		</>
 	)
 }

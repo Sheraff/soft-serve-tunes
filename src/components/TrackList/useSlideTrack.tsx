@@ -75,7 +75,7 @@ export default function useSlideTrack(
 			}, {signal})
 		}
 
-		function delayedSwitch(which: 'left' | 'right' = 'left') {
+		function delayedSwitch(which: 'left' | 'right' = 'left', end: () => void) {
 			if (!element) return
 
 			triggerSecondaryAction = false
@@ -93,6 +93,9 @@ export default function useSlideTrack(
 					triggerSecondaryAction = true
 					controller.abort()
 					switchController = null
+					end()
+					playlist()
+					callbacks.current.onAdd()
 				}, {signal})
 			}, DELAYED_SWITCH_DURATION)
 		}
@@ -119,9 +122,7 @@ export default function useSlideTrack(
 				element.classList.remove(styles.will as string)
 				controller.abort()
 				animController = null
-				if (triggerSecondaryAction) {
-					callbacks.current.onAdd()
-				} else {
+				if (!triggerSecondaryAction) {
 					callbacks.current.onNext()
 				}
 			}, {signal})
@@ -163,7 +164,7 @@ export default function useSlideTrack(
 				}
 				const valid = dx > 48 || dx < -48
 				if (valid && !timeoutId) {
-					delayedSwitch(dx > 48 ? 'left' : 'right')
+					delayedSwitch(dx > 48 ? 'left' : 'right', end)
 				}
 				if (!valid && timeoutId) {
 					clearTimeout(timeoutId)

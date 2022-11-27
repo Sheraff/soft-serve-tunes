@@ -1,11 +1,11 @@
 import { usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import TrackList from "components/TrackList"
-import { startTransition } from "react"
+import { memo, startTransition } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
 import Cover from "./Cover"
 import styles from './index.module.css'
 
-export default function NowPlaying() {
+export default memo(function NowPlaying() {
 	const {data} = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
 	const {setPlaylistIndex} = useSetPlaylistIndex()
@@ -31,4 +31,4 @@ export default function NowPlaying() {
 			/>
 		</div>
 	)
-}
+})
