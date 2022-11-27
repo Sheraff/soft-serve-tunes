@@ -301,10 +301,37 @@ class AcoustId {
 		// this would give track.name, album, artist, album.artist, track.duration, track.count, track.position
 		// don't do this for score too low
 		// don't do this for empty array of results
+		// it might be that this type of data is returned for very recent releases (or maybe it's not about being recent
+		// but just that from now on acoustid will only provide this type of answers)
 		/**
 		 * fetch -  acoustid  Intentional Dweeb (/Users/Flo/Music/Empty/MEUTE/Taumel/12 Intentional Dweeb.flac)
 		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 224.8593537414966 vs []
 		 * [ { id: 'b5726e26-6241-4bf5-904d-22c6dcdeecb5', score: 1 } ]
+		 * 
+		 * fetch -  acoustid  Memento Mori (feat. Killstation) (/home/pi/Music/Polyphia/Remember That You Will Die/06 Memento Mori (feat. Killstation).mp3)
+		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 164.1795918367347 vs [, ]
+		 * [
+		 *   { id: '89022cad-fc08-439e-b07a-c5319d230999', score: 0.940533 },
+		 *   { id: 'd69e4c70-94d4-41e6-a987-7ffbd8df0960', score: 0.940533 }
+		 * ]
+		 */
+
+		// maybe we could still accept a mismatch in duration if all other info are identical to those from metadata?
+		// currently, when we reject all answers, we end up proceeding with info from metadata anyway... might as well
+		// have more useful info from musicbrainz in that case (linked genres, mbid, count & position, ...)
+		/**
+		 * fetch -  acoustid  Montego Bay Spleen (/home/pi/Music/St. Germain/Tourist/02 Montego Bay Spleen.mp3)
+		 * 404   -  acoustid  Musicbrainz fingerprint matches don't match file duration: 372.8457142857143 vs [341]
+		 * [
+		 *   {
+		 *     duration: 341,
+		 *     releasegroups: [ [Object], [Object] ],
+		 *     title: 'Montego Bay Spleen',
+		 *     id: '86af445d-c9f9-44af-8db0-320c964a5523',
+		 *     artists: [ [Object] ],
+		 *     score: 0.973892
+		 *   }
+		 * ]
 		 */
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't match file duration: ${metaDuration} vs [${mostConfidentRecordings.map(({duration}) => duration).join(', ')}]`)
