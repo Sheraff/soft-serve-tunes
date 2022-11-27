@@ -13,7 +13,7 @@ import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
 import { loadingStatus } from "server/router/list"
-import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
+import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import { useAtom } from "jotai"
 import useIsOnline from "client/sw/useIsOnline"
 

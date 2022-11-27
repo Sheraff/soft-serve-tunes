@@ -162,6 +162,19 @@ export function useCurrentTrack() {
 	return data
 }
 
+export function useGetCurrentIndex() {
+	const trpcClient = trpc.useContext()
+	return useCallback(() => {
+		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		if (!playlist) {
+			throw new Error(`trying to find "playlist" index, but query doesn't exist yet`)
+		}
+		const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
+		if (index < 0) return undefined
+		return index
+	}, [trpcClient])
+}
+
 export function useNextTrack() {
 	const repeatType = useAtomValue(repeat)
 	const { data } = usePlaylist({select: ({tracks, current, order}) => {

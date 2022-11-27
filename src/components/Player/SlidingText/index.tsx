@@ -1,9 +1,10 @@
 import classNames from "classnames"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { inferQueryOutput } from "utils/trpc"
-import { albumView, artistView } from "components/AppContext"
+import { albumView, artistView, mainView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
+import { useGetCurrentIndex } from "client/db/useMakePlaylist"
 
 export default function SlidingText({
 	item,
@@ -30,12 +31,47 @@ export default function SlidingText({
 		return () => observer.disconnect()
 	}, [])
 
+	const showHome = useShowHome()
+	const focusRef = useRef<boolean>(false)
+	const main = useAtomValue(mainView)
+	const getCurrentIndex = useGetCurrentIndex()
+	const scrollToCurrent = useCallback(() => {
+		const index = getCurrentIndex()
+		if (typeof index === "undefined") return
+		const element = document.querySelector(`[data-index="${index}"]`)
+		if (!element) return
+		element.scrollIntoView({
+			behavior: "smooth",
+			block: "center",
+		})
+	}, [getCurrentIndex])
+	useEffect(() => {
+		if (main !== "home") return
+		if (!focusRef.current) return
+		focusRef.current = false
+		scrollToCurrent()
+	}, [main, scrollToCurrent])
+	const onClickTrackName = () => {
+		if (main === "home") {
+			scrollToCurrent()
+		} else {
+			focusRef.current = true
+			showHome("home")
+		}
+	}
+
+
 	const album = item?.album
 	const artist = item?.artist
 
 	const content = item && (
 		<>
-			{item?.name}
+			<button
+				type="button"
+				onClick={onClickTrackName}
+			>
+				{item?.name}
+			</button>
 			{album && (
 				<>
 					{' · '}
@@ -64,11 +100,11 @@ export default function SlidingText({
 	return (
 		<div className={classNames(styles.main, className, {[styles.sliding as string]: separator})}>
 			<div className={styles.wrapper}>
-				<div className={styles.span} ref={span}>
+				<div className={styles.span} ref={span} key="base">
 					{content}
 				</div>
 				{separator && (
-					<div className={styles.span}>
+					<div className={styles.span} key="clone">
 						{'· '}
 						{content}
 						{' · '}

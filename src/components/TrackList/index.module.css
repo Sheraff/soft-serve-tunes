@@ -4,6 +4,9 @@
 .item {
 	width: 100%;
 }
+.unloaded {
+	height: calc(48px + 2 * 8px + 1px);
+}
 
 .wrapper {
 	position: relative;
