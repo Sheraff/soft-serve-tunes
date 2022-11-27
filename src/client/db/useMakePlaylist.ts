@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useMemo } from "react"
+import { type RefObject, useCallback, useMemo, startTransition } from "react"
 import { type inferQueryOutput, trpc } from "utils/trpc"
 import { type inferHandlerInput } from "@trpc/server"
 import { type AppRouter } from "server/router"
@@ -13,9 +13,10 @@ import {
 } from "./utils"
 import { useQuery } from "react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
-import { useAtomValue } from "jotai"
-import { repeat } from "components/Player"
+import { useAtomValue, useSetAtom } from "jotai"
+import { repeat, shuffle } from "components/Player"
 import generateUniqueName from "utils/generateUniqueName"
+import shuffleArray from "utils/shuffleArray"
 
 /**
  * TODO: 
@@ -38,9 +39,12 @@ type PlaylistMeta = {
 	name: string
 	/** @description id of the server-side playlist (an id is only assigned when the playlist is saved) */
 	id: string | null
+	/** @description list of track IDs for the playlist, in the order they will be played (in shuffle, this is a different order from `tracks`) */
+	order: string[]
 }
 
 export type Playlist = PlaylistMeta & {
+	/** @description list of tracks for the playlist, in the order they appear visually */
 	tracks: PlaylistTrack[]
 }
 
@@ -48,10 +52,15 @@ async function setPlaylist(
 	trpcClient: ReturnType<typeof trpc.useContext>,
 	name: Playlist['name'],
 	id: Playlist['id'],
-	current: Playlist['current'],
-	tracks: Playlist['tracks']
+	tracks: Playlist['tracks'],
+	current?: Playlist['current'],
 ) {
-	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], { tracks, current, name, id })
+	const regularOrder = tracks.map(({id}) => id)
+	const order = shuffle.getValue()
+		? shuffleArray(regularOrder)
+		: regularOrder
+	const newCurrent = current || order[0]
+	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], { tracks, current: newCurrent, name, id, order })
 	await Promise.all([
 		deleteAllFromIndexedDB("playlist").then(() => (
 			storeListInIndexedDB<PlaylistDBEntry>("playlist", tracks.map((track, i) => ({
@@ -62,7 +71,7 @@ async function setPlaylist(
 				}
 			})))
 		)),
-		storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", { current, name, id }),
+		storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", { current: newCurrent, name, id, order }),
 	])
 }
 
@@ -73,7 +82,7 @@ export function useSetPlaylist() {
 		id: Exclude<Playlist['id'], null>,
 		tracks: Playlist['tracks']
 	) => {
-		await setPlaylist(trpcClient, name, id, tracks[0]?.id, tracks)
+		await setPlaylist(trpcClient, name, id, tracks)
 	}, [trpcClient])
 }
 
@@ -88,7 +97,7 @@ async function makePlaylist(
 	name: string,
 ) {
 	const uniqueName = await uniqueNameFromName(trpcClient, name)
-	await setPlaylist(trpcClient, uniqueName, null, list[0]?.id, list)
+	await setPlaylist(trpcClient, uniqueName, null, list)
 }
 
 export function useMakePlaylist() {
@@ -121,6 +130,7 @@ export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlis
 				current: meta?.current || tracks[0]?.id,
 				name: meta?.name || "New Playlist",
 				tracks,
+				order: meta?.order || tracks.map(({id}) => id),
 			}
 		},
 		cacheTime: 0,
@@ -154,12 +164,16 @@ export function useCurrentTrack() {
 
 export function useNextTrack() {
 	const repeatType = useAtomValue(repeat)
-	const { data } = usePlaylist({select: ({tracks, current}) => {
+	const { data } = usePlaylist({select: ({tracks, current, order}) => {
 		if (repeatType === 2) return undefined
-		const index = tracks.findIndex(({id}) => id === current)
+		const index = order.findIndex((id) => id === current)
 		if (index < 0) return undefined
 		if (repeatType === 0 && index >= tracks.length - 1) return undefined
-		return tracks[index >= tracks.length - 1 ? 0 : (index + 1)]
+		const nextIndex = index >= tracks.length - 1
+			? 0
+			: index + 1
+		const nextTrack = tracks.find(({id}) => id === order[nextIndex])
+		return nextTrack
 	}})
 	return data
 }
@@ -212,7 +226,7 @@ export function useSetPlaylistIndex() {
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
-			const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
+			const index = playlist.order.findIndex((id) => id === playlist.current)
 			if (repeatType === 0 && index >= playlist.tracks.length - 1) {
 				return
 			}
@@ -220,7 +234,7 @@ export function useSetPlaylistIndex() {
 				? 0
 				: index + 1
 			
-			const current = playlist.tracks[newIndex]!.id
+			const current = playlist.order[newIndex]!
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				current,
@@ -235,18 +249,27 @@ export function useSetPlaylistIndex() {
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
-			const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
+			const index = playlist.order.findIndex((id) => id === playlist.current)
 			const newIndex = index <= 0
 				? playlist.tracks.length - 1
 				: index - 1
-			const current = playlist.tracks[newIndex]!.id
+			const current = playlist.order[newIndex]!
+			// if "prev" gets us to the last item of the playlist, 
+			// AND the playlist is shuffled, 
+			// keep the order, but 0 starts at the last index
+			// this is to avoid clicking "prev" and listening to a single track before reaching an "invisible" end
+			const newOrder = index > 0 || !shuffle.getValue() || !playlist.order.length
+				? playlist.order
+				: [playlist.order.at(-1)!, ...playlist.order.slice(0, playlist.order.length - 1)]
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				current,
+				order: newOrder,
 			})
 			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current,
+				order: newOrder,
 			}))
 		}
 	}), [trpcClient])
@@ -280,10 +303,20 @@ export function useAddNextToPlaylist() {
 		}
 		// playlist is inactive, just add track to the end (or to the start if `forceCurrent`)
 		if (typeof cache.current === 'undefined') {
+			const baseOrder = cache.tracks.map(({id}) => id)
+			const newOrder = shuffle.getValue()
+				? forceCurrent
+					? [track.id, ...shuffleArray(baseOrder)]
+					: shuffleArray([track.id, ...baseOrder])
+				: forceCurrent
+					? [track.id, ...baseOrder]
+					: [...baseOrder, track.id]
+			
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
 				current: forceCurrent ? track.id : undefined,
 				tracks: forceCurrent ? [track, ...cache.tracks] : [...cache.tracks, track],
+				order: newOrder,
 			})
 			await Promise.all([
 				storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
@@ -297,6 +330,7 @@ export function useAddNextToPlaylist() {
 				modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 					...meta,
 					current: forceCurrent ? track.id : undefined,
+					order: newOrder,
 				})),
 			])
 			if (cache.id) {
@@ -323,32 +357,46 @@ export function useAddNextToPlaylist() {
 		 * playlist is now A, 1, 2, 3, 4, B, C
 		 * if currently playing progresses to B, and we insert another 5, 6
 		 * playlist is now A, 1, 2, 3, 4, B, 5, 6, C
+		 * 
+		 * ---
+		 * if playlist is currently shuffled, `order` and `tracks` are de-sync
+		 * - order is the order in which tracks will be played
+		 * - tracks is the order in which tracks will be displayed
+		 * when adding via "play next", tracks are added "after the current" in both `order` and `tracks`
+		 * so that they appear predictably in visual order below the current
+		 * and they will play predictably in order after the current
+		 * (after which "shuffle" will resume, meaning the rest of the playlist is out-of-sync between order and tracks)
 		*/
-		const currentIndex = cache.tracks.findIndex(({id}) => id === cache.current)
+		const currentIndex = cache.order.findIndex((id) => id === cache.current)
 		const {index, isStack} = forceCurrent
 			? {index: currentIndex + 1, isStack: true}
-			: findEndOfStack(cache.tracks, currentIndex)
+			: findEndOfStack(cache.order, currentIndex)
+		const tracksIndex = cache.tracks.findIndex(({id}) => id === cache.order[index - 1]) + 1
 		if (!isStack) {
 			playNextStack.length = 0
 		}
 		playNextStack.push(track.id)
+		const newOrder = [...cache.order]
+		newOrder.splice(index, 0, track.id)
 		trpc: {
-			const newItems = [...cache.tracks]
-			newItems.splice(index, 0, track)
+			const newTracks = [...cache.tracks]
+			newTracks.splice(tracksIndex, 0, track)
 			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
 				current: forceCurrent ? track.id : cache.current,
-				tracks: newItems,
+				tracks: newTracks,
+				order: newOrder,
 			})
 		}
 		await Promise.all([
 			storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
 				index: cache.tracks.length,
 				track,
-			}).then(() => reorderListInIndexedDB(cache.tracks.length, index)),
+			}).then(() => reorderListInIndexedDB(cache.tracks.length, tracksIndex)),
 			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current: forceCurrent ? track.id : cache.current,
+				order: newOrder,
 			})),
 		])
 		if (cache.id) {
@@ -357,22 +405,22 @@ export function useAddNextToPlaylist() {
 				type: "add-track",
 				params: {
 					id: track.id,
-					index,
+					index: tracksIndex,
 				}
 			})
 		}
 	}, [trpcClient, mutateAsync])
 }
 
-function findEndOfStack(tracks: Playlist['tracks'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
+function findEndOfStack(order: Playlist['order'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
 	const index = currentIndex + 1
-	if (index === tracks.length) {
+	if (index === order.length) {
 		return {index, isStack}
 	}
-	if (!playNextStack.includes(tracks[index]!.id)) {
+	if (!playNextStack.includes(order[index]!)) {
 		return {index, isStack}
 	}
-	return findEndOfStack(tracks, index, true)
+	return findEndOfStack(order, index, true)
 }
 
 export function useReorderPlaylist() {
@@ -386,10 +434,20 @@ export function useReorderPlaylist() {
 		const newItems = [...playlist.tracks]
 		const [item] = newItems.splice(oldIndex, 1)
 		newItems.splice(newIndex, 0, item!)
+		const newOrder = shuffle.getValue()
+			? playlist.order // if playlist is already shuffled, `order` is not correlated to `tracks`, so only update tracks
+			: newItems.map(({id}) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
 		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 			...playlist,
 			tracks: newItems,
+			order: newOrder,
 		})
+		if (shuffle.getValue()) {
+			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				order: newOrder,
+			}))
+		}
 		await reorderListInIndexedDB(oldIndex, newIndex)
 		if (playlist.id) {
 			await mutateAsync({
@@ -447,26 +505,29 @@ export function useRemoveFromPlaylist() {
 		}
 		let newCurrent = playlist.current
 		if (id === playlist.current) {
-			const index = playlist.tracks.findIndex(track => track.id === playlist.current)
-			if (index < playlist.tracks.length - 1) {
-				newCurrent = playlist.tracks[index + 1]!.id
-			} else if (playlist.tracks.length === 1) {
+			const index = playlist.order.findIndex(id => id === playlist.current)
+			if (index < playlist.order.length - 1) {
+				newCurrent = playlist.order[index + 1]!
+			} else if (playlist.order.length === 1) {
 				newCurrent = undefined
 			} else {
-				newCurrent = playlist.tracks.at(-1)!.id
+				newCurrent = playlist.order.at(-1)!
 			}
 		}
 		const newItems = playlist.tracks.filter(track => track.id !== id)
+		const newOrder = playlist.order.filter(orderId => orderId !== id)
 		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
 			...playlist,
 			current: newCurrent,
 			tracks: newItems,
+			order: newOrder,
 		})
 		await Promise.all([
 			deleteFromListInIndexedDB(id),
 			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current: newCurrent,
+				order: newOrder,
 			})),
 		])
 		if (playlist.id) {
@@ -508,6 +569,45 @@ async function deleteFromListInIndexedDB(id: string) {
 		}
 		tx.oncomplete = resolve
 	})
+}
+
+export function useShufflePlaylist() {
+	const setShuffle = useSetAtom(shuffle)
+	const trpcClient = trpc.useContext()
+	return useCallback(() => {
+		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		if (!playlist) {
+			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+		}
+		const isShuffle = shuffle.getValue()
+		setShuffle(isShuffle ? false : true)
+		if (!isShuffle) {
+			playNextStack.length = 0
+		}
+		startTransition(() => {
+			const baseOrder = playlist.tracks.map(({id}) => id)
+			const newOrder = isShuffle
+				? baseOrder
+				: (() => {
+					if (playlist.current) {
+						// if playlist has a current item, set the current at the top, shuffle the rest
+						// this avoids setting shuffle on, only to have just 3 tracks playing and the playlist stopping because it
+						// reached an "invisible" end
+						return [playlist.current, ...shuffleArray(baseOrder.filter(id => id !== playlist.current))]
+					} else {
+						return shuffleArray(baseOrder)
+					}
+				})()
+			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+				...playlist,
+				order: newOrder,
+			})
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+				...meta,
+				order: newOrder,
+			}))
+		})
+	}, [setShuffle, trpcClient])
 }
 
 export function useRenamePlaylist() {

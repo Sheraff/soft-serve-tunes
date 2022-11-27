@@ -10,13 +10,13 @@ import PlayIcon from "icons/play_arrow.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
 import { trpc } from "utils/trpc"
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import asyncPersistedAtom from "components/AppContext/asyncPersistedAtom"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Player/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
 import useIsOnline from "client/sw/useIsOnline"
-import { useCurrentTrack, usePlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { useCurrentTrack, usePlaylist, useSetPlaylistIndex, useShufflePlaylist } from "client/db/useMakePlaylist"
 import ShuffleIcon from 'icons/shuffle.svg'
 import RepeatIcon from 'icons/repeat.svg'
 import RepeatOneIcon from 'icons/repeat_one.svg'
@@ -118,7 +118,8 @@ export default memo(function Player() {
 
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
-	const [isShuffle, setIsShuffle] = useAtom(shuffle)
+	const isShuffle = useAtomValue(shuffle)
+	const shufflePlaylist = useShufflePlaylist()
 	const [repeatType, setRepeatType] = useAtom(repeat)
 
 	return (
@@ -142,7 +143,7 @@ export default memo(function Player() {
 				<Suspense fallback={<button><ShuffleIcon /></button>}>
 					<button
 						className={isShuffle ? styles.enabled : undefined}
-						onClick={() => setIsShuffle(a => !a)}
+						onClick={shufflePlaylist}
 					>
 						<ShuffleIcon />
 					</button>
