@@ -354,7 +354,6 @@ export const playlistRouter = createRouter()
         }))
       }
       socketServer.send('invalidate:playlist', { id: input.id })
-      // return getResolve(input.id)
     }
   })
   .mutation("delete", {

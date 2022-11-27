@@ -1,3 +1,5 @@
+import pluralize from "utils/pluralize"
+
 function playlistArtistName(
 	artistData: {name: string}[],
 ) {
@@ -20,5 +22,5 @@ export default function descriptionFromPlaylistCredits(
 
 	const names = playlistArtistName(artistData)
 
-	return `${trackCount} track${trackCount > 1 ? 's' : ''}${names}`
+	return `${trackCount} track${pluralize(trackCount)}${names}`
 }

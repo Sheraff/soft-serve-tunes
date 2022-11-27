@@ -48,7 +48,7 @@ export default function Cover() {
 
 	return (
 		<>
-			<div className={classNames(styles.main, styles[`count-${albumData.length}`])}>
+			<div className={classNames(styles.main, styles[`count-${albumData.length}` as keyof typeof styles])}>
 				{albumData.map((album) => (
 					<img
 						key={album.id}
