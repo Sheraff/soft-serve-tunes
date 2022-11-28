@@ -28,6 +28,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 	const [seconds, setSeconds] = useState(0) // current time
 	const [totalSeconds, setTotalSeconds] = useState(0) // total time of source
 	const [playing, setPlaying] = useState(false) // follows state of DOM node
+	const [id, setId] = useState<string | undefined>(undefined) // using state for an ID in sync w/ what the rest of the data is about
 	const [loading, setLoading] = useState(true)
 	const [playedSeconds, setPlayedSeconds] = useState(0) // how long the source has been playing (excludes loading / stalled / seeking)
 	const remainingSeconds = totalSeconds - seconds
@@ -134,6 +135,8 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				setPlayedSeconds(0)
 				_setLoading(true)
 				// element.play()
+				const newId = src.split('/api/file/')[1]
+				setId(newId)
 			}
 		})
 		observer.observe(element, {
@@ -201,6 +204,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		: 0
 
 	return {
+		id,
 		playing,
 		loading,
 		displayCurrentTime,

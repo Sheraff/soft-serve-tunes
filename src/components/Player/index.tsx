@@ -70,6 +70,7 @@ export default memo(function Player() {
 	)
 
 	const {
+		id: audioSrcId,
 		playing,
 		loading,
 		displayCurrentTime,
@@ -105,13 +106,13 @@ export default memo(function Player() {
 		return () => controller.abort()
 	}, [togglePlay])
 
-	const consideredPlayed = playedSeconds > 45 || playedSeconds / totalSeconds > 0.4
+	const consideredPlayed = playedSeconds > 45 || (totalSeconds && playedSeconds / totalSeconds > 0.4)
 	const {mutate} = trpc.useMutation(["track.playcount"])
 	useEffect(() => {
-		if (consideredPlayed && item?.id) {
-			mutate({id: item?.id})
+		if (consideredPlayed && audioSrcId) {
+			mutate({id: audioSrcId})
 		}
-	}, [mutate, consideredPlayed, item?.id])
+	}, [mutate, consideredPlayed, audioSrcId])
 
 	const online = useIsOnline()
 	const {data: cached} = useCachedTrack({id: item?.id})
