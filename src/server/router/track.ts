@@ -77,22 +77,23 @@ export const trackRouter = createRouter()
           },
           audiodb: {
             select: {
-              intDuration: true,
+              // intDuration: true,
               intTrackNumber: true,
             }
           },
           spotify: {
             select: {
-              durationMs: true,
+              // durationMs: true,
               trackNumber: true,
-              discNumber: true,
+              explicit: true,
+              // discNumber: true,
             }
           },
-          lastfm: {
-            select: {
-              duration: true,
-            }
-          },
+          // lastfm: {
+          //   select: {
+          //     duration: true,
+          //   }
+          // },
         }
       })
       if (!track) return null

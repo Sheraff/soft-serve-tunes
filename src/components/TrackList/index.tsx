@@ -9,9 +9,14 @@ import PlaylistNextIcon from "icons/playlist_play.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import DragIcon from "icons/drag_indicator.svg"
+import ExplicitIcon from "icons/explicit.svg"
+import OfflineIcon from "icons/wifi_off.svg"
+import NewIcon from "icons/fiber_new.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
+import useIsOnline from "client/sw/useIsOnline"
+import useCachedTrack from "client/sw/useCachedTrack"
 
 const emptyFunction = () => {}
 
@@ -91,9 +96,14 @@ function TrackItem({
 	}
 	useSlideTrack(item, callbacks, {quickSwipeDeleteAnim})
 
-	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
-
 	const NextIcon = quickSwipeIcon || PlaylistNextIcon
+
+	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
+	const explicit = Boolean(data?.spotify?.explicit)
+	const recent = data?.createdAt && Date.now() - 1 * 24 * 60 * 60 * 1000 < data.createdAt.getTime()
+	const online = useIsOnline()
+	const {data: cached} = useCachedTrack({id: track.id, enabled: !online})
+	const offline = !online && cached
 
 	return (
 		<div ref={item} className={classNames(styles.wrapper, {
@@ -145,8 +155,15 @@ function TrackItem({
 						)}
 						{data?.name}
 					</span>
-					{data?.album?.name && <span>{data?.album.name}</span>}
-					{data?.artist?.name && <span>{data?.artist.name}</span>}
+					{data?.album?.name && <span className={styles.credits}>{data?.album.name}</span>}
+					{data?.artist?.name && <span className={styles.credits}>{data?.artist.name}</span>}
+					{(explicit || offline || recent) && (
+						<span className={styles.icons}>
+							{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
+							{offline && <OfflineIcon key="offline" className={styles.offline} />}
+							{recent && <NewIcon key="recent" />}
+						</span>
+					)}
 				</p>
 			</button>
 			<FavoriteIcon className={styles.fav} />
