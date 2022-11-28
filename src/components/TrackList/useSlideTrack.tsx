@@ -196,6 +196,10 @@ export default function useSlideTrack(
 		element.addEventListener('touchstart', (event) => {
 			if (!isDragging) {
 				const touch = event.changedTouches.item(0) as Touch
+				if (touch.clientX < 20 || touch.clientX > innerWidth - 20) {
+					// avoid conflict with phone swipe global gestures
+					return
+				}
 				start(touch)
 			}
 		}, {signal, passive: true})
@@ -207,6 +211,6 @@ export default function useSlideTrack(
 			if (switchController) switchController.abort()
 			if (timeoutId) clearTimeout(timeoutId)
 		}
-	}, [ref, callbacks])
+	}, [ref, callbacks, opts.quickSwipeDeleteAnim])
 
 }
