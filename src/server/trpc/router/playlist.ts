@@ -10,6 +10,7 @@ import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
 import { recursiveSubGenres } from "./genre"
 import log from "utils/logger"
+import { type Prisma } from "@prisma/client"
 
 const trackSelect = {
   id: true,
@@ -26,7 +27,7 @@ const trackSelect = {
       name: true,
     },
   }
-} as const // satisfies Prisma.TrackFindManyArgs['select']
+} satisfies Prisma.TrackFindManyArgs['select']
 
 async function getResolve(id: string) {
   const result = await prisma.playlist.findUnique({
