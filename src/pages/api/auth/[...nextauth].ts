@@ -5,8 +5,8 @@ import GithubProvider from "next-auth/providers/github";
 
 // Prisma adapter for NextAuth, optional and can be removed
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "../../../server/db/client";
-import { env } from "../../../env/server.mjs";
+import { prisma } from "server/db/client";
+import { env } from "env/server.mjs";
 import log from "utils/logger";
 
 export const authOptions: NextAuthOptions = {
@@ -14,10 +14,10 @@ export const authOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account}) {
 			const allowed = env.ALLOWED_USERS.some(
-				([provider, email]) => account.provider === provider && user.email === email
+				([provider, email]) => account && account.provider === provider && user.email === email
 			)
 			if (!allowed) {
-				log("error", "401", `Unauthorized sign-in attempt @ ${account.provider} - ${user.email}`)
+				log("error", "401", `Unauthorized sign-in attempt @ ${account?.provider} - ${user.email}`)
 				console.log(account)
 				console.log(user)
 			}

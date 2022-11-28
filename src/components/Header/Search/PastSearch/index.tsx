@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { trpc, type inferQueryOutput } from "utils/trpc"
+import { AllRoutes, RouteKey, trpc, type RouterOutputs } from "utils/trpc"
 import { albumView, artistView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
@@ -8,48 +8,66 @@ import { startTransition } from "react"
 import { useAddNextToPlaylist, useMakePlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import { useRemoveFromPastSearches } from "client/db/indexedPastSearches"
 
+type Option<Key extends AllRoutes> = {
+	key: Key
+	Component: (entity: Exclude<RouterOutputs[Key[0]][Key[1]], null>) => JSX.Element
+	cover: (e?: RouterOutputs[Key[0]][Key[1]]) => string | undefined
+}
+
+const track: Option<["track", "miniature"]> = {
+	key: ["track", "miniature"],
+	Component: TrackInfo,
+	cover: (e) => e?.cover?.id,
+}
+const album: Option<["album", "miniature"]> = {
+	key: ["album", "miniature"],
+	Component: AlbumInfo,
+	cover: (e) => e?.cover?.id,
+}
+const artist: Option<["artist", "miniature"]> = {
+	key: ["artist", "miniature"],
+	Component: ArtistInfo,
+	cover: (e) => e?.cover?.id,
+}
+const genre: Option<["genre", "miniature"]> = {
+	key: ["genre", "miniature"],
+	Component: GenreInfo,
+	cover: () => undefined
+}
+const playlist: Option<["playlist", "get"]> = {
+	key: ["playlist", "get"],
+	Component: PlaylistInfo,
+	cover: (e) => e?.albums?.find(a => a.coverId)?.coverId
+}
+
 const OPTIONS = {
-	track: {
-		key: "track.miniature",
-		Component: TrackInfo,
-		cover: (e?: inferQueryOutput<"track.miniature">) => e?.cover?.id,
-	},
-	album: {
-		key: "album.miniature",
-		Component: AlbumInfo,
-		cover: (e?: inferQueryOutput<"album.miniature">) => e?.cover?.id,
-	},
-	artist: {
-		key: "artist.miniature",
-		Component: ArtistInfo,
-		cover: (e?: inferQueryOutput<"artist.miniature">) => e?.cover?.id,
-	},
-	genre: {
-		key: "genre.miniature",
-		Component: GenreInfo,
-		cover: () => undefined
-	},
-	playlist: {
-		key: "playlist.get",
-		Component: PlaylistInfo,
-		cover: (e?: inferQueryOutput<"playlist.get">) => e?.albums.find(a => a.coverId)?.coverId
-	}
+	track,
+	album,
+	artist,
+	genre,
+	playlist,
 } as const
 
-function trackNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"track.miniature"> {
+function trackNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["track"]["miniature"] {
 	return type === "track"
 }
-function albumNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"album.miniature"> {
+function albumNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["album"]["miniature"] {
 	return type === "album"
 }
-function artistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"artist.miniature"> {
+function artistNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["artist"]["miniature"] {
 	return type === "artist"
 }
-function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"genre.miniature"> {
+function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["genre"]["miniature"] {
 	return type === "genre"
 }
-function playlistNarrow(type: keyof typeof OPTIONS, entity: any): entity is inferQueryOutput<"playlist.get"> {
+function playlistNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["playlist"]["get"] {
 	return type === "playlist"
+}
+
+function getTrpcProcedure(key: typeof OPTIONS[keyof typeof OPTIONS]["key"]) {
+	if (key[0] === "playlist" && key[1] === "get")
+		return trpc.playlist.get
+	return trpc[key[0]][key[1]]
 }
 
 
@@ -70,14 +88,13 @@ export default function PastSearch({
 	const {mutate: deletePastSearch} = useRemoveFromPastSearches()
 
 	const {key, Component, cover} = OPTIONS[type]
-	const {data: entity} = trpc.useQuery([key, {id}], {
+	const {data: entity} = getTrpcProcedure(key).useQuery({id}, {
 		onSettled(data) {
 			if (data) return
 			deletePastSearch({id})
 		}
 	})
 
-	// @ts-expect-error -- I'm too lazy to type this... it's only fine as long as this component remains very simple
 	const coverId = cover(entity)
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
 
@@ -124,7 +141,6 @@ export default function PastSearch({
 				{entity && (
 					<>
 						<p className={styles.name}>{entity.name}</p>
-						{/* @ts-expect-error -- I'm too lazy to type this... it's only fine as long as this component remains very simple */}
 						<Component {...entity} />
 					</>
 				)}
@@ -133,7 +149,7 @@ export default function PastSearch({
 	)
 }
 
-function ArtistInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['artist']['key']>, null>) {
+function ArtistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['artist']['key'][0]][typeof OPTIONS['artist']['key'][1]], null>) {
 	return (
 		<p className={styles.info}>Artist{entity._count?.albums
 			? ` · ${entity._count.albums} album${entity._count.albums > 1 ? 's': ''}`
@@ -144,7 +160,7 @@ function ArtistInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['artist']['k
 	)
 }
 
-function AlbumInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['album']['key']>, null>) {
+function AlbumInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['album']['key'][0]][typeof OPTIONS['album']['key'][1]], null>) {
 	return (
 		<p className={styles.info}>Album{entity._count?.tracks
 			? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
@@ -153,7 +169,7 @@ function AlbumInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['album']['key
 	)
 }
 
-function TrackInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['track']['key']>, null>) {
+function TrackInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['track']['key'][0]][typeof OPTIONS['track']['key'][1]], null>) {
 	return (
 		<p className={styles.info}>Track{entity.artist
 			? ` · by ${entity.artist.name}`
@@ -164,7 +180,7 @@ function TrackInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['track']['key
 	)
 }
 
-function GenreInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['genre']['key']>, null>) {
+function GenreInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['genre']['key'][0]][typeof OPTIONS['genre']['key'][1]], null>) {
 	return (
 		<p className={styles.info}>Genre{entity._count?.tracks
 			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
@@ -173,7 +189,7 @@ function GenreInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['genre']['key
 	)
 }
 
-function PlaylistInfo(entity: Exclude<inferQueryOutput<typeof OPTIONS['playlist']['key']>, null>) {
+function PlaylistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['playlist']['key'][0]][typeof OPTIONS['playlist']['key'][1]], null>) {
 	return (
 		<p className={styles.info}>Playlist{entity._count.tracks
 			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`

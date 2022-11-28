@@ -1,10 +1,8 @@
-import { type inferHandlerInput } from "@trpc/server"
-import { type AppRouter } from "server/router"
-import { type TQuery } from "utils/trpc"
+import { type AllRoutes, type RouterInputs } from "utils/trpc"
 
 export default async function revalidateSwCache<
-	TRouteKey extends TQuery
->(key: TRouteKey, params?: inferHandlerInput<AppRouter['_def']['queries'][TRouteKey]>[0]) {
+	TRouteKey extends AllRoutes
+>(key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]) {
 	const registration = await navigator.serviceWorker.ready
 	if (!registration.active) return
 	registration.active.postMessage({

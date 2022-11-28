@@ -26,7 +26,7 @@ const TEST_ALBUM_IDS = [
 
 
 function SingleTest({id}: {id: string}) {
-	const {data} = trpc.useQuery(["album.miniature", {id}])
+	const {data} = trpc.album.miniature.useQuery({id})
 
 	const img = data?.cover
 	// const palette = img?.palette ? JSON.parse(img.palette) : []

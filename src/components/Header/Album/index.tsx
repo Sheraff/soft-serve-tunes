@@ -25,7 +25,7 @@ export default forwardRef(function AlbumView({
 	const album = useAtomValue(albumView)
 	const enabled = Boolean(id && album.open)
 
-	const {data} = trpc.useQuery(["album.get", {id}], {
+	const {data} = trpc.album.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
 	})

@@ -27,7 +27,7 @@ export default forwardRef(function ArtistView({
 	const artist = useAtomValue(artistView)
 	const enabled = Boolean(id && artist.open)
 
-	const {data, isLoading} = trpc.useQuery(["artist.get", {id}], {
+	const {data, isLoading} = trpc.artist.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
 	})

@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { inferQueryOutput } from "utils/trpc"
+import { type RouterOutputs } from "utils/trpc"
 import { albumView, artistView, mainView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { useAtomValue, useSetAtom } from "jotai"
@@ -10,7 +10,7 @@ export default function SlidingText({
 	item,
 	className,
 }: {
-	item: Exclude<inferQueryOutput<"playlist.generate">, undefined>[number] | undefined
+	item: Exclude<RouterOutputs["playlist"]["generate"], undefined>[number] | undefined
 	className?: string
 }) {
 	const setAlbum = useSetAtom(albumView)

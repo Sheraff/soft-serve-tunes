@@ -19,7 +19,7 @@ function GenreItem({
 }) {
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
-	const {data} = trpc.useQuery(["genre.miniature", {id: genre.id}])
+	const {data} = trpc.genre.miniature.useQuery({id: genre.id})
 
 	const count = data?._count.tracks ?? 0
 

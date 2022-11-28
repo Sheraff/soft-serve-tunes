@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
-import { type inferQueryOutput, trpc } from "utils/trpc"
+import { trpc, type RouterOutputs } from "utils/trpc"
 import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
@@ -18,11 +18,11 @@ function AlbumItem({
 }: {
 	album: AlbumListItem
 	enableSiblings?: () => void
-	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
+	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	index: number
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = trpc.useQuery(["album.miniature", {id: album.id}])
+	const {data} = trpc.album.miniature.useQuery({id: album.id})
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return

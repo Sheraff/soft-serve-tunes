@@ -1,42 +1,57 @@
-// src/utils/trpc.ts
-import type { AppRouter } from "server/router";
-import { createReactQueryHooks, TRPCClientErrorLike, UseTRPCQueryOptions } from "@trpc/react";
-import type { inferProcedureOutput, inferProcedureInput } from "@trpc/server";
+import { httpBatchLink, loggerLink, TRPCClientErrorLike } from "@trpc/client";
+import { createTRPCNext } from "@trpc/next";
+import { type inferProcedureInput, type inferProcedureOutput, type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
+import superjson from "superjson";
 
-export const trpc = createReactQueryHooks<AppRouter>();
+import { type AppRouter } from "server/trpc/router/_app";
+import { UseTRPCQueryOptions } from "@trpc/react-query/shared";
+
+const getBaseUrl = () => {
+  if (typeof window !== "undefined") return ""; // browser should use relative url
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // SSR should use vercel url
+  return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
+};
+
+export const trpc = createTRPCNext<AppRouter>({
+  config() {
+    return {
+      transformer: superjson,
+      links: [
+        loggerLink({
+          enabled: (opts) =>
+            process.env.NODE_ENV === "development" ||
+            (opts.direction === "down" && opts.result instanceof Error),
+        }),
+        httpBatchLink({
+          url: `${getBaseUrl()}/api/trpc`,
+        }),
+      ],
+    };
+  },
+  ssr: false,
+});
 
 /**
- * Enum containing all api query paths
- */
-export type TQuery = keyof AppRouter["_def"]["queries"]
+ * Inference helper for inputs
+ * @example type HelloInput = RouterInputs['example']['hello']
+ **/
+export type RouterInputs = inferRouterInputs<AppRouter>;
 /**
- * This is a helper method to infer the output of a query resolver
- * @example type HelloOutput = inferQueryOutput<'hello'>
- */
-export type inferQueryOutput<
-  TRouteKey extends keyof AppRouter["_def"]["queries"],
-> = inferProcedureOutput<AppRouter["_def"]["queries"][TRouteKey]>;
+ * Inference helper for outputs
+ * @example type HelloOutput = RouterOutputs['example']['hello']
+ **/
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export type inferQueryInput<
-  TRouteKey extends keyof AppRouter["_def"]["queries"],
-> = inferProcedureInput<AppRouter["_def"]["queries"][TRouteKey]>;
+export type RouteKey = keyof AppRouter["_def"]["procedures"]
 
-export type inferMutationOutput<
-  TRouteKey extends keyof AppRouter["_def"]["mutations"],
-> = inferProcedureOutput<AppRouter["_def"]["mutations"][TRouteKey]>;
+type C = {
+  [K in RouteKey]: readonly [K, Exclude<keyof AppRouter["_def"]["procedures"][K] & string, "_def" | "createCaller" | "getErrorShape">]
+}
 
-export type inferMutationInput<
-  TRouteKey extends keyof AppRouter["_def"]["mutations"],
-> = inferProcedureInput<AppRouter["_def"]["mutations"][TRouteKey]>;
+export type AllRoutes = C[RouteKey]
 
-type ClientError = TRPCClientErrorLike<AppRouter>
+type D = {
+  [K in RouteKey]: RouterInputs[K][Exclude<keyof AppRouter["_def"]["procedures"][K] & string, "_def" | "createCaller" | "getErrorShape">]
+}
 
-export type inferUseTRPCQueryOptions<
-  TRouteKey extends keyof AppRouter['_def']['queries'],
-> = UseTRPCQueryOptions<
-  TRouteKey,
-  inferQueryInput<TRouteKey>,
-  inferQueryOutput<TRouteKey>,
-  inferQueryOutput<TRouteKey>,
-  ClientError
->
+export type AllInputs = D[RouteKey]

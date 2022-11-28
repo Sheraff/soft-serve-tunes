@@ -11,7 +11,7 @@ export default function AddToPlaylist({
 	item: {id: string} | null
 	setItem: (item: null) => void
 }) {
-	const {data} = trpc.useQuery(["playlist.list"])
+	const {data} = trpc.playlist.list.useQuery()
 	const hasSomePlaylsts = Boolean(data?.length)
 	const addToPlaylist = useAddToPlaylist()
 	return (

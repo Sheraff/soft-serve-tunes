@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { deleteFromIndexedDB, listAllFromIndexedDB, storeInIndexedDB } from "./utils"
 
 const MAX_ITEMS_COUNT = 30

@@ -1,7 +1,7 @@
-// src/pages/api/trpc/[trpc].ts
+import { env } from "env/server.mjs"
 import { createNextApiHandler } from "@trpc/server/adapters/next"
-import { appRouter } from "server/router"
-import { createContext } from "server/router/context"
+import { createContext } from "server/trpc/context"
+import { appRouter } from "server/trpc/router/_app"
 
 // export API handler
 export default createNextApiHandler({
@@ -10,4 +10,9 @@ export default createNextApiHandler({
   batching: {
     enabled: true, // somehow disabling this breaks the populate request
   },
+  onError: env.NODE_ENV !== "production"
+    ? ({ path, error }) => {
+        console.error(`❌ tRPC failed on ${path}: ${error}`);
+      }
+    : undefined,
 })

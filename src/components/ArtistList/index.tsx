@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { startTransition, useEffect, useRef, useState } from "react"
-import { trpc, type inferQueryOutput } from "utils/trpc"
+import { trpc, type RouterOutputs } from "utils/trpc"
 import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
 import { useSetAtom } from "jotai"
@@ -18,11 +18,11 @@ function ArtistItem({
 }: {
 	artist: ArtistListItem
 	enableSiblings?: () => void
-	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
+	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	index: number
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = trpc.useQuery(["artist.miniature", {id: artist.id}])
+	const {data} = trpc.artist.miniature.useQuery({id: artist.id})
 	
 	useEffect(() => {
 		if (!enableSiblings || !item.current) return

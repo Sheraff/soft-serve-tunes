@@ -5,6 +5,7 @@ import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveIcon from 'icons/library_add.svg'
 import SavedIcon from 'icons/collections_bookmark.svg'
+import { useQueryClient } from "@tanstack/react-query"
 
 function SaveButton({id, className}: {
 	id: string | null
@@ -12,8 +13,9 @@ function SaveButton({id, className}: {
 }) {
 	const button = useRef<HTMLButtonElement>(null)
 	const trpcClient = trpc.useContext()
-	const {mutate: savePlaylistMutation} = trpc.useMutation(["playlist.save"])
-	const {mutate: deletePlaylistMutation} = trpc.useMutation(["playlist.delete"])
+	const queryClient = useQueryClient()
+	const {mutate: savePlaylistMutation} = trpc.playlist.save.useMutation()
+	const {mutate: deletePlaylistMutation} = trpc.playlist.delete.useMutation()
 
 	const [freezeId, setFreezeId] = useState<boolean | null>(null)
 
@@ -58,7 +60,7 @@ function SaveButton({id, className}: {
 		}
 
 		startTransition(() => {
-			const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			const cache = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!cache) {
 				target.getAnimations().forEach(anim => anim.cancel())
 				element.classList.remove(styles.save)
@@ -73,8 +75,8 @@ function SaveButton({id, className}: {
 					if (!playlist) {
 						throw new Error('Trying to save a playlist, but mutation returned null')
 					}
-					trpcClient.setQueryData(["playlist.get", {id: playlist.id}], playlist)
-					onPlaylistSaved(trpcClient, playlist.id, playlist.name)
+					trpcClient.playlist.get.setData({id: playlist.id}, playlist)
+					onPlaylistSaved(queryClient, playlist.id, playlist.name)
 					conditions++
 					onEnd()
 				},
@@ -128,8 +130,8 @@ function SaveButton({id, className}: {
 		startTransition(() => {
 			deletePlaylistMutation({ id }, {
 				onSuccess() {
-					trpcClient.setQueryData(["playlist.get", {id}], null)
-					onPlaylistSaved(trpcClient, null, null)
+					trpcClient.playlist.get.setData({id}, null)
+					onPlaylistSaved(queryClient, null, null)
 					conditions++
 					onEnd()
 				},

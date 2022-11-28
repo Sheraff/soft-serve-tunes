@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState } from "react"
-import { type inferQueryOutput, trpc } from "utils/trpc"
+import { type RouterOutputs, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
@@ -42,16 +42,16 @@ function TrackItem({
 	enableSiblings?: () => void
 	current?: boolean
 	onClick?: (id:string, name:string) => void
-	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
+	onSelect?: (track: Exclude<RouterOutputs["track"]["miniature"], null>) => void
 	draggable?: boolean
 	onAdd?: (track: TrackListItem) => void
-	onNext?: (track: Exclude<inferQueryOutput<"track.miniature">, undefined | null>) => void
+	onNext?: (track: Exclude<RouterOutputs["track"]["miniature"], undefined | null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 	index: number
 }) {
 	const item = useRef<HTMLDivElement>(null)
-	const {data} = trpc.useQuery(["track.miniature", {id: track.id}])
+	const {data} = trpc.track.miniature.useQuery({id: track.id})
 
 	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
@@ -75,7 +75,7 @@ function TrackItem({
 
 	const isEmpty = !data?.cover
 
-	const {mutate: likeMutation} = trpc.useMutation(["track.like"])
+	const {mutate: likeMutation} = trpc.track.like.useMutation()
 	const callbacks = useRef<SlideCallbacks>({
 		onLike: emptyFunction,
 		onAdd: emptyFunction,
@@ -159,9 +159,11 @@ function TrackItem({
 					{data?.artist?.name && <span className={styles.credits}>{data?.artist.name}</span>}
 					{(explicit || offline || recent) && (
 						<span className={styles.icons}>
-							{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
-							{offline && <OfflineIcon key="offline" className={styles.offline} />}
-							{recent && <NewIcon key="recent" />}
+							<>
+								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
+								{offline && <OfflineIcon key="offline" className={styles.offline} />}
+								{recent && <NewIcon key="recent" />}
+							</>
 						</span>
 					)}
 				</p>
@@ -189,10 +191,10 @@ export default function TrackList({
 	tracks: TrackListItem[]
 	current?: string
 	onClick?: Parameters<typeof TrackItem>[0]["onClick"]
-	onSelect?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
+	onSelect?: (track: Exclude<RouterOutputs["track"]["miniature"], null>) => void
 	orderable?: boolean
 	onReorder?: (from: number, to: number) => void
-	quickSwipeAction?: (track: Exclude<inferQueryOutput<"track.miniature">, null>) => void
+	quickSwipeAction?: (track: Exclude<RouterOutputs["track"]["miniature"], null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 }) {

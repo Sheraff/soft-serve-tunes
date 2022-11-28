@@ -35,9 +35,9 @@ export default memo(function NextTrack({
 
 	const enabled = Boolean(online && cached && nextItem)
 
-	const { data } = trpc.useQuery(["track.miniature", {
+	const { data } = trpc.track.miniature.useQuery({
 		id: nextItem?.id as string
-	}], { enabled })
+	}, { enabled })
 
 	if (!enabled) {
 		return null

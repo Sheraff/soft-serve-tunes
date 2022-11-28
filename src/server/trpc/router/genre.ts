@@ -1,4 +1,4 @@
-import { createRouter } from "./context"
+import { router, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
 import { prisma } from "server/db/client"
 import { type Prisma } from "@prisma/client"
@@ -111,93 +111,89 @@ async function recursiveNonEmpty(id: string, genreSet: Set<string> = new Set()) 
   return false
 }
 
-export const genreRouter = createRouter()
-  .query("miniature", {
-    input: z
-      .object({
-        id: z.string(),
-      }),
-    async resolve({ input, ctx }) {
-      const meta = await ctx.prisma.genre.findUnique({
-        where: {id: input.id},
-        select: {name: true, id: true}
-      })
-      if (!meta) return meta
-      const data = await recursiveSubGenres(input.id)
-      return extendFromRecursive(meta, data, false)
-    },
+const miniature = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input, ctx }) => {
+  const meta = await ctx.prisma.genre.findUnique({
+    where: {id: input.id},
+    select: {name: true, id: true}
   })
-  .query("get", {
-    input: z
-      .object({
-        id: z.string(),
-      }),
-    async resolve({ input, ctx }) {
-      const meta = await ctx.prisma.genre.findUnique({
-        where: {id: input.id},
-        select: {
-          id: true,
-          name: true,
-          subgenres: {
-            where: nonEmptyGenreWhere,
-            select: {id: true, name: true},
-          },
-          supgenres: {
-            where: nonEmptyGenreWhere,
-            select: {id: true, name: true},
-          },
-        },
-      })
-      if (!meta) return meta
-      const fullMeta = {
-        ...meta,
-        supgenres: await Promise.all(meta.supgenres.map(async (genre) => {
-          const data = await recursiveSubGenres(genre.id)
-          return extendFromRecursive(genre, data, false)
-        })),
-        subgenres: await Promise.all(meta.subgenres.map(async (genre) => {
-          const data = await recursiveSubGenres(genre.id)
-          return extendFromRecursive(genre, data, false)
-        })),
-      }
-      const data = await recursiveSubGenres(input.id)
-      const result = await extendFromRecursive(fullMeta, data, true)
-      return result
-    },
-  })
-  .query("list", {
-    async resolve({ ctx }) {
-      const seed = await ctx.prisma.genre.findMany({
-        where: nonEmptyGenreWhere,
-        orderBy: { name: "asc" },
-        select: { name: true, id: true }
-      })
-      const keep: Array<typeof seed[number]> = []
-      for (const genre of seed) {
-        if (await recursiveNonEmpty(genre.id))
-          keep.push(genre)
-      }
-      return keep
-    }
-  })
-  .query("most-fav", {
-    async resolve({ ctx }) {
-      const seed = await ctx.prisma.genre.findMany({
-        where: nonEmptyGenreWhere,
-        select: { name: true, id: true }
-      })
-      const list = await Promise.all(seed.map(async (genre) => {
-        const data = await recursiveSubGenres(genre.id, {
-          where: {userData: {favorite: true}},
-          select: {id: true},
-        })
-        return extendFromRecursive(genre, data, false)
-      }))
-      const mostLiked = list
-        .sort((a, b) => (b._count.tracks / (b._count.from + 1)) - (a._count.tracks / (a._count.from + 1)))
-        .slice(0, 10)
-        .map(({id, name}) => ({id, name}))
-      return mostLiked
-    }
-  })
+  if (!meta) return meta
+  const data = await recursiveSubGenres(input.id)
+  return extendFromRecursive(meta, data, false)
+})
 
+const get = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input, ctx }) => {
+  const meta = await ctx.prisma.genre.findUnique({
+    where: {id: input.id},
+    select: {
+      id: true,
+      name: true,
+      subgenres: {
+        where: nonEmptyGenreWhere,
+        select: {id: true, name: true},
+      },
+      supgenres: {
+        where: nonEmptyGenreWhere,
+        select: {id: true, name: true},
+      },
+    },
+  })
+  if (!meta) return meta
+  const fullMeta = {
+    ...meta,
+    supgenres: await Promise.all(meta.supgenres.map(async (genre) => {
+      const data = await recursiveSubGenres(genre.id)
+      return extendFromRecursive(genre, data, false)
+    })),
+    subgenres: await Promise.all(meta.subgenres.map(async (genre) => {
+      const data = await recursiveSubGenres(genre.id)
+      return extendFromRecursive(genre, data, false)
+    })),
+  }
+  const data = await recursiveSubGenres(input.id)
+  const result = await extendFromRecursive(fullMeta, data, true)
+  return result
+})
+
+const list = publicProcedure.query(async ({ ctx }) => {
+  const seed = await ctx.prisma.genre.findMany({
+    where: nonEmptyGenreWhere,
+    orderBy: { name: "asc" },
+    select: { name: true, id: true }
+  })
+  const keep: Array<typeof seed[number]> = []
+  for (const genre of seed) {
+    if (await recursiveNonEmpty(genre.id))
+      keep.push(genre)
+  }
+  return keep
+})
+
+const mostFav = publicProcedure.query(async ({ ctx }) => {
+  const seed = await ctx.prisma.genre.findMany({
+    where: nonEmptyGenreWhere,
+    select: { name: true, id: true }
+  })
+  const list = await Promise.all(seed.map(async (genre) => {
+    const data = await recursiveSubGenres(genre.id, {
+      where: {userData: {favorite: true}},
+      select: {id: true},
+    })
+    return extendFromRecursive(genre, data, false)
+  }))
+  const mostLiked = list
+    .sort((a, b) => (b._count.tracks / (b._count.from + 1)) - (a._count.tracks / (a._count.from + 1)))
+    .slice(0, 10)
+    .map(({id, name}) => ({id, name}))
+  return mostLiked
+})
+
+export const genreRouter = router({
+  miniature,
+  get,
+  list,
+  mostFav,
+})

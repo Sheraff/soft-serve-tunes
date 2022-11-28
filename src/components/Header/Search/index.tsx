@@ -26,11 +26,11 @@ export default function Search({
 	const results = useRef<HTMLOutputElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
-	const {data: tracksRaw} = trpc.useQuery(["track.searchable"], {enabled})
-	const {data: albumsRaw} = trpc.useQuery(["album.searchable"], {enabled})
-	const {data: artistsRaw} = trpc.useQuery(["artist.searchable"], {enabled})
-	const {data: genresRaw} = trpc.useQuery(["genre.list"], {enabled})
-	const {data: playlistsRaw} = trpc.useQuery(["playlist.searchable"], {enabled})
+	const {data: tracksRaw} = trpc.track.searchable.useQuery(undefined, {enabled})
+	const {data: albumsRaw} = trpc.album.searchable.useQuery(undefined, {enabled})
+	const {data: artistsRaw} = trpc.artist.searchable.useQuery(undefined, {enabled})
+	const {data: genresRaw} = trpc.genre.list.useQuery(undefined, {enabled})
+	const {data: playlistsRaw} = trpc.playlist.searchable.useQuery(undefined, {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])

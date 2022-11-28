@@ -1,9 +1,7 @@
-// src/pages/_app.tsx
-import { withTRPC } from "@trpc/next";
-import type { AppRouter } from "server/router";
-import type { AppType } from "next/dist/shared/lib/utils";
-import superjson from "superjson";
+import { type AppType } from "next/dist/shared/lib/utils";
+import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
+import { trpc } from "utils/trpc";
 import "styles/globals.css";
 import Head from "next/head";
 // import { ReactQueryDevtools } from 'react-query/devtools';
@@ -26,7 +24,7 @@ if (typeof window !== 'undefined') {
   }, {once: true})
 }
 
-const MyApp: AppType = ({
+const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
@@ -48,43 +46,4 @@ const MyApp: AppType = ({
   );
 };
 
-const getBaseUrl = () => {
-  if (typeof window !== "undefined") {
-    return "";
-  }
-  if (process.browser) return ""; // Browser should use current path
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // SSR should use vercel url
-
-  return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
-};
-
-export default withTRPC<AppRouter>({
-  config({ ctx }) {
-    /**
-     * If you want to use SSR, you need to use the server's full URL
-     * @link https://trpc.io/docs/ssr
-     */
-    const url = `${getBaseUrl()}/api/trpc`;
-
-    return {
-      url,
-      transformer: superjson,
-      queryClientConfig: {
-        defaultOptions: {
-          queries: {
-            staleTime: Infinity,
-            cacheTime: Infinity,
-            retry: 1,
-            refetchOnWindowFocus: false,
-            refetchOnMount: true,
-            refetchOnReconnect: false,
-          },
-        },
-      },
-    };
-  },
-  /**
-   * @link https://trpc.io/docs/ssr
-   */
-  ssr: false,
-})(MyApp);
+export default trpc.withTRPC(MyApp);

@@ -12,7 +12,7 @@ import { env } from "env/client.mjs"
 import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
-import { loadingStatus } from "server/router/list"
+import { loadingStatus } from "server/trpc/router/list"
 import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import { useAtom } from "jotai"
 import useIsOnline from "client/sw/useIsOnline"
@@ -30,7 +30,7 @@ const Home: NextPage<{
 }) => {
 	const setProgress = useProgressBar()
 	const [ready, setReady] = useState(!shouldAwaitServer)
-	const { mutate } = trpc.useMutation(["list.populate"])
+	const { mutate } = trpc.list.populate.useMutation()
 
 	useEffect(() => {
 		if (ready) return

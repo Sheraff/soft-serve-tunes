@@ -1,12 +1,10 @@
 /// <reference lib="webworker" />
-import { type inferHandlerInput } from "@trpc/server"
-import { type AppRouter } from "server/router"
-import { type TQuery } from "utils/trpc"
+import { type AllRoutes, type AllInputs, type RouterInputs } from "utils/trpc"
 import { handleTrpcFetchResponse } from "../fetch/trpc"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
 const batch: {
-	items: {key: TQuery, params: inferHandlerInput<AppRouter['_def']['queries'][TQuery]>[0]}[]
+	items: {key: AllRoutes, params: AllInputs}[]
 	timeoutId: ReturnType<typeof setTimeout> | null
 } = {
 	items: [],
@@ -21,7 +19,7 @@ function processBatch() {
 	if (items.length === 0) return
 
 	const {endpoints, input} = items.reduce((params, item, i) => {
-		params.endpoints.push(item.key)
+		params.endpoints.push(item.key.join("."))
 		params.input[i] = item.params
 			? {json: item.params}
 			: {json:null, meta:{values:["undefined"]}}
@@ -48,8 +46,8 @@ function processBatch() {
 }
 
 export default function trpcRevalidation<
-	TRouteKey extends TQuery
->(item: {key: TRouteKey, params: inferHandlerInput<AppRouter['_def']['queries'][TRouteKey]>[0]}) {
+	TRouteKey extends AllRoutes
+>(item: {key: TRouteKey, params: RouterInputs[TRouteKey[0]][TRouteKey[1]]}) {
 	batch.items.push(item)
 	if (!batch.timeoutId) {
 		batch.timeoutId = setTimeout(processBatch, 10)

@@ -1,7 +1,5 @@
 import { type RefObject, useCallback, useMemo, startTransition } from "react"
-import { type inferQueryOutput, trpc } from "utils/trpc"
-import { type inferHandlerInput } from "@trpc/server"
-import { type AppRouter } from "server/router"
+import { trpc, type RouterInputs, type RouterOutputs } from "utils/trpc"
 import {
 	deleteAllFromIndexedDB,
 	listAllFromIndexedDB,
@@ -11,12 +9,13 @@ import {
 	storeInIndexedDB,
 	storeListInIndexedDB,
 } from "./utils"
-import { useQuery } from "react-query"
+import { useQuery } from "@tanstack/react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
 import { useAtomValue, useSetAtom } from "jotai"
 import { repeat, shuffle } from "components/Player"
 import generateUniqueName from "utils/generateUniqueName"
 import shuffleArray from "utils/shuffleArray"
+import { useQueryClient } from "@tanstack/react-query"
 
 /**
  * TODO: 
@@ -25,7 +24,7 @@ import shuffleArray from "utils/shuffleArray"
  * - I'm not sure it's useful that a playlist name must be unique, maybe remove all that logic
  */
 
-type PlaylistTrack = Exclude<inferQueryOutput<"playlist.generate">, undefined>[number]
+type PlaylistTrack = Exclude<RouterOutputs["playlist"]["generate"], undefined>[number]
 
 type PlaylistDBEntry = {
 	/** @description index of order of tracks inside the playlist */
@@ -49,7 +48,7 @@ export type Playlist = PlaylistMeta & {
 }
 
 async function setPlaylist(
-	trpcClient: ReturnType<typeof trpc.useContext>,
+	queryClient: ReturnType<typeof useQueryClient>,
 	name: Playlist['name'],
 	id: Playlist['id'],
 	tracks: Playlist['tracks'],
@@ -60,7 +59,7 @@ async function setPlaylist(
 		? shuffleArray(regularOrder)
 		: regularOrder
 	const newCurrent = current || order[0]
-	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], { tracks, current: newCurrent, name, id, order })
+	queryClient.setQueryData<Playlist>(["playlist"], { tracks, current: newCurrent, name, id, order })
 	await Promise.all([
 		deleteAllFromIndexedDB("playlist").then(() => (
 			storeListInIndexedDB<PlaylistDBEntry>("playlist", tracks.map((track, i) => ({
@@ -76,47 +75,49 @@ async function setPlaylist(
 }
 
 export function useSetPlaylist() {
-	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useCallback(async (
 		name: Playlist['name'],
 		id: Exclude<Playlist['id'], null>,
 		tracks: Playlist['tracks']
 	) => {
-		await setPlaylist(trpcClient, name, id, tracks)
-	}, [trpcClient])
+		await setPlaylist(queryClient, name, id, tracks)
+	}, [queryClient])
 }
 
 async function uniqueNameFromName(trpcClient: ReturnType<typeof trpc.useContext>, name: string) {
-	const playlists = await trpcClient.fetchQuery(["playlist.list"])
+	const playlists = await trpcClient.playlist.list.fetch()
 	return generateUniqueName(name, playlists)
 }
 
 async function makePlaylist(
 	trpcClient: ReturnType<typeof trpc.useContext>,
+	queryClient: ReturnType<typeof useQueryClient>,
 	list: PlaylistTrack[],
 	name: string,
 ) {
 	const uniqueName = await uniqueNameFromName(trpcClient, name)
-	await setPlaylist(trpcClient, uniqueName, null, list)
+	await setPlaylist(queryClient, uniqueName, null, list)
 }
 
 export function useMakePlaylist() {
 	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useCallback(async (
-		params: inferHandlerInput<AppRouter['_def']['queries']["playlist.generate"]>[0],
+		params: RouterInputs["playlist"]["generate"],
 		name: string,
 	) => {
-		const list = await trpcClient.fetchQuery(["playlist.generate", params])
+		const list = await trpcClient.playlist.generate.fetch(params)
 		if (!list) return
-		await makePlaylist(trpcClient, list, name)
-	}, [trpcClient])
+		await makePlaylist(trpcClient, queryClient, list, name)
+	}, [trpcClient, queryClient])
 }
 
 export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlist) => T} = {}) {
-	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useQuery<Playlist, unknown, T>(["playlist"], {
 		async queryFn() {
-			const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			const cache = queryClient.getQueryData<Playlist>(["playlist"])
 			if (cache) return cache
 			const [results, meta] = await Promise.all([
 				listAllFromIndexedDB<PlaylistDBEntry>("playlist"),
@@ -163,16 +164,16 @@ export function useCurrentTrack() {
 }
 
 export function useGetCurrentIndex() {
-	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useCallback(() => {
-		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
 			throw new Error(`trying to find "playlist" index, but query doesn't exist yet`)
 		}
 		const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
 		if (index < 0) return undefined
 		return index
-	}, [trpcClient])
+	}, [queryClient])
 }
 
 export function useNextTrack() {
@@ -194,9 +195,9 @@ export function useNextTrack() {
 export function useCurrentTrackDetails() {
 	const track = useCurrentTrack()
 
-	const { data } = trpc.useQuery(["track.miniature", {
+	const { data } = trpc.track.miniature.useQuery({
 		id: track?.id as string
-	}], {
+	}, {
 		enabled: Boolean(track),
 	})
 
@@ -204,10 +205,10 @@ export function useCurrentTrackDetails() {
 }
 
 export function useSetPlaylistIndex() {
-	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useMemo(() => ({
 		async setPlaylistIndex(index: number) {
-			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
@@ -217,7 +218,7 @@ export function useSetPlaylistIndex() {
 				? 0
 				: index
 			const current = playlist.tracks[newIndex]!.id
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				current,
 			})
@@ -235,7 +236,7 @@ export function useSetPlaylistIndex() {
 				}
 				return
 			}
-			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
@@ -248,7 +249,7 @@ export function useSetPlaylistIndex() {
 				: index + 1
 			
 			const current = playlist.order[newIndex]!
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				current,
 			})
@@ -258,7 +259,7 @@ export function useSetPlaylistIndex() {
 			}))
 		},
 		async prevPlaylistIndex() {
-			const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
@@ -274,7 +275,7 @@ export function useSetPlaylistIndex() {
 			const newOrder = index > 0 || !shuffle.getValue() || !playlist.order.length
 				? playlist.order
 				: [playlist.order.at(-1)!, ...playlist.order.slice(0, playlist.order.length - 1)]
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				current,
 				order: newOrder,
@@ -285,14 +286,15 @@ export function useSetPlaylistIndex() {
 				order: newOrder,
 			}))
 		}
-	}), [trpcClient])
+	}), [queryClient])
 }
 
 export function useAddToPlaylist() {
 	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	const queryClient = useQueryClient()
+	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (playlistId: string, track: {id: string}) => {
-		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const cache = queryClient.getQueryData<Playlist>(["playlist"])
 		const isCurrent = playlistId === cache?.id
 		if (!isCurrent) {
 			return mutateAsync({
@@ -305,7 +307,7 @@ export function useAddToPlaylist() {
 			// playlist already contains track
 			return
 		}
-		const fullTrack = trpcClient.getQueryData(["track.miniature", {id: track.id}])
+		const fullTrack = trpcClient.track.miniature.getData({id: track.id})
 		if (!fullTrack) {
 			console.error(`We shouldn't be able to be here, adding a track to a playlist should only happen from the track, so it must be in the trpc cache`)
 			return
@@ -320,7 +322,7 @@ export function useAddToPlaylist() {
 					fullTrack.id,
 				])
 			]
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+		queryClient.setQueryData<Playlist>(["playlist"], {
 			...cache,
 			tracks: newTracks,
 			order: newOrder,
@@ -341,25 +343,26 @@ export function useAddToPlaylist() {
 			params: {id: fullTrack.id},
 		})
 
-	}, [trpcClient, mutateAsync])
+	}, [trpcClient, queryClient, mutateAsync])
 }
 
 const playNextStack: string[] = []
 
 export function useAddNextToPlaylist() {
 	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	const queryClient = useQueryClient()
+	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (track: PlaylistTrack, forceCurrent?: boolean) => {
-		const cache = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const cache = queryClient.getQueryData<Playlist>(["playlist"])
 		// playlist doesn't exist, create it with new track as current
 		if (!cache) {
-			await makePlaylist(trpcClient, [track], "New Playlist")
+			await makePlaylist(trpcClient, queryClient, [track], "New Playlist")
 			return
 		}
 		// playlist already contains track, do nothing
 		if (cache.tracks.some(({id}) => id === track.id)) {
 			if (forceCurrent) {
-				trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+				queryClient.setQueryData<Playlist>(["playlist"], {
 					...cache,
 					current: track.id,
 				})
@@ -381,7 +384,7 @@ export function useAddNextToPlaylist() {
 					? [track.id, ...baseOrder]
 					: [...baseOrder, track.id]
 			
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
 				current: forceCurrent ? track.id : undefined,
 				tracks: forceCurrent ? [track, ...cache.tracks] : [...cache.tracks, track],
@@ -450,7 +453,7 @@ export function useAddNextToPlaylist() {
 		trpc: {
 			const newTracks = [...cache.tracks]
 			newTracks.splice(tracksIndex, 0, track)
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
 				current: forceCurrent ? track.id : cache.current,
 				tracks: newTracks,
@@ -478,7 +481,7 @@ export function useAddNextToPlaylist() {
 				}
 			})
 		}
-	}, [trpcClient, mutateAsync])
+	}, [trpcClient, queryClient, mutateAsync])
 }
 
 function findEndOfStack(order: Playlist['order'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
@@ -493,10 +496,10 @@ function findEndOfStack(order: Playlist['order'], currentIndex: number, isStack 
 }
 
 export function useReorderPlaylist() {
-	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	const queryClient = useQueryClient()
+	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (oldIndex: number, newIndex: number) => {
-		const playlist = trpcClient.queryClient.getQueryData<Playlist>(['playlist'])
+		const playlist = queryClient.getQueryData<Playlist>(['playlist'])
 		if (!playlist) {
 			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 		}
@@ -506,7 +509,7 @@ export function useReorderPlaylist() {
 		const newOrder = shuffle.getValue()
 			? playlist.order // if playlist is already shuffled, `order` is not correlated to `tracks`, so only update tracks
 			: newItems.map(({id}) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+		queryClient.setQueryData<Playlist>(["playlist"], {
 			...playlist,
 			tracks: newItems,
 			order: newOrder,
@@ -528,7 +531,7 @@ export function useReorderPlaylist() {
 				}
 			})
 		}
-	}, [trpcClient, mutateAsync])
+	}, [queryClient, mutateAsync])
 }
 
 async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
@@ -565,10 +568,10 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 }
 
 export function useRemoveFromPlaylist() {
-	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	const queryClient = useQueryClient()
+	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (id: string) => {
-		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
 			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 		}
@@ -585,7 +588,7 @@ export function useRemoveFromPlaylist() {
 		}
 		const newItems = playlist.tracks.filter(track => track.id !== id)
 		const newOrder = playlist.order.filter(orderId => orderId !== id)
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+		queryClient.setQueryData<Playlist>(["playlist"], {
 			...playlist,
 			current: newCurrent,
 			tracks: newItems,
@@ -608,7 +611,7 @@ export function useRemoveFromPlaylist() {
 				}
 			})
 		}
-	}, [trpcClient, mutateAsync])
+	}, [queryClient, mutateAsync])
 }
 
 async function deleteFromListInIndexedDB(id: string) {
@@ -642,9 +645,9 @@ async function deleteFromListInIndexedDB(id: string) {
 
 export function useShufflePlaylist() {
 	const setShuffle = useSetAtom(shuffle)
-	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
 	return useCallback(() => {
-		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
 			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 		}
@@ -667,7 +670,7 @@ export function useShufflePlaylist() {
 						return shuffleArray(baseOrder)
 					}
 				})()
-			trpcClient.queryClient.setQueryData<Playlist>(["playlist"], {
+			queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
 				order: newOrder,
 			})
@@ -676,21 +679,21 @@ export function useShufflePlaylist() {
 				order: newOrder,
 			}))
 		})
-	}, [setShuffle, trpcClient])
+	}, [setShuffle, queryClient])
 }
 
 export function useRenamePlaylist() {
 	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.useMutation(["playlist.modify"])
+	const queryClient = useQueryClient()
+	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (id: string, name: string) => {
-		const playlist = trpcClient.queryClient.getQueryData<Playlist>(["playlist"])
+		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
 			throw new Error(`trying to rename "playlist" query, but query doesn't exist yet`)
 		}
 		const uniqueName = await uniqueNameFromName(trpcClient, name)
-		// @ts-expect-error -- hey if it wasn't there before, it's okay that it's not here now
-		trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
-		trpcClient.setQueryData(["playlist.get", {id}], (a) => a ? ({...a, name: uniqueName}) : null)
+		queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
+		trpcClient.playlist.get.setData({id}, (a) => a ? ({...a, name: uniqueName}) : null)
 		await mutateAsync({
 			id,
 			type: "rename",
@@ -698,15 +701,15 @@ export function useRenamePlaylist() {
 				name: uniqueName
 			}
 		})
-	}, [trpcClient, mutateAsync])
+	}, [trpcClient, queryClient, mutateAsync])
 	}
 
 export async function onPlaylistSaved(
-	trpcClient: ReturnType<typeof trpc.useContext>,
+	queryClient: ReturnType<typeof useQueryClient>,
 	id: string | null,
 	name: string | null,
 ) {
-	trpcClient.queryClient.setQueryData<Playlist>(["playlist"], (data) => {
+	queryClient.setQueryData<Playlist>(["playlist"], (data) => {
 		if (!data) {
 			throw new Error(`trying to add ID to "playlist" query, but query doesn't exist yet`)
 		}

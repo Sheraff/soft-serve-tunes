@@ -114,7 +114,7 @@ function TracksByTraitSuggestion() {
 	}
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
-	const {data: tracks = []} = trpc.useQuery(["track.by-trait", {trait, order}])
+	const {data: tracks = []} = trpc.track.byTrait.useQuery({trait, order})
 	const title = moustache(FEATURES[trait][order].description, "tracks")
 	return (
 		<>
@@ -152,7 +152,7 @@ function AlbumsByTraitSuggestion() {
 			order: option.type,
 		})
 	}
-	const {data: albums = [], isLoading} = trpc.useQuery(["album.by-trait", {trait, order}])
+	const {data: albums = [], isLoading} = trpc.album.byTrait.useQuery({trait, order})
 	return (
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "albums")}</SectionTitle>
@@ -176,13 +176,13 @@ const UpdateSuggestions = () => {
 		return () => {
 			updateSuggestionTimeoutId = setTimeout(() => {
 				updateSuggestionTimeoutId = null
-				revalidateSwCache("artist.most-fav")
-				revalidateSwCache("artist.most-recent-listen")
-				revalidateSwCache("artist.least-recent-listen")
-				revalidateSwCache("album.most-fav")
-				revalidateSwCache("album.most-recent-listen")
-				revalidateSwCache("album.most-recent-add")
-				revalidateSwCache("genre.most-fav")
+				revalidateSwCache(["artist", "mostFav"])
+				revalidateSwCache(["artist", "mostRecentListen"])
+				revalidateSwCache(["artist", "leastRecentListen"])
+				revalidateSwCache(["album", "mostFav"])
+				revalidateSwCache(["album", "mostRecentListen"])
+				revalidateSwCache(["album", "mostRecentAdd"])
+				revalidateSwCache(["genre", "mostFav"])
 			}, 20_000)
 		}
 	}, [])
@@ -191,14 +191,14 @@ const UpdateSuggestions = () => {
 
 export default memo(function Suggestions(){
 
-	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.useQuery(["artist.most-fav"])
-	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.useQuery(["artist.most-recent-listen"])
-	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.useQuery(["artist.least-recent-listen"])
-	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.useQuery(["album.most-fav"])
-	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.useQuery(["album.most-recent-listen"])
-	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.useQuery(["album.most-recent-add"])
-	const {data: genreFavs = []} = trpc.useQuery(["genre.most-fav"])
-	const {data: playlists = []} = trpc.useQuery(["playlist.list"], {
+	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.artist.mostFav.useQuery()
+	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.artist.mostRecentListen.useQuery()
+	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.artist.leastRecentListen.useQuery()
+	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.album.mostFav.useQuery()
+	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.album.mostRecentListen.useQuery()
+	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.album.mostRecentAdd.useQuery()
+	const {data: genreFavs = []} = trpc.genre.mostFav.useQuery()
+	const {data: playlists = []} = trpc.playlist.list.useQuery(undefined, {
 		select(playlists) {
 			return playlists.slice(0, 4)
 		}

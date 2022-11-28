@@ -11,7 +11,7 @@ export const prisma =
   global.prisma ||
   new PrismaClient({
     log: env.NODE_ENV !== "production"
-      ? ['info', 'warn', 'error']
+      ? ['info', 'warn', 'error'] // "query"
       : ['warn', 'error'],
   });
 

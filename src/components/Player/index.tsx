@@ -107,7 +107,7 @@ export default memo(function Player() {
 	}, [togglePlay])
 
 	const consideredPlayed = playedSeconds > 45 || (totalSeconds && playedSeconds / totalSeconds > 0.4)
-	const {mutate} = trpc.useMutation(["track.playcount"])
+	const {mutate} = trpc.track.playcount.useMutation()
 	useEffect(() => {
 		if (consideredPlayed && audioSrcId) {
 			mutate({id: audioSrcId})

@@ -1,7 +1,7 @@
 import { useSetPlaylist } from 'client/db/useMakePlaylist'
 import { useShowHome } from 'components/AppContext'
 import { startTransition } from 'react'
-import { type inferQueryOutput, trpc } from 'utils/trpc'
+import { type RouterOutputs, trpc } from 'utils/trpc'
 import styles from './index.module.css'
 
 function PlaylistItem({
@@ -10,11 +10,10 @@ function PlaylistItem({
 	index,
 }: {
 	playlist: {id: string, name: string}
-	onSelect?: (playlist: Exclude<inferQueryOutput<"playlist.get">, null>) => void
-	controller: {switch?: () => void}
+	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
 	index: number
 }) {
-	const {data} = trpc.useQuery(["playlist.get", {id: playlist.id}])
+	const {data} = trpc.playlist.get.useQuery({id: playlist.id})
 
 	const setPlaylist = useSetPlaylist()
 	const showHome = useShowHome()

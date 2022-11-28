@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { unstable_getServerSession as getServerSession } from "next-auth"
-import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
+import { getServerAuthSession } from "server/common/get-server-auth-session"
 import { createReadStream } from "node:fs"
 import { prisma } from "server/db/client"
 import log from "utils/logger"
@@ -9,7 +8,7 @@ import { env } from "env/server.mjs"
 import { relative } from "node:path"
 
 export default async function file(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, nextAuthOptions);
+  const session = await getServerAuthSession({ req, res })
   if (!session) {
     return res.status(401).json({ error: "authentication required" })
   }

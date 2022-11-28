@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
 import { Fragment, useMemo, useRef, useState } from "react"
-import { useQuery } from "react-query"
+import { useQuery } from "@tanstack/react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
@@ -20,7 +20,7 @@ export default function Cover() {
 		queryFn: () => {
 			if (!albums) return []
 			return Promise.all(albums.map(({id}) => (
-				trpcClient.fetchQuery(["album.miniature", {id}])
+				trpcClient.album.miniature.fetch({id})
 			)))
 		},
 		select: (data) => {
@@ -33,7 +33,7 @@ export default function Cover() {
 		queryFn: () => {
 			if (!artists) return []
 			return Promise.all(artists.map(({id}) => (
-				trpcClient.fetchQuery(["artist.miniature", {id}])
+				trpcClient.artist.miniature.fetch({id})
 			)))
 		},
 		select: (data) => data.filter(a => a) as Exclude<typeof data[number], null>[],

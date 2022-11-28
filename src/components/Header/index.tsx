@@ -43,7 +43,7 @@ export default function Header() {
 	})
 
 	// prefetch select queries
-	trpc.useQuery(["track.searchable"])
+	trpc.track.searchable.useQuery()
 
 	const showHome = useShowHome()
 	const main = useAtomValue(mainView)
