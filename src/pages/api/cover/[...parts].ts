@@ -52,13 +52,13 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
           fastShrinkOnLoad: false,
         })
         .toFormat('avif')
-      // respond
-      returnStream = transformStream.clone()
       // store
       transformStream
         .clone()
         .toFile(exactFilePath)
         .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
+      // respond
+      returnStream = transformStream
     } catch {
       log("error", "500", "sharp", `no such file: cover #${id} @ ${cover.path}`)
       removeImageEntry(id)
