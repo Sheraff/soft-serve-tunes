@@ -9,6 +9,7 @@ import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
 import { recursiveSubGenres } from "./genre"
+import log from "utils/logger"
 
 const trackSelect = {
   id: true,
@@ -276,6 +277,7 @@ export const playlistRouter = createRouter()
             data: { modifiedAt: new Date().toISOString() },
           })
         })
+        log("info", "200", "trpc", `playlist order changed "${input.id}" ${input.params.from} > ${input.params.to}`)
       } else if (input.type === "remove-track") {
         await ctx.prisma.$transaction(async (tx) => {
           const [entry] = await tx.playlistEntry.findMany({
@@ -312,6 +314,7 @@ export const playlistRouter = createRouter()
             data: { modifiedAt: new Date().toISOString() },
           })
         })
+        log("info", "200", "trpc", `playlist track removed "${input.params.id}"`)
       } else if (input.type === "add-track") {
         if (typeof input.params.index === "number") {
           await ctx.prisma.$transaction(async (tx) => {
@@ -367,6 +370,7 @@ export const playlistRouter = createRouter()
             })
           })
         }
+        log("info", "200", "trpc", `playlist track added "${input.params.id}"`)
       } else if (input.type === "rename") {
         const playlists = await ctx.prisma.playlist.findMany({
           where: { id: { not: input.id } },
@@ -380,6 +384,7 @@ export const playlistRouter = createRouter()
             modifiedAt: new Date().toISOString(),
           },
         }))
+        log("info", "200", "trpc", `playlist renamed "${name}"`)
       }
       socketServer.send('invalidate:playlist', { id: input.id })
     }

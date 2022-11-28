@@ -12,7 +12,7 @@ export const zTrackTraits = z.union([
   z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
   z.literal("energy"), // fast, loud, and noisy
   z.literal("speechiness"), // talk show, audio book, poetry
-  z.literal("acousticness"),
+  z.literal("acousticness"), // reverb, analog instruments / electric, numeric, distorted
   z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
   z.literal("liveness"), // performed live / studio recording
   z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
@@ -77,23 +77,15 @@ export const trackRouter = createRouter()
           },
           audiodb: {
             select: {
-              // intDuration: true,
               intTrackNumber: true,
             }
           },
           spotify: {
             select: {
-              // durationMs: true,
               trackNumber: true,
               explicit: true,
-              // discNumber: true,
             }
           },
-          // lastfm: {
-          //   select: {
-          //     duration: true,
-          //   }
-          // },
         }
       })
       if (!track) return null
@@ -121,9 +113,12 @@ export const trackRouter = createRouter()
       const now = new Date().toISOString()
       const track = await retryable(() => ctx.prisma.track.findUnique({
         where: { id: input.id },
-        select: { albumId: true, artistId: true },
+        select: { albumId: true, artistId: true, name: true },
       }))
-      if (!track) return
+      if (!track) {
+        log("error", "404", "trpc", `could not find track ${input.id} for playcount increase`)
+        return
+      }
 
       await ctx.prisma.$transaction([
         ctx.prisma.track.update({
@@ -153,6 +148,7 @@ export const trackRouter = createRouter()
         ] : []),
       ])
 
+      log("info", "200", "trpc", `playcount +1 track "${track.name}"`)
       socketServer.send("invalidate:track", {id: input.id})
       if (track.albumId)
         socketServer.send("invalidate:album", {id: track.albumId})
@@ -174,9 +170,12 @@ export const trackRouter = createRouter()
       }
       const track = await retryable(() => ctx.prisma.track.findUnique({
         where: { id: input.id },
-        select: { albumId: true, artistId: true },
+        select: { albumId: true, artistId: true, name: true },
       }))
-      if (!track) return
+      if (!track) {
+        log("error", "404", "trpc", `could not find track ${input.id} for like ${input.toggle}`)
+        return
+      }
 
       const kind = input.toggle ? 'increment' : 'decrement'
       const init = input.toggle ? 1 : 0
@@ -209,6 +208,7 @@ export const trackRouter = createRouter()
         ] : []),
       ])
 
+      log("info", "200", "trpc", `like ${input.toggle} track "${track.name}"`)
       socketServer.send("invalidate:track", {id: input.id})
       if (albumId)
         socketServer.send("invalidate:album", {id: albumId})
