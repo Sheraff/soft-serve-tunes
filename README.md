@@ -44,7 +44,7 @@ freebox > box settings > ports >
   ```sh
   sudo su
   curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-  sudo apt install nodejs
+  sudo apt install nodejs # or follow CLI instructions
   ```
 - install git
   ```sh
