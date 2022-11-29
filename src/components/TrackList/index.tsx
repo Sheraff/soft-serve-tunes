@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState } from "react"
+import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState, useMemo } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
@@ -100,7 +100,10 @@ function TrackItem({
 
 	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
 	const explicit = Boolean(data?.spotify?.explicit)
-	const recent = data?.createdAt && Date.now() - 1 * 24 * 60 * 60 * 1000 < data.createdAt.getTime()
+	const recent = useMemo(
+		() => data?.createdAt && Date.now() - 0.3 * 24 * 60 * 60 * 1000 < data.createdAt.getTime(), // TODO: should be more, maybe 2-3 days?
+		[data?.createdAt]
+	)
 	const online = useIsOnline()
 	const {data: cached} = useCachedTrack({id: track.id, enabled: !online})
 	const offline = !online && cached
