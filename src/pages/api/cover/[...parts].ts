@@ -6,8 +6,11 @@ import { prisma } from "server/db/client"
 import sharp from "sharp"
 import { access } from "node:fs/promises"
 import log from "utils/logger"
+import Queue from "utils/Queue"
 
 const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
+
+const queue = new Queue(0)
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const {parts} = req.query
@@ -43,6 +46,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     }
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     try {
+      await queue.next()
       await access(originalFilePath, constants.R_OK)
       log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
       const transformStream = sharp(originalFilePath)
