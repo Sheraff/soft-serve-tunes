@@ -11,6 +11,10 @@ const batch: {
 	timeoutId: null,
 }
 
+function joinRoute(key: AllRoutes) {
+	return key.join('.') as `${typeof key[0]}.${typeof key[1]}`
+}
+
 function processBatch() {
 	const items = batch.items
 	batch.timeoutId = null
@@ -19,12 +23,12 @@ function processBatch() {
 	if (items.length === 0) return
 
 	const {endpoints, input} = items.reduce((params, item, i) => {
-		params.endpoints.push(item.key.join("."))
+		params.endpoints.push(joinRoute(item.key))
 		params.input[i] = item.params
 			? {json: item.params}
 			: {json:null, meta:{values:["undefined"]}}
 		return params
-	}, {endpoints: [], input: {}} as {endpoints: string[], input: Record<number, any>})
+	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof joinRoute>[], input: Record<number, any>})
 
 	const url = new URL(`/api/trpc/${endpoints.join(',')}`, self.location.origin)
 	url.searchParams.set('batch', '1')
