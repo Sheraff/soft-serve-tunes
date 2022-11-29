@@ -47,8 +47,8 @@ export default async function retryable<T>(callback: () => (Promise<T> | T), tri
 				console.error('will not retry callback, received an unrecoverable prisma error code')
 				throw e
 			}
-			const code = typeof e === 'object' ? ` code:${e.code}` : ''
-			const keys = typeof e === 'object' ? ` keys[${Object.keys(e).join(',')}]` : ''
+			const code = e && typeof e === 'object' && ('code' in e) ? ` code:${e.code}` : ''
+			const keys = e && typeof e === 'object' ? ` keys[${Object.keys(e).join(',')}]` : ''
 			console.warn(new Error(`Error in retryable${code}${keys}, will retry #${tries}`, {cause: e}))
 			await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 1000 * 2**tries))
 			const result = await retryable(callback, tries + 1, originalError || e)

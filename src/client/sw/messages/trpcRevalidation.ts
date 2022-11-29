@@ -28,7 +28,7 @@ function processBatch() {
 			? {json: item.params}
 			: {json:null, meta:{values:["undefined"]}}
 		return params
-	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof joinRoute>[], input: Record<number, any>})
+	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof joinRoute>[], input: Record<number, unknown>})
 
 	const url = new URL(`/api/trpc/${endpoints.join(',')}`, self.location.origin)
 	url.searchParams.set('batch', '1')

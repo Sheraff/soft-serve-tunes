@@ -93,7 +93,7 @@ export default function ArtistList({
 	loading = false,
 }: {
 	artists: ArtistListItem[]
-	onSelect?: (artist: Exclude<inferQueryOutput<"artist.miniature">, null>) => void
+	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	lines?: 1 | 3
 	loading?: boolean
 }) {

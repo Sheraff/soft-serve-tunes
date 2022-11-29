@@ -93,7 +93,7 @@ export default function AlbumList({
 	loading = false,
 }: {
 	albums: AlbumListItem[]
-	onSelect?: (album: Exclude<inferQueryOutput<"album.miniature">, null>) => void
+	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	scrollable?: boolean
 	lines?: 1 | 2
 	loading?: boolean
