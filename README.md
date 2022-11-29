@@ -27,6 +27,7 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - maskable icons: https://maskable.app/editor
 - icon: https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
 - eased gradients: https://larsenwork.com/easing-gradients/
+- postgres.app: https://postgresapp.com/
 
 ## Deploy to raspberry
 
@@ -66,7 +67,7 @@ freebox > box settings > ports >
 - install postgresql (https://pimylifeup.com/raspberry-pi-postgresql/)
   ```sh
   sudo apt install postgresql
-  createuser pi -P --interactive
+  createuser pi -P --interactive # will determine the user:password to use in the .env file
   psql
   CREATE DATABASE pi;
   exit

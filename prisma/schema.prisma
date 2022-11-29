@@ -4,11 +4,7 @@ generator client {
 }
 
 datasource db {
-  // NOTE: When using postgresql, mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-  // Further reading:
-  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -394,11 +390,6 @@ model SpotifyTrack {
   track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
 }
 
-model AcoustidStorage {
-  id   String @id
-  data String
-}
-
 model FileToCreate {
   path  String @id
   count Int    @default(0)
@@ -411,13 +402,13 @@ model Account {
   type                     String
   provider                 String
   providerAccountId        String
-  refresh_token            String? // @db.Text
-  access_token             String? // @db.Text
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
   expires_at               Int?
   refresh_token_expires_in Int?
   token_type               String?
   scope                    String?
-  id_token                 String? // @db.Text
+  id_token                 String? @db.Text
   session_state            String?
   user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 

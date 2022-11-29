@@ -168,15 +168,6 @@ class AcoustId {
 	}
 
 	async #fetch(body: `?${string}`) {
-		const stored = await retryable(() => prisma.acoustidStorage.findUnique({where: {id: body}}))
-		if (stored) {
-			try {
-				return JSON.parse(stored.data)
-			} catch (e) {
-				console.log('error while parsing stored acoustid response', body)
-				throw e
-			}
-		}
 		const data = await this.#queue.push(() => fetch(`https://api.acoustid.org/v2/lookup${body}`))
 		if (data.status !== 200) {
 			if (data.status === 429) {
@@ -191,14 +182,6 @@ class AcoustId {
 			log("error", "error", "acoustid", parsed.error.message)
 			throw new Error(parsed.error.message)
 		}
-		retryable(() => prisma.acoustidStorage.upsert({
-			where: { id: body },
-			update: {},
-			create: {
-				id: body,
-				data: JSON.stringify(json),
-			}
-		}))
 		return parsed
 	}
 
