@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["extendedWhereUnique", "interactiveTransactions"]
+  previewFeatures = ["extendedWhereUnique"]
 }
 
 datasource db {

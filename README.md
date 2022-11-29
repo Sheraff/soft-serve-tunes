@@ -63,6 +63,15 @@ freebox > box settings > ports >
   ```sh
   apt-get install libchromaprint-tools
   ```
+- install postgresql (https://pimylifeup.com/raspberry-pi-postgresql/)
+  ```sh
+  sudo apt install postgresql
+  createuser pi -P --interactive
+  psql
+  CREATE DATABASE pi;
+  exit
+  exit
+  ```
 - install `npm i`
 - configure .env music folder
 - build (put pi on a fan, it's gonna heat up) `npm run build`
