@@ -64,7 +64,7 @@ function contrastRatio(lum1: number, lum2: number) {
 }
 
 /**
- * @description Insures a minimum contrast ratio of 4 between first and last
+ * @description Insures a minimum contrast ratio of 2 between first and last
  * color by manipulating lightness if needed
  */
 function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
@@ -74,7 +74,7 @@ function minColorRatio([bg, _, __, main]: FourHslPixels): FourHslPixels {
 	const min = minLum === bg.lum ? bg : main
 	const ratio = contrastRatio(maxLum, minLum)
 
-	if (ratio >= 4) {
+	if (ratio >= 2) {
 		return [bg, _, __, main]
 	}
 
