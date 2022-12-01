@@ -404,14 +404,7 @@ class MyWatcher {
 	}
 }
 
-declare global {
-	// eslint-disable-next-line no-var
-	var fileWatcher: MyWatcher | null;
-}
-
-export const fileWatcher = globalThis.fileWatcher
-	|| new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)
-
-// if (env.NODE_ENV !== "production") {
-	globalThis.fileWatcher = fileWatcher
-// }
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const fileWatcher = globalThis.fileWatcher || new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)
+// @ts-expect-error -- see above
+globalThis.fileWatcher = fileWatcher

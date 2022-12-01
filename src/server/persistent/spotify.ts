@@ -886,16 +886,7 @@ class Spotify {
 	}
 }
 
-
-
-declare global {
-	// eslint-disable-next-line no-var
-	var spotify: Spotify | null;
-}
-
-export const spotify = globalThis.spotify
-	|| new Spotify()
-
-// if (env.NODE_ENV !== "production") {
-	globalThis.spotify = spotify
-// }
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const spotify = globalThis.spotify || new Spotify()
+// @ts-expect-error -- see above
+globalThis.spotify = spotify

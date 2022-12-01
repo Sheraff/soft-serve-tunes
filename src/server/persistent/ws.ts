@@ -70,16 +70,10 @@ class MyWebSocketServer extends WebSocketServer {
 	}
 }
 
-declare global {
-	// eslint-disable-next-line no-var
-	var socketServer: MyWebSocketServer | null;
-}
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const socketServer = globalThis.socketServer || new MyWebSocketServer({
+	port: env.WEBSOCKET_SERVER_PORT,
+})
+// @ts-expect-error -- see above
+globalThis.socketServer = socketServer
 
-export const socketServer = globalThis.socketServer
-	|| new MyWebSocketServer({
-		port: env.WEBSOCKET_SERVER_PORT,
-	})
-
-// if (env.NODE_ENV !== "production") {
-	globalThis.socketServer = socketServer
-// }

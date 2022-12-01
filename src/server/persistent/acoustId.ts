@@ -6,8 +6,6 @@ import { dirname, join, relative } from "node:path"
 import { IAudioMetadata } from "music-metadata"
 import similarStrings from "utils/similarStrings"
 import log from "utils/logger"
-import { prisma } from "server/db/client"
-import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
 import { socketServer } from "server/persistent/ws"
 import MusicBrainz from "server/persistent/musicBrainz"
@@ -540,13 +538,7 @@ class AcoustId {
 	}
 }
 
-
-declare global {
-	// eslint-disable-next-line no-var
-	var acoustId: AcoustId | null;
-}
-
-export const acoustId = globalThis.acoustId
-	|| new AcoustId()
-
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const acoustId = globalThis.acoustId || new AcoustId()
+// @ts-expect-error -- see above
 globalThis.acoustId = acoustId

@@ -947,15 +947,7 @@ async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof la
 	return connections.map(({ id }) => id)
 }
 
-
-declare global {
-	// eslint-disable-next-line no-var
-	var lastFm: LastFM | null;
-}
-
-export const lastFm = globalThis.lastFm
-	|| new LastFM()
-
-// if (env.NODE_ENV !== "production") {
-	globalThis.lastFm = lastFm
-// }
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const lastFm = globalThis.lastFm || new LastFM()
+// @ts-expect-error -- see above
+globalThis.lastFm = lastFm

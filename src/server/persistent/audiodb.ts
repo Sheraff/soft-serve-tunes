@@ -466,14 +466,7 @@ async function keysAndInputToImageIds<
 	return Object.fromEntries(content) as Result
 }
 
-declare global {
-	// eslint-disable-next-line no-var
-	var audioDb: AudioDb | null;
-}
-
-export const audioDb = globalThis.audioDb
-	|| new AudioDb()
-
-// if (env.NODE_ENV !== "production") {
-	globalThis.audioDb = audioDb
-// }
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
+export const audioDb = globalThis.audioDb || new AudioDb()
+// @ts-expect-error -- see above
+globalThis.audioDb = audioDb
