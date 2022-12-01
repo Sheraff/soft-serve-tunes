@@ -37,9 +37,11 @@ export default function asyncPersistedAtom<T extends Serializable>(
 	baseAtom.onMount = (set) => {
 		retrieveFromIndexedDB<T>("appState", key)
 			.then((value) => {
-				if(value) {
+				if (value) {
 					set(value)
 					window.__PERSISTED_ATOMS__[key] = value
+				} else {
+					window.__PERSISTED_ATOMS__[key] = initial
 				}
 			})
 	}

@@ -240,7 +240,9 @@ export function useSetPlaylistIndex() {
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
-			const index = playlist.order.findIndex((id) => id === playlist.current)
+			const index = playlist.current
+				? playlist.order.indexOf(playlist.current)
+				: -1
 			if (repeatType === 0 && index >= playlist.tracks.length - 1) {
 				return
 			}
@@ -263,7 +265,9 @@ export function useSetPlaylistIndex() {
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
 			}
-			const index = playlist.order.findIndex((id) => id === playlist.current)
+			const index = playlist.current
+				? playlist.order.indexOf(playlist.current)
+				: -1
 			const newIndex = index <= 0
 				? playlist.tracks.length - 1
 				: index - 1
