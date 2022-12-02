@@ -96,6 +96,12 @@ export const searchView = atom(
 type MainView = "suggestions" | "home"
 export const mainView = atom<MainView>("suggestions")
 
+export function useIsHome() {
+	const stack = useAtomValue(panelStack)
+	const view = useAtomValue(mainView)
+	return stack.length === 0 && view === "suggestions"
+}
+
 export function useShowHome() {
 	const setAlbum = useSetAtom(albumView)
 	const setArtist = useSetAtom(artistView)

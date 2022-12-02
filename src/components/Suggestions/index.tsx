@@ -3,7 +3,7 @@ import SectionTitle from "atoms/SectionTitle"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import AlbumList from "components/AlbumList"
-import { useShowHome } from "components/AppContext"
+import { useIsHome, useShowHome } from "components/AppContext"
 import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
@@ -191,14 +191,18 @@ const UpdateSuggestions = () => {
 
 export default memo(function Suggestions(){
 
-	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.artist.mostFav.useQuery()
-	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.artist.mostRecentListen.useQuery()
-	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.artist.leastRecentListen.useQuery()
-	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.album.mostFav.useQuery()
-	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.album.mostRecentListen.useQuery()
-	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.album.mostRecentAdd.useQuery()
-	const {data: genreFavs = []} = trpc.genre.mostFav.useQuery()
+	const enabled = useIsHome()
+
+	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.artist.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.artist.mostRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.artist.leastRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.album.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.album.mostRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.album.mostRecentAdd.useQuery(undefined, {enabled, keepPreviousData: true})
+	const {data: genreFavs = []} = trpc.genre.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
 	const {data: playlists = []} = trpc.playlist.list.useQuery(undefined, {
+		enabled,
+		keepPreviousData: true,
 		select(playlists) {
 			return playlists.slice(0, 4)
 		}

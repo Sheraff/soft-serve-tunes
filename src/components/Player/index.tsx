@@ -1,4 +1,4 @@
-import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { memo, Suspense, useCallback, useEffect, useRef } from "react"
 import Audio from "./Audio"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
@@ -9,7 +9,6 @@ import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
-import { trpc } from "utils/trpc"
 import { useAtom, useAtomValue } from "jotai"
 import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import GlobalPalette from "./GlobalPalette"
@@ -55,7 +54,7 @@ export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 	const {data: playlist} = usePlaylist()
 	const item = useCurrentTrack()
-	const {nextPlaylistIndex: playNext, prevPlaylistIndex} = useSetPlaylistIndex()
+	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
 
 	const playPrev = useCallback(
 		() => {
@@ -68,16 +67,18 @@ export default memo(function Player() {
 		},
 		[prevPlaylistIndex]
 	)
+	const playNext = useCallback(
+		() => nextPlaylistIndex(audio),
+		[nextPlaylistIndex]
+	)
 
 	const {
-		id: audioSrcId,
 		playing,
 		loading,
 		displayCurrentTime,
 		displayTotalTime,
 		displayRemainingTime,
 		totalSeconds,
-		playedSeconds,
 		progress,
 	} = useAudio(audio)
 
@@ -106,14 +107,6 @@ export default memo(function Player() {
 		return () => controller.abort()
 	}, [togglePlay])
 
-	const consideredPlayed = playedSeconds > 45 || (totalSeconds && playedSeconds / totalSeconds > 0.4)
-	const {mutate} = trpc.track.playcount.useMutation()
-	useEffect(() => {
-		if (consideredPlayed && audioSrcId) {
-			mutate({id: audioSrcId})
-		}
-	}, [mutate, consideredPlayed, audioSrcId])
-
 	const online = useIsOnline()
 	const {data: cached} = useCachedTrack({id: item?.id})
 
@@ -121,7 +114,11 @@ export default memo(function Player() {
 
 	const isShuffle = useAtomValue(shuffle)
 	const shufflePlaylist = useShufflePlaylist()
+
 	const [repeatType, setRepeatType] = useAtom(repeat)
+	const cycleRepeatTypes = useCallback(() => {
+		setRepeatType(repeatType => (repeatType + 1) % 3 as 0 | 1 | 2)
+	}, [setRepeatType])
 
 	return (
 		<div className={styles.main}>
@@ -158,14 +155,11 @@ export default memo(function Player() {
 						<OfflineIcon />
 					)}
 				</>
-				<button onClick={() => playNext(audio)} disabled={!hasPrevNext}><NextIcon /></button>
+				<button onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
 				<Suspense fallback={<button><RepeatIcon /></button>}>
 					<button
 						className={repeatType ? styles.enabled : undefined}
-						onClick={() => {
-							const nextRepeatType = (repeatType + 1) % 3 as 0 | 1 | 2
-							setRepeatType(nextRepeatType)
-						}}
+						onClick={cycleRepeatTypes}
 					>
 						{repeatType === 2 ? <RepeatOneIcon /> : <RepeatIcon />}
 					</button>

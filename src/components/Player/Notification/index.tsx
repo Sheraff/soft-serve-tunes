@@ -1,7 +1,7 @@
-import { type RefObject, useEffect } from "react"
+import { type RefObject, useEffect, memo } from "react"
 import { useCurrentTrackDetails, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 
-export default function Notification({
+export default memo(function Notification({
 	audio
 }: {
 	audio: RefObject<HTMLAudioElement>
@@ -34,4 +34,4 @@ export default function Notification({
 	}, [hasData, prevPlaylistIndex, nextPlaylistIndex, audio])
 
 	return null
-}
+})

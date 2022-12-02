@@ -1,12 +1,12 @@
 import classNames from "classnames"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { type RouterOutputs } from "utils/trpc"
 import { albumView, artistView, mainView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useGetCurrentIndex } from "client/db/useMakePlaylist"
 
-export default function SlidingText({
+export default memo(function SlidingText({
 	item,
 	className,
 }: {
@@ -113,4 +113,4 @@ export default function SlidingText({
 			</div>
 		</div>
 	)
-}
+})

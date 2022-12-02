@@ -1,4 +1,5 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from "react"
+import { trpc } from "utils/trpc"
 
 type TimeVector = [number, number, number]
 
@@ -28,17 +29,17 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 	const [seconds, setSeconds] = useState(0) // current time
 	const [totalSeconds, setTotalSeconds] = useState(0) // total time of source
 	const [playing, setPlaying] = useState(false) // follows state of DOM node
-	const [id, setId] = useState<string | undefined>(undefined) // using state for an ID in sync w/ what the rest of the data is about
 	const [loading, setLoading] = useState(true)
-	const [playedSeconds, setPlayedSeconds] = useState(0) // how long the source has been playing (excludes loading / stalled / seeking)
 	const remainingSeconds = totalSeconds - seconds
-
+	
 	const [displayCurrentTime, displayTotalTime, displayRemainingTime] = useMemo(() => {
 		const currentTimeVector = secondsToTimeVector(seconds)
 		const totalTimeVector = secondsToTimeVector(totalSeconds)
 		const remainingTimeVector = secondsToTimeVector(remainingSeconds)
 		return pairOfTimeVectorsToPairOfDisplayStrings([currentTimeVector, totalTimeVector, remainingTimeVector])
 	}, [seconds, totalSeconds, remainingSeconds])
+	
+	const {mutate} = trpc.track.playcount.useMutation()
 
 	useEffect(() => {
 		const element = audio.current
@@ -46,17 +47,68 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 
 		let currentSrc: string
 		let currentPlayedSectionStart: number
-		let loading = true
+		let currentId: string | undefined
 
-		const _setLoading = (bool: boolean) => {
-			setLoading(bool)
-			loading = bool
+		let visible = true
+		const onVisibilityChange = () => {
+			if (document.visibilityState === "hidden") {
+				visible = false
+			} else {
+				visible = true
+				setPlaying(playing)
+				setLoading(loading)
+				setTotalSeconds(totalSeconds)
+				setSeconds(seconds)
+			}
+		}
+
+		let playedSeconds = 0
+		let consideredPlayed = false
+		const _setPlayedSeconds = (s: number) => {
+			playedSeconds = s
+			const newConsideredPlayed = Boolean(playedSeconds > 45 || (totalSeconds && playedSeconds / totalSeconds > 0.4))
+			if (!consideredPlayed && newConsideredPlayed && currentId) {
+				mutate({id: currentId})
+			}
+			consideredPlayed = newConsideredPlayed
+		}
+
+		let playing = false
+		const _setPlaying = (p: boolean) => {
+			playing = p
+			if (visible) {
+				setPlaying(p)
+			}
+		}
+		
+		let loading = true
+		const _setLoading = (l: boolean) => {
+			loading = l
+			if (visible) {
+				setLoading(l)
+			}
+		}
+
+		let totalSeconds = 0
+		const _setTotalSeconds = (s: number) => {
+			totalSeconds = s
+			if (visible) {
+				setTotalSeconds(s)
+			}
+		}
+
+		let seconds = 0
+		const _setSeconds = (s: number) => {
+			seconds = s
+			if (visible) {
+				setSeconds(s)
+			}
 		}
 
 		const onDuration = () => {
 			const {duration, src} = element
 			if (!Number.isNaN(duration) && (src === currentSrc)) {
-				setTotalSeconds(duration)
+				_setTotalSeconds(duration)
 				navigator.mediaSession.setPositionState({
 					duration: element.duration,
 					playbackRate: element.playbackRate,
@@ -68,11 +120,10 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		const onTimeUpdate = () => {
 			const {currentTime, src} = element
 			if (!Number.isNaN(currentTime) && (src === currentSrc)) {
-				setSeconds(currentTime)
-				// onDuration() // TODO: shouldn't have to be called every time
+				_setSeconds(currentTime)
 				if (!loading) {
 					const delta = currentTime - currentPlayedSectionStart
-					setPlayedSeconds(prev => prev + delta)
+					_setPlayedSeconds(playedSeconds + delta)
 				}
 				currentPlayedSectionStart = currentTime
 			}
@@ -81,15 +132,10 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		// onPlay / onPause reflect the intention of the user, but `onPlay` doesn't mean audio is actually coming out
 		// it might still be loading
 		const onPlay = () => {
-			setPlaying(true)
+			_setPlaying(true)
 		}
 		const onPause = () => {
-			setPlaying(false)
-		}
-
-		const onMetadata = () => {
-			// onDuration()
-			// onTimeUpdate()
+			_setPlaying(false)
 		}
 
 		const onStalled = () => {
@@ -121,7 +167,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 
 		const onEnded = () => {
-			setPlaying(false)
+			_setPlaying(false)
 		}
 
 		// watch for "src" attribute change
@@ -130,13 +176,11 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			if (src !== currentSrc) {
 				currentSrc = src
 				currentPlayedSectionStart = 0
-				setTotalSeconds(0)
-				setSeconds(0)
-				setPlayedSeconds(0)
+				_setTotalSeconds(0)
+				_setSeconds(0)
 				_setLoading(true)
-				// element.play()
-				const newId = src.split('/api/file/')[1]
-				setId(newId)
+				_setPlayedSeconds(0)
+				currentId = src.split('/api/file/')[1]
 			}
 		})
 		observer.observe(element, {
@@ -150,61 +194,24 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		element.addEventListener('play', onPlay, {signal: controller.signal})
 		element.addEventListener('ended', onEnded, {signal: controller.signal})
 		element.addEventListener('pause', onPause, {signal: controller.signal})
-		element.addEventListener('loadedmetadata', onMetadata, {signal: controller.signal})
 		element.addEventListener('stalled', onStalled, {signal: controller.signal})
 		element.addEventListener('waiting', onWaiting, {signal: controller.signal})
 		element.addEventListener('playing', onPlaying, {signal: controller.signal})
 		element.addEventListener('seeking', onStalled, {signal: controller.signal})
 		element.addEventListener('seeked', onUnStalled, {signal: controller.signal})
+		document.addEventListener("visibilitychange", onVisibilityChange, {signal: controller.signal})
 
 		return () => {
 			observer.disconnect()
 			controller.abort()
 		}
-	}, [audio])
-
-	/**
-	 * Acquire WakeLockSentinel to prevent audio from stopping after 1 track when phone screen is locked
-	 * If this isn't enough and playlists keep getting stopped at the end of a track, the
-	 * next thing to try would be to handle the "change src, call .play()" right inside the `ended` event
-	 * listener, and not rely on a React render to propagate the new src
-	 */
-	const wakeLockSentinel = useRef<Promise<WakeLockSentinel> | null>(null)
-	useEffect(() => {
-		if (playing && !wakeLockSentinel.current) {
-			// lock can only be acquired if page is visible
-			if (document.visibilityState === 'visible') {
-				wakeLockSentinel.current = navigator.wakeLock.request("screen")
-				return
-			} else {
-				const controller = new AbortController()
-				document.addEventListener("visibilitychange", () => {
-					if (document.visibilityState === 'visible') {
-						wakeLockSentinel.current = navigator.wakeLock.request("screen")
-						controller.abort()
-					}
-				}, {signal: controller.signal})
-				return () => controller.abort()
-			}
-		}
-		if (!wakeLockSentinel.current) {
-			return
-		}
-		// release lock after 15 minutes without playing, because it seems like the neighborly thing to do
-		const timeoutId = setTimeout(async () => {
-			const lock = await wakeLockSentinel.current
-			lock?.release()
-			wakeLockSentinel.current = null
-		}, 1000 * 15)
-		return () => clearTimeout(timeoutId)
-	}, [playing])
+	}, [audio, mutate])
 
 	const progress = Boolean(seconds && totalSeconds) 
 		? seconds / totalSeconds
 		: 0
 
 	return {
-		id,
 		playing,
 		loading,
 		displayCurrentTime,
@@ -213,7 +220,6 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		seconds,
 		totalSeconds,
 		remainingSeconds,
-		playedSeconds,
 		progress,
 	}
 }
