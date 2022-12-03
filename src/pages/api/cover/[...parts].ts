@@ -10,7 +10,10 @@ import Queue from "utils/Queue"
 
 const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 
-const queue = new Queue(0)
+// @ts-expect-error -- declaring a global for persisting the instance, but not a global type
+const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
+// @ts-expect-error -- see above
+globalThis.sharpQueue = queue
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const {parts} = req.query
