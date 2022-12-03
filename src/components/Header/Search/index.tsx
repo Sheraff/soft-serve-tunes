@@ -24,6 +24,8 @@ export default function Search({
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
 	const results = useRef<HTMLOutputElement>(null)
+	const artistList = useRef<HTMLDivElement>(null)
+	const albumList = useRef<HTMLDivElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
 	const {data: tracksRaw} = trpc.track.searchable.useQuery(undefined, {enabled})
@@ -68,6 +70,14 @@ export default function Search({
 			results.current?.scroll({
 				top: 0,
 				behavior: 'smooth',
+			})
+			artistList.current?.scroll({
+				left: 0,
+				behavior: 'smooth'
+			})
+			albumList.current?.scroll({
+				left: 0,
+				behavior: 'smooth'
 			})
 		}, {signal: controller.signal, passive: true})
 		let lastScroll = 0
@@ -118,20 +128,22 @@ export default function Search({
 						))}
 					</div>
 				)}
-				{!showPast && Boolean(artists.length) && (
+				{!showPast && (
 					<div>
 						<SectionTitle>Artists</SectionTitle>
 						<ArtistList
+							ref={artistList}
 							artists={artists.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: 'artist', id})}
 							loading={!artists.length}
 						/>
 					</div>
 				)}
-				{!showPast && Boolean(albums.length) && (
+				{!showPast && (
 					<div>
 						<SectionTitle>Albums</SectionTitle>
 						<AlbumList
+							ref={albumList}
 							scrollable
 							albums={albums.slice(0, 28)}
 							onSelect={({id}) => id && onSelect({type: 'album', id})}

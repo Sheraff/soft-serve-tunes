@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { startTransition, useEffect, useRef, useState } from "react"
+import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
@@ -85,7 +85,7 @@ function AlbumItem({
 	)
 }
 
-export default function AlbumList({
+export default forwardRef(function AlbumList({
 	albums,
 	onSelect,
 	scrollable = false,
@@ -97,13 +97,8 @@ export default function AlbumList({
 	scrollable?: boolean
 	lines?: 1 | 2
 	loading?: boolean
-}) {
+}, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
-
-	const ref = useRef<HTMLDivElement>(null)
-	useEffect(() => {
-		ref.current?.scrollTo(0, 0)
-	}, [albums])
 
 	return (
 		<div className={classNames(styles.wrapper, {[styles.scrollable as string]: scrollable})} ref={ref}>
@@ -128,4 +123,4 @@ export default function AlbumList({
 			</ul>
 		</div>
 	)
-}
+})

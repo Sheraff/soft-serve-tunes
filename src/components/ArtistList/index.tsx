@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { startTransition, useEffect, useRef, useState } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useState } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
@@ -86,7 +86,7 @@ function ArtistItem({
 	)
 }
 
-export default function ArtistList({
+export default forwardRef(function ArtistList({
 	artists,
 	onSelect,
 	lines = 3,
@@ -96,16 +96,14 @@ export default function ArtistList({
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	lines?: 1 | 3
 	loading?: boolean
-}) {
+}, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
-	const ref = useRef<HTMLDivElement>(null)
-	useEffect(() => {
-		ref.current?.scrollTo(0, 0)
-	}, [artists])
-
 	return (
-		<div className={styles.wrapper} ref={ref}>
+		<div
+			className={styles.wrapper}
+			ref={ref}
+		>
 			<ul className={classNames(styles.main, styles[`lines-${lines}`], {[styles.loading]: loading})}>
 				{artists.map((artist, i) => (
 					<li className={styles.item} key={artist.id}>
@@ -122,4 +120,4 @@ export default function ArtistList({
 			</ul>
 		</div>
 	)
-}
+})
