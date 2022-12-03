@@ -139,7 +139,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const selectedCover = selectCover(metadata.common.picture)
 		const { hash, path: imagePath, palette } = selectedCover
 			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split('/')[1], `from createTrack ${name}`)
-			: { hash: '', path: '', palette: '' }
+			: { hash: '', path: '', palette: undefined }
 
 		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
 			if (fingerprinted?.artists?.[0]) {

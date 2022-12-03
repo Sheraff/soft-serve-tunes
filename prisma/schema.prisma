@@ -88,7 +88,7 @@ model Image {
   id                     String          @id
   path                   String          @unique
   mimetype               String
-  palette                String
+  palette                Json?
   track                  Track[]         @relation(name: "metaImage")
   trackCover             Track[]         @relation(name: "cover")
   artistCover            Artist[]        @relation

@@ -1,7 +1,7 @@
+import { type Prisma } from "@prisma/client"
 import Head from "next/head"
-import { CSSProperties } from "react"
-
-export type PaletteDefinition = [string, string, string, string]
+import { type CSSProperties } from "react"
+import { type PaletteDefinition } from "utils/paletteExtraction"
 
 const keys = [
 	'--palette-bg-main',
@@ -11,40 +11,51 @@ const keys = [
 ] as const
 
 const defaultValues = [
-	'#0d0110',
-	'#300a38',
-	'#b145c7',
-	'#e6dde9',
+	{h:288, s:88, l:3},
+	{h:290, s:70, l:13},
+	{h:290, s:54, l:53},
+	{h:285, s:21, l:89},
 ] as PaletteDefinition
 
-export function paletteToCSSProperties(palette: PaletteDefinition) {
+function hslToCss(value: PaletteDefinition[number]) {
+	return `hsl(${value.h}, ${value.s}%, ${value.l}%)`
+}
+
+function isPaletteDefinition(palette?: Prisma.JsonValue): palette is PaletteDefinition {
+	return Boolean(palette)
+}
+
+export function paletteToCSSProperties(palette?: Prisma.JsonValue) {
+	if (!isPaletteDefinition(palette)) {
+		return undefined
+	}
 	return Object.fromEntries(
-		keys.map((key, i) => [key, palette[i]])
+		palette.map((value, i) => [keys[i], hslToCss(value)])
 	) as unknown as CSSProperties & {[key in typeof keys[number]]: string}
 }
 
 export default function Palette({
 	palette = defaultValues,
 }: {
-	palette: PaletteDefinition
+	palette?: PaletteDefinition & Prisma.JsonArray
 }) {
 	return (
 		<Head>
 			<style key="palette-definition">
-				{keys.map((key, i) => `
-					@property ${key} {
+				{defaultValues.map((value, i) => `
+					@property ${keys[i]} {
 						syntax: '<color>';
 						inherits: true;
-						initial-value: ${defaultValues[i]};
+						initial-value: ${hslToCss(value)};
 					}
 				`).join('')}
 			</style>
 			<style key="palette-values">
 				{`body {\n`}
-				{palette.map((value, i) => `${keys[i]}: ${value};`).join("\n")}
+				{palette.map((value, i) => `${keys[i]}: ${hslToCss(value)};`).join("\n")}
 				{`}\n`}
 			</style>
-			<meta name="theme-color" content={palette[0]} />
+			<meta name="theme-color" content={hslToCss(palette[0])} />
 		</Head>
 	)
 }

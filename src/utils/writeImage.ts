@@ -7,13 +7,14 @@ import { prisma } from "server/db/client"
 import sharp from "sharp"
 import extractPaletteFromUint8 from "utils/paletteExtraction"
 import retryable from "./retryable"
+import { type Prisma } from "@prisma/client"
 
 export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string) {
 	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
 	const fileName = `${hash}${extension.startsWith('.') ? '' : '.'}${extension}`
 	const imagePath = join('.meta', hash[0], hash[1], hash[2], fileName)
 	const existingImage = await retryable(() => prisma.image.findUnique({ where: { id: hash } }))
-	let palette = existingImage?.palette || ''
+	let palette = existingImage?.palette as undefined | Exclude<Prisma.JsonValue, null>
 	if (!existingImage) {
 		const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, imagePath)
 		const dir = dirname(fullPath)
@@ -28,10 +29,8 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 			})
 		})
 		try {
-			const extracted = await extractPalette(buffer)
-			if (extracted) {
-				palette = JSON.stringify(extracted)
-			} else {
+			palette = await extractPalette(buffer)
+			if (!palette) {
 				console.warn('Could not extract palette', extension, url)
 			}
 		} catch (error) {
@@ -48,7 +47,7 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 
 export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 	(Awaited<ReturnType<typeof writeImage>> & {mimetype: string})
-	| {mimetype: '',hash: '',path: '',palette: '',exists: undefined}
+	| {mimetype: '',hash: '',path: '',palette: undefined,exists: undefined}
 > {
 	if (url) {
 		let step = 0
@@ -79,7 +78,7 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 		mimetype: '',
 		hash: '',
 		path: '',
-		palette: '',
+		palette: undefined,
 		exists: undefined,
 	}
 }

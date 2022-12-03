@@ -65,7 +65,7 @@ export default forwardRef(function ArtistView({
 		infos.push(`${data._count.tracks} track${pluralize(data._count.tracks)}`)
 	}
 
-	const palette = data?.cover ? paletteToCSSProperties(JSON.parse(data.cover.palette)) : undefined
+	const palette = paletteToCSSProperties(data?.cover?.palette)
 
 	const main = useRef<HTMLDivElement>(null)
 	useImperativeHandle(ref, () => main.current as HTMLDivElement)

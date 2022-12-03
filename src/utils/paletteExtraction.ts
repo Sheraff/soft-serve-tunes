@@ -277,12 +277,20 @@ function convertRGBtoHSL (pixel: RGBPixel): HSLPixel {
 	}
 }
 
-function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): string {
-	return `hsl(${h}, ${s}%, ${l}%)`
+type FormattedHSL = {h: number, s: number, l: number}
+
+function formatHSL({h = 0, s = 0, l = 0}: {h?: number, s?: number, l?:number} = {}): FormattedHSL {
+	return {
+		h,
+		s: Number(s.toFixed(2)),
+		l: Number(l.toFixed(2)),
+	}
 }
+
+export type PaletteDefinition = [FormattedHSL, FormattedHSL, FormattedHSL, FormattedHSL]
 
 export default function extractPaletteFromUint8(data: Uint8ClampedArray, channels: 3 | 4 = 4) {
 	const main = extractPalette(data, channels)
-	const palette = main.map(formatHSL)
+	const palette = main.map(formatHSL) as PaletteDefinition
 	return palette
 }
