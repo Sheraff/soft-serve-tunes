@@ -617,19 +617,25 @@ class Spotify {
 					const newTrackAlbumId = newTrack.album.id
 					const trackAlbumId = track.album.id
 					await retryable(async () => {
-						await prisma.spotifyAlbum.update({
+						const foundToUpdate = await prisma.spotifyAlbum.findUnique({
 							where: {
 								id: newTrackAlbumId,
 								album: null
 							},
-							data: {
-								album: {
-									connect: {
-										id: trackAlbumId,
+							select: {id: true},
+						})
+						if (foundToUpdate) {
+							await prisma.spotifyAlbum.update({
+								where: {id: foundToUpdate.id},
+								data: {
+									album: {
+										connect: {
+											id: trackAlbumId,
+										}
 									}
 								}
-							}
-						})
+							})
+						}
 					})
 				}
 				artistObject = newTrack.artist
@@ -856,19 +862,25 @@ class Spotify {
 				}
 				const artistId = albumObject.id
 				await retryable(async () => {
-					await prisma.spotifyAlbum.update({
+					const foundToUpdate = await prisma.spotifyAlbum.findUnique({
 						where: {
 							id: artistId,
 							artist: null,
 						},
-						data: {
-							album: {
-								connect: {
-									id: result.id,
+						select: {id: true},
+					})
+					if (foundToUpdate) {
+						await prisma.spotifyAlbum.update({
+							where: {id: foundToUpdate.id},
+							data: {
+								album: {
+									connect: {
+										id: result.id,
+									}
 								}
 							}
-						}
-					})
+						})
+					}
 				})
 				const albumChangedCover = await computeAlbumCover(result.id, {artist: true, tracks: true})
 				if (!albumChangedCover) {
