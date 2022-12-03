@@ -592,19 +592,25 @@ class Spotify {
 					const newTrackArtistId = newTrack.artist.id
 					const trackArtistId = track.artist.id
 					await retryable(async () => {
-						await prisma.spotifyArtist.update({
+						const foundToConnect = await prisma.spotifyArtist.findUnique({
 							where: {
 								id: newTrackArtistId,
 								artist: null,
 							},
-							data: {
-								artist: {
-									connect: {
-										id: trackArtistId,
+							select: {id: true},
+						})
+						if (foundToConnect) {
+							await prisma.spotifyArtist.update({
+								where: {id: foundToConnect.id},
+								data: {
+									artist: {
+										connect: {
+											id: trackArtistId,
+										}
 									}
 								}
-							}
-						})
+							})
+						}
 					})
 				}
 				if (track.album?.id && newTrack.album?.id) {
