@@ -1,4 +1,4 @@
-import { RefObject, startTransition, useEffect, useRef, useState } from "react"
+import { type RefObject, startTransition, useEffect, useRef, useState } from "react"
 
 export default function useDisplayAndShow(
 	open: boolean,
@@ -23,7 +23,7 @@ export default function useDisplayAndShow(
 		})
 	}, [open])
 
-	// show after display
+	// show after display=true
 	useEffect(() => {
 		if (initial.current || !display) {
 			return
