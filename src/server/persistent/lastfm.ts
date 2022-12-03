@@ -948,6 +948,6 @@ async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof la
 }
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
-export const lastFm = globalThis.lastFm || new LastFM()
+export const lastFm = (globalThis.lastFm || new LastFM()) as InstanceType<typeof LastFM>
 // @ts-expect-error -- see above
 globalThis.lastFm = lastFm

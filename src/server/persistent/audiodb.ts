@@ -467,6 +467,6 @@ async function keysAndInputToImageIds<
 }
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
-export const audioDb = globalThis.audioDb || new AudioDb()
+export const audioDb = (globalThis.audioDb || new AudioDb()) as InstanceType<typeof AudioDb>
 // @ts-expect-error -- see above
 globalThis.audioDb = audioDb

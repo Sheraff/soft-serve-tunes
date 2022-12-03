@@ -405,6 +405,6 @@ class MyWatcher {
 }
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
-export const fileWatcher = globalThis.fileWatcher || new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)
+export const fileWatcher = (globalThis.fileWatcher || new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)) as InstanceType<typeof MyWatcher>
 // @ts-expect-error -- see above
 globalThis.fileWatcher = fileWatcher

@@ -539,6 +539,6 @@ class AcoustId {
 }
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
-export const acoustId = globalThis.acoustId || new AcoustId()
+export const acoustId = (globalThis.acoustId || new AcoustId()) as InstanceType<typeof AcoustId>
 // @ts-expect-error -- see above
 globalThis.acoustId = acoustId

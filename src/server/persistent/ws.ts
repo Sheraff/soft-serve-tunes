@@ -71,9 +71,9 @@ class MyWebSocketServer extends WebSocketServer {
 }
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
-export const socketServer = globalThis.socketServer || new MyWebSocketServer({
+export const socketServer = (globalThis.socketServer || new MyWebSocketServer({
 	port: env.WEBSOCKET_SERVER_PORT,
-})
+})) as InstanceType<typeof MyWebSocketServer>
 // @ts-expect-error -- see above
 globalThis.socketServer = socketServer
 
