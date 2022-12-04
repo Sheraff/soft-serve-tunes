@@ -52,6 +52,7 @@ export default memo(function SlidingText({
 		scrollToCurrent()
 	}, [main, scrollToCurrent])
 	const onClickTrackName = () => {
+		navigator.vibrate(1)
 		if (main === "home") {
 			scrollToCurrent()
 		} else {
@@ -77,7 +78,10 @@ export default memo(function SlidingText({
 					{' · '}
 					<button
 						type="button"
-						onClick={() => setAlbum({id: album.id, name: album.name, open: true})}
+						onClick={() => {
+							navigator.vibrate(1)
+							setAlbum({id: album.id, name: album.name, open: true})
+						}}
 					>
 						{album.name}
 					</button>
@@ -88,7 +92,10 @@ export default memo(function SlidingText({
 					{' · '}
 					<button
 						type="button"
-						onClick={() => setArtist({id: artist.id, name: artist.name, open: true})}
+						onClick={() => {
+							navigator.vibrate(1)
+							setArtist({id: artist.id, name: artist.name, open: true})
+						}}
 					>
 						{artist.name}
 					</button>
