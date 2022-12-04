@@ -9,6 +9,7 @@ import Head from "next/head";
 if (typeof window !== 'undefined') {
   window.addEventListener('load', async () => {
     try {
+      if (!("serviceWorker" in navigator)) return
       const registration = await navigator.serviceWorker.register(
         new URL('../client/sw/sw.ts', import.meta.url),
         {

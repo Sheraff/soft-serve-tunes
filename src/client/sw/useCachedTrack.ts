@@ -5,6 +5,7 @@ export default function useCachedTrack({id, enabled}: {id?: string, enabled?: bo
 		enabled: Boolean(id) && enabled !== false,
 		queryKey: ['sw-cached-track', id],
 		queryFn({ signal }) {
+			if (!("serviceWorker" in navigator)) return false
 			const controller = new AbortController()
 			// signal will always be defined on browsers that support it, and I only care about modern browsers
 			signal!.onabort = () => controller.abort()

@@ -32,6 +32,7 @@ export default function WatcherSocket() {
 	}
 
 	useEffect(() => {
+		if (!("serviceWorker" in navigator)) return
 		const controller = new AbortController()
 		navigator.serviceWorker.ready.then((registration) => {
 			const target = registration.active
@@ -60,6 +61,7 @@ export default function WatcherSocket() {
 
 	useEffect(() => {
 		const onOnline = async () => {
+			if (!("serviceWorker" in navigator)) return
 			const registration = await navigator.serviceWorker.ready
 			const target = registration.active
 			if (!target) {
