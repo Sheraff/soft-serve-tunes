@@ -227,14 +227,14 @@ export function useSetPlaylistIndex() {
 				current,
 			}))
 		},
-		async nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
+		nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
 			const repeatType = repeat.getValue()
 			if (repeatType === 2) {
 				if (audio.current) {
 					audio.current.currentTime = 0
 					audio.current.play()
 				}
-				return
+				return true
 			}
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
@@ -244,7 +244,7 @@ export function useSetPlaylistIndex() {
 				? playlist.order.indexOf(playlist.current)
 				: -1
 			if (repeatType === 0 && index >= playlist.tracks.length - 1) {
-				return
+				return false
 			}
 			const newIndex = index >= playlist.tracks.length - 1
 				? 0
@@ -255,12 +255,13 @@ export function useSetPlaylistIndex() {
 				...playlist,
 				current,
 			})
-			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current,
 			}))
+			return true
 		},
-		async prevPlaylistIndex() {
+		prevPlaylistIndex() {
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
@@ -284,7 +285,7 @@ export function useSetPlaylistIndex() {
 				current,
 				order: newOrder,
 			})
-			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current,
 				order: newOrder,

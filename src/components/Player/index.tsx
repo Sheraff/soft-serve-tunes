@@ -38,7 +38,10 @@ function RightTimeSlot({
 	displayTotalTime: string
 }) {
 	const [displayRemaining, setDisplayRemaining] = useAtom(playerDisplayRemaining)
-	const switchEndTime = () => setDisplayRemaining(a => !a)
+	const switchEndTime = () => {
+		navigator.vibrate(1)
+		setDisplayRemaining(a => !a)
+	}
 	return (
 		<button
 			type="button"
@@ -64,11 +67,17 @@ export default memo(function Player() {
 				return
 			}
 			prevPlaylistIndex()
+			navigator.vibrate(1)
 		},
 		[prevPlaylistIndex]
 	)
 	const playNext = useCallback(
-		() => nextPlaylistIndex(audio),
+		() => {
+			const hasNext = nextPlaylistIndex(audio)
+			if (hasNext) {
+				navigator.vibrate(1)
+			}
+		},
 		[nextPlaylistIndex]
 	)
 
@@ -84,6 +93,7 @@ export default memo(function Player() {
 
 	const togglePlay = useCallback(() => {
 		if (!audio.current) return
+		navigator.vibrate(1)
 		if (playing) {
 			audio.current.pause()
 		} else {
@@ -113,10 +123,15 @@ export default memo(function Player() {
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
 	const isShuffle = useAtomValue(shuffle)
-	const shufflePlaylist = useShufflePlaylist()
+	const _shufflePlaylist = useShufflePlaylist()
+	const shufflePlaylist = useCallback(() => {
+		_shufflePlaylist()
+		navigator.vibrate(1)
+	}, [_shufflePlaylist])
 
 	const [repeatType, setRepeatType] = useAtom(repeat)
 	const cycleRepeatTypes = useCallback(() => {
+		navigator.vibrate(1)
 		setRepeatType(repeatType => (repeatType + 1) % 3 as 0 | 1 | 2)
 	}, [setRepeatType])
 
