@@ -123,7 +123,10 @@ export default forwardRef(function ArtistView({
 				{data?.audiodb?.strBiographyEN && (
 					<div
 						className={classNames(styles.bio, {[styles.seeBio as string]: seeBio})}
-						onClick={() => setSeeBio(!seeBio)}
+						onClick={() => {
+							navigator.vibrate(1)
+							setSeeBio(!seeBio)
+						}}
 					>
 						<div ref={bio} className={styles.bioText}>
 							<div>
@@ -145,6 +148,7 @@ export default forwardRef(function ArtistView({
 						const playlistName = !data
 							? "New Playlist"
 							: data.name
+						navigator.vibrate(1)
 						startTransition(() => {
 							makePlaylist({type: "artist", id}, playlistName)
 							showHome("home")

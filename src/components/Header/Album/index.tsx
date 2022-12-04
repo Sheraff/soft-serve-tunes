@@ -61,11 +61,16 @@ export default forwardRef(function AlbumView({
 	}
 	if (data?.artist) {
 		infos.push(
-			<button type="button" onClick={() => data.artist && setArtist({
-				id: data.artist.id,
-				name: data.artist.name,
-				open: true,
-			})}>
+			<button type="button" onClick={() => {
+				if (data.artist) {
+					navigator.vibrate(1)
+					setArtist({
+						id: data.artist.id,
+						name: data.artist.name,
+						open: true,
+					})
+				}
+			}}>
 				{`${data.artist?.name}`}
 			</button>
 		)
@@ -134,7 +139,10 @@ export default forwardRef(function AlbumView({
 				{data?.audiodb?.strDescriptionEN && (
 					<div
 						className={classNames(styles.bio, {[styles.seeBio as string]: seeBio})}
-						onClick={() => setSeeBio(!seeBio)}
+						onClick={() => {
+							navigator.vibrate(1)
+							setSeeBio(!seeBio)
+						}}
 					>
 						<div ref={bio} className={styles.bioText}>
 							<div>
@@ -158,6 +166,7 @@ export default forwardRef(function AlbumView({
 							: !data.artist
 							? data.name
 							: `${data.name} by ${data.artist.name}`
+						navigator.vibrate(1)
 						startTransition(() => {
 							makePlaylist({type: "album", id}, playlistName)
 							showHome("home")
