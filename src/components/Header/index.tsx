@@ -48,15 +48,23 @@ export default function Header() {
 	const showHome = useShowHome()
 	const main = useAtomValue(mainView)
 	const showDashboardIcon = main === "home"
-	const onClickMainIcon = showDashboardIcon
-		? () => showHome("suggestions")
-		: () => showHome("home")
+	const onClickMainIcon = () => {
+		navigator.vibrate(1)
+		if (showDashboardIcon) {
+			showHome("suggestions")
+		} else {
+			showHome("home")
+		}
+	}
 
 	return (
 		<>
 			<div className={styles.head}>
 				<div className={styles.bg} />
-				<button onClick={() => signOut()} className={styles.button}>
+				<button onClick={() => {
+					navigator.vibrate(1)
+					signOut()
+				}} className={styles.button}>
 					<LogoutIcon />
 				</button>
 				<Upload className={styles.button} />
@@ -70,6 +78,7 @@ export default function Header() {
 					data-open={searchState.show}
 					style={{"--z": searchZ + 10} as CSSProperties}
 					onClick={() => {
+						navigator.vibrate(1)
 						if (search.open) {
 							showHome()
 						} else {

@@ -36,8 +36,14 @@ export default memo(function Upload({
 
 	return (
 		<>
-			<button type="button" className={className} onClick={() => setOpen(true)}><UploadIcon /></button>
-			<Dialog title="Upload music files" open={open} onClose={() => setOpen(false)}>
+			<button type="button" className={className} onClick={() => {
+				navigator.vibrate(1)
+				setOpen(true)
+			}}><UploadIcon /></button>
+			<Dialog title="Upload music files" open={open} onClose={() => {
+				navigator.vibrate(1)
+				setOpen(false)
+			}}>
 				<label className={styles.label}>
 					<UploadFileIcon />
 					<p>Upload files</p>
