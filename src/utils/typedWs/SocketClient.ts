@@ -1,6 +1,6 @@
 import { env } from "env/client.mjs"
 
-const ssr = typeof window === "undefined"
+const ssr = typeof window === "undefined" && typeof self === "undefined"
 
 export default class SocketClient<
 	Router extends Record<Route, (...args: any) => any>,
@@ -10,13 +10,30 @@ export default class SocketClient<
 	socket: WebSocket | null = null
 	target: EventTarget
 
+	#onOnline: () => void
+	#onOffline: () => void
+	#onMessage: <K extends Route>(event: MessageEvent<any>) => void
+
 	constructor() {
 		if (ssr) {
 			this.socket = {} as any
 			this.target = {} as any
+			this.#onOnline = () => {}
+			this.#onOffline = () => {}
+			this.#onMessage = () => {}
 			return
 		}
 		this.target = new EventTarget()
+
+		this.#onOnline = () => this.#initSocket()
+		this.#onOffline = () => this.socket?.close()
+		this.#onMessage = <K extends Route>(event: MessageEvent<any>) => {
+			const { type, payload } = JSON.parse(event.data) as {
+				type: K,
+				payload: ReturnType<Router[K]>
+			}
+			this.target.dispatchEvent(new CustomEvent(type, { detail: payload }))
+		}
 		
 		this.#initSocket()
 	}
@@ -31,14 +48,14 @@ export default class SocketClient<
 		}
 
 		if (!navigator.onLine) {
-			addEventListener('online', () => this.#initSocket(), {once: true})
+			addEventListener('online', this.#onOnline, {once: true})
 			return
 		}
 
 		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
-		socket.addEventListener("message", this.#onMessage.bind(this))
+		socket.addEventListener("message", this.#onMessage)
 
-		addEventListener('offline', () => this.socket?.close(), {once: true})
+		addEventListener('offline', this.#onOffline, {once: true})
 		socket.onopen = () => this.#backOff = 1
 		socket.onclose = () => {
 			this.#timeoutId = setTimeout(() => {
@@ -54,11 +71,16 @@ export default class SocketClient<
 		this.socket = socket
 	}
 
-	#onMessage<K extends Route>(event: MessageEvent<any>) {
-		const { type, payload } = JSON.parse(event.data) as {
-			type: K,
-			payload: ReturnType<Router[K]>
+	destroy() {
+		if (this.socket){
+			this.socket.removeEventListener("message", this.#onMessage)
+			this.socket.onclose = null
+			this.socket.close()
 		}
-		this.target.dispatchEvent(new CustomEvent(type, { detail: payload }))
+		if (this.#timeoutId) {
+			clearTimeout(this.#timeoutId)
+		}
+		removeEventListener('online', this.#onOnline)
+		removeEventListener('offline', this.#onOffline)
 	}
 }

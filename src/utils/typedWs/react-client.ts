@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react"
 import type { Router } from "./server"
 import SocketClient from "./SocketClient"
 
-const wsClient = new SocketClient<Router>()
+let wsClient: InstanceType<typeof SocketClient<Router>> | null = null
+let subscriptionsCount = 0
 
 type UseSubscription<K extends keyof Router> = (params: {
 	onData: (data: ReturnType<Router[K]>) => void
@@ -16,6 +17,8 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 		callbackRef.current = {onData, onError}
 		useEffect(() => {
 			if (enabled === false) return
+			subscriptionsCount++
+			if (!wsClient) wsClient = new SocketClient<Router>()
 			const controller = new AbortController()
 			wsClient.target.addEventListener(prop, (event) => {
 				if (!(event instanceof CustomEvent)) return
@@ -32,7 +35,14 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 				signal: controller.signal,
 				passive: true,
 			})
-			return () => controller.abort()
+			return () => {
+				controller.abort()
+				subscriptionsCount--
+				if (subscriptionsCount === 0 && wsClient) {
+					wsClient.destroy()
+					wsClient = null
+				}
+			}
 		}, [enabled])
 	}
 }

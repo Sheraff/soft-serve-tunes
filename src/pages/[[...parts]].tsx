@@ -13,7 +13,7 @@ import { AppState } from "components/AppContext"
 import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import { useAtom } from "jotai"
 import useIsOnline from "client/sw/useIsOnline"
-import { socketClient } from "utils/typedWs/client"
+import { socketClient } from "utils/typedWs/react-client"
 import { useQuery } from "@tanstack/react-query"
 import { loadingStatus } from "pages/api/cold-start"
 

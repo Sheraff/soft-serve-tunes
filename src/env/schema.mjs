@@ -50,6 +50,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER: z.string(),
   NEXT_PUBLIC_WEBSOCKET_URL: z.string(),
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
+  NEXT_PUBLIC_ENV: z.enum(["development", "test", "production"]),
 });
 
 /**
@@ -62,4 +63,5 @@ export const clientEnv = {
   NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER: process.env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER,
   NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
+  NEXT_PUBLIC_ENV: process.env.NODE_ENV,
 };
