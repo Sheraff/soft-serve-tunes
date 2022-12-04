@@ -52,11 +52,14 @@ export default function Cover() {
 					<button
 						key={artistData[i]!.id}
 						type="button"
-						onClick={() => setArtist({
-							id: artistData[i]!.id,
-							name: artistData[i]!.name,
-							open: true,
-						})}
+						onClick={() => {
+							navigator.vibrate(1)
+							setArtist({
+								id: artistData[i]!.id,
+								name: artistData[i]!.name,
+								open: true,
+							})
+						}}
 					>
 						{artistData[i]!.name}
 					</button>
@@ -68,11 +71,13 @@ export default function Cover() {
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})
 	const renamePlaylist = useRenamePlaylist()
 	onTitleEdit.current = (newName) => {
+		navigator.vibrate(1)
 		setEditing(false)
 		renamePlaylist(id!, newName.trim())
 	}
 	const onTitleEditStart = useRef<() => void>(() => {})
 	onTitleEditStart.current = () => {
+		navigator.vibrate(1)
 		setEditing(true)
 	}
 

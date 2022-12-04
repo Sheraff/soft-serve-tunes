@@ -151,6 +151,7 @@ function SaveButton({id, className}: {
 			onClick={() => {
 				if (freezeId !== null)
 					return
+				navigator.vibrate(1)
 				if (id) {
 					deletePlaylist()
 				} else {
