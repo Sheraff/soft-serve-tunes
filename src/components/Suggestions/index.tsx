@@ -106,6 +106,7 @@ function TracksByTraitSuggestion() {
 	const [open, setOpen] = useState(false)
 	const [{trait, order}, setPreferredTracks] = useAtom(preferredTrackList)
 	const onSelect = (option: Option) => {
+		navigator.vibrate(1)
 		setOpen(false)
 		setPreferredTracks({
 			trait: option.key,
@@ -121,12 +122,19 @@ function TracksByTraitSuggestion() {
 			<SectionTitle>{title}</SectionTitle>
 			<div className={styles.buttons}>
 				<button type="button" onClick={() => {
+					navigator.vibrate(1)
 					makePlaylist({type: "by-trait", order, trait}, title)
 					showHome("home")
 				}}><PlaylistIcon /></button>
-				<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+				<button type="button" onClick={() => {
+					navigator.vibrate(1)
+					setOpen(true)
+				}}><FilterIcon /></button>
 			</div>
-			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
+			<Dialog title="Choose your mood" open={open} onClose={() => {
+				navigator.vibrate(1)
+				setOpen(false)
+			}}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
 			<TrackList tracks={tracks} />
@@ -146,6 +154,7 @@ function AlbumsByTraitSuggestion() {
 	const [open, setOpen] = useState(false)
 	const [{trait, order}, setPreferredAlbums] = useAtom(preferredAlbumList)
 	const onSelect = (option: Option) => {
+		navigator.vibrate(1)
 		setOpen(false)
 		setPreferredAlbums({
 			trait: option.key,
@@ -157,9 +166,15 @@ function AlbumsByTraitSuggestion() {
 		<>
 			<SectionTitle>{moustache(FEATURES[trait][order].description, "albums")}</SectionTitle>
 			<div className={styles.buttons}>
-				<button type="button" onClick={() => setOpen(true)}><FilterIcon /></button>
+				<button type="button" onClick={() => {
+					navigator.vibrate(1)
+					setOpen(true)
+				}}><FilterIcon /></button>
 			</div>
-			<Dialog title="Choose your mood" open={open} onClose={() => setOpen(false)}>
+			<Dialog title="Choose your mood" open={open} onClose={() => {
+				navigator.vibrate(1)
+				setOpen(false)
+			}}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
 			<AlbumList albums={albums}  lines={1} scrollable loading={isLoading}/>
