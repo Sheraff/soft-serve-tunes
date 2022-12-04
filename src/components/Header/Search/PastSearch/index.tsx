@@ -110,6 +110,7 @@ export default function PastSearch({
 				}
 			)}
 			onClick={() => {
+				navigator.vibrate(1)
 				startTransition(() => {
 					if (trackNarrow(type, entity)) {
 						if (!entity) return console.warn('PastSearch could not add track to playlist as it was not able to fetch associated data')
