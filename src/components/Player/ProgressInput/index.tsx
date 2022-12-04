@@ -74,6 +74,14 @@ export default function ProgressInput({
 		const audioElement = audio.current
 
 
+		const vibrateOnInput = (prev: number, curr: number) => {
+			const prevChunk = Math.floor(prev / 30)
+			const newChunk = Math.floor(curr / 30)
+			if (prevChunk !== newChunk) {
+				navigator.vibrate(1)
+			}
+		}
+
 		const onInput = () => {
 			const value = Number(inputElement.value) / 100
 			paramsToAllowParentProgressAfterUserInput.current = {
@@ -83,6 +91,7 @@ export default function ProgressInput({
 			}
 			const currentTime = value * audioElement.duration
 			if (Number.isFinite(currentTime)) {
+				vibrateOnInput(audioElement.currentTime, currentTime)
 				audioElement.currentTime = currentTime
 			}
 			if (parentProgressRef.current < value) {
