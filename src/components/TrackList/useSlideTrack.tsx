@@ -43,6 +43,7 @@ export default function useSlideTrack(
 			const {signal} = controller
 			animController = controller
 			element.classList.add(styles['like-anim'] as string)
+			navigator.vibrate(1)
 
 			element.addEventListener('animationend', (e) => {
 				if (e.animationName !== styles['like-slide'] && e.animationName !== styles['dislike-slide']) return
@@ -93,6 +94,7 @@ export default function useSlideTrack(
 					triggerSecondaryAction = true
 					controller.abort()
 					switchController = null
+					navigator.vibrate(1)
 					end()
 					playlist()
 					callbacks.current.onAdd()
@@ -111,6 +113,7 @@ export default function useSlideTrack(
 			} else {
 				element.classList.add(styles['add-anim'] as string)
 			}
+			navigator.vibrate(1)
 
 			element.addEventListener('animationend', (e) => {
 				if (e.animationName !== styles['add-anim-body'] && e.animationName !== styles['remove-anim-body']) return

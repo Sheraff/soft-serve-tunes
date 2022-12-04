@@ -27,6 +27,7 @@ function PlaylistItem({
 			className={styles.item}
 			type="button"
 			onClick={() => {
+				navigator.vibrate(1)
 				startTransition(() => {
 					if (!data) return
 					onSelect?.(data)

@@ -55,6 +55,7 @@ function AlbumItem({
 			className={styles.button}
 			type="button"
 			onClick={(event) => {
+				navigator.vibrate(1)
 				data && onSelect?.(data)
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()

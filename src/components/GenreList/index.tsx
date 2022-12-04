@@ -29,6 +29,7 @@ function GenreItem({
 			type="button"
 			onClick={() => {
 				startTransition(() => {
+					navigator.vibrate(1)
 					genre && onSelect?.(genre)
 					makePlaylist({type: "genre", id: genre.id}, genre.name)
 					showHome("home")

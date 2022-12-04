@@ -100,6 +100,7 @@ export default function useDragTrack<T extends boolean>(
 						: Math.ceil(totalOffset / itemHeight - 0.5)
 					const clampedItemsOffset = Math.min(totalSiblings - itemIndex - 1, Math.max(-itemIndex, currentItemsOffset))
 					if (itemsOffset !== clampedItemsOffset) {
+						navigator.vibrate(1)
 						itemsOffset = clampedItemsOffset
 						iterateSiblings(item!, itemsOffset, (sibling, inRange) => {
 							sibling.classList.toggle(styles.slide as string, inRange)
@@ -149,6 +150,7 @@ export default function useDragTrack<T extends boolean>(
 				event.stopPropagation()
 				const touch = event.changedTouches.item(0)
 				const item = target.closest(`.${styles.item}`) as HTMLElement | null
+				navigator.vibrate(1)
 				start(touch, item)
 			}
 		}, {signal, capture: true})

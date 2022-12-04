@@ -119,6 +119,7 @@ function TrackItem({
 				})}
 				type="button"
 				onClick={() => {
+					navigator.vibrate(1)
 					data && onSelect?.(data)
 					if (onClick) {
 						onClick(track.id, track.name)
@@ -207,7 +208,10 @@ export default function TrackList({
 		onDrop: emptyFunction
 	})
 	callbacks.current.onDrop = (from, to) => {
-		onReorder?.(from, to)
+		if (onReorder) {
+			navigator.vibrate(1)
+			onReorder(from, to)
+		}
 	}
 	useDragTrack(ref, !!orderable, callbacks)
 	const addNextToPlaylist = useAddNextToPlaylist()
