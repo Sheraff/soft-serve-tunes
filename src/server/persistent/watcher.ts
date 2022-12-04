@@ -3,11 +3,11 @@ import { dirname, join, relative } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import createTrack from "server/db/createTrack"
-import { socketServer } from "server/persistent/ws"
 import chokidar from "chokidar"
 import { unlink } from "node:fs/promises"
 import log from "utils/logger"
 import retryable from "utils/retryable"
+import { socketServer } from "utils/typedWs/server"
 
 type MapValueType<A> = A extends Map<string, infer V> ? V : never;
 
@@ -272,7 +272,7 @@ class MyWatcher {
 				where: { id },
 			})
 		])
-		socketServer.send('watcher:remove', { track })
+		socketServer.emit("remove", { type: "track", id: track.id })
 		return track
 	}
 
@@ -293,7 +293,7 @@ class MyWatcher {
 		})
 		for (const album of orphanedAlbums) {
 			log("event", "event", "fswatcher", `remove album ${album.name} because it wasn't linked to any tracks anymore`)
-			socketServer.send('watcher:remove', { album })
+			socketServer.emit("remove", { type: "album", id: album.id })
 		}
 		const orphanedArtists = await prisma.artist.findMany({
 			where: {
@@ -312,7 +312,7 @@ class MyWatcher {
 		})
 		for (const artist of orphanedArtists) {
 			log("event", "event", "fswatcher", `remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
-			socketServer.send('watcher:remove', { artist })
+			socketServer.emit("remove", { type: "artist", id: artist.id })
 		}
 		const orphanedGenres = await prisma.genre.findMany({
 			where: {
@@ -334,7 +334,7 @@ class MyWatcher {
 		})
 		for (const genre of orphanedGenres) {
 			log("event", "event", "fswatcher", `remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
-			socketServer.send('watcher:remove', { genre })
+			socketServer.emit("remove", { type: "genre", id: genre.id })
 		}
 
 		const orphanedPlaylists = await prisma.playlist.findMany({
@@ -346,7 +346,7 @@ class MyWatcher {
 		})
 		for (const playlist of orphanedPlaylists) {
 			log("event", "event", "fswatcher", `remove playlist ${playlist.name} because it wasn't linked to any tracks anymore`)
-			socketServer.send('watcher:remove', { playlist })
+			socketServer.emit("remove", { type: "playlist", id: playlist.id })
 		}
 
 		const orphanedImages = await prisma.image.findMany({

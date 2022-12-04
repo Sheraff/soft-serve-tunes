@@ -46,13 +46,44 @@ function processBatch() {
 		} else {
 			console.warn('SW: failed trpc revalidation', response.status, response.statusText, url)
 		}
+	}).catch(() => {
+		items.forEach(item => addItemToBatch(item))
 	})
+}
+
+function isEquivalentItem<
+	ARouteKey extends AllRoutes,
+	BRouteKey extends AllRoutes,
+>(
+	a: {key: ARouteKey, params: RouterInputs[ARouteKey[0]][ARouteKey[1]]},
+	b: {key: BRouteKey, params: RouterInputs[BRouteKey[0]][BRouteKey[1]]}
+) {
+	if (a.key[0] !== b.key[0]) return false
+	if (a.key[1] !== b.key[1]) return false
+	if (a.params === b.params) return true
+	if (a.params === undefined || b.params === undefined) return false
+	const aKeys = Object.keys(a.params)
+	const bKeys = Object.keys(b.params)
+	if (aKeys.length !== bKeys.length) return false
+	for (let i = 0; i < aKeys.length; i++) {
+		const key = aKeys[i]!
+		if (a.params[key] !== b.params[key]) return false
+	}
+	return true
+}
+
+function addItemToBatch<
+	TRouteKey extends AllRoutes
+>(item: {key: TRouteKey, params: RouterInputs[TRouteKey[0]][TRouteKey[1]]}) {
+	if (!batch.items.some(i => isEquivalentItem(i, item))) {
+		batch.items.push(item)
+	}
 }
 
 export default function trpcRevalidation<
 	TRouteKey extends AllRoutes
 >(item: {key: TRouteKey, params: RouterInputs[TRouteKey[0]][TRouteKey[1]]}) {
-	batch.items.push(item)
+	addItemToBatch(item)
 	if (!batch.timeoutId) {
 		batch.timeoutId = setTimeout(processBatch, 10)
 	}

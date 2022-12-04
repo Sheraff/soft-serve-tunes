@@ -6,9 +6,9 @@ import { fetchAndWriteImage } from "utils/writeImage"
 import sanitizeString, { cleanGenreList } from "utils/sanitizeString"
 import pathToSearch from "utils/pathToSearch"
 import log from "utils/logger"
-import { socketServer } from "server/persistent/ws"
 import retryable from "utils/retryable"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
+import { socketServer } from "utils/typedWs/server"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -834,7 +834,7 @@ class Spotify {
 				})
 				const artistChangedCover = await computeArtistCover(result.id, {album: true, tracks: true})
 				if (!artistChangedCover) {
-					socketServer.send("invalidate:artist", {id: result.id})
+					socketServer.emit("invalidate", {type: "artist", id: result.id})
 				}
 				changedTrack = true
 			}
@@ -884,7 +884,7 @@ class Spotify {
 				})
 				const albumChangedCover = await computeAlbumCover(result.id, {artist: true, tracks: true})
 				if (!albumChangedCover) {
-					socketServer.send("invalidate:album", {id: result.id})
+					socketServer.emit("invalidate", {type: "album", id: result.id})
 				}
 				changedTrack = true
 			}
@@ -892,7 +892,7 @@ class Spotify {
 			if (changedTrack) {
 				const trackChangedCover = await computeTrackCover(trackDbId, {album: true, artist: true})
 				if (!trackChangedCover) {
-					socketServer.send("invalidate:track", {id: trackDbId})
+					socketServer.emit("invalidate", {type: "track", id: trackDbId})
 				}
 				log("ready", "200", "spotify", `did all of the things for track ${track.name}`)
 			}

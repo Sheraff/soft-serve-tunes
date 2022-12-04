@@ -10,11 +10,11 @@ import { env } from "env/server.mjs"
 import { fileWatcher } from "server/persistent/watcher"
 import { spotify } from "server/persistent/spotify"
 import pathToSearch from "utils/pathToSearch"
-import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { isVariousArtists, notArtistName } from "server/db/createTrack"
 import { prisma } from "server/db/client"
 import { acoustId } from "server/persistent/acoustId"
+import { socketServer } from "utils/typedWs/server"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const session = await getServerSession(req, res, nextAuthOptions);
@@ -43,7 +43,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	const indexes = (Array.isArray(fields['index']) ? fields['index'] : [fields['index']]).map(Number)
 	const of = (Array.isArray(fields['of']) ? fields['of'] : [fields['of']]).map(Number)
 	const wakeUpSignal = Array.isArray(fields['wakeup']) ? fields['wakeup'][0] : fields['wakeup']
-	socketServer.send('upload:progress', getProgress(0, indexes, of))
+	socketServer.emit('upload', getProgress(0, indexes, of))
 
 	// make sure watcher is awake
 	if (wakeUpSignal) {
@@ -51,7 +51,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	}
 
 	for (let i = 0; i < uploads.length; i++) {
-		socketServer.send('upload:progress', getProgress(i, indexes, of))
+		socketServer.emit('upload', getProgress(i, indexes, of))
 		const upload = uploads[i]
 		const name = names[i]
 		if (!upload || !name) {
@@ -150,7 +150,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		}
 	}
 	if (indexes.at(-1) === of.at(-1)) {
-		socketServer.send('upload:progress', 1)
+		socketServer.emit('upload', 1)
 	}
 	return res.status(201).end()
 }

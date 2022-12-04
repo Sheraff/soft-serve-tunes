@@ -1,6 +1,6 @@
 import { prisma } from "server/db/client"
-import { socketServer } from "server/persistent/ws"
 import retryable from "utils/retryable"
+import { socketServer } from "utils/typedWs/server"
 
 export async function computeAlbumCover(id: string, propagate: {artist?: boolean, tracks?: boolean}) {
   const album = await retryable(() => prisma.album.findUnique({
@@ -31,7 +31,7 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
   }
 
   if (changed) {
-    socketServer.send("invalidate:album", { id })
+    socketServer.emit("invalidate", { type: "album", id })
   }
 
   return changed
@@ -112,7 +112,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
   }
 
   if (changed) {
-    socketServer.send("invalidate:track", { id })
+    socketServer.emit("invalidate", { type: "track", id })
   }
 
   return changed
@@ -184,7 +184,7 @@ export async function computeArtistCover(id: string, propagate: {album?: boolean
   }
 
   if (changed) {
-    socketServer.send("invalidate:artist", { id })
+    socketServer.emit("invalidate", { type: "artist", id })
   }
 
   return changed

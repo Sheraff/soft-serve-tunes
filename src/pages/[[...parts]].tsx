@@ -8,14 +8,14 @@ import { Suspense, useEffect, useState } from "react"
 import AudioTest from "components/AudioTest"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
 import WatcherSocket from "components/WatcherSocket"
-import { env } from "env/client.mjs"
-import { trpc } from "utils/trpc"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
-import { loadingStatus } from "server/trpc/router/list"
 import asyncPersistedAtom from "client/db/asyncPersistedAtom"
 import { useAtom } from "jotai"
 import useIsOnline from "client/sw/useIsOnline"
+import { socketClient } from "utils/typedWs/client"
+import { useQuery } from "@tanstack/react-query"
+import { loadingStatus } from "pages/api/cold-start"
 
 const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
 
@@ -30,45 +30,27 @@ const Home: NextPage<{
 }) => {
 	const setProgress = useProgressBar()
 	const [ready, setReady] = useState(!shouldAwaitServer)
-	const { mutate } = trpc.list.populate.useMutation()
 
-	useEffect(() => {
-		if (ready) return
-		const controller = new AbortController()
-		let socket: WebSocket | null = null
-		mutate(undefined, {
-			onSuccess(shouldSubscribe) {
-				if (!shouldSubscribe) {
-					setProgress(1)
-					setReady(true)
-					return
-				}
-				socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
-				socket.onopen = () => {
-					socket?.send(JSON.stringify({ type: 'populate:subscribe' }))
-				}
-				socket.addEventListener("message", (e) => {
-					const data = JSON.parse(e.data)
-					if (data.type === "populate:done") {
-						console.log("populating library: DONE")
-						setProgress(1)
-						setReady(true)
-						socket?.close()
-					} else if (data.type === "populate:progress") {
-						console.log(`populating library: ${data.payload}%`)
-						setProgress(data.payload)
-					}
-				}, { signal: controller.signal })
-			},
-			onError() {
+	const {data: coldStartLoading} = useQuery(["cold-start"], {
+		queryFn: () => fetch("/api/cold-start", {headers: {Cache: "no-store"}})
+			.then((res) => res.json())
+			.then((json) => !json.done)
+			.catch(() => false),
+	})
+	socketClient.loading.useSubscription({
+		onData(progress) {
+			setProgress(progress)
+			if (progress === 1) {
 				setReady(true)
 			}
-		})
-		return () => {
-			controller.abort()
-			socket?.close()
-		}
-	}, [mutate, setProgress, ready])
+		},
+		onError(error) {
+			console.error(error)
+			setProgress(1)
+			setReady(true)
+		},
+		enabled: coldStartLoading !== false
+	})
 
 	const { data: session } = useSession()
 
@@ -93,7 +75,7 @@ const Home: NextPage<{
 			</Head>
 			<ProgressBarSingleton />
 			<AppState>
-				{ready && loggedIn && (
+				{(ready || coldStartLoading === false) && loggedIn && (
 					<>
 						<Suspense>
 							<AudioTest />

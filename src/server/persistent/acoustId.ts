@@ -7,9 +7,9 @@ import { IAudioMetadata } from "music-metadata"
 import similarStrings from "utils/similarStrings"
 import log from "utils/logger"
 import { notArtistName } from "server/db/createTrack"
-import { socketServer } from "server/persistent/ws"
 import MusicBrainz from "server/persistent/musicBrainz"
 import { simplifiedName } from "utils/sanitizeString"
+import { socketServer } from "utils/typedWs/server"
 
 /*
  * VOCABULARY:
@@ -424,7 +424,7 @@ class AcoustId {
 
 			return 0
 		})
-		socketServer.send("global:message", {message: albums})
+		socketServer.emit("console", {message: albums})
 		return albums
 	}
 

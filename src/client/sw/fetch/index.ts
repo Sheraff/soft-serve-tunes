@@ -8,9 +8,13 @@ import trpcPost from "./trpcPost"
 export default function onFetch(event: FetchEvent) {
 	const request = event.request
 
+	if (request.headers.get('cache') === 'no-store') {
+		return
+	}
+
 	if (request.method === "GET") {
 		const url = new URL(request.url)
-		if (request.headers.get('Accept')?.includes('image') && url.pathname !== '/') { // ignore requests for images
+		if (url.pathname.startsWith('/api/cover') || (request.headers.get('Accept')?.includes('image') && url.pathname !== '/')) { // ignore requests for images
 			return
 		} else if (url.pathname.startsWith('/api/auth')) { // ignore requests related to auth
 			return

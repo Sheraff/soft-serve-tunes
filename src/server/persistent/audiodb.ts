@@ -1,4 +1,3 @@
-import { socketServer } from "server/persistent/ws"
 import { env } from "env/server.mjs"
 import { z } from "zod"
 import { fetchAndWriteImage } from "utils/writeImage"
@@ -7,6 +6,7 @@ import sanitizeString, { cleanGenreList } from "utils/sanitizeString"
 import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
+import { socketServer } from "utils/typedWs/server"
 
 const audiodbArtistSchema = z.object({artists:
 	z.array(z.object({
@@ -195,7 +195,7 @@ class AudioDb {
 				},
 			})
 		)
-		socketServer.send("invalidate:artist", {id: id})
+		socketServer.emit("invalidate", {type: "artist", id})
 		log("ready", "200", "audiodb", `fetched artist ${audiodbArtist.strArtist}`)
 	}
 
@@ -290,7 +290,7 @@ class AudioDb {
 				}
 			})
 		)
-		socketServer.send("invalidate:album", {id})
+		socketServer.emit("invalidate", {type: "album", id})
 		log("ready", "200", "audiodb", `fetched album ${audiodbAlbum.strAlbum}`)
 	}
 
@@ -430,7 +430,7 @@ class AudioDb {
 				thumbId: imageIds.strTrackThumb,
 			},
 		}))
-		socketServer.send("invalidate:track", {id})
+		socketServer.emit("invalidate", {type: "track", id})
 		log("ready", "200", "audiodb", `fetched track ${data.strTrack}`)
 	}
 }

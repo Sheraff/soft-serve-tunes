@@ -1,92 +1,8 @@
 import { useEffect } from "react"
-import { env } from "env/client.mjs"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import { trpc } from "utils/trpc"
 import { useQueryClient } from "@tanstack/react-query"
-
-function onWsMessageData(data: any) {
-	if (data.type === "watcher:add") {
-		console.log("added track", data.payload)
-		revalidateSwCache(["track", "searchable"])
-		revalidateSwCache(["artist", "searchable"])
-		revalidateSwCache(["album", "searchable"])
-		revalidateSwCache(["genre", "list"])
-		if (data.payload?.artistId) {
-			revalidateSwCache(["artist", "miniature"], {id: data.payload.artistId})
-			revalidateSwCache(["artist", "get"], {id: data.payload.artistId})
-			revalidateSwCache(["playlist", "generate"], { type: 'artist', id: data.payload.artistId })
-		}
-		if (data.payload?.albumId) {
-			revalidateSwCache(["album", "miniature"], {id: data.payload.albumId})
-			revalidateSwCache(["album", "get"], {id: data.payload.albumId})
-			revalidateSwCache(["playlist", "generate"], { type: 'album', id: data.payload.albumId })
-			revalidateSwCache(["album", "mostRecentAdd"])
-		}
-	} else if (data.type === "watcher:add-playlist") {
-		console.log("added playlist")
-		revalidateSwCache(["playlist", "list"])
-		revalidateSwCache(["playlist", "searchable"])
-	} else if (data.type === "watcher:remove-playlist") {
-		console.log("removed playlist")
-		revalidateSwCache(["playlist", "list"])
-		revalidateSwCache(["playlist", "searchable"])
-		revalidateSwCache(["playlist", "get"], { id: data.payload.id })
-	} else if (data.type === "watcher:remove") {
-		console.log("removed", data.payload)
-		if (data.payload?.track) {
-			revalidateSwCache(["track", "searchable"])
-			revalidateSwCache(["track", "miniature"], {id: data.payload.track.id})
-			revalidateSwCache(["playlist", "generate"], { type: 'track', id: data.payload.track.id })
-		}
-		if (data.payload?.artist) {
-			revalidateSwCache(["artist", "searchable"])
-			revalidateSwCache(["artist", "miniature"], {id: data.payload.artist.id})
-			revalidateSwCache(["artist", "get"], {id: data.payload.artist.id})
-			revalidateSwCache(["playlist", "generate"], { type: 'artist', id: data.payload.artist.id })
-		}
-		if (data.payload?.album) {
-			revalidateSwCache(["album", "searchable"])
-			revalidateSwCache(["album", "miniature"], {id: data.payload.album.id})
-			revalidateSwCache(["album", "get"], {id: data.payload.album.id})
-			revalidateSwCache(["playlist", "generate"], { type: 'album', id: data.payload.album.id })
-		}
-		if (data.payload?.genre) {
-			revalidateSwCache(["genre", "list"])
-			revalidateSwCache(["genre", "miniature"], {id: data.payload.genre.id})
-			revalidateSwCache(["genre", "get"], {id: data.payload.genre.id})
-			revalidateSwCache(["playlist", "generate"], { type: 'genre', id: data.payload.genre.id })
-		}
-	} else if (data.type === "invalidate:track") {
-		console.log("invalidate track", data.payload)
-		revalidateSwCache(["track", "miniature"], {id: data.payload.id})
-	} else if (data.type === "invalidate:album") {
-		console.log("invalidate album", data.payload)
-		revalidateSwCache(["album", "miniature"], {id: data.payload.id})
-		revalidateSwCache(["album", "get"], {id: data.payload.id})
-	} else if (data.type === "invalidate:artist") {
-		console.log("invalidate artist", data.payload)
-		revalidateSwCache(["artist", "miniature"], {id: data.payload.id})
-		revalidateSwCache(["artist", "get"], {id: data.payload.id})
-	} else if (data.type === "invalidate:playlist") {
-		console.log("invalidate playlist", data.payload)
-		revalidateSwCache(["playlist", "get"], {id: data.payload.id})
-		revalidateSwCache(["playlist", "list"])
-		revalidateSwCache(["playlist", "searchable"])
-	} else if (data.type === "invalidate:listen-count") {
-		console.log("invalidate listen counts")
-		revalidateSwCache(["artist", "mostRecentListen"])
-		revalidateSwCache(["artist", "leastRecentListen"])
-		revalidateSwCache(["album", "mostRecentListen"])
-	} else if (data.type === "invalidate:likes") {
-		console.log("invalidate like counts")
-		revalidateSwCache(["artist", "mostFav"])
-		revalidateSwCache(["album", "mostFav"])
-		revalidateSwCache(["genre", "mostFav"])
-	} else if (data.type === "global:message") {
-		// @ts-expect-error -- web socket messages aren't typed
-		console[data.payload?.level || 'log'](data.payload.message)
-	}
-}
+import { socketClient } from "utils/typedWs/client"
 
 export default function WatcherSocket() {
 	const trpcClient = trpc.useContext()
@@ -106,46 +22,100 @@ export default function WatcherSocket() {
 		revalidateSwCache(["genre", "mostFav"])
 	}, [])
 
-	useEffect(() => {
-		let socket: WebSocket
-		let backOff = 1
-		let timeoutId: ReturnType<typeof setTimeout> | null = null
-		const onOnline = () => startConnection()
-		const onOffline = () => socket?.close()
-		const startConnection = () => {
-			if (!navigator.onLine) {
-				addEventListener('online', onOnline, {once: true})
+	socketClient.add.useSubscription({
+		onData({type, id}) {
+			console.log(`added ${type} ${id}`)
+			if (type === "playlist") {
+				revalidateSwCache(["playlist", "list"])
+				revalidateSwCache(["playlist", "searchable"])
 				return
 			}
-			addEventListener('offline', onOffline, {once: true})
-			socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
-			socket.onopen = () => {
-				backOff = 1
-			}
-			socket.onmessage = (e) => {
-				const data = JSON.parse(e.data)
-				onWsMessageData(data)
-			}
-			socket.onclose = () => {
-				timeoutId = setTimeout(() => {
-					startConnection()
-				}, backOff * 1_000)
-				backOff *= 2
+			revalidateSwCache(["track", "searchable"])
+			revalidateSwCache(["artist", "searchable"])
+			revalidateSwCache(["album", "searchable"])
+			revalidateSwCache(["genre", "list"])
+			if (type === "artist") {
+				revalidateSwCache(["artist", "miniature"], {id})
+				revalidateSwCache(["artist", "get"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'artist', id })
+			} else if (type === "album") {
+				revalidateSwCache(["album", "miniature"], {id})
+				revalidateSwCache(["album", "get"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'album', id })
+				revalidateSwCache(["album", "mostRecentAdd"])
 			}
 		}
-		startConnection()
-		return () => {
-			if (socket) {
-				socket.onclose = null
-				socket.close()
+	})
+
+	socketClient.remove.useSubscription({
+		onData({type, id}) {
+			console.log(`removed ${type} ${id}`)
+			if (type === "playlist") {
+				revalidateSwCache(["playlist", "list"])
+				revalidateSwCache(["playlist", "searchable"])
+				revalidateSwCache(["playlist", "get"], { id })
+			} else if (type === "track") {
+				revalidateSwCache(["track", "searchable"])
+				revalidateSwCache(["track", "miniature"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'track', id })
+			} else if (type === "artist") {
+				revalidateSwCache(["artist", "searchable"])
+				revalidateSwCache(["artist", "miniature"], {id})
+				revalidateSwCache(["artist", "get"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'artist', id })
+			} else if (type === "album") {
+				revalidateSwCache(["album", "searchable"])
+				revalidateSwCache(["album", "miniature"], {id})
+				revalidateSwCache(["album", "get"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'album', id })
+			} else if (type === "genre") {
+				revalidateSwCache(["genre", "list"])
+				revalidateSwCache(["genre", "miniature"], {id})
+				revalidateSwCache(["genre", "get"], {id})
+				revalidateSwCache(["playlist", "generate"], { type: 'genre', id })
 			}
-			if (timeoutId) {
-				clearTimeout(timeoutId)
-			}
-			removeEventListener('online', onOnline)
-			removeEventListener('offline', onOffline)
 		}
-	}, [])
+	})
+
+	socketClient.invalidate.useSubscription({
+		onData({type, id}) {
+			console.log(`invalidated ${type} ${id}`)
+			if (type === "track") {
+				revalidateSwCache(["track", "miniature"], {id})
+			} else if (type === "album") {
+				revalidateSwCache(["album", "miniature"], {id})
+				revalidateSwCache(["album", "get"], {id})
+			} else if (type === "artist") {
+				revalidateSwCache(["artist", "miniature"], {id})
+				revalidateSwCache(["artist", "get"], {id})
+			} else if (type === "playlist") {
+				revalidateSwCache(["playlist", "get"], {id})
+				revalidateSwCache(["playlist", "list"])
+				revalidateSwCache(["playlist", "searchable"])
+			}
+		}
+	})
+
+	socketClient.metrics.useSubscription({
+		onData({type}) {
+			console.log(`metrics ${type}`)
+			if (type === "listen-count") {
+				revalidateSwCache(["artist", "mostRecentListen"])
+				revalidateSwCache(["artist", "leastRecentListen"])
+				revalidateSwCache(["album", "mostRecentListen"])
+			} else if (type === "likes") {
+				revalidateSwCache(["artist", "mostFav"])
+				revalidateSwCache(["album", "mostFav"])
+				revalidateSwCache(["genre", "mostFav"])
+			}
+		}
+	})
+
+	socketClient.console.useSubscription({
+		onData({type, message}) {
+			console[type](message)
+		}
+	})
 
 	useEffect(() => {
 		const controller = new AbortController()

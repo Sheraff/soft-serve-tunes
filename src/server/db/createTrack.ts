@@ -13,7 +13,7 @@ import { cleanGenreList, simplifiedName } from "utils/sanitizeString"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeTrackCover } from "./computeCover"
-import { socketServer } from "server/persistent/ws"
+import { socketServer } from "utils/typedWs/server"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -336,11 +336,10 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
 		await computeTrackCover(track.id, {album: true, artist: true})
-		socketServer.send('watcher:add', {
-			id: track.id,
-			albumId: track.albumId || linkedAlbum?.albumId,
-			artistId: track.artistId,
-		})
+		socketServer.emit("add", {type: "track", id: track.id})
+		if (track.artistId) socketServer.emit("add", {type: "artist", id: track.artistId})
+		const albumId = track.albumId ?? linkedAlbum?.albumId
+		if (albumId) socketServer.emit("add", {type: "album", id: albumId})
 		await tryAgainLater()
 		return track
 	} catch (e) {

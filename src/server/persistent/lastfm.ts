@@ -4,13 +4,13 @@ import Queue from "utils/Queue"
 import { prisma } from "server/db/client"
 import { fetchAndWriteImage } from "utils/writeImage"
 import sanitizeString from "utils/sanitizeString"
-import { socketServer } from "server/persistent/ws"
 import lastfmImageToUrl from "utils/lastfmImageToUrl"
 import log from "utils/logger"
 import retryable from "utils/retryable"
 import { notArtistName } from "server/db/createTrack"
 import similarStrings from "utils/similarStrings"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
+import { socketServer } from "utils/typedWs/server"
 
 const lastFmErrorSchema = z
 	.object({
@@ -459,7 +459,7 @@ class LastFM {
 		}
 		const trackChangedCover = await computeTrackCover(id, {album: true, artist: true})
 		if (!trackChangedCover) {
-			socketServer.send("invalidate:track", { id })
+			socketServer.emit("invalidate", { type: "track", id })
 		}
 		log("ready", "200", "lastfm", `fetched track ${track.name}`)
 		this.#running.delete(id)
@@ -610,19 +610,19 @@ class LastFM {
 		})
 		const artistChangedCover = await computeArtistCover(id, {tracks: false, album: false})
 		if (!artistChangedCover) {
-			socketServer.send("invalidate:artist", { id })
+			socketServer.emit("invalidate", { type: "artist", id })
 		}
 		Promise.resolve().then(async () => {
 			for (const album of connectingAlbums) {
 				const albumChangedCover = await computeAlbumCover(album.id, {artist: true, tracks: true})
 				if (!albumChangedCover) {
-					socketServer.send("invalidate:album", { id: album.id })
+					socketServer.emit("invalidate", { type: "album", id: album.id })
 				}
 			}
 			for (const track of connectingTracks) {
 				const trackChangedCover = await computeTrackCover(track.id, {album: true, artist: true})
 				if (!trackChangedCover) {
-					socketServer.send("invalidate:track", { id: track.id })
+					socketServer.emit("invalidate", { type: "track", id: track.id })
 				}
 			}
 		})
@@ -792,19 +792,19 @@ class LastFM {
 		})
 		const albumChangedCover = await computeAlbumCover(id, {tracks: false, artist: true})
 		if (!albumChangedCover) {
-			socketServer.send("invalidate:album", { id })
+			socketServer.emit("invalidate", { type: "album", id })
 		}
 		if (connectingArtist) {
 			const artistChangedCover = await computeArtistCover(connectingArtist, {tracks: false, album: false})
 			if (!artistChangedCover) {
-				socketServer.send("invalidate:artist", { id: connectingArtist })
+				socketServer.emit("invalidate", { type: "artist", id: connectingArtist })
 			}
 		}
 		Promise.resolve().then(async () => {
 			for (const track of connectingTracks) {
 				const trackChangedCover = await computeTrackCover(track, {album: true, artist: true})
 				if (!trackChangedCover) {
-					socketServer.send("invalidate:track", { id: track })
+					socketServer.emit("invalidate", { type: "track", id: track })
 				}
 			}
 		})

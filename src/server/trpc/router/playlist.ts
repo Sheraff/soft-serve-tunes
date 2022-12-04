@@ -2,7 +2,6 @@ import { router, publicProcedure, protectedProcedure } from "server/trpc/trpc"
 import { z } from "zod"
 import { zTrackTraits } from "./track"
 import { TRPCError } from "@trpc/server"
-import { socketServer } from "server/persistent/ws"
 import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
 import { prisma } from "server/db/client"
@@ -11,6 +10,7 @@ import generateUniqueName from "utils/generateUniqueName"
 import { recursiveSubGenres } from "./genre"
 import log from "utils/logger"
 import { type Prisma } from "@prisma/client"
+import { socketServer } from "utils/typedWs/server"
 
 const trackSelect = {
   id: true,
@@ -201,7 +201,7 @@ const save = protectedProcedure.input(z.object({
     },
     select: {id: true},
   })
-  socketServer.send("watcher:add-playlist")
+  socketServer.emit("add", {type: "playlist", id: playlist.id})
   return getResolve(playlist.id)
 })
 
@@ -376,7 +376,7 @@ const modify = protectedProcedure.input(z.union([
     }))
     log("info", "200", "trpc", `playlist renamed "${name}"`)
   }
-  socketServer.send('invalidate:playlist', { id: input.id })
+  socketServer.emit("invalidate", { type: "playlist", id: input.id })
 })
 
 const deleteEndpoint = protectedProcedure.input(z.object({
@@ -395,7 +395,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
         select: { id: true },
       }),
     ])
-    socketServer.send('watcher:remove-playlist', { playlist })
+    socketServer.emit("remove", { type: "playlist", id: playlist.id })
     return playlist
   } catch (e) {
     console.warn(e)
@@ -422,7 +422,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
     if (!tracks) {
       const reason = "Couldn't recover, the playlist itself doesn't seem to exist anymore and we can't find the playlistEntries anymore"
       console.log(reason)
-      socketServer.send('watcher:remove-playlist', { playlist: { id: input.id } })
+      socketServer.emit("remove", { type: "playlist", id: input.id })
       throw new TRPCError({
         message: reason,
         code: "INTERNAL_SERVER_ERROR",
@@ -447,7 +447,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
       })
     } catch {}
     const playlist = { id: input.id }
-    socketServer.send('watcher:remove-playlist', { playlist })
+    socketServer.emit("remove", { type: "playlist", id: playlist.id })
     return playlist
   }
 })

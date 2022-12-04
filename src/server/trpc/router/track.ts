@@ -3,10 +3,10 @@ import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { spotify } from "server/persistent/spotify"
 import { audioDb } from "server/persistent/audiodb"
-import { socketServer } from "server/persistent/ws"
 import log from "utils/logger"
 import { TRPCError } from "@trpc/server"
 import retryable from "utils/retryable"
+import { socketServer } from "utils/typedWs/server"
 
 export const zTrackTraits = z.union([
   z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
@@ -113,13 +113,13 @@ const playcount = protectedProcedure.input(z.object({
   ])
 
   log("info", "200", "trpc", `playcount +1 track "${track.name}"`)
-  socketServer.send("invalidate:track", {id: input.id})
+  socketServer.emit("invalidate", {type: "track", id: input.id})
   if (track.albumId)
-    socketServer.send("invalidate:album", {id: track.albumId})
+    socketServer.emit("invalidate", {type: "album", id: track.albumId})
   if (track.artistId)
-    socketServer.send("invalidate:artist", {id: track.artistId})
+    socketServer.emit("invalidate", {type: "artist", id: track.artistId})
   if (track.albumId || track.artistId)
-    socketServer.send("invalidate:listen-count")
+    socketServer.emit("metrics", {type: "listen-count"})
 })
 
 const like = protectedProcedure.input(z.object({
@@ -170,12 +170,12 @@ const like = protectedProcedure.input(z.object({
   ])
 
   log("info", "200", "trpc", `like ${input.toggle} track "${track.name}"`)
-  socketServer.send("invalidate:track", {id: input.id})
+  socketServer.emit("invalidate", {type: "track", id: input.id})
   if (albumId)
-    socketServer.send("invalidate:album", {id: albumId})
+    socketServer.emit("invalidate", {type: "album", id: albumId})
   if (artistId)
-    socketServer.send("invalidate:artist", {id: artistId})
-  socketServer.send("invalidate:likes")
+    socketServer.emit("invalidate", {type: "artist", id: artistId})
+  socketServer.emit("metrics", {type: "likes"})
 
   return track
 })
