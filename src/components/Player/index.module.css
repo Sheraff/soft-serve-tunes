@@ -10,7 +10,8 @@
 		max(10px, env(safe-area-inset-right))
 		max(14px, env(safe-area-inset-bottom))
 		max(10px, env(safe-area-inset-left));
-	box-shadow: 0 0 8px var(--palette-bg-gradient);
+	/* box-shadow: 0 0 8px var(--palette-bg-gradient); */
+	border-top: 1px solid var(--palette-bg-gradient);
 
 	display: grid;
 	grid-template-areas:
