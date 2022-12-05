@@ -19,6 +19,47 @@ import { loadingStatus } from "pages/api/cold-start"
 
 const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
 
+function AuthCore({
+	providers,
+	ssrLoggedIn,
+	ready,
+}: {
+	providers: Awaited<ReturnType<typeof getProviders>>
+	ssrLoggedIn: boolean
+	ready: boolean
+}) {
+	const { data: session } = useSession()
+
+	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
+	const [offlineLoggedInState, setOfflineLoggedIn] = useAtom(allowOfflineLogin)
+	const isOnline = useIsOnline()
+	useEffect(() => {
+		if (isOnline) {
+			setOfflineLoggedIn(onlineLoggedInState)
+		}
+	}, [onlineLoggedInState, isOnline, setOfflineLoggedIn])
+
+	const loggedIn = isOnline ? onlineLoggedInState : offlineLoggedInState
+
+	return (
+		<>
+			<AppState>
+				{ready && loggedIn && (
+					<>
+						<Suspense>
+							<AudioTest />
+						</Suspense>
+						<WatcherSocket />
+					</>
+				)}
+			</AppState>
+			{!loggedIn && isOnline && (
+				<SignIn providers={providers!} />
+			)}
+		</>
+	)
+}
+
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
 	ssrLoggedIn: boolean
@@ -52,19 +93,6 @@ const Home: NextPage<{
 		enabled: coldStartLoading !== false
 	})
 
-	const { data: session } = useSession()
-
-	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
-	const [offlineLoggedInState, setOfflineLoggedIn] = useAtom(allowOfflineLogin)
-	const isOnline = useIsOnline()
-	useEffect(() => {
-		if (isOnline) {
-			setOfflineLoggedIn(onlineLoggedInState)
-		}
-	}, [onlineLoggedInState, isOnline, setOfflineLoggedIn])
-
-	const loggedIn = isOnline ? onlineLoggedInState : offlineLoggedInState
-
 	return (
 		<>
 			<Head>
@@ -74,19 +102,13 @@ const Home: NextPage<{
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<ProgressBarSingleton />
-			<AppState>
-				{(ready || coldStartLoading === false) && loggedIn && (
-					<>
-						<Suspense>
-							<AudioTest />
-						</Suspense>
-						<WatcherSocket />
-					</>
-				)}
-			</AppState>
-			{!loggedIn && isOnline && (
-				<SignIn providers={providers!} />
-			)}
+			<Suspense>
+				<AuthCore
+					providers={providers}
+					ssrLoggedIn={ssrLoggedIn}
+					ready={ready || coldStartLoading === false}
+				/>
+			</Suspense>
 			<div id="modal" />
 		</>
 	)

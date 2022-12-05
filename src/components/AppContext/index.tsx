@@ -166,8 +166,8 @@ function Back() {
 export function AppState({children}: {children: React.ReactNode}) {
 	return (
 		<Provider>
+			{children}
 			<Suspense>
-				{children}
 				<Back />
 			</Suspense>
 		</Provider>

@@ -53,6 +53,43 @@ function RightTimeSlot({
 	)
 }
 
+function ShuffleButton() {
+	const isShuffle = useAtomValue(shuffle)
+
+	const _shufflePlaylist = useShufflePlaylist()
+	const shufflePlaylist = useCallback(() => {
+		_shufflePlaylist()
+		navigator.vibrate(1)
+	}, [_shufflePlaylist])
+
+	return (
+		<button
+			className={isShuffle ? styles.enabled : undefined}
+			onClick={shufflePlaylist}
+		>
+			<ShuffleIcon />
+		</button>
+	)
+}
+
+function RepeatButton() {
+	const [repeatType, setRepeatType] = useAtom(repeat)
+
+	const cycleRepeatTypes = useCallback(() => {
+		navigator.vibrate(1)
+		setRepeatType(repeatType => (repeatType + 1) % 3 as 0 | 1 | 2)
+	}, [setRepeatType])
+	
+	return (
+		<button
+			className={repeatType ? styles.enabled : undefined}
+			onClick={cycleRepeatTypes}
+		>
+			{repeatType === 2 ? <RepeatOneIcon /> : <RepeatIcon />}
+		</button>
+	)
+}
+
 export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 	const {data: playlist} = usePlaylist()
@@ -122,19 +159,6 @@ export default memo(function Player() {
 
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
-	const isShuffle = useAtomValue(shuffle)
-	const _shufflePlaylist = useShufflePlaylist()
-	const shufflePlaylist = useCallback(() => {
-		_shufflePlaylist()
-		navigator.vibrate(1)
-	}, [_shufflePlaylist])
-
-	const [repeatType, setRepeatType] = useAtom(repeat)
-	const cycleRepeatTypes = useCallback(() => {
-		navigator.vibrate(1)
-		setRepeatType(repeatType => (repeatType + 1) % 3 as 0 | 1 | 2)
-	}, [setRepeatType])
-
 	return (
 		<div className={styles.main}>
 			<ProgressInput
@@ -154,12 +178,7 @@ export default memo(function Player() {
 			<SlidingText className={styles.info} item={item} />
 			<div className={styles.ui}>
 				<Suspense fallback={<button><ShuffleIcon /></button>}>
-					<button
-						className={isShuffle ? styles.enabled : undefined}
-						onClick={shufflePlaylist}
-					>
-						<ShuffleIcon />
-					</button>
+					<ShuffleButton />
 				</Suspense>
 				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
@@ -172,18 +191,15 @@ export default memo(function Player() {
 				</>
 				<button onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
 				<Suspense fallback={<button><RepeatIcon /></button>}>
-					<button
-						className={repeatType ? styles.enabled : undefined}
-						onClick={cycleRepeatTypes}
-					>
-						{repeatType === 2 ? <RepeatOneIcon /> : <RepeatIcon />}
-					</button>
+					<RepeatButton />
 				</Suspense>
 			</div>
 			<Audio ref={audio}/>
 			<GlobalPalette />
 			<Notification audio={audio} />
-			<NextTrack audio={audio} id={item?.id}/>
+			<Suspense>
+				<NextTrack audio={audio} id={item?.id}/>
+			</Suspense>
 		</div>
 	)
 })

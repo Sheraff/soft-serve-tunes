@@ -177,7 +177,7 @@ function AlbumsByTraitSuggestion() {
 			}}>
 				<PillChoice options={options} onSelect={onSelect} current={FEATURES[trait][order].qualifier}/>
 			</Dialog>
-			<AlbumList albums={albums}  lines={1} scrollable loading={isLoading}/>
+			<AlbumList albums={albums} lines={1} scrollable loading={isLoading}/>
 		</>
 	)
 }
@@ -232,7 +232,12 @@ export default memo(function Suggestions(){
 					<ArtistList artists={artistRecent} lines={1} loading={artistRecentLoading} />
 				</div>
 				<div className={styles.section}>
-					<Suspense>
+					<Suspense fallback={
+						<>
+							<SectionTitle> </SectionTitle>
+							<AlbumList albums={[]} lines={1} scrollable loading />
+						</>
+					}>
 						<AlbumsByTraitSuggestion />
 					</Suspense>
 				</div>
