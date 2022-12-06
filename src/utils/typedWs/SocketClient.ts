@@ -34,6 +34,9 @@ export default class SocketClient<
 			}
 			this.target.dispatchEvent(new CustomEvent(type, { detail: payload }))
 		}
+
+		addEventListener('online', this.#onOnline)
+		addEventListener('offline', this.#onOffline)
 		
 		this.#initSocket()
 	}
@@ -48,14 +51,12 @@ export default class SocketClient<
 		}
 
 		if (!navigator.onLine) {
-			addEventListener('online', this.#onOnline, {once: true})
 			return
 		}
 
 		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
 		socket.addEventListener("message", this.#onMessage)
 
-		addEventListener('offline', this.#onOffline, {once: true})
 		socket.onopen = () => this.#backOff = 1
 		socket.onclose = () => {
 			this.#timeoutId = setTimeout(() => {
