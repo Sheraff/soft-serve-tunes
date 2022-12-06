@@ -4,14 +4,13 @@ import { useMakePlaylist } from "client/db/useMakePlaylist"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import AlbumList from "components/AlbumList"
 import { useIsHome, useShowHome } from "components/AppContext"
-import asyncPersistedAtom from "client/db/asyncPersistedAtom"
+import suspensePersistedState from "client/db/suspensePersistedState"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import PlaylistList from "components/PlaylistList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import PlaylistIcon from "icons/queue_music.svg"
-import { useAtom } from "jotai"
 import { memo, Suspense, useEffect, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -94,7 +93,7 @@ function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string
 	return replaceOther
 }
 
-export const preferredTrackList = asyncPersistedAtom<{
+export const preferredTrackList = suspensePersistedState<{
 	trait: keyof typeof FEATURES
 	order: "asc" | "desc"
 }>("preferredTrackList", {
@@ -104,7 +103,7 @@ export const preferredTrackList = asyncPersistedAtom<{
 
 function TracksByTraitSuggestion() {
 	const [open, setOpen] = useState(false)
-	const [{trait, order}, setPreferredTracks] = useAtom(preferredTrackList)
+	const [{trait, order}, setPreferredTracks] = preferredTrackList.useState()
 	const onSelect = (option: Option) => {
 		navigator.vibrate(1)
 		setOpen(false)
@@ -142,7 +141,7 @@ function TracksByTraitSuggestion() {
 	)
 }
 
-export const preferredAlbumList = asyncPersistedAtom<{
+export const preferredAlbumList = suspensePersistedState<{
 	trait: keyof typeof FEATURES
 	order: "asc" | "desc"
 }>("preferredAlbumList", {
@@ -152,7 +151,7 @@ export const preferredAlbumList = asyncPersistedAtom<{
 
 function AlbumsByTraitSuggestion() {
 	const [open, setOpen] = useState(false)
-	const [{trait, order}, setPreferredAlbums] = useAtom(preferredAlbumList)
+	const [{trait, order}, setPreferredAlbums] = preferredAlbumList.useState()
 	const onSelect = (option: Option) => {
 		navigator.vibrate(1)
 		setOpen(false)

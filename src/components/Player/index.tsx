@@ -9,8 +9,7 @@ import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
-import { useAtom, useAtomValue } from "jotai"
-import asyncPersistedAtom from "client/db/asyncPersistedAtom"
+import suspensePersistedState from "client/db/suspensePersistedState"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Player/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
@@ -21,14 +20,14 @@ import RepeatIcon from 'icons/repeat.svg'
 import RepeatOneIcon from 'icons/repeat_one.svg'
 import NextTrack from "./NextTrack"
 
-export const playerDisplayRemaining = asyncPersistedAtom<boolean>("playerDisplayRemaining", false)
-export const shuffle = asyncPersistedAtom<boolean>("shuffle", false)
+export const playerDisplayRemaining = suspensePersistedState<boolean>("playerDisplayRemaining", false)
+export const shuffle = suspensePersistedState<boolean>("shuffle", false)
 /**
  * 0: false
  * 1: repeat all
  * 2: repeat one
  */
-export const repeat = asyncPersistedAtom<0 | 1 | 2>("repeat", 0)
+export const repeat = suspensePersistedState<0 | 1 | 2>("repeat", 0)
 
 function RightTimeSlot({
 	displayRemainingTime,
@@ -37,7 +36,7 @@ function RightTimeSlot({
 	displayRemainingTime: string
 	displayTotalTime: string
 }) {
-	const [displayRemaining, setDisplayRemaining] = useAtom(playerDisplayRemaining)
+	const [displayRemaining, setDisplayRemaining] = playerDisplayRemaining.useState()
 	const switchEndTime = () => {
 		navigator.vibrate(1)
 		setDisplayRemaining(a => !a)
@@ -54,7 +53,7 @@ function RightTimeSlot({
 }
 
 function ShuffleButton() {
-	const isShuffle = useAtomValue(shuffle)
+	const isShuffle = shuffle.useValue()
 
 	const _shufflePlaylist = useShufflePlaylist()
 	const shufflePlaylist = useCallback(() => {
@@ -73,11 +72,11 @@ function ShuffleButton() {
 }
 
 function RepeatButton() {
-	const [repeatType, setRepeatType] = useAtom(repeat)
+	const [repeatType, setRepeatType] = repeat.useState()
 
 	const cycleRepeatTypes = useCallback(() => {
 		navigator.vibrate(1)
-		setRepeatType(repeatType => (repeatType + 1) % 3 as 0 | 1 | 2)
+		setRepeatType((repeatType = 0) => (repeatType + 1) % 3 as 0 | 1 | 2)
 	}, [setRepeatType])
 	
 	return (

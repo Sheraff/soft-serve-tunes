@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
 import { Fragment, useMemo, useRef, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
@@ -9,7 +9,6 @@ import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlayl
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
 import SectionTitle from "atoms/SectionTitle"
 import { artistView } from "components/AppContext"
-import { useSetAtom } from "jotai"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
@@ -40,7 +39,7 @@ export default function Cover() {
 		keepPreviousData: true,
 	})
 	
-	const setArtist = useSetAtom(artistView)
+	const queryClient = useQueryClient()
 	const description = useMemo(() => {
 		const string = descriptionFromPlaylistCredits(artistData, length, true)
 		const parts = string.split("{{name}}")
@@ -54,18 +53,18 @@ export default function Cover() {
 						type="button"
 						onClick={() => {
 							navigator.vibrate(1)
-							setArtist({
+							artistView.setState({
 								id: artistData[i]!.id,
 								name: artistData[i]!.name,
 								open: true,
-							})
+							}, queryClient)
 						}}
 					>
 						{artistData[i]!.name}
 					</button>
 				)
 		])
-	}, [artistData, length, setArtist])
+	}, [artistData, length, queryClient])
 
 	const [editing, setEditing] = useState(false)
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})

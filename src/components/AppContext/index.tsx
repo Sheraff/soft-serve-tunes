@@ -1,8 +1,9 @@
-import { atom, Provider, useAtomValue, useSetAtom } from "jotai"
-import { Suspense, useCallback, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect } from "react"
+import globalState from "./globalState"
 
 type Panel = "artist" | "album" | "search"
-export const panelStack = atom<Panel[]>([])
+export const panelStack = globalState<Panel[]>("panelStack", [])
 
 type ArtistView = {
 	id: string,
@@ -15,27 +16,19 @@ type ArtistView = {
 		src?: string,
 	}
 }
-const _artistView = atom<ArtistView>({
+
+export const artistView = globalState<ArtistView>("artistView", {
 	id: "cl7ackbmy20574654y4vrqekmfb",
 	name: "MGMT",
 	open: false,
+}, (value, queryClient) => {
+	panelStack.setState((stack) => {
+		const newStack = stack.filter((name) => name !== "artist")
+		if (value.open) newStack.push("artist")
+		return newStack
+	}, queryClient)
+	history.pushState({}, "just-allow-back-button")
 })
-export const artistView = atom(
-	(get) => get(_artistView),
-	(get, set, value: ArtistView | ((prev: ArtistView, get: any) => ArtistView | undefined)) => {
-		const newView = typeof value === "function"
-			? value(get(_artistView), get)
-			: value
-		if (newView === undefined) return
-		set(panelStack, (stack) => {
-			const newStack = stack.filter((name) => name !== "artist")
-			if (newView.open) newStack.push("artist")
-			return newStack
-		})
-		history.pushState({}, "just-allow-back-button")
-		set(_artistView, newView)
-	}
-)
 
 type AlbumView = {
 	id: string,
@@ -48,91 +41,68 @@ type AlbumView = {
 		src?: string,
 	}
 }
-const _albumView = atom<AlbumView>({
+export const albumView = globalState<AlbumView>("albumView", {
 	id: "cl7ackd5z20628354y4a90y4vn7",
 	name: "Oracular Spectacular",
 	open: false,
+}, (value, queryClient) => {
+	panelStack.setState((stack) => {
+		const newStack = stack.filter((name) => name !== "album")
+		if (value.open) newStack.push("album")
+		return newStack
+	}, queryClient)
+	history.pushState({}, "just-allow-back-button")
 })
-export const albumView = atom(
-	(get) => get(_albumView),
-	(get, set, value: AlbumView | ((prev: AlbumView, get: any) => AlbumView | undefined)) => {
-		const newView = typeof value === "function"
-			? value(get(_albumView), get)
-			: value
-		if (newView === undefined) return
-		set(panelStack, (stack) => {
-			const newStack = stack.filter((name) => name !== "album")
-			if (newView.open) newStack.push("album")
-			return newStack
-		})
-		history.pushState({}, "just-allow-back-button")
-		set(_albumView, newView)
-	}
-)
+
 
 type SearchView = {
 	open: boolean
 }
-const _searchView = atom<SearchView>({
+export const searchView = globalState<SearchView>("searchView", {
 	open: false,
+}, (value, queryClient) => {
+	panelStack.setState((stack) => {
+		const newStack = stack.filter((name) => name !== "search")
+		if (value.open) newStack.push("search")
+		return newStack
+	}, queryClient)
+	history.pushState({}, "just-allow-back-button")
 })
-export const searchView = atom(
-	(get) => get(_searchView),
-	(get, set, value: SearchView | ((prev: SearchView, get: any) => SearchView | undefined)) => {
-		const newView = typeof value === "function"
-			? value(get(_searchView), get)
-			: value
-		if (newView === undefined) return
-		set(panelStack, (stack) => {
-			const newStack = stack.filter((name) => name !== "search")
-			if (newView.open) newStack.push("search")
-			return newStack
-		})
-		history.pushState({}, "just-allow-back-button")
-		set(_searchView, newView)
-	}
-)
 
 type MainView = "suggestions" | "home"
-export const mainView = atom<MainView>("suggestions")
+export const mainView = globalState<MainView>("mainView", "suggestions")
 
 export function useIsHome() {
-	const stack = useAtomValue(panelStack)
-	const view = useAtomValue(mainView)
+	const stack = panelStack.useValue()
+	const view = mainView.useValue()
 	return stack.length === 0 && view === "suggestions"
 }
 
 export function useShowHome() {
-	const setAlbum = useSetAtom(albumView)
-	const setArtist = useSetAtom(artistView)
-	const setSearch = useSetAtom(searchView)
-	const setMainView = useSetAtom(mainView)
+	const queryClient = useQueryClient()
 
 	return useCallback((which?: MainView) => {
-		const close = <P extends Panel>(name: P) => (
-			prev: P extends "album" ? AlbumView : P extends "artist" ? ArtistView : SearchView,
-			get: any
+		const stack = panelStack.getValue(queryClient)
+
+		const close = <Prev extends AlbumView | ArtistView | SearchView>(
+			prev: Prev
 		) => {
-			const stack = get(panelStack)
-			if(!stack.includes(name)) return undefined
 			return {...prev, open: false}
 		}
-		setAlbum(close("album"))
-		setArtist(close("artist"))
-		setSearch(close("search"))
+
+		if (stack.includes("album")) albumView.setState(close, queryClient)
+		if (stack.includes("artist")) artistView.setState(close, queryClient)
+		if (stack.includes("search")) searchView.setState(close, queryClient)
 		if (which)
-			setMainView(which)
+			mainView.setState(which, queryClient)
 	}, [
-		setAlbum,
-		setArtist,
-		setSearch,
-		setMainView,
+		queryClient,
 	])
 }
 
-function Back() {
-	const stack = useAtomValue(panelStack)
-	const setMainView = useSetAtom(mainView)
+export function AppState() {
+	const stack = panelStack.useValue()
+	const queryClient = useQueryClient()
 	const showHome = useShowHome()
 	useEffect(() => {
 		const controller = new AbortController()
@@ -140,7 +110,7 @@ function Back() {
 			if (stack.length) {
 				showHome()
 			} else {
-				setMainView(value => value === "home" ? "suggestions" : "home")
+				mainView.setState(value => value === "home" ? "suggestions" : "home", queryClient)
 			}
 			history.pushState({}, "just-allow-back-button")
 		}
@@ -160,16 +130,4 @@ function Back() {
 		return () => controller.abort()
 	})
 	return null
-}
-
-
-export function AppState({children}: {children: React.ReactNode}) {
-	return (
-		<Provider>
-			{children}
-			<Suspense>
-				<Back />
-			</Suspense>
-		</Provider>
-	)
 }

@@ -11,7 +11,6 @@ import {
 } from "./utils"
 import { useQuery } from "@tanstack/react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
-import { useAtomValue, useSetAtom } from "jotai"
 import { repeat, shuffle } from "components/Player"
 import generateUniqueName from "utils/generateUniqueName"
 import shuffleArray from "utils/shuffleArray"
@@ -55,7 +54,7 @@ async function setPlaylist(
 	current?: Playlist['current'],
 ) {
 	const regularOrder = tracks.map(({id}) => id)
-	const order = shuffle.getValue()
+	const order = shuffle.getValue(queryClient)
 		? shuffleArray(regularOrder)
 		: regularOrder
 	const newCurrent = current || order[0]
@@ -177,7 +176,7 @@ export function useGetCurrentIndex() {
 }
 
 export function useNextTrack() {
-	const repeatType = useAtomValue(repeat)
+	const repeatType = repeat.useValue()
 	const { data } = usePlaylist({select: ({tracks, current, order}) => {
 		if (repeatType === 2) return undefined
 		const index = order.findIndex((id) => id === current)
@@ -228,7 +227,7 @@ export function useSetPlaylistIndex() {
 			}))
 		},
 		nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
-			const repeatType = repeat.getValue()
+			const repeatType = repeat.getValue(queryClient)
 			if (repeatType === 2) {
 				if (audio.current) {
 					audio.current.currentTime = 0
@@ -277,7 +276,7 @@ export function useSetPlaylistIndex() {
 			// AND the playlist is shuffled, 
 			// keep the order, but 0 starts at the last index
 			// this is to avoid clicking "prev" and listening to a single track before reaching an "invisible" end
-			const newOrder = index > 0 || !shuffle.getValue() || !playlist.order.length
+			const newOrder = index > 0 || !shuffle.getValue(queryClient) || !playlist.order.length
 				? playlist.order
 				: [playlist.order.at(-1)!, ...playlist.order.slice(0, playlist.order.length - 1)]
 			queryClient.setQueryData<Playlist>(["playlist"], {
@@ -318,7 +317,7 @@ export function useAddToPlaylist() {
 			return
 		}
 		const newTracks = [...cache.tracks, fullTrack]
-		const newOrder = !shuffle.getValue()
+		const newOrder = !shuffle.getValue(queryClient)
 			? [...cache.order, fullTrack.id]
 			: [
 				...(cache.current ? [cache.current] : []),
@@ -381,7 +380,7 @@ export function useAddNextToPlaylist() {
 		// playlist is inactive, just add track to the end (or to the start if `forceCurrent`)
 		if (typeof cache.current === 'undefined') {
 			const baseOrder = cache.tracks.map(({id}) => id)
-			const newOrder = shuffle.getValue()
+			const newOrder = shuffle.getValue(queryClient)
 				? forceCurrent
 					? [track.id, ...shuffleArray(baseOrder)]
 					: shuffleArray([track.id, ...baseOrder])
@@ -511,7 +510,7 @@ export function useReorderPlaylist() {
 		const newItems = [...playlist.tracks]
 		const [item] = newItems.splice(oldIndex, 1)
 		newItems.splice(newIndex, 0, item!)
-		const newOrder = shuffle.getValue()
+		const newOrder = shuffle.getValue(queryClient)
 			? playlist.order // if playlist is already shuffled, `order` is not correlated to `tracks`, so only update tracks
 			: newItems.map(({id}) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
 		queryClient.setQueryData<Playlist>(["playlist"], {
@@ -519,7 +518,7 @@ export function useReorderPlaylist() {
 			tracks: newItems,
 			order: newOrder,
 		})
-		if (shuffle.getValue()) {
+		if (shuffle.getValue(queryClient)) {
 			await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				order: newOrder,
@@ -649,15 +648,14 @@ async function deleteFromListInIndexedDB(id: string) {
 }
 
 export function useShufflePlaylist() {
-	const setShuffle = useSetAtom(shuffle)
 	const queryClient = useQueryClient()
 	return useCallback(() => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
 			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 		}
-		const isShuffle = shuffle.getValue()
-		setShuffle(isShuffle ? false : true)
+		const isShuffle = shuffle.getValue(queryClient)
+		shuffle.setState(isShuffle ? false : true, queryClient)
 		if (!isShuffle) {
 			playNextStack.length = 0
 		}
@@ -684,7 +682,7 @@ export function useShufflePlaylist() {
 				order: newOrder,
 			}))
 		})
-	}, [setShuffle, queryClient])
+	}, [queryClient])
 }
 
 export function useRenamePlaylist() {

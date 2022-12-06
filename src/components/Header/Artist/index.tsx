@@ -7,7 +7,6 @@ import styles from "./index.module.css"
 import classNames from "classnames"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
-import { useAtomValue } from "jotai"
 import TrackList from "components/TrackList"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
@@ -24,7 +23,7 @@ export default forwardRef(function ArtistView({
 	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
-	const artist = useAtomValue(artistView)
+	const artist = artistView.useValue()
 	const enabled = Boolean(id && artist.open)
 
 	const {data, isLoading} = trpc.artist.get.useQuery({id}, {

@@ -3,10 +3,10 @@ import { AllRoutes, RouteKey, trpc, type RouterOutputs } from "utils/trpc"
 import { albumView, artistView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
-import { useSetAtom } from "jotai"
 import { startTransition } from "react"
 import { useAddNextToPlaylist, useMakePlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import { useRemoveFromPastSearches } from "client/db/indexedPastSearches"
+import { useQueryClient } from "@tanstack/react-query"
 
 type Option<Key extends AllRoutes> = {
 	key: Key
@@ -78,9 +78,8 @@ export default function PastSearch({
 	id: string
 	type: keyof typeof OPTIONS
 }) {
+	const queryClient = useQueryClient()
 
-	const setArtist = useSetAtom(artistView)
-	const setAlbum = useSetAtom(albumView)
 	const makePlaylist = useMakePlaylist()
 	const setPlaylist = useSetPlaylist()
 	const addNextToPlaylist = useAddNextToPlaylist()
@@ -120,9 +119,9 @@ export default function PastSearch({
 						makePlaylist({type: "genre", id}, entity ? entity.name : "New Playlist")
 						showHome("home")
 					} else if (albumNarrow(type, entity)) {
-						setAlbum({id, open: true, name: entity?.name})
+						albumView.setState({id, open: true, name: entity?.name}, queryClient)
 					} else if (artistNarrow(type, entity)) {
-						setArtist({id, open: true, name: entity?.name})
+						artistView.setState({id, open: true, name: entity?.name}, queryClient)
 					} else if (playlistNarrow(type, entity)) {
 						if (!entity) return console.warn('PastSearch could not start playlist as it was not able to fetch associated data')
 						setPlaylist(entity.name, entity.id, entity.tracks)

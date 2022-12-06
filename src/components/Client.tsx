@@ -4,11 +4,10 @@ import AudioTest from "components/AudioTest"
 import WatcherSocket from "components/WatcherSocket"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
-import asyncPersistedAtom from "client/db/asyncPersistedAtom"
-import { useAtom } from "jotai"
+import suspensePersistedState from "client/db/suspensePersistedState"
 import useIsOnline from "client/sw/useIsOnline"
 
-const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
+const allowOfflineLogin = suspensePersistedState<boolean>("allowOfflineLogin", false)
 
 export default function AuthCore({
 	providers,
@@ -22,7 +21,7 @@ export default function AuthCore({
 	const { data: session } = useSession()
 
 	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
-	const [offlineLoggedInState, setOfflineLoggedIn] = useAtom(allowOfflineLogin)
+	const [offlineLoggedInState, setOfflineLoggedIn] = allowOfflineLogin.useState()
 	const isOnline = useIsOnline()
 	useEffect(() => {
 		if (isOnline) {
@@ -34,16 +33,15 @@ export default function AuthCore({
 
 	return (
 		<>
-			<AppState>
-				{ready && loggedIn && (
-					<>
-						<Suspense>
-							<AudioTest />
-						</Suspense>
-						<WatcherSocket />
-					</>
-				)}
-			</AppState>
+			{ready && loggedIn && (
+				<>
+					<AppState />
+					<Suspense>
+						<AudioTest />
+					</Suspense>
+					<WatcherSocket />
+				</>
+			)}
 			{!loggedIn && isOnline && (
 				<SignIn providers={providers!} />
 			)}
