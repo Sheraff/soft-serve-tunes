@@ -1,64 +1,18 @@
 import type { NextPage } from "next"
 import type { NextApiRequest, NextApiResponse } from "next"
 import Head from "next/head"
-import { useSession, getProviders } from "next-auth/react"
+import { getProviders } from "next-auth/react"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import { unstable_getServerSession as getServerSession } from "next-auth"
-import { Suspense, useEffect, useState } from "react"
-import AudioTest from "components/AudioTest"
+import { Suspense, useState } from "react"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
-import WatcherSocket from "components/WatcherSocket"
-import SignIn from "components/SignIn"
-import { AppState } from "components/AppContext"
-import asyncPersistedAtom from "client/db/asyncPersistedAtom"
-import { useAtom } from "jotai"
-import useIsOnline from "client/sw/useIsOnline"
 import { socketClient } from "utils/typedWs/react-client"
 import { useQuery } from "@tanstack/react-query"
 import { loadingStatus } from "pages/api/cold-start"
+import dynamic from "next/dynamic"
 
-const allowOfflineLogin = asyncPersistedAtom<boolean>("allowOfflineLogin", false)
+const AuthCore = dynamic(() => import("components/Client"), { ssr: false })
 
-function AuthCore({
-	providers,
-	ssrLoggedIn,
-	ready,
-}: {
-	providers: Awaited<ReturnType<typeof getProviders>>
-	ssrLoggedIn: boolean
-	ready: boolean
-}) {
-	const { data: session } = useSession()
-
-	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
-	const [offlineLoggedInState, setOfflineLoggedIn] = useAtom(allowOfflineLogin)
-	const isOnline = useIsOnline()
-	useEffect(() => {
-		if (isOnline) {
-			setOfflineLoggedIn(onlineLoggedInState)
-		}
-	}, [onlineLoggedInState, isOnline, setOfflineLoggedIn])
-
-	const loggedIn = isOnline ? onlineLoggedInState : offlineLoggedInState
-
-	return (
-		<>
-			<AppState>
-				{ready && loggedIn && (
-					<>
-						<Suspense>
-							<AudioTest />
-						</Suspense>
-						<WatcherSocket />
-					</>
-				)}
-			</AppState>
-			{!loggedIn && isOnline && (
-				<SignIn providers={providers!} />
-			)}
-		</>
-	)
-}
 
 const Home: NextPage<{
 	providers: Awaited<ReturnType<typeof getProviders>>
