@@ -655,11 +655,11 @@ export function useShufflePlaylist() {
 			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
 		}
 		const isShuffle = shuffle.getValue(queryClient)
-		shuffle.setState(isShuffle ? false : true, queryClient)
 		if (!isShuffle) {
 			playNextStack.length = 0
 		}
 		startTransition(() => {
+			shuffle.setState(isShuffle ? false : true, queryClient)
 			const baseOrder = playlist.tracks.map(({id}) => id)
 			const newOrder = isShuffle
 				? baseOrder

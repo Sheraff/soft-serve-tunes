@@ -11,7 +11,7 @@ import PlaylistList from "components/PlaylistList"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
 import PlaylistIcon from "icons/queue_music.svg"
-import { memo, Suspense, useEffect, useState } from "react"
+import { memo, startTransition, Suspense, useEffect, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import PillChoice from "./PillChoice"
@@ -107,9 +107,11 @@ function TracksByTraitSuggestion() {
 	const onSelect = (option: Option) => {
 		navigator.vibrate(1)
 		setOpen(false)
-		setPreferredTracks({
-			trait: option.key,
-			order: option.type,
+		startTransition(() => {
+			setPreferredTracks({
+				trait: option.key,
+				order: option.type,
+			})
 		})
 	}
 	const makePlaylist = useMakePlaylist()
@@ -155,9 +157,11 @@ function AlbumsByTraitSuggestion() {
 	const onSelect = (option: Option) => {
 		navigator.vibrate(1)
 		setOpen(false)
-		setPreferredAlbums({
-			trait: option.key,
-			order: option.type,
+		startTransition(() => {
+			setPreferredAlbums({
+				trait: option.key,
+				order: option.type,
+			})
 		})
 	}
 	const {data: albums = [], isLoading} = trpc.album.byTrait.useQuery({trait, order})

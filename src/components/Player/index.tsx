@@ -1,4 +1,4 @@
-import { memo, Suspense, useCallback, useEffect, useRef } from "react"
+import { memo, startTransition, Suspense, useCallback, useEffect, useRef } from "react"
 import Audio from "./Audio"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
@@ -39,7 +39,9 @@ function RightTimeSlot({
 	const [displayRemaining, setDisplayRemaining] = playerDisplayRemaining.useState()
 	const switchEndTime = () => {
 		navigator.vibrate(1)
-		setDisplayRemaining(a => !a)
+		startTransition(() => {
+			setDisplayRemaining(a => !a)
+		})
 	}
 	return (
 		<button
@@ -76,7 +78,9 @@ function RepeatButton() {
 
 	const cycleRepeatTypes = useCallback(() => {
 		navigator.vibrate(1)
-		setRepeatType((repeatType = 0) => (repeatType + 1) % 3 as 0 | 1 | 2)
+		startTransition(() => {
+			setRepeatType((repeatType = 0) => (repeatType + 1) % 3 as 0 | 1 | 2)
+		})
 	}, [setRepeatType])
 	
 	return (

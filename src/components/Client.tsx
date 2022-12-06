@@ -1,5 +1,5 @@
 import { useSession, type getProviders } from "next-auth/react"
-import { Suspense, useEffect } from "react"
+import { startTransition, Suspense, useEffect } from "react"
 import AudioTest from "components/AudioTest"
 import WatcherSocket from "components/WatcherSocket"
 import SignIn from "components/SignIn"
@@ -25,7 +25,9 @@ export default function AuthCore({
 	const isOnline = useIsOnline()
 	useEffect(() => {
 		if (isOnline) {
-			setOfflineLoggedIn(onlineLoggedInState)
+			startTransition(() => {
+				setOfflineLoggedIn(onlineLoggedInState)
+			})
 		}
 	}, [onlineLoggedInState, isOnline, setOfflineLoggedIn])
 
