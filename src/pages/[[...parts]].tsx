@@ -44,7 +44,7 @@ const Home: NextPage<{
 			setProgress(1)
 			setReady(true)
 		},
-		enabled: coldStartLoading !== false
+		enabled: coldStartLoading === true
 	})
 
 	return (
