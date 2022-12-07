@@ -41,7 +41,7 @@ function ArtistItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	const isEmpty = !data?.cover
+	const isEmpty = data && !data.cover
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2)}` : undefined
@@ -70,12 +70,14 @@ function ArtistItem({
 		>
 			{!isEmpty && (
 				<div className={styles.img}>
-					<img
-						src={src}
-						alt=""
-						loading={index > 2 ? "lazy" : undefined}
-						decoding={index > 2 ? "async" : undefined}
-					/>
+					{src && (
+						<img
+							src={src}
+							alt=""
+							loading={index > 2 ? "lazy" : undefined}
+							decoding={index > 2 ? "async" : undefined}
+						/>
+					)}
 				</div>
 			)}
 			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
