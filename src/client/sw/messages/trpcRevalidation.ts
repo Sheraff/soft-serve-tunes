@@ -1,19 +1,21 @@
 /// <reference lib="webworker" />
-import { type AllRoutes, type AllInputs, type RouterInputs } from "utils/trpc"
+import { type AllRoutes, type AllInputs, type RouterInputs, keyArrayToString } from "utils/trpc"
 import { workerSocketClient } from "utils/typedWs/vanilla-client"
 import { handleTrpcFetchResponse } from "../fetch/trpc"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
 const batch: {
-	items: {key: AllRoutes, params?: AllInputs}[]
+	items: {
+		payload: {
+			key: AllRoutes,
+			params?: AllInputs,
+		},
+		invalidate: boolean,
+	}[]
 	timeoutId: ReturnType<typeof setTimeout> | null
 } = {
 	items: [],
 	timeoutId: null,
-}
-
-function joinRoute(key: AllRoutes) {
-	return key.join('.') as `${typeof key[0]}.${typeof key[1]}`
 }
 
 function processBatch() {
@@ -22,14 +24,18 @@ function processBatch() {
 	batch.items = []
 
 	if (items.length === 0) return
+	if (items.length > 10) {
+		const later = items.splice(10)
+		later.forEach(item => addItemToBatch(item))
+	}
 
 	const {endpoints, input} = items.reduce((params, item, i) => {
-		params.endpoints.push(joinRoute(item.key))
-		params.input[i] = item.params
-			? {json: item.params}
+		params.endpoints.push(keyArrayToString(item.payload.key))
+		params.input[i] = item.payload.params
+			? {json: item.payload.params}
 			: {json:null, meta:{values:["undefined"]}}
 		return params
-	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof joinRoute>[], input: Record<number, unknown>})
+	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof keyArrayToString>[], input: Record<number, unknown>})
 
 	const url = new URL(`/api/trpc/${endpoints.join(',')}`, self.location.origin)
 	url.searchParams.set('batch', '1')
@@ -40,14 +46,17 @@ function processBatch() {
 			await handleTrpcFetchResponse(response, url)
 			const clients = await self.clients.matchAll()
 			clients.forEach(client => {
-				items.forEach((payload) =>
-					client.postMessage({type: 'sw-trpc-invalidation', payload})
-				)
+				items.forEach(({invalidate, payload}) => {
+					if (invalidate) {
+						client.postMessage({type: 'sw-trpc-invalidation', payload})
+					}
+				})
 			})
 		} else {
 			console.warn('SW: failed trpc revalidation', response.status, response.statusText, url)
 		}
-	}).catch(() => {
+	}).catch((e) => {
+		console.warn(new Error(`SW: caught fetch during processBatch ${url}`, {cause: e}))
 		items.forEach(item => addItemToBatch(item))
 	})
 }
@@ -75,19 +84,31 @@ function isEquivalentItem<
 
 function addItemToBatch<
 	TRouteKey extends AllRoutes
->(item: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]}) {
-	if (!batch.items.some(i => isEquivalentItem(i, item))) {
+>(
+	item: {
+		payload: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]}
+		invalidate: boolean,
+	},
+) {
+	const existing = batch.items.find(i => isEquivalentItem(i.payload, item.payload))
+	if (!existing) {
 		batch.items.push(item)
+	} else if (item.invalidate) {
+		existing.invalidate = true
 	}
 }
 
 export default function trpcRevalidation<
 	TRouteKey extends AllRoutes
->(item: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]}) {
-	addItemToBatch(item)
-	if (!batch.timeoutId) {
-		batch.timeoutId = setTimeout(processBatch, 10)
+>(
+	payload: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]},
+	invalidate = true,
+) {
+	addItemToBatch({payload, invalidate})
+	if (batch.timeoutId) {
+		clearTimeout(batch.timeoutId)
 	}
+	batch.timeoutId = setTimeout(processBatch, 10)
 }
 
 

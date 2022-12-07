@@ -65,8 +65,22 @@ type C = {
 
 export type AllRoutes = C[RouteKey]
 
+type E = {
+  [K in RouteKey]: `${K}.${Exclude<keyof AppRouter["_def"]["procedures"][K] & string, "_def" | "createCaller" | "getErrorShape">}`
+}
+
+export type AllRoutesString = E[RouteKey]
+
 type D = {
   [K in RouteKey]: RouterInputs[K][Exclude<keyof AppRouter["_def"]["procedures"][K] & string, "_def" | "createCaller" | "getErrorShape">]
 }
 
 export type AllInputs = D[RouteKey]
+
+export function keyArrayToString<R extends AllRoutes>(route: R) {
+	return route.join('.') as `${typeof route[0]}.${typeof route[1]}`
+}
+
+export function keyStringToArray<K extends AllRoutesString>(key: K) {
+  return key.split('.') as typeof key extends `${infer A}.${infer B}` ? [A, B] : never
+}

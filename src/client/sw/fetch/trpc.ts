@@ -1,4 +1,6 @@
 /// <reference lib="webworker" />
+import { AllRoutesString, keyStringToArray } from "utils/trpc"
+import trpcRevalidation from "../messages/trpcRevalidation"
 import { CACHES } from "../utils/constants"
 
 function trpcUrlToCacheKeys(url: URL) {
@@ -6,10 +8,10 @@ function trpcUrlToCacheKeys(url: URL) {
 	if (!parts) {
 		throw new Error (`function called on the wrong url, no trpc endpoints found @${url}`)
 	}
-	const endpoints = parts.split(',')
+	const endpoints = parts.split(',') as AllRoutesString[]
 	const inputString = url.searchParams.get('input')
 	const input = inputString
-		? JSON.parse(inputString) as {[key: number]: any}
+		? JSON.parse(inputString) as {[key: number]: {json: any}}
 		: {}
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)
@@ -73,9 +75,9 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		// some of the endpoints requested were missing from cache, make a single batched call to fetch them
 		const fetchEndpoints = fetchIndices.map((i) => endpoints[i]).join(',')
 		const fetchInput = fetchIndices.reduce((object, i, j) => {
-			object[j] = input[i]
+			object[j] = input[i]!
 			return object
-		}, {} as {[key: number]: any})
+		}, {} as {[key: number]: {json: any}})
 		const fetchUrl = new URL(`/api/trpc/${fetchEndpoints}`, self.location.origin)
 		fetchUrl.searchParams.set('batch', '1')
 		fetchUrl.searchParams.set('input', JSON.stringify(fetchInput))
@@ -93,24 +95,18 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 				const rest = endpoints.reduce((acc, endpoint, i) => {
 					if (fetchIndices.includes(i)) return acc
 					acc.endpoints.push(endpoint)
-					acc.input[acc.endpoints.length - 1] = input[i]
+					acc.input[acc.endpoints.length - 1] = input[i]!
 					return acc
 				}, {
 					endpoints: [],
 					input: {},
 				} as {
-					endpoints: string[],
-					input: {[key: number]: any}
+					endpoints: typeof endpoints,
+					input: {[key: number]: {json: any}}
 				})
-				const restUrl = new URL(`/api/trpc/${rest.endpoints.join(',')}`, self.location.origin)
-				restUrl.searchParams.set('batch', '1')
-				restUrl.searchParams.set('input', JSON.stringify(rest.input))
-				const restResponse = await fetch(restUrl)
-				if (restResponse.status === 200 || restResponse.status === 207) {
-					handleTrpcFetchResponse(restResponse, restUrl)
-				} else if (restResponse.status > 200 && restResponse.status < 300) {
-					console.warn('SW: unexpected 2xx response status', restResponse)
-				}
+				rest.endpoints.forEach((endpoint, i) => {
+					trpcRevalidation({key: keyStringToArray(endpoint), params: rest.input[i]!.json}, false)
+				})
 			})
 		}
 	} else {
