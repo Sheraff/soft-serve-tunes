@@ -82,6 +82,7 @@ function ArtistItem({
 			)}
 			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
 				<span className={styles.name}>{artist.name}</span>
+				{!data && <span>&nbsp;</span>}
 				{albumCount > 1 && <span>{albumCount} albums</span>}
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
 			</p>

@@ -53,10 +53,10 @@
 	height: var(--side);
 	border-radius: 50%;
 	overflow: hidden;
+	background-color: var(--palette-primary);
 }
 .img:empty {
 	border: 1px solid var(--palette-secondary);
-	background-color: var(--palette-primary);
 }
 .img img {
 	position: absolute;
