@@ -3,7 +3,7 @@ import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwar
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { albumView } from "components/AppContext"
 import styles from "./index.module.css"
-import { useSetAtom } from "jotai"
+import { useQueryClient } from "@tanstack/react-query"
 
 type AlbumListItem = {
 	id: string
@@ -47,7 +47,7 @@ function AlbumItem({
 	const trackCount = data?._count?.tracks ?? 0
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2)}` : ""
 
-	const setAlbum = useSetAtom(albumView)
+	const queryClient = useQueryClient()
 
 	return (
 		<button
@@ -60,12 +60,12 @@ function AlbumItem({
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
 				startTransition(() => {
-					setAlbum({
+					albumView.setState({
 						id: album.id,
 						name: data?.name || album.name,
 						open: true,
 						rect: {top, left, width, src}
-					})
+					}, queryClient)
 				})
 			}}
 		>

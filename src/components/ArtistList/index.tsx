@@ -3,7 +3,7 @@ import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useS
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
-import { useSetAtom } from "jotai"
+import { useQueryClient } from "@tanstack/react-query"
 
 type ArtistListItem = {
 	id: string
@@ -46,7 +46,7 @@ function ArtistItem({
 	const trackCount = data?._count?.tracks ?? 0
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2)}` : undefined
 
-	const setArtist = useSetAtom(artistView)
+	const queryClient = useQueryClient()
 
 	return (
 		<button
@@ -59,12 +59,12 @@ function ArtistItem({
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
 				startTransition(() => {
-					setArtist({
+					artistView.setState({
 						id: artist.id,
 						name: data?.name || artist.name,
 						open: true,
 						rect: {top, left, width, src}
-					})
+					}, queryClient)
 				})
 			}}
 		>

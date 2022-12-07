@@ -7,10 +7,10 @@ import classNames from "classnames"
 import TrackList from "components/TrackList"
 import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
-import { useAtomValue, useSetAtom } from "jotai"
 import Head from "next/head"
 import { trpc } from "utils/trpc"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default forwardRef(function AlbumView({
 	open: _open,
@@ -22,7 +22,7 @@ export default forwardRef(function AlbumView({
 	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
-	const album = useAtomValue(albumView)
+	const album = albumView.useValue()
 	const enabled = Boolean(id && album.open)
 
 	const {data} = trpc.album.get.useQuery({id}, {
@@ -33,7 +33,7 @@ export default forwardRef(function AlbumView({
 	const makePlaylist = useMakePlaylist()
 
 	const showHome = useShowHome()
-	const setArtist = useSetAtom(artistView)
+	const queryClient = useQueryClient()
 
 	const [seeBio, setSeeBio] = useState(false)
 	const bio = useRef<HTMLDivElement>(null)
@@ -64,11 +64,11 @@ export default forwardRef(function AlbumView({
 			<button type="button" onClick={() => {
 				if (data.artist) {
 					navigator.vibrate(1)
-					setArtist({
+					artistView.setState({
 						id: data.artist.id,
 						name: data.artist.name,
 						open: true,
-					})
+					}, queryClient)
 				}
 			}}>
 				{`${data.artist?.name}`}

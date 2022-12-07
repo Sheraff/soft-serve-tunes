@@ -11,18 +11,17 @@ import SearchIcon from "icons/search.svg"
 import LogoutIcon from "icons/logout.svg"
 import DashboardIcon from "icons/dashboard.svg"
 import QueueMusicIcon from "icons/queue_music.svg"
-import { useAtom, useAtomValue } from "jotai"
 import Upload from "./Upload"
 
 export default function Header() {
-	const stack = useAtomValue(panelStack)
+	const stack = panelStack.useValue()
 	const searchZ = stack.indexOf("search")
 	const artistZ = stack.indexOf("artist")
 	const albumZ = stack.indexOf("album")
 	
-	const [search, setSearch] = useAtom(searchView)
-	const [artist, setArtist] = useAtom(artistView)
-	const [album, setAlbum] = useAtom(albumView)
+	const [search, setSearch] = searchView.useState()
+	const [artist, setArtist] = artistView.useState()
+	const [album, setAlbum] = albumView.useState()
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle, () => {
@@ -46,7 +45,7 @@ export default function Header() {
 	trpc.track.searchable.useQuery()
 
 	const showHome = useShowHome()
-	const main = useAtomValue(mainView)
+	const main = mainView.useValue()
 	const showDashboardIcon = main === "home"
 	const onClickMainIcon = () => {
 		navigator.vibrate(1)

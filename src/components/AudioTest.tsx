@@ -3,31 +3,21 @@ import Player from "components/Player"
 import Header from "components/Header"
 import { mainView } from "components/AppContext"
 import Suggestions from "components/Suggestions"
-import { useAtomValue } from "jotai"
-import { Suspense } from "react"
 import NowPlaying from "components/NowPlaying"
 
 
 export default function AudioTest() {
-	const main = useAtomValue(mainView)
+	const main = mainView.useValue()
 	return (
 		<div className={styles.container}>
-			<Suspense>
-				<Header/>
-			</Suspense>
+			<Header/>
 			{main === "home" && (
-				<Suspense>
-					<NowPlaying />
-				</Suspense>
+				<NowPlaying />
 			)}
 			{main === "suggestions" && (
-				<Suspense>
-					<Suggestions />
-				</Suspense>
+				<Suggestions />
 			)}
-			<Suspense>
-				<Player />
-			</Suspense>
+			<Player />
 		</div>
 	)
 }

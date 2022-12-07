@@ -3,8 +3,8 @@ import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { type RouterOutputs } from "utils/trpc"
 import { albumView, artistView, mainView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { useAtomValue, useSetAtom } from "jotai"
 import { useGetCurrentIndex } from "client/db/useMakePlaylist"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default memo(function SlidingText({
 	item,
@@ -13,8 +13,7 @@ export default memo(function SlidingText({
 	item: Exclude<RouterOutputs["playlist"]["generate"], undefined>[number] | undefined
 	className?: string
 }) {
-	const setAlbum = useSetAtom(albumView)
-	const setArtist = useSetAtom(artistView)
+	const queryClient = useQueryClient()
 
 	const [separator, setSeparator] = useState(false)
 	const span = useRef<HTMLDivElement>(null)
@@ -33,7 +32,7 @@ export default memo(function SlidingText({
 
 	const showHome = useShowHome()
 	const focusRef = useRef<boolean>(false)
-	const main = useAtomValue(mainView)
+	const main = mainView.useValue()
 	const getCurrentIndex = useGetCurrentIndex()
 	const scrollToCurrent = useCallback(() => {
 		const index = getCurrentIndex()
@@ -80,7 +79,7 @@ export default memo(function SlidingText({
 						type="button"
 						onClick={() => {
 							navigator.vibrate(1)
-							setAlbum({id: album.id, name: album.name, open: true})
+							albumView.setState({id: album.id, name: album.name, open: true}, queryClient)
 						}}
 					>
 						{album.name}
@@ -94,7 +93,7 @@ export default memo(function SlidingText({
 						type="button"
 						onClick={() => {
 							navigator.vibrate(1)
-							setArtist({id: artist.id, name: artist.name, open: true})
+							artistView.setState({id: artist.id, name: artist.name, open: true}, queryClient)
 						}}
 					>
 						{artist.name}
