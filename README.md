@@ -22,6 +22,20 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - [ ] Track no. gets messed up if its info doesn't come from the
   same source as the album info
 
+- [ ] Raid The Radio by Geneeral Elektriks gets the wrong album
+
+- [ ] All of Goran Bregovic's Karmen "can't be fingerprinted"
+  ```
+  wait  -  fswatcher  could not fingerprint Goran Bregovic/Karmen (with a Happy End)/02 Gas Gas.flac, trying again later
+  Error: 500 - Internal Server Error
+      at #fetch (/home/pi/soft-serve-tunes/.next/server/chunks/130.js:737:19)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async AcoustId.identify (/home/pi/soft-serve-tunes/.next/server/chunks/130.js:716:22)
+      at async createTrack (/home/pi/soft-serve-tunes/.next/server/chunks/130.js:160:29)
+      at async MyWatcher.resolve (/home/pi/soft-serve-tunes/.next/server/chunks/639.js:206:13)
+      at async MyWatcher.enqueueResolve (/home/pi/soft-serve-tunes/.next/server/chunks/639.js:173:21)
+  ```
+
 ## RESOURCES
 - favicon: https://realfavicongenerator.net/
 - maskable icons: https://maskable.app/editor
