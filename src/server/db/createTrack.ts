@@ -128,7 +128,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const name = (() => {
 			if (fingerprinted?.title)
 				return fingerprinted.title
-			const uselessNameRegex = /^[0-9\s\-]*(track|piste)[0-9\s]*$/i
+			const uselessNameRegex = /^[0-9\s\-]*(track|piste|plage)[0-9\s]*$/i
 			if (metadata.common.title && !uselessNameRegex.test(metadata.common.title))
 				return metadata.common.title
 			return basename(path, extname(path))
