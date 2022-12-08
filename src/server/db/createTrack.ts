@@ -376,7 +376,7 @@ async function tryAgainLater(path?: string, count = -1) {
 				log("info", "wait", "fswatcher", `retrying (#${item.count}) to create file ${item.path}`)
 				await createTrack(item.path)
 			}
-		}, 120_000)
+		}, 180_000)
 	}
 }
 

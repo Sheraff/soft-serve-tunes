@@ -170,7 +170,10 @@ class AcoustId {
 		if (data.status !== 200) {
 			if (data.status === 429) {
 				// Too many requests, back-off for a second
-				this.#queue.delay(1000)
+				this.#queue.delay(1_000)
+			} else if (data.status === 504 || data.status === 500) {
+				// Gateway timeout or internal server error, back-off for 10 seconds
+				this.#queue.delay(10_000)
 			}
 			throw new Error(`${data.status} - ${data.statusText}`)
 		}
