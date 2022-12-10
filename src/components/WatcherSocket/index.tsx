@@ -44,6 +44,7 @@ export default function WatcherSocket() {
 				if (message.type === 'sw-notify-when-track-cached') {
 					const id = message.payload.url.split('/').at(-1)
 					queryClient.invalidateQueries(['sw-cached-track', id])
+					queryClient.invalidateQueries(['sw-first-cached-track'])
 				} else if (message.type === 'sw-trpc-invalidation') {
 					const queryKey = message.payload.key
 					const queryParams = {
