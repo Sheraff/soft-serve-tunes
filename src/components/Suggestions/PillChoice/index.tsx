@@ -10,8 +10,9 @@ export default function PillChoice<
 }: {
 	options: [Option, Option][]
 	onSelect: (option: Option) => void
-	current?: Option["label"]
+	current?: Option["label"][]
 }) {
+	const isCurrent = (option: Option) => current && current.includes(option.label)
 	return (
 		<div className={styles.main}>
 			{options.map((pair) => (
@@ -20,7 +21,7 @@ export default function PillChoice<
 						key={pair[0].label}
 						type="button"
 						onClick={() => onSelect(pair[0])}
-						className={classNames(styles.item, {[styles.current]: current === pair[0].label})}
+						className={classNames(styles.item, {[styles.current]: isCurrent(pair[0])})}
 					>
 						<span>{pair[0].label}</span>
 					</button>
@@ -28,7 +29,7 @@ export default function PillChoice<
 						key={pair[1].label}
 						type="button"
 						onClick={() => onSelect(pair[1])}
-						className={classNames(styles.item, {[styles.current]: current === pair[1].label})}
+						className={classNames(styles.item, {[styles.current]: isCurrent(pair[1])})}
 					>
 						<span>{pair[1].label}</span>
 					</button>

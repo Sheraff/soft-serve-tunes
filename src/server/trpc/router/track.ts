@@ -7,11 +7,12 @@ import log from "utils/logger"
 import { TRPCError } from "@trpc/server"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
+import { prisma } from "server/db/client"
 
 export const zTrackTraits = z.union([
   z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
   z.literal("energy"), // fast, loud, and noisy
-  z.literal("speechiness"), // talk show, audio book, poetry
+  z.literal("speechiness"), // talk show, audio book, poetry, rap, spoken word / singing
   z.literal("acousticness"), // reverb, analog instruments / electric, numeric, distorted
   z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
   z.literal("liveness"), // performed live / studio recording
@@ -180,34 +181,64 @@ const like = protectedProcedure.input(z.object({
   return track
 })
 
-const byTrait = publicProcedure.input(z.object({
-  trait: zTrackTraits,
-  order: z.union([
-    z.literal("desc"),
-    z.literal("asc"),
-  ]),
-})).query(({ input, ctx }) => {
-  return ctx.prisma.track.findMany({
-    where: {
-      spotify: { [input.trait]: { gt: 0 } },
-      file: { duration: { gt: 30 } },
-    },
-    orderBy: { spotify: { [input.trait]: input.order } },
-    take: 5,
-    include: {
-      spotify: {
-        select: {
-          [input.trait]: true,
-        }
-      }
-    }
+export function getSpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTrackTraits>, order: 'desc' | 'asc'}[], count: number) {
+  return prisma.$queryRawUnsafe(`
+    SELECT
+      "public"."SpotifyTrack"."trackId",
+      ${traits.map((t) => `"public"."SpotifyTrack"."${t.trait}" as ${t.trait}`).join(",")},
+      (${traits.map((t) => (t.order === "asc") ? `(1-${t.trait})` : t.trait).join("+")}) as score
+    FROM "public"."SpotifyTrack"
+    WHERE (
+      "public"."SpotifyTrack"."durationMs" > 30000
+      AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
+    )
+    ORDER BY score DESC LIMIT ${count} OFFSET 0
+  `) as unknown as {trackId: string}[]
+}
+
+const byMultiTraits = publicProcedure.input(z.object({
+  traits: z.array(z.object({
+    trait: zTrackTraits,
+    order: z.enum(['desc', 'asc']),
+  })),
+})).query(async ({ input, ctx }) => {
+  const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 6)
+
+  const tracks = await ctx.prisma.track.findMany({
+    where: {id: { in: spotifyTracks.map((t) => t.trackId) }},
   })
+
+  return tracks
 })
+
+// const byTrait = publicProcedure.input(z.object({
+//   trait: zTrackTraits,
+//   order: z.enum(['desc', 'asc']),
+// })).query(({ input, ctx }) => {
+//   return ctx.prisma.track.findMany({
+//     where: {
+//       AND: [
+//         { spotify: { [input.trait]: { not: null } } },
+//         { spotify: { [input.trait]: { not: 0 } } },
+//       ],
+//       file: { duration: { gt: 30 } },
+//     },
+//     orderBy: { spotify: { [input.trait]: input.order } },
+//     take: 5,
+//     include: {
+//       spotify: {
+//         select: {
+//           [input.trait]: true,
+//         }
+//       }
+//     }
+//   })
+// })
 
 export const trackRouter = router({
   searchable,
   miniature,
   playcount,
   like,
-  byTrait,
+  byMultiTraits,
 })

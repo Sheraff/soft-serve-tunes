@@ -3,6 +3,8 @@ import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
+import { zTrackTraits } from "./track"
+import { prisma } from "server/db/client"
 
 const searchable = publicProcedure.query(({ ctx }) => 
   ctx.prisma.album.findMany({
@@ -172,52 +174,77 @@ const mostRecentAdd = publicProcedure.query(async ({ ctx }) => {
   return recent
 })
 
-const byTrait = publicProcedure.input(z.object({
-  trait: z.union([
-    z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
-    z.literal("energy"), // fast, loud, and noisy
-    z.literal("speechiness"), // talk show, audio book, poetry
-    z.literal("acousticness"),
-    z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
-    z.literal("liveness"), // performed live / studio recording
-    z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
-  ]),
-  order: z.union([
-    z.literal("desc"),
-    z.literal("asc"),
-  ]),
+function getAlbumsBySpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTrackTraits>, order: 'desc' | 'asc'}[]) {
+  return prisma.$queryRawUnsafe(`
+    SELECT
+      "public"."SpotifyTrack"."albumId",
+      AVG(${traits.map((t) => (t.order === "asc") ? `(1-"public"."SpotifyTrack"."${t.trait}")` : `"public"."SpotifyTrack"."${t.trait}"`).join("+")}) as score
+    FROM "public"."SpotifyTrack"
+    WHERE (
+      "public"."SpotifyTrack"."durationMs" > 30000
+      AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
+    )
+    GROUP BY "public"."SpotifyTrack"."albumId" HAVING (
+      (NOT "public"."SpotifyTrack"."albumId" IS NULL)
+    )
+    ORDER BY score DESC OFFSET 0
+  `) as unknown as {albumId: string, score: number | null}[]
+}
+
+const byMultiTraits = publicProcedure.input(z.object({
+  traits: z.array(z.object({
+    trait: zTrackTraits,
+    order: z.enum(['desc', 'asc']),
+  })),
 })).query(async ({ input, ctx }) => {
-  const {trait, order} = input
-  const spotifyTracks = await ctx.prisma.spotifyTrack.groupBy({
-    by: ["albumId"],
-    _avg: {
-      [trait]: true,
-    },
-    having: {
-      NOT: {
-        albumId: null
-      },
-      [trait]: {
-        _avg: {
-          [order === "desc" ? "gt" : "lt"]: 0.5,
-        }
-      },
-    },
-  })
-  const orderMultiplier = order === "desc" ? 1 : -1
-  const spotifyAlbumId = spotifyTracks
-    .filter(a => (a._avg[trait] !== null) && a.albumId)
-    .sort((a, b) => {
-      const delta = (a._avg[trait] as unknown as number) - (b._avg[trait] as unknown as number)
-      return orderMultiplier * delta
-    })
+  const spotifyAlbums = await getAlbumsBySpotifyTracksByMultiTraits(input.traits)
+  const filtered = spotifyAlbums
+    .filter(({score}) => score)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, 10)
-    .map(a => a.albumId) as string[]
+
   return ctx.prisma.album.findMany({
-    where: {spotify: {id: { in: spotifyAlbumId }}},
+    where: {spotify: {id: { in: filtered.map(a => a.albumId) }}},
     select: { id: true, name: true },
   })
 })
+
+
+// const byTrait = publicProcedure.input(z.object({
+//   trait: zTrackTraits,
+//   order: z.enum(['desc', 'asc']),
+// })).query(async ({ input, ctx }) => {
+//   const {trait, order} = input
+//   const spotifyTracks = await ctx.prisma.spotifyTrack.groupBy({
+//     by: ["albumId"],
+//     _avg: {
+//       [trait]: true,
+//     },
+//     having: {
+//       NOT: {
+//         albumId: null
+//       },
+//       [trait]: {
+//         _avg: {
+//           [order === "desc" ? "gt" : "lt"]: 0.5,
+//         }
+//       },
+//     },
+//   })
+//   const orderMultiplier = order === "desc" ? 1 : -1
+//   const spotifyAlbumId = spotifyTracks
+//     .filter(a => (a._avg[trait] !== null) && a.albumId)
+//     .sort((a, b) => {
+//       const delta = (a._avg[trait] as unknown as number) - (b._avg[trait] as unknown as number)
+//       return orderMultiplier * delta
+//     })
+//     .slice(0, 10)
+//     .map(a => a.albumId) as string[]
+//   return ctx.prisma.album.findMany({
+//     where: {spotify: {id: { in: spotifyAlbumId }}},
+//     select: { id: true, name: true },
+//   })
+// })
 
 export const albumRouter = router({
   searchable,
@@ -226,6 +253,6 @@ export const albumRouter = router({
   mostFav,
   mostRecentListen,
   mostRecentAdd,
-  byTrait,
+  byMultiTraits,
 })
 

@@ -1,6 +1,6 @@
 import { router, publicProcedure, protectedProcedure } from "server/trpc/trpc"
 import { z } from "zod"
-import { zTrackTraits } from "./track"
+import { getSpotifyTracksByMultiTraits, zTrackTraits } from "./track"
 import { TRPCError } from "@trpc/server"
 import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
@@ -75,13 +75,12 @@ const generate = publicProcedure.input(z.union([
     id: z.string(),
   }),
   z.object({
-    type: z.enum(['by-trait']),
-    trait: zTrackTraits,
-    order: z.union([
-      z.literal("desc"),
-      z.literal("asc"),
-    ]),
-  })
+    type: z.literal('by-multi-traits'),
+    traits: z.array(z.object({
+      trait: zTrackTraits,
+      order: z.enum(['desc', 'asc']),
+    })),
+  }),
 ])).query(async ({ input, ctx }) => {
   if (input.type === 'track') {
     return ctx.prisma.track.findMany({
@@ -110,14 +109,10 @@ const generate = publicProcedure.input(z.union([
     const data = await recursiveSubGenres(input.id, {select: trackSelect})
     return data.tracks
   }
-  if (input.type === 'by-trait') {
-    return ctx.prisma.track.findMany({
-      where: {
-        spotify: { [input.trait]: { gt: 0 } },
-        file: { duration: { gt: 30 } },
-      },
-      orderBy: { spotify: { [input.trait]: input.order } },
-      take: 30,
+  if (input.type === 'by-multi-traits') {
+    const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 30)
+    return await ctx.prisma.track.findMany({
+      where: {id: { in: spotifyTracks.map((t) => t.trackId) }},
       select: trackSelect,
     })
   }

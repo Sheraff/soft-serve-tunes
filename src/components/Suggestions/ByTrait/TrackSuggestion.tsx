@@ -1,0 +1,52 @@
+import Dialog from "atoms/Dialog"
+import SectionTitle from "atoms/SectionTitle"
+import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { useShowHome } from "components/AppContext"
+import suspensePersistedState from "client/db/suspensePersistedState"
+import TrackList from "components/TrackList"
+import FilterIcon from "icons/filter_list.svg"
+import PlaylistIcon from "icons/queue_music.svg"
+import { useMemo, useState } from "react"
+import { trpc } from "utils/trpc"
+import styles from "../index.module.css"
+import PillChoice from "../PillChoice"
+import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSelectedOptions, Trait } from "./utils"
+
+const preferredTrackList = suspensePersistedState<Trait[]>("preferredTrackList", [{
+	trait: "danceability",
+	order: "desc"
+}])
+
+export default function TracksByTraitSuggestion() {
+	const [open, setOpen] = useState(false)
+	const [preferredOptions, setPreferredTracks] = preferredTrackList.useState()
+	const onSelect = addNewTraitByOption(setPreferredTracks)
+	const makePlaylist = useMakePlaylist()
+	const showHome = useShowHome()
+	const {data: tracks = []} = trpc.track.byMultiTraits.useQuery({traits: preferredOptions})
+	const title = useMemo(() => titleFromSelectedOptions(preferredOptions, "tracks"), [preferredOptions])
+	const currentOptions = selectionFromSelectedOptions(preferredOptions)
+	return (
+		<>
+			<SectionTitle>{title}</SectionTitle>
+			<div className={styles.buttons}>
+				<button type="button" onClick={() => {
+					navigator.vibrate(1)
+					makePlaylist({type: "by-multi-traits", traits: preferredOptions}, title)
+					showHome("home")
+				}}><PlaylistIcon /></button>
+				<button type="button" onClick={() => {
+					navigator.vibrate(1)
+					setOpen(true)
+				}}><FilterIcon /></button>
+			</div>
+			<Dialog title="Choose your mood" open={open} onClose={() => {
+				navigator.vibrate(1)
+				setOpen(false)
+			}}>
+				<PillChoice options={options} onSelect={onSelect} current={currentOptions}/>
+			</Dialog>
+			<TrackList tracks={tracks} />
+		</>
+	)
+}
