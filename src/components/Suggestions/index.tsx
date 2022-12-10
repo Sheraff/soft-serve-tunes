@@ -69,12 +69,12 @@ const FEATURES = {
 	},
 	valence: {
 		asc: {
-			qualifier: "euphoric",
-			description: "Cheerful {{type}}",
-		},
-		desc: {
 			qualifier: "depressed",
 			description: "Depressing {{type}}",
+		},
+		desc: {
+			qualifier: "euphoric",
+			description: "Cheerful {{type}}",
 		},
 	},
 } as const
