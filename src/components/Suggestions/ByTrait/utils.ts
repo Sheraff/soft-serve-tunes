@@ -24,7 +24,7 @@ function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string
 
 export function titleFromSelectedOptions(options: Trait[], entity: "tracks" | "albums") {
 	if (options.length === 1) {
-		return moustache(FEATURES[options[0]!.trait][options[0]!.order].description, "tracks")
+		return moustache(FEATURES[options[0]!.trait][options[0]!.order].description, entity)
 	}
 	const exactMatch = COMBINED_FEATURES.find(({traits}) => {
 		const entries = Object.entries(traits)
