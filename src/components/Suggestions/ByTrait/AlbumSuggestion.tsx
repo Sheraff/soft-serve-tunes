@@ -19,7 +19,6 @@ export default function AlbumsByTraitSuggestion() {
 	const [preferredOptions, setPreferredAlbums] = preferredAlbumList.useState()
 	const onSelect = addNewTraitByOption(setPreferredAlbums)
 	const {data: albums = [], isLoading} = trpc.album.byMultiTraits.useQuery({traits: preferredOptions})
-	console.log(albums)
 	const title = useMemo(() => titleFromSelectedOptions(preferredOptions, "albums"), [preferredOptions])
 	const currentOptions = selectionFromSelectedOptions(preferredOptions)
 	
