@@ -16,7 +16,7 @@ import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
-import useCachedTrack from "client/sw/useCachedTrack"
+import { useCachedTrack } from "client/sw/useCachedTrack"
 
 const emptyFunction = () => {}
 

@@ -22,6 +22,7 @@ export async function messageCheckFirstCachedTrack({
 		from: number,
 		loop: boolean,
 		tracks: string[],
+		direction?: 1 | -1,
 	},
 	id: string
 }, {
@@ -31,11 +32,20 @@ export async function messageCheckFirstCachedTrack({
 	if (!source) return
 	const cache = await caches.open(CACHES.media)
 	let next = null
-	const max = params.loop
-		? params.from + params.tracks.length
-		: params.tracks.length
-	for (let i = params.from; i < max; i++) {
-		const track = params.tracks[i % params.tracks.length]!
+	const reverse = params.direction === -1
+	const max = reverse
+		? params.loop
+			? params.from - params.tracks.length
+			: -1
+		: params.loop
+			? params.from + params.tracks.length
+			: params.tracks.length
+	for (
+		let i = params.from;
+		reverse ? i > max : i < max;
+		reverse ? i-- : i++
+	) {
+		const track = params.tracks[(i + params.tracks.length) % params.tracks.length]!
 		const cached = await cache.match(new URL(`/api/file/${track}`, self.location.origin), {
 			ignoreVary: true,
 			ignoreSearch: true,
@@ -45,7 +55,6 @@ export async function messageCheckFirstCachedTrack({
 			break
 		}
 	}
-	console.log('offline find first cached track, found next track', next, params.from, params.loop, params.tracks)
 	source.postMessage({type: 'sw-first-cached-track', payload: {
 		id,
 		next,

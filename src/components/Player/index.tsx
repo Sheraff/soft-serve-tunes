@@ -12,7 +12,7 @@ import SlidingText from "./SlidingText"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Player/Notification"
-import useCachedTrack from "client/sw/useCachedTrack"
+import { useCachedTrack } from "client/sw/useCachedTrack"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCurrentTrack, usePlaylist, useSetPlaylistIndex, useShufflePlaylist } from "client/db/useMakePlaylist"
 import ShuffleIcon from 'icons/shuffle.svg'
@@ -100,20 +100,21 @@ export default memo(function Player() {
 	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
 
 	const playPrev = useCallback(
-		() => {
+		async () => {
 			if (audio.current && audio.current.currentTime > 10) {
 				audio.current.currentTime = 0
 				audio.current.play()
 				return
 			}
-			prevPlaylistIndex()
-			navigator.vibrate(1)
+			const hasPrev = await prevPlaylistIndex()
+			if (hasPrev) {
+				navigator.vibrate(1)
+			}
 		},
 		[prevPlaylistIndex]
 	)
 	const playNext = useCallback(
 		async () => {
-			console.log('play next')
 			const hasNext = await nextPlaylistIndex(audio)
 			if (hasNext) {
 				navigator.vibrate(1)

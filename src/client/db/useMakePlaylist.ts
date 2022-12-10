@@ -281,7 +281,6 @@ export function useSetPlaylistIndex() {
 					return null
 				}
 				if (globalWsClient.wsClient?.serverState === false) {
-					console.log('offline play next')
 					const nextId = await findFirstCachedTrack({
 						from: index + 1,
 						tracks: playlist.order,
@@ -313,7 +312,7 @@ export function useSetPlaylistIndex() {
 			}))
 			return true
 		},
-		prevPlaylistIndex() {
+		async prevPlaylistIndex() {
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
 				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
@@ -321,9 +320,30 @@ export function useSetPlaylistIndex() {
 			const index = playlist.current
 				? playlist.order.indexOf(playlist.current)
 				: -1
-			const newIndex = index <= 0
-				? playlist.tracks.length - 1
-				: index - 1
+
+			const newIndex = await (async () => {
+				if (globalWsClient.wsClient?.serverState === false) {
+					const nextId = await findFirstCachedTrack({
+						from: index - 1,
+						tracks: playlist.order,
+						loop: true,
+						direction: -1,
+					})
+					if (!nextId) {
+						return null
+					}
+					return playlist.order.indexOf(nextId)
+				}
+				if (index <= 0) {
+					return playlist.tracks.length - 1
+				}
+				return index - 1
+			})()
+
+			if (newIndex === null) {
+				return false
+			}
+
 			const current = playlist.order[newIndex]!
 			// if "prev" gets us to the last item of the playlist, 
 			// AND the playlist is shuffled, 

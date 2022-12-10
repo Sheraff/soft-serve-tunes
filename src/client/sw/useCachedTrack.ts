@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
-export default function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) {
+export function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) {
 	const query = useQuery({
 		enabled: Boolean(id) && enabled !== false,
 		queryKey: ['sw-cached-track', id],
@@ -30,7 +30,15 @@ export default function useCachedTrack({id, enabled}: {id?: string, enabled?: bo
 	return query
 }
 
-export async function findFirstCachedTrack(params: {from: number, loop: boolean, tracks: string[]}, signal?: AbortSignal) {
+export async function findFirstCachedTrack(
+	params: {
+		from: number,
+		loop: boolean,
+		tracks: string[],
+		direction?: 1 | -1,
+	},
+	signal?: AbortSignal
+) {
 	if (!("serviceWorker" in navigator)) return null
 	const controller = new AbortController()
 	if (signal) {
@@ -50,7 +58,6 @@ export async function findFirstCachedTrack(params: {from: number, loop: boolean,
 				controller.abort()
 			}
 		} , {signal: controller.signal})
-		console.log('offline find first cached track, sending message')
 		target.postMessage({type: 'sw-first-cached-track', payload: {params, id}})
 		controller.signal.onabort = () => reject(new Error('stale SW query'))
 	})
@@ -62,6 +69,7 @@ export function useNextCachedTrack(params: {
 	enabled?: boolean,
 	from: number,
 	loop: boolean,
+	direction?: 1 | -1,
 }) {
 	const query = useQuery({
 		enabled: params.tracks.length > 0 && params.enabled !== false,
