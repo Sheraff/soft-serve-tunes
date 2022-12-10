@@ -41,6 +41,9 @@ export default class SocketServerEmitter<
 			this.#alive.set(ws, true)
 			ws.on('pong', () => this.#alive.set(ws, true))
 
+			// pong
+			ws.on('message', () => ws.send(''))
+
 			// logs
 			log("event", "event", `WebSocket Connection ++ (${this.#server.clients.size})`)
 			ws.once('close', () => {

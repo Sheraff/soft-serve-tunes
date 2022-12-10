@@ -30,6 +30,10 @@ export default class SocketClient<
 		this.#onOnline = () => this.#initSocket()
 		this.#onOffline = () => this.socket?.close()
 		this.#onMessage = <K extends Route>(event: MessageEvent<any>) => {
+			if (event.data === '') {
+				this.#onPong()
+				return
+			}
 			const { type, payload } = JSON.parse(event.data) as {
 				type: K,
 				payload: ReturnType<Router[K]>
@@ -44,6 +48,12 @@ export default class SocketClient<
 		this.#initSocket()
 	}
 
+	#pongState = true
+	#pongIntervalId: ReturnType<typeof setInterval> | null = null
+	#onPong() {
+		this.#pongState = true
+	}
+
 	#backOff = 1
 	#timeoutId: ReturnType<typeof setTimeout> | null = null
 
@@ -51,6 +61,10 @@ export default class SocketClient<
 		if (this.#timeoutId) {
 			clearTimeout(this.#timeoutId)
 			this.#timeoutId = null
+		}
+		if (this.#pongIntervalId) {
+			clearInterval(this.#pongIntervalId)
+			this.#pongIntervalId = null
 		}
 
 		if (!navigator.onLine) {
@@ -61,11 +75,25 @@ export default class SocketClient<
 		socket.addEventListener("message", this.#onMessage)
 
 		socket.onopen = () => {
+			this.#pongState = true
 			this.serverState = true
 			this.#backOff = 1
+
+			this.#pongIntervalId = setInterval(() => {
+				if (!this.#pongState) {
+					socket.close()
+					return
+				}
+				this.#pongState = false
+				socket.send('')
+			}, 10_000)
 		}
 		socket.onclose = () => {
 			this.serverState = false
+			if (this.#pongIntervalId) {
+				clearInterval(this.#pongIntervalId)
+				this.#pongIntervalId = null
+			}
 			this.#timeoutId = setTimeout(() => {
 				this.#initSocket()
 			}, this.#backOff * 1_000)
@@ -107,6 +135,9 @@ export default class SocketClient<
 		}
 		if (this.#timeoutId) {
 			clearTimeout(this.#timeoutId)
+		}
+		if (this.#pongIntervalId) {
+			clearInterval(this.#pongIntervalId)
 		}
 		removeEventListener('online', this.#onOnline)
 		removeEventListener('offline', this.#onOffline)
