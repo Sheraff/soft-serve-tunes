@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
-import { access } from "node:fs/promises"
+import { access, stat } from "node:fs/promises"
 import log from "utils/logger"
 import Queue from "utils/Queue"
 
@@ -35,8 +35,15 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
 
   let returnStream: ({pipe: (res: NextApiResponse) => NextApiResponse}) | null = null
+  let etag: string | undefined
   try {
-    await access(exactFilePath, constants.R_OK)
+    const stats = await stat(exactFilePath)
+    etag = stats.ino.toString()
+
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end()
+    }
+
     returnStream = createReadStream(exactFilePath)
   } catch {
     const cover = await prisma.image.findUnique({
@@ -76,10 +83,21 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     log("error", "500", "sharp", `${width}x${width} cover #${id}`)
     return res.status(500).json({ error: "Error transforming image" })
   }
+  if (!etag) {
+    /**
+     * if there is no etag yet it means the file is being generated
+     * as we're streaming the response, so we don't have the definitive
+     * file stats yet. Because this is slow, interruptions are likely and
+     * result in a corrupted cached file. To avoid this, we generate a
+     * random etag that will be replaced once the file is ready.
+     */
+    etag = Date.now().toString() + Math.random().toString()
+  }
 
   res
     .setHeader("Content-Type", "image/avif")
-    .setHeader("Cache-Control", "public, max-age=31536000")
+    .setHeader("Cache-Control", "max-age=604800, stale-while-revalidate=31536000") // keep for 1 week, revalidate 1 year
+    .setHeader("ETag", etag)
   return returnStream
     .pipe(res)
     .on('error', (error: NodeJS.ErrnoException) => {
