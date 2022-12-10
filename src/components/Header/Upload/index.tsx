@@ -3,10 +3,12 @@ import DropTarget from "./DropTarget"
 import UploadFileIcon from "icons/upload_file.svg"
 import UploadFolderIcon from "icons/drive_folder_upload.svg"
 import UploadIcon from "icons/cloud_upload.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 import { ChangeEvent, memo, useCallback, useState } from "react"
 import styles from "./index.module.css"
 import { useProgressBar } from "components/ProgressBar"
 import uploadLoop from "./uploadLoop"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 export default memo(function Upload({
 	className,
@@ -34,16 +36,28 @@ export default memo(function Upload({
 
 	const close = useCallback(() => setOpen(false), [])
 
+	const isOnline = useIsOnline()
+
 	return (
 		<>
-			<button type="button" className={className} onClick={() => {
-				navigator.vibrate(1)
-				setOpen(true)
-			}}><UploadIcon /></button>
-			<Dialog title="Upload music files" open={open} onClose={() => {
-				navigator.vibrate(1)
-				setOpen(false)
-			}}>
+			<button
+				type="button"
+				className={className}
+				onClick={isOnline ? () => {
+					navigator.vibrate(1)
+					setOpen(true)
+				} : undefined}
+			>
+				{isOnline ? <UploadIcon /> : <OfflineIcon />}
+			</button>
+			<Dialog
+				title="Upload music files"
+				open={open}
+				onClose={() => {
+					navigator.vibrate(1)
+					setOpen(false)
+				}}
+			>
 				<label className={styles.label}>
 					<UploadFileIcon />
 					<p>Upload files</p>
