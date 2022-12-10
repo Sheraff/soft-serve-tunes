@@ -120,7 +120,7 @@ const acoustiIdLookupSchema = z.object({
 	status: z.enum(["ok"]),
 	results: z.array(z.object({
 		score: z.number().min(0).max(1),
-		id: z.string(),
+		id: z.string(), // this is an acoustid id, not a musicbrainz id like the other ones
 		recordings: z.array(acoustIdRecordingSchema).optional(),
 	}))
 })

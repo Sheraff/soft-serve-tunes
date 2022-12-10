@@ -22,8 +22,6 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 - [ ] Track no. gets messed up if its info doesn't come from the
   same source as the album info
 
-- [ ] Raid The Radio by Geneeral Elektriks gets the wrong album
-
 
 ## RESOURCES
 - favicon: https://realfavicongenerator.net/
@@ -134,7 +132,8 @@ systemctl restart apache2
   pm2 save
   ```
 
-### prevent connection "timeout after idle"
+### If using wifi
+#### Prevent connection "timeout after idle"
 The raspberry pi comes with a power management utility on its wifi chip. This results in 
 connections that are very slow / timeout if the raspberry hasn't connected to the network in 
 a while. [This forum post helped.](https://forums.raspberrypi.com/viewtopic.php?t=231125)
@@ -147,6 +146,14 @@ a while. [This forum post helped.](https://forums.raspberrypi.com/viewtopic.php?
 - disable power management permanently:
   - `sudo nano /etc/rc.local`
   - add `iwconfig wlan0 power off` to the file
+
+### If using ethernet
+#### Disable wifi
+Disabling the wifi can boost raspberry performance. [This article helped.](https://linuxhint.com/disable-raspberry-pi-wifi-3-methods/)
+```sh
+sudo nano /boot/config.txt
+```
+add `dtoverlay=disable-wifi` to the config, under `[all]`
 
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
