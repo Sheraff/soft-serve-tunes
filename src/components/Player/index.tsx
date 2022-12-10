@@ -13,7 +13,7 @@ import suspensePersistedState from "client/db/suspensePersistedState"
 import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Player/Notification"
 import useCachedTrack from "client/sw/useCachedTrack"
-import useIsOnline from "client/sw/useIsOnline"
+import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCurrentTrack, usePlaylist, useSetPlaylistIndex, useShufflePlaylist } from "client/db/useMakePlaylist"
 import ShuffleIcon from 'icons/shuffle.svg'
 import RepeatIcon from 'icons/repeat.svg'
@@ -112,8 +112,9 @@ export default memo(function Player() {
 		[prevPlaylistIndex]
 	)
 	const playNext = useCallback(
-		() => {
-			const hasNext = nextPlaylistIndex(audio)
+		async () => {
+			console.log('play next')
+			const hasNext = await nextPlaylistIndex(audio)
 			if (hasNext) {
 				navigator.vibrate(1)
 			}

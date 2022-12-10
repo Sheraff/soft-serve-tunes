@@ -1,5 +1,5 @@
 import { useNextTrack, useSetPlaylistIndex } from "client/db/useMakePlaylist"
-import useIsOnline from "client/sw/useIsOnline"
+import useIsOnline from "utils/typedWs/useIsOnline"
 import Head from "next/head"
 import { memo, useEffect, type RefObject } from "react"
 import useCachedTrack from "client/sw/useCachedTrack"

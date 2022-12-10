@@ -9,7 +9,7 @@ export default function useCachedTrack({id, enabled}: {id?: string, enabled?: bo
 			const controller = new AbortController()
 			// signal will always be defined on browsers that support it, and I only care about modern browsers
 			signal!.onabort = () => controller.abort()
-			return new Promise(async (resolve, reject) => {
+			return new Promise<boolean>(async (resolve, reject) => {
 				const registration = await navigator.serviceWorker.ready
 				const target = registration.active
 				if (!target) {
@@ -25,6 +25,49 @@ export default function useCachedTrack({id, enabled}: {id?: string, enabled?: bo
 				target.postMessage({type: 'sw-cached-track', payload: {id}})
 				controller.signal.onabort = () => reject(new Error('stale SW query'))
 			})
+		},
+	})
+	return query
+}
+
+export async function findFirstCachedTrack(params: {from: number, loop: boolean, tracks: string[]}, signal?: AbortSignal) {
+	if (!("serviceWorker" in navigator)) return null
+	const controller = new AbortController()
+	if (signal) {
+		signal.onabort = () => controller.abort()
+	}
+	const found = await new Promise<string | null>(async (resolve, reject) => {
+		const id = Math.random().toString(36).slice(2)
+		const registration = await navigator.serviceWorker.ready
+		const target = registration.active
+		if (!target) {
+			return reject(new Error('no active SW registration'))
+		}
+		navigator.serviceWorker.addEventListener("message", (event) => {
+			const message = event.data
+			if (message.type === 'sw-first-cached-track' && message.payload.id === id) {
+				resolve(message.payload.next as string | null)
+				controller.abort()
+			}
+		} , {signal: controller.signal})
+		console.log('offline find first cached track, sending message')
+		target.postMessage({type: 'sw-first-cached-track', payload: {params, id}})
+		controller.signal.onabort = () => reject(new Error('stale SW query'))
+	})
+	return found
+}
+
+export function useNextCachedTrack(params: {
+	tracks: string[],
+	enabled?: boolean,
+	from: number,
+	loop: boolean,
+}) {
+	const query = useQuery({
+		enabled: params.tracks.length > 0 && params.enabled !== false,
+		queryKey: ['sw-first-cached-track', params],
+		queryFn({ signal }) {
+			return findFirstCachedTrack(params, signal)
 		},
 	})
 	return query

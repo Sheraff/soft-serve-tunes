@@ -5,7 +5,7 @@ import WatcherSocket from "components/WatcherSocket"
 import SignIn from "components/SignIn"
 import { AppState } from "components/AppContext"
 import suspensePersistedState from "client/db/suspensePersistedState"
-import useIsOnline from "client/sw/useIsOnline"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 const allowOfflineLogin = suspensePersistedState<boolean>("allowOfflineLogin", false)
 

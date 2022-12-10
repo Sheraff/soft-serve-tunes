@@ -2,8 +2,19 @@ import { useEffect, useRef } from "react"
 import type { Router } from "./server"
 import SocketClient from "./SocketClient"
 
-let wsClient: InstanceType<typeof SocketClient<Router>> | null = null
-let subscriptionsCount = 0
+const _globalWsClient = new class {
+	wsClient: InstanceType<typeof SocketClient<Router>> | null = null
+	constructor() {
+		if (typeof window === 'undefined') return
+		this.wsClient = new SocketClient<Router>()
+	}
+}
+
+declare global {
+	var globalWsClient: typeof _globalWsClient; // eslint-disable-line no-var
+}
+globalThis.globalWsClient = _globalWsClient
+export { _globalWsClient as globalWsClient }
 
 type UseSubscription<K extends keyof Router> = (params: {
 	onData: (data: ReturnType<Router[K]>) => void
@@ -17,10 +28,8 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 		callbackRef.current = {onData, onError}
 		useEffect(() => {
 			if (enabled === false) return
-			subscriptionsCount++
-			if (!wsClient) wsClient = new SocketClient<Router>()
 			const controller = new AbortController()
-			wsClient.target.addEventListener(prop, (event) => {
+			globalWsClient.wsClient!.target.addEventListener(prop, (event) => {
 				if (!(event instanceof CustomEvent)) return
 				const payload = event.detail as ReturnType<Router[K]>
 				callbackRef.current.onData(payload)
@@ -28,7 +37,7 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 				signal: controller.signal,
 				passive: true,
 			})
-			wsClient.target.addEventListener('__socket-client-error__', (event) => {
+			globalWsClient.wsClient!.target.addEventListener('__socket-client-error__', (event) => {
 				if (!callbackRef.current.onError) return
 				callbackRef.current.onError(event)
 			}, {
@@ -37,11 +46,6 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 			})
 			return () => {
 				controller.abort()
-				subscriptionsCount--
-				if (subscriptionsCount === 0 && wsClient) {
-					wsClient.destroy()
-					wsClient = null
-				}
 			}
 		}, [enabled])
 	}

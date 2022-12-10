@@ -13,6 +13,7 @@ export default class SocketClient<
 	#onOnline: () => void
 	#onOffline: () => void
 	#onMessage: <K extends Route>(event: MessageEvent<any>) => void
+	#serverStateListeners: Set<(online: boolean) => void> = new Set()
 
 	constructor() {
 		if (ssr) {
@@ -21,6 +22,7 @@ export default class SocketClient<
 			this.#onOnline = () => {}
 			this.#onOffline = () => {}
 			this.#onMessage = () => {}
+			this.serverState = false
 			return
 		}
 		this.target = new EventTarget()
@@ -37,6 +39,7 @@ export default class SocketClient<
 
 		addEventListener('online', this.#onOnline)
 		addEventListener('offline', this.#onOffline)
+		this.serverState = navigator.onLine
 		
 		this.#initSocket()
 	}
@@ -57,8 +60,12 @@ export default class SocketClient<
 		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
 		socket.addEventListener("message", this.#onMessage)
 
-		socket.onopen = () => this.#backOff = 1
+		socket.onopen = () => {
+			this.serverState = true
+			this.#backOff = 1
+		}
 		socket.onclose = () => {
+			this.serverState = false
 			this.#timeoutId = setTimeout(() => {
 				this.#initSocket()
 			}, this.#backOff * 1_000)
@@ -70,6 +77,26 @@ export default class SocketClient<
 		}
 
 		this.socket = socket
+	}
+
+	#serverState = false
+	get serverState() {
+		return this.#serverState
+	}
+	set serverState(online: boolean) {
+		if (this.#serverState === online) {
+			return
+		}
+		this.#serverState = online
+		this.#serverStateListeners.forEach(listener => listener(online))
+	}
+
+	addConnectionListener(listener: (online: boolean) => void) {
+		this.#serverStateListeners.add(listener)
+	}
+
+	removeConnectionListener(listener: (online: boolean) => void) {
+		this.#serverStateListeners.delete(listener)
 	}
 
 	destroy() {

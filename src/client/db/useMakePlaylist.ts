@@ -15,6 +15,9 @@ import { repeat, shuffle } from "components/Player"
 import generateUniqueName from "utils/generateUniqueName"
 import shuffleArray from "utils/shuffleArray"
 import { useQueryClient } from "@tanstack/react-query"
+import { globalWsClient } from "utils/typedWs/react-client"
+import { findFirstCachedTrack, useNextCachedTrack } from "client/sw/useCachedTrack"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 /**
  * TODO: 
@@ -57,7 +60,18 @@ async function setPlaylist(
 	const order = shuffle.getValue(queryClient)
 		? shuffleArray(regularOrder)
 		: regularOrder
-	const newCurrent = current || order[0]
+	const newCurrent = await (async () => {
+		if (globalWsClient.wsClient?.serverState !== false) {
+			return current || order[0]
+		}
+		const nextCached = await findFirstCachedTrack({
+			tracks: order,
+			from: current ? order.indexOf(current) + 1 : 0,
+			loop: repeat.getValue(queryClient) === 1,
+		})
+		return nextCached || current || order[0]
+	})()
+		
 	queryClient.setQueryData<Playlist>(["playlist"], { tracks, current: newCurrent, name, id, order })
 	await Promise.all([
 		deleteAllFromIndexedDB("playlist").then(() => (
@@ -112,7 +126,13 @@ export function useMakePlaylist() {
 	}, [trpcClient, queryClient])
 }
 
-export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlist) => T} = {}) {
+export function usePlaylist<T = Playlist>({
+	select,
+	enabled = true,
+}: {
+	select?: (playlist: Playlist) => T,
+	enabled?: boolean,
+} = {}) {
 	const queryClient = useQueryClient()
 	return useQuery<Playlist, unknown, T>(["playlist"], {
 		async queryFn() {
@@ -133,6 +153,7 @@ export function usePlaylist<T = Playlist>({select}: {select?: (playlist: Playlis
 				order: meta?.order || tracks.map(({id}) => id),
 			}
 		},
+		enabled,
 		cacheTime: 0,
 		select,
 	})
@@ -177,8 +198,20 @@ export function useGetCurrentIndex() {
 
 export function useNextTrack() {
 	const repeatType = repeat.useValue()
+	const online = useIsOnline()
+	const { data: {order = [], from} = {} } = usePlaylist({
+		enabled: !online,
+		select: ({order, current}) => ({order, from: order.findIndex((id) => id === current) + 1}),
+	})
+	const { data: offlineNext } = useNextCachedTrack({
+		enabled: !online,
+		from: from!,
+		loop: repeatType === 1,
+		tracks: order!,
+	})
 	const { data } = usePlaylist({select: ({tracks, current, order}) => {
 		if (repeatType === 2) return undefined
+		if (!online) return tracks.find(({id}) => id === offlineNext)
 		const index = order.findIndex((id) => id === current)
 		if (index < 0) return undefined
 		if (repeatType === 0 && index >= tracks.length - 1) return undefined
@@ -226,7 +259,7 @@ export function useSetPlaylistIndex() {
 				current,
 			}))
 		},
-		nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
+		async nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
 			const repeatType = repeat.getValue(queryClient)
 			if (repeatType === 2) {
 				if (audio.current) {
@@ -242,12 +275,32 @@ export function useSetPlaylistIndex() {
 			const index = playlist.current
 				? playlist.order.indexOf(playlist.current)
 				: -1
-			if (repeatType === 0 && index >= playlist.tracks.length - 1) {
+
+			const newIndex = await (async () => {
+				if (repeatType === 0 && index >= playlist.tracks.length - 1) {
+					return null
+				}
+				if (globalWsClient.wsClient?.serverState === false) {
+					console.log('offline play next')
+					const nextId = await findFirstCachedTrack({
+						from: index + 1,
+						tracks: playlist.order,
+						loop: repeatType === 1,
+					})
+					if (!nextId) {
+						return null
+					}
+					return playlist.order.indexOf(nextId)
+				}
+				if (index >= playlist.tracks.length - 1) {
+					return 0
+				}
+				return index + 1
+			})()
+			
+			if (newIndex === null) {
 				return false
 			}
-			const newIndex = index >= playlist.tracks.length - 1
-				? 0
-				: index + 1
 			
 			const current = playlist.order[newIndex]!
 			queryClient.setQueryData<Playlist>(["playlist"], {
