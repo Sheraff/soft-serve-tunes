@@ -7,6 +7,11 @@ import sharp from "sharp"
 import { access, stat } from "node:fs/promises"
 import log from "utils/logger"
 import Queue from "utils/Queue"
+import {
+  computeAlbumCover,
+  computeTrackCover,
+  computeArtistCover,
+} from "server/db/computeCover"
 
 const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 
@@ -107,18 +112,27 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function removeImageEntry(id: string) {
-  // TODO: this is annoying to do and not exhaustive...
-  // computing which image is associated with any entity should be its own function and store de result in database on the entity itself
-  // so that we can easily re-trigger said computation, and invalidate client caches precisely
-  const image = await prisma.image.delete({
-    where: { id },
-    // select: {
-    //   track: {select: {id: true}},
-    //   lastfmAlbum: {select: {entityId: true}},
-    //   lastfmArtist: {select: {entityId: true}},
-    //   spotifyArtist: {select: {artistId: true}},
-    //   spotifyAlbum: {select: {albumId: true}},
-    // }
+  const tracks = await prisma.track.findMany({
+    where: { coverId: id },
   })
+  const albums = await prisma.album.findMany({
+    where: { coverId: id },
+  })
+  const artists = await prisma.artist.findMany({
+    where: { coverId: id },
+  })
+  await prisma.image.delete({
+    where: { id },
+  })
+  for (const track of tracks) {
+    await computeTrackCover(track.id, {album: false, artist: false})
+  }
+  for (const album of albums) {
+    await computeAlbumCover(album.id, {artist: false, tracks: false})
+  }
+  for (const artist of artists) {
+    await computeArtistCover(artist.id, {album: false, tracks: false})
+  }
+
   log("warn", "500", "sharp", `deleted entry for file: cover #${id}`)
 }
