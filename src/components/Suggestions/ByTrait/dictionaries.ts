@@ -132,6 +132,83 @@ export const COMBINED_FEATURES = [
 		ignore: ["danceability", "liveness", "instrumentalness", "speechiness"],
 		description: "{{Danceability}} {{speechiness}} {{instrumentalness}} {{liveness}} ballads",
 	},
+	// chatGPT generated
+	{
+		traits: {energy: "desc", valence: "desc", acousticness: "asc"},
+		description: "Energetic {{type}} for getting pumped up",
+	},
+	{
+		traits: {energy: "asc", acousticness: "desc", valence: "asc", instrumentalness: "desc"},
+		description: "Soothing {{type}} for relaxation",
+	},
+	{
+		traits: {energy: "desc", danceability: "desc", valence: "desc", speechiness: "asc"},
+		description: "Upbeat {{type}} for a road trip",
+	},
+	{
+		traits: {energy: "asc", acousticness: "desc", valence: "asc", instrumentalness: "asc"},
+		description: "Introspective {{type}} for a rainy day",
+	},
+	{
+		traits: {energy: "desc", danceability: "desc", valence: "desc", liveness: "desc"},
+		description: "Fiery {{type}} for a dance-off",
+	},
+	{
+		traits: {energy: "asc", acousticness: "asc", valence: "desc", instrumentalness: "asc"},
+		description: "Chill {{type}} for a beach bonfire",
+	},
+	{
+		traits: {energy: "desc", acousticness: "asc", valence: "desc", speechiness: "asc"},
+		description: "Melodic {{type}} for a sing-along",
+	},
+	{
+		traits: {danceability: "desc", energy: "desc", valence: "desc", speechiness: "asc"},
+		description: "Funkalicious {{type}} for a funky good time",
+	},
+	{
+		traits: {danceability: "desc", energy: "desc", valence: "desc", acousticness: "asc", instrumentalness: "asc"},
+		description: "Old-school {{type}} for a throwback party",
+	},
+	{
+		traits: {energy: "asc", acousticness: "asc", valence: "asc", instrumentalness: "desc", speechiness: "asc"},
+		description: "Dreamy {{type}} for a dreamy vibe",
+	},
+	{
+		traits: {danceability: "desc", energy: "desc"},
+		description: "Danceable {{type}} for getting your groove on",
+	},
+	{
+		traits: {acousticness: "asc", valence: "asc"},
+		description: "Mellow {{type}} for a laid-back evening",
+	},
+	{
+		traits: {energy: "desc", valence: "desc"},
+		description: "Rockin' {{type}} for a rock concert",
+	},
+	{
+		traits: {danceability: "asc", valence: "asc"},
+		description: "Smooth {{type}} for a romantic date",
+	},
+	{
+		traits: {energy: "desc", danceability: "desc"},
+		description: "Punchy {{type}} for a workout",
+	},
+	{
+		traits: {instrumentalness: "asc", valence: "asc"},
+		description: "Mystical {{type}} for a meditative mood",
+	},
+	{
+		traits: {energy: "desc", danceability: "desc"},
+		description: "Electrifying {{type}} for a dance party",
+	},
+	{
+		traits: {instrumentalness: "asc", speechiness: "desc"},
+		description: "Intriguing {{type}} for a thought-provoking playlist",
+	},
+	{
+		traits: {energy: "desc", valence: "desc"},
+		description: "Sassy {{type}} for a girls' night out",
+	},
 ] as {
 	traits: {[key in keyof typeof FEATURES]?: "asc" | "desc"}
 	description: `${string}{{type}}${string}` | `{{Type}}${string}`
