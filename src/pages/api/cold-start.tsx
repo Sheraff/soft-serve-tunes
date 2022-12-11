@@ -88,6 +88,7 @@ function act() {
 			socketServer.emit("loading", 1)
 			clearInterval(interval)
 			loadingStatus.promise = null
+			log("ready", "ready", "fswatcher", `All files in the music directory have an entry in the database, all database entries without a file are removed`)
 		})
 }
 
