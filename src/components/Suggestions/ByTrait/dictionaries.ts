@@ -7,7 +7,7 @@ export const FEATURES = {
 			listOrder: 2,
 		},
 		desc: {
-			qualifier: "beats",
+			qualifier: "groovy",
 			description: "{{Type}} with the strongest beat",
 			listOrder: 5,
 			entity: "beats"
@@ -37,7 +37,7 @@ export const FEATURES = {
 			listOrder: 2,
 		},
 	},
-	instrumentalness: {
+	instrumentalness: { // TODO: instrumentalness is not instrumental vs. lyrical, it's how much "instruments" there is (a piano solo would be low instrumentalness)
 		asc: {
 			qualifier: "lyrical",
 			description: "Lyrical {{type}}",
@@ -73,11 +73,12 @@ export const FEATURES = {
 			listOrder: 2,
 		},
 	},
-	speechiness: {
+	speechiness: { // TODO: speechiness is not song vs. rap, it's how much human voice is in the track (a piano solo would be low speechiness)
 		asc: {
 			qualifier: "singing",
 			description: "{{Type}} to sing along",
 			listOrder: 4,
+			entity: "songs"
 		},
 		desc: {
 			qualifier: "prose",
@@ -102,6 +103,14 @@ export const COMBINED_FEATURES = [
 		description: "{{Type}} for a rave",
 	},
 	{
+		traits: {danceability: "desc", speechiness: "desc"},
+		description: "Grooviest prose",
+	},
+	{
+		traits: {energy: "asc",speechiness: "desc"},
+		description: "Smooth songs",
+	},
+	{
 		traits: {speechiness: "asc", instrumentalness: "asc", danceability: "desc"},
 		description: "{{Type}} for karaoke",
 	},
@@ -109,7 +118,23 @@ export const COMBINED_FEATURES = [
 		traits: {instrumentalness: "asc", danceability: "desc", energy: "desc", valence: "desc"},
 		description: "{{Type}} for a party",
 	},
+	{
+		traits: {energy: "desc", acousticness: "asc", valence: "desc"},
+		ignore: ["danceability", "liveness"],
+		description: "High-energy {{danceability}} {{liveness}} {{type}}",
+	},
+	{
+		traits: {energy: "desc", acousticness: "asc", valence: "asc"},
+		ignore: ["danceability", "liveness"],
+		description: "{{Danceability}} emo {{liveness}} {{type}}",
+	},
+	{
+		traits: {energy: "asc", acousticness: "desc", valence: "asc"},
+		ignore: ["danceability", "liveness", "instrumentalness", "speechiness"],
+		description: "{{Danceability}} {{speechiness}} {{instrumentalness}} {{liveness}} ballads",
+	},
 ] as {
 	traits: {[key in keyof typeof FEATURES]?: "asc" | "desc"}
 	description: `${string}{{type}}${string}` | `{{Type}}${string}`
+	ignore?: (keyof typeof FEATURES)[]
 }[]

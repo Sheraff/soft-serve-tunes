@@ -191,6 +191,7 @@ export function getSpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTr
     WHERE (
       "public"."SpotifyTrack"."durationMs" > 30000
       AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
+      AND ${traits.map((t) => (t.order === "asc") ? `${t.trait} < 0.5` : `${t.trait} > 0.5`).join(" AND ")}
     )
     ORDER BY score DESC LIMIT ${count} OFFSET 0
   `) as unknown as {trackId: string}[]
@@ -203,11 +204,11 @@ const byMultiTraits = publicProcedure.input(z.object({
   })),
 })).query(async ({ input, ctx }) => {
   const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 6)
-
+  const ids = spotifyTracks.map((t) => t.trackId)
   const tracks = await ctx.prisma.track.findMany({
-    where: {id: { in: spotifyTracks.map((t) => t.trackId) }},
+    where: {id: { in: ids }},
   })
-
+  tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
   return tracks
 })
 

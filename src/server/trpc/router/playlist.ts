@@ -111,10 +111,12 @@ const generate = publicProcedure.input(z.union([
   }
   if (input.type === 'by-multi-traits') {
     const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 30)
-    return await ctx.prisma.track.findMany({
-      where: {id: { in: spotifyTracks.map((t) => t.trackId) }},
-      select: trackSelect,
+    const ids = spotifyTracks.map((t) => t.trackId)
+    const tracks = await ctx.prisma.track.findMany({
+      where: {id: { in: ids }},
     })
+    tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+    return tracks
   }
 })
 

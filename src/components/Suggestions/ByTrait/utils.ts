@@ -15,26 +15,56 @@ export const options = Object.entries(FEATURES).map(([key, {asc, desc}]) => ([
 	{label: desc.qualifier, key, type: "desc"},
 ])) as [Option, Option][]
 
-function moustache(description: `${string}{{type}}${string}` | `{{Type}}${string}`, type: "tracks" | "albums") {
-	const capitalized = type.charAt(0).toUpperCase() + type.slice(1)
-	const replaceFirst = description.replace("{{Type}}", capitalized)
-	const replaceOther = replaceFirst.replace("{{type}}", type)
-	return replaceOther
+function capitalize(str: string) {
+	return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function isKeyOf<T extends Record<string, unknown>>(obj: T, key: string): key is keyof T & string {
+	return key in obj
+}
+
+function moustache(
+	description: `${string}{{type}}${string}` | `{{Type}}${string}`,
+	type: "tracks" | "albums",
+	fillers: Trait[] = []
+) {
+	const re = /\{\{([a-z]+)\}\}/i
+	let match: RegExpMatchArray | null
+	let replaced = description as string
+	while ((match = replaced.match(re)) !== null) {
+		const [full, trait] = match
+		if (!trait) continue
+		const traitName = trait.toLowerCase()
+		if (traitName === "type") {
+			replaced = replaced.replace(full, type)
+		} else {
+			const fillerTrait = fillers.find(({trait}) => trait === traitName)
+			if (fillerTrait) {
+				const qualifier = FEATURES[fillerTrait.trait][fillerTrait.order].qualifier
+				replaced = replaced.replace(full, qualifier)
+			} else {
+				replaced = replaced.replace(full, "")
+			}
+		}
+	}
+	const trimmed = replaced.replaceAll(/\s+/g, " ").trim()
+	return capitalize(trimmed)
 }
 
 export function titleFromSelectedOptions(options: Trait[], entity: "tracks" | "albums") {
 	if (options.length === 1) {
 		return moustache(FEATURES[options[0]!.trait][options[0]!.order].description, entity)
 	}
-	const exactMatch = COMBINED_FEATURES.find(({traits}) => {
+	const exactMatch = COMBINED_FEATURES.find(({traits, ignore = []}) => {
+		const filtered = options.filter(({trait}) => !ignore.includes(trait))
 		const entries = Object.entries(traits)
-		if (entries.length !== options.length) {
+		if (entries.length !== filtered.length) {
 			return false
 		}
-		return options.every(({trait, order}) => traits[trait] === order)
+		return filtered.every(({trait, order}) => traits[trait] === order)
 	})
 	if (exactMatch) {
-		return moustache(exactMatch.description, entity)
+		return moustache(exactMatch.description, entity, options)
 	}
 	const list = [...options]
 		.sort((a, b) => FEATURES[a.trait][a.order].listOrder - FEATURES[b.trait][b.order].listOrder)

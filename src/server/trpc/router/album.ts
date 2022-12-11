@@ -183,6 +183,7 @@ function getAlbumsBySpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zT
     WHERE (
       "public"."SpotifyTrack"."durationMs" > 30000
       AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
+      AND ${traits.map((t) => (t.order === "asc") ? `${t.trait} < 0.5` : `${t.trait} > 0.5`).join(" AND ")}
     )
     GROUP BY "public"."SpotifyTrack"."albumId" HAVING (
       (NOT "public"."SpotifyTrack"."albumId" IS NULL)
@@ -198,15 +199,18 @@ const byMultiTraits = publicProcedure.input(z.object({
   })),
 })).query(async ({ input, ctx }) => {
   const spotifyAlbums = await getAlbumsBySpotifyTracksByMultiTraits(input.traits)
-  const filtered = spotifyAlbums
+  const ids = spotifyAlbums
     .filter(({score}) => score)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, 10)
+    .map(a => a.albumId)
 
-  return ctx.prisma.album.findMany({
-    where: {spotify: {id: { in: filtered.map(a => a.albumId) }}},
-    select: { id: true, name: true },
+  const albums = await ctx.prisma.album.findMany({
+    where: {spotify: {id: { in: ids }}},
+    select: { id: true, name: true, spotify: { select: { id: true } } },
   })
+  albums.sort((a, b) => ids.indexOf(a.spotify!.id) - ids.indexOf(b.spotify!.id))
+  return albums.map((a) => ({id: a.id, name: a.name}))
 })
 
 
