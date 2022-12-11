@@ -69,7 +69,7 @@ export default class SocketClient<
 			clearInterval(this.#pongIntervalId)
 			this.#pongIntervalId = null
 		}
-		if (typeof window !== "undefined") {
+		if (typeof document !== "undefined") {
 			document.removeEventListener("visibilitychange", this.#onFocus)
 		}
 
@@ -104,7 +104,7 @@ export default class SocketClient<
 				this.#initSocket()
 			}, this.#backOff * 1_000)
 			this.#backOff *= 2
-			if (typeof window !== "undefined") {
+			if (typeof document !== "undefined") {
 				document.addEventListener("visibilitychange", this.#onFocus)
 			}
 		}
