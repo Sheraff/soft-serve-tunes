@@ -114,6 +114,7 @@ const generate = publicProcedure.input(z.union([
     const ids = spotifyTracks.map((t) => t.trackId)
     const tracks = await ctx.prisma.track.findMany({
       where: {id: { in: ids }},
+      select: trackSelect,
     })
     tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
     return tracks
