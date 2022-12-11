@@ -10,13 +10,13 @@ import { socketServer } from "utils/typedWs/server"
 import { prisma } from "server/db/client"
 
 export const zTrackTraits = z.union([
-  z.literal("danceability"), // tempo, rhythm stability, beat strength, and overall regularity
-  z.literal("energy"), // fast, loud, and noisy
-  z.literal("speechiness"), // talk show, audio book, poetry, rap, spoken word / singing
-  z.literal("acousticness"), // reverb, analog instruments / electric, numeric, distorted
-  z.literal("instrumentalness"), // instrumental tracks / rap, spoken word
-  z.literal("liveness"), // performed live / studio recording
-  z.literal("valence"), // happy, cheerful, euphoric / sad, depressed, angry
+  z.literal("danceability"),
+  z.literal("energy"),
+  z.literal("speechiness"),
+  z.literal("acousticness"),
+  z.literal("instrumentalness"),
+  z.literal("liveness"),
+  z.literal("valence"),
 ])
 
 const searchable = publicProcedure.query(({ ctx }) => {
@@ -217,30 +217,6 @@ const byMultiTraits = publicProcedure.input(z.object({
   tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
   return tracks
 })
-
-// const byTrait = publicProcedure.input(z.object({
-//   trait: zTrackTraits,
-//   order: z.enum(['desc', 'asc']),
-// })).query(({ input, ctx }) => {
-//   return ctx.prisma.track.findMany({
-//     where: {
-//       AND: [
-//         { spotify: { [input.trait]: { not: null } } },
-//         { spotify: { [input.trait]: { not: 0 } } },
-//       ],
-//       file: { duration: { gt: 30 } },
-//     },
-//     orderBy: { spotify: { [input.trait]: input.order } },
-//     take: 5,
-//     include: {
-//       spotify: {
-//         select: {
-//           [input.trait]: true,
-//         }
-//       }
-//     }
-//   })
-// })
 
 export const trackRouter = router({
   searchable,
