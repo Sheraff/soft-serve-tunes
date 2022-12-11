@@ -12,6 +12,7 @@ export default class SocketClient<
 
 	#onOnline: () => void
 	#onOffline: () => void
+	#onFocus: () => void
 	#onMessage: <K extends Route>(event: MessageEvent<any>) => void
 	#serverStateListeners: Set<(online: boolean) => void> = new Set()
 
@@ -21,6 +22,7 @@ export default class SocketClient<
 			this.target = {} as any
 			this.#onOnline = () => {}
 			this.#onOffline = () => {}
+			this.#onFocus = () => {}
 			this.#onMessage = () => {}
 			this.serverState = false
 			return
@@ -29,6 +31,7 @@ export default class SocketClient<
 
 		this.#onOnline = () => this.#initSocket()
 		this.#onOffline = () => this.socket?.close()
+		this.#onFocus = () => this.#retryOnFocus()
 		this.#onMessage = <K extends Route>(event: MessageEvent<any>) => {
 			if (event.data === '') {
 				this.#onPong()
@@ -66,6 +69,9 @@ export default class SocketClient<
 			clearInterval(this.#pongIntervalId)
 			this.#pongIntervalId = null
 		}
+		if (typeof window !== "undefined") {
+			document.removeEventListener("visibilitychange", this.#onFocus)
+		}
 
 		if (!navigator.onLine) {
 			return
@@ -98,6 +104,9 @@ export default class SocketClient<
 				this.#initSocket()
 			}, this.#backOff * 1_000)
 			this.#backOff *= 2
+			if (typeof window !== "undefined") {
+				document.addEventListener("visibilitychange", this.#onFocus)
+			}
 		}
 		socket.onerror = (e) => {
 			console.error(e)
@@ -105,6 +114,12 @@ export default class SocketClient<
 		}
 
 		this.socket = socket
+	}
+
+	#retryOnFocus() {
+		if (!document.hidden) {
+			this.#initSocket()
+		}
 	}
 
 	#serverState = false
