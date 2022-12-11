@@ -19,10 +19,6 @@ function capitalize(str: string) {
 	return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-function isKeyOf<T extends Record<string, unknown>>(obj: T, key: string): key is keyof T & string {
-	return key in obj
-}
-
 function moustache(
 	description: `${string}{{type}}${string}` | `{{Type}}${string}`,
 	type: "tracks" | "albums",
