@@ -3,24 +3,24 @@ export const FEATURES = {
 	danceability: {
 		asc: {
 			qualifier: "hectic",
-			description: "Hectic {{type}}",
+			description: "Lackadaisical {{type}}",
 			listOrder: 2,
 		},
 		desc: {
-			qualifier: "groovy",
-			description: "{{Type}} with the strongest beat",
+			qualifier: "rhythmic",
+			description: "{{Type}} with infectious beats",
 			listOrder: 5,
 			entity: "beats"
 		},
 	},
 	energy: {
 		asc: {
-			qualifier: "chill",
+			qualifier: "mellow",
 			description: "{{Type}} to relax to",
 			listOrder: 2,
 		},
 		desc: {
-			qualifier: "high-octane",
+			qualifier: "energetic",
 			description: "High-octane {{type}}",
 			listOrder: 2,
 		},
@@ -37,15 +37,15 @@ export const FEATURES = {
 			listOrder: 2,
 		},
 	},
-	instrumentalness: { // TODO: instrumentalness is not instrumental vs. lyrical, it's how much "instruments" there is (a piano solo would be low instrumentalness)
+	instrumentalness: {
 		asc: {
-			qualifier: "lyrical",
-			description: "Lyrical {{type}}",
+			qualifier: "minimal",
+			description: "Minimalist {{type}}",
 			listOrder: 2,
 		},
 		desc: {
-			qualifier: "instrumental",
-			description: "Instrumental {{type}}",
+			qualifier: "orchestral",
+			description: "Atmospheric {{type}}",
 			listOrder: 2,
 		},
 	},
@@ -63,22 +63,21 @@ export const FEATURES = {
 	},
 	valence: {
 		asc: {
-			qualifier: "depressed",
-			description: "Depressing {{type}}",
+			qualifier: "somber",
+			description: "Melancholic {{type}}",
 			listOrder: 2,
 		},
 		desc: {
-			qualifier: "euphoric",
+			qualifier: "upbeat",
 			description: "Cheerful {{type}}",
 			listOrder: 2,
 		},
 	},
-	speechiness: { // TODO: speechiness is not song vs. rap, it's how much human voice is in the track (a piano solo would be low speechiness)
+	speechiness: {
 		asc: {
-			qualifier: "singing",
-			description: "{{Type}} to sing along",
-			listOrder: 4,
-			entity: "songs"
+			qualifier: "melodic",
+			description: "Melodic {{type}}",
+			listOrder: 2,
 		},
 		desc: {
 			qualifier: "prose",
@@ -106,14 +105,14 @@ export const COMBINED_FEATURES = [
 		traits: {danceability: "desc", speechiness: "desc"},
 		description: "Grooviest prose",
 	},
-	{
-		traits: {energy: "asc",speechiness: "desc"},
-		description: "Smooth songs",
-	},
-	{
-		traits: {speechiness: "asc", instrumentalness: "asc", danceability: "desc"},
-		description: "{{Type}} for karaoke",
-	},
+	// {
+	// 	traits: {energy: "asc",speechiness: "desc"},
+	// 	description: "Smooth songs",
+	// },
+	// {
+	// 	traits: {speechiness: "asc", instrumentalness: "asc", danceability: "desc"},
+	// 	description: "{{Type}} for karaoke",
+	// },
 	{
 		traits: {instrumentalness: "asc", danceability: "desc", energy: "desc", valence: "desc"},
 		description: "{{Type}} for a party",
