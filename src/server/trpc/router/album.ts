@@ -174,16 +174,21 @@ const mostRecentAdd = publicProcedure.query(async ({ ctx }) => {
   return recent
 })
 
-function getAlbumsBySpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTrackTraits>, order: 'desc' | 'asc'}[]) {
+function getAlbumsBySpotifyTracksByMultiTraitsWithTarget(
+  traits: {
+    trait: z.infer<typeof zTrackTraits>,
+    value: number | string
+  }[]
+) {
   return prisma.$queryRawUnsafe(`
     SELECT
       "public"."SpotifyTrack"."albumId",
-      AVG(${traits.map((t) => (t.order === "asc") ? `(1-"public"."SpotifyTrack"."${t.trait}")` : `"public"."SpotifyTrack"."${t.trait}"`).join("+")}) as score
+      AVG(0 - ${traits.map((t) => `ABS(${t.value}-"public"."SpotifyTrack"."${t.trait}")`).join("-")}) as score
     FROM "public"."SpotifyTrack"
     WHERE (
       "public"."SpotifyTrack"."durationMs" > 30000
       AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
-      AND ${traits.map((t) => (t.order === "asc") ? `${t.trait} < 0.5` : `${t.trait} > 0.5`).join(" AND ")}
+      AND ${traits.map((t) => `ABS(${t.value}-${t.trait}) < 0.5`).join(" AND ")}
     )
     GROUP BY "public"."SpotifyTrack"."albumId" HAVING (
       (NOT "public"."SpotifyTrack"."albumId" IS NULL)
@@ -195,10 +200,10 @@ function getAlbumsBySpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zT
 const byMultiTraits = publicProcedure.input(z.object({
   traits: z.array(z.object({
     trait: zTrackTraits,
-    order: z.enum(['desc', 'asc']),
+    value: z.string(),
   })),
 })).query(async ({ input, ctx }) => {
-  const spotifyAlbums = await getAlbumsBySpotifyTracksByMultiTraits(input.traits)
+  const spotifyAlbums = await getAlbumsBySpotifyTracksByMultiTraitsWithTarget(input.traits)
   const ids = spotifyAlbums
     .filter(({score}) => score)
     .sort((a, b) => (b.score || 0) - (a.score || 0))

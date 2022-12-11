@@ -181,17 +181,23 @@ const like = protectedProcedure.input(z.object({
   return track
 })
 
-export function getSpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTrackTraits>, order: 'desc' | 'asc'}[], count: number) {
+export function getSpotifyTracksByMultiTraitsWithTarget(
+  traits: {
+    trait: z.infer<typeof zTrackTraits>,
+    value: number | string
+  }[],
+  count: number
+) {
   return prisma.$queryRawUnsafe(`
     SELECT
       "public"."SpotifyTrack"."trackId",
       ${traits.map((t) => `"public"."SpotifyTrack"."${t.trait}" as ${t.trait}`).join(",")},
-      (${traits.map((t) => (t.order === "asc") ? `(1-${t.trait})` : t.trait).join("+")}) as score
+      (0 - ${traits.map((t) => `ABS(${t.value}-${t.trait})`).join("-")}) as score
     FROM "public"."SpotifyTrack"
     WHERE (
       "public"."SpotifyTrack"."durationMs" > 30000
       AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
-      AND ${traits.map((t) => (t.order === "asc") ? `${t.trait} < 0.5` : `${t.trait} > 0.5`).join(" AND ")}
+      AND ${traits.map((t) => `ABS(${t.value}-${t.trait}) < 0.5`).join(" AND ")}
     )
     ORDER BY score DESC LIMIT ${count} OFFSET 0
   `) as unknown as {trackId: string}[]
@@ -200,10 +206,10 @@ export function getSpotifyTracksByMultiTraits(traits: {trait: z.infer<typeof zTr
 const byMultiTraits = publicProcedure.input(z.object({
   traits: z.array(z.object({
     trait: zTrackTraits,
-    order: z.enum(['desc', 'asc']),
+    value: z.string(),
   })),
 })).query(async ({ input, ctx }) => {
-  const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 6)
+  const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
   const ids = spotifyTracks.map((t) => t.trackId)
   const tracks = await ctx.prisma.track.findMany({
     where: {id: { in: ids }},

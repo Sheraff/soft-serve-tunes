@@ -1,216 +1,280 @@
 
 export const FEATURES = {
 	danceability: {
-		asc: {
+		"0": {
 			qualifier: "hectic",
-			description: "Lackadaisical {{type}}",
 			listOrder: 2,
 		},
-		desc: {
+		"1": {
 			qualifier: "rhythmic",
-			description: "{{Type}} with infectious beats",
 			listOrder: 5,
-			entity: "beats"
 		},
 	},
 	energy: {
-		asc: {
+		"0": {
 			qualifier: "mellow",
-			description: "{{Type}} to relax to",
 			listOrder: 2,
 		},
-		desc: {
+		"1": {
 			qualifier: "energetic",
-			description: "High-octane {{type}}",
 			listOrder: 2,
 		},
 	},
 	acousticness: {
-		asc: {
+		"0": {
 			qualifier: "electric",
-			description: "Electric {{type}}",
 			listOrder: 2,
 		},
-		desc: {
+		"1": {
 			qualifier: "acoustic",
-			description: "Acoustic {{type}}",
 			listOrder: 2,
 		},
 	},
 	instrumentalness: {
-		asc: {
+		"0": {
 			qualifier: "minimal",
-			description: "Minimalist {{type}}",
 			listOrder: 2,
 		},
-		desc: {
-			qualifier: "orchestral",
-			description: "Atmospheric {{type}}",
+		"0.5": {
+			qualifier: "musical",
+			listOrder: 2,
+		},
+		"1": {
+			qualifier: "instrumental",
 			listOrder: 2,
 		},
 	},
 	liveness: {
-		asc: {
+		"0": {
 			qualifier: "studio",
-			description: "{{Type}} recorded in a studio",
 			listOrder: 3,
 		},
-		desc: {
+		"1": {
 			qualifier: "live",
-			description: "{{Type}} performed live",
 			listOrder: 1,
 		},
 	},
 	valence: {
-		asc: {
+		"0": {
 			qualifier: "somber",
-			description: "Melancholic {{type}}",
 			listOrder: 2,
 		},
-		desc: {
+		"1": {
 			qualifier: "upbeat",
-			description: "Cheerful {{type}}",
 			listOrder: 2,
 		},
 	},
 	speechiness: {
-		asc: {
+		"0": {
 			qualifier: "melodic",
-			description: "Melodic {{type}}",
 			listOrder: 2,
 		},
-		desc: {
-			qualifier: "prose",
-			description: "{{Type}} with the best flow",
+		"0.3": {
+			qualifier: "song",
 			listOrder: 4,
-			entity: "prose"
+		},
+		"0.6": {
+			qualifier: "rap",
+			listOrder: 4,
+		},
+		"1": {
+			qualifier: "prose",
+			listOrder: 4,
 		},
 	},
-} as const
+}
 
 export const COMBINED_FEATURES = [
 	{
-		traits: {danceability: "desc", energy: "desc"},
+		traits: {danceability: "0"},
+		description: "Lackadaisical {{type}}",
+	},
+	{
+		traits: {danceability: "1"},
+		description: "{{Type}} with infectious beats",
+	},
+	{
+		traits: {energy: "0"},
+		description: "{{Type}} to relax to",
+	},
+	{
+		traits: {energy: "1"},
+		description: "High-octane {{type}}",
+	},
+	{
+		traits: {acousticness: "0"},
+		description: "Electric {{type}}",
+	},
+	{
+		traits: {acousticness: "1"},
+		description: "Acoustic {{type}}",
+	},
+	{
+		traits: {instrumentalness: "0"},
+		description: "Minimalist {{type}}",
+	},
+	{
+		traits: {instrumentalness: "0.5"},
+		description: "Musical {{type}}",
+	},
+	{
+		traits: {instrumentalness: "1"},
+		description: "Atmospheric {{type}}",
+	},
+	{
+		traits: {liveness: "0"},
+		description: "{{Type}} recorded in a studio",
+	},
+	{
+		traits: {liveness: "1"},
+		description: "{{Type}} performed live",
+	},
+	{
+		traits: {valence: "0"},
+		description: "Melancholic {{type}}",
+	},
+	{
+		traits: {valence: "1"},
+		description: "Cheerful {{type}}",
+	},
+	{
+		traits: {speechiness: "0"},
+		description: "Melodic {{type}}",
+	},
+	{
+		traits: {speechiness: "0.3"},
+		description: "Mid speech {{type}}",
+	},
+	{
+		traits: {speechiness: "0.7"},
+		description: "Mid speech {{type}}",
+	},
+	{
+		traits: {speechiness: "1"},
+		description: "{{Type}} with the best flow",
+	},
+	{
+		traits: {danceability: "1", energy: "1"},
 		description: "{{Type}} for clubbing",
 	},
 	{
-		traits: {acousticness: "asc", energy: "desc"},
+		traits: {acousticness: "0", energy: "1"},
 		description: "{{Type}} for headbanging",
 	},
 	{
-		traits: {danceability: "desc", energy: "desc", acousticness: "asc"},
+		traits: {danceability: "1", energy: "1", acousticness: "0"},
 		description: "{{Type}} for a rave",
 	},
 	{
-		traits: {danceability: "desc", speechiness: "desc"},
+		traits: {danceability: "1", speechiness: "1"},
 		description: "Grooviest prose",
 	},
 	// {
-	// 	traits: {energy: "asc",speechiness: "desc"},
+	// 	traits: {energy: "0",speechiness: "1"},
 	// 	description: "Smooth songs",
 	// },
 	// {
-	// 	traits: {speechiness: "asc", instrumentalness: "asc", danceability: "desc"},
+	// 	traits: {speechiness: "0", instrumentalness: "0", danceability: "1"},
 	// 	description: "{{Type}} for karaoke",
 	// },
 	{
-		traits: {instrumentalness: "asc", danceability: "desc", energy: "desc", valence: "desc"},
+		traits: {instrumentalness: "0", danceability: "1", energy: "1", valence: "1"},
 		description: "{{Type}} for a party",
 	},
 	{
-		traits: {energy: "desc", acousticness: "asc", valence: "desc"},
+		traits: {energy: "1", acousticness: "0", valence: "1"},
 		ignore: ["danceability", "liveness"],
 		description: "High-energy {{danceability}} {{liveness}} {{type}}",
 	},
 	{
-		traits: {energy: "desc", acousticness: "asc", valence: "asc"},
+		traits: {energy: "1", acousticness: "0", valence: "0"},
 		ignore: ["danceability", "liveness"],
 		description: "{{Danceability}} emo {{liveness}} {{type}}",
 	},
 	{
-		traits: {energy: "asc", acousticness: "desc", valence: "asc"},
+		traits: {energy: "0", acousticness: "1", valence: "0"},
 		ignore: ["danceability", "liveness", "instrumentalness", "speechiness"],
 		description: "{{Danceability}} {{speechiness}} {{instrumentalness}} {{liveness}} ballads",
 	},
 	// chatGPT generated
 	{
-		traits: {energy: "desc", valence: "desc", acousticness: "asc"},
+		traits: {energy: "1", valence: "1", acousticness: "0"},
 		description: "Energetic {{type}} for getting pumped up",
 	},
 	{
-		traits: {energy: "asc", acousticness: "desc", valence: "asc", instrumentalness: "desc"},
+		traits: {energy: "0", acousticness: "1", valence: "0", instrumentalness: "1"},
 		description: "Soothing {{type}} for relaxation",
 	},
 	{
-		traits: {energy: "desc", danceability: "desc", valence: "desc", speechiness: "asc"},
+		traits: {energy: "1", danceability: "1", valence: "1", speechiness: "0"},
 		description: "Upbeat {{type}} for a road trip",
 	},
 	{
-		traits: {energy: "asc", acousticness: "desc", valence: "asc", instrumentalness: "asc"},
+		traits: {energy: "0", acousticness: "1", valence: "0", instrumentalness: "0"},
 		description: "Introspective {{type}} for a rainy day",
 	},
 	{
-		traits: {energy: "desc", danceability: "desc", valence: "desc", liveness: "desc"},
+		traits: {energy: "1", danceability: "1", valence: "1", liveness: "1"},
 		description: "Fiery {{type}} for a dance-off",
 	},
 	{
-		traits: {energy: "asc", acousticness: "asc", valence: "desc", instrumentalness: "asc"},
+		traits: {energy: "0", acousticness: "0", valence: "1", instrumentalness: "0"},
 		description: "Chill {{type}} for a beach bonfire",
 	},
 	{
-		traits: {energy: "desc", acousticness: "asc", valence: "desc", speechiness: "asc"},
+		traits: {energy: "1", acousticness: "0", valence: "1", speechiness: "0"},
 		description: "Melodic {{type}} for a sing-along",
 	},
 	{
-		traits: {danceability: "desc", energy: "desc", valence: "desc", speechiness: "asc"},
+		traits: {danceability: "1", energy: "1", valence: "1", speechiness: "0"},
 		description: "Funkalicious {{type}} for a funky good time",
 	},
 	{
-		traits: {danceability: "desc", energy: "desc", valence: "desc", acousticness: "asc", instrumentalness: "asc"},
+		traits: {danceability: "1", energy: "1", valence: "1", acousticness: "0", instrumentalness: "0"},
 		description: "Old-school {{type}} for a throwback party",
 	},
 	{
-		traits: {energy: "asc", acousticness: "asc", valence: "asc", instrumentalness: "desc", speechiness: "asc"},
+		traits: {energy: "0", acousticness: "0", valence: "0", instrumentalness: "1", speechiness: "0"},
 		description: "Dreamy {{type}} for a dreamy vibe",
 	},
 	{
-		traits: {danceability: "desc", energy: "desc"},
+		traits: {danceability: "1", energy: "1"},
 		description: "Danceable {{type}} for getting your groove on",
 	},
 	{
-		traits: {acousticness: "asc", valence: "asc"},
+		traits: {acousticness: "0", valence: "0"},
 		description: "Mellow {{type}} for a laid-back evening",
 	},
 	{
-		traits: {energy: "desc", valence: "desc"},
+		traits: {energy: "1", valence: "1"},
 		description: "Rockin' {{type}} for a rock concert",
 	},
 	{
-		traits: {danceability: "asc", valence: "asc"},
+		traits: {danceability: "0", valence: "0"},
 		description: "Smooth {{type}} for a romantic date",
 	},
 	{
-		traits: {energy: "desc", danceability: "desc"},
+		traits: {energy: "1", danceability: "1"},
 		description: "Punchy {{type}} for a workout",
 	},
 	{
-		traits: {instrumentalness: "asc", valence: "asc"},
+		traits: {instrumentalness: "0", valence: "0"},
 		description: "Mystical {{type}} for a meditative mood",
 	},
 	{
-		traits: {energy: "desc", danceability: "desc"},
+		traits: {energy: "1", danceability: "1"},
 		description: "Electrifying {{type}} for a dance party",
 	},
 	{
-		traits: {instrumentalness: "asc", speechiness: "desc"},
+		traits: {instrumentalness: "0", speechiness: "1"},
 		description: "Intriguing {{type}} for a thought-provoking playlist",
 	},
 	{
-		traits: {energy: "desc", valence: "desc"},
+		traits: {energy: "1", valence: "1"},
 		description: "Sassy {{type}} for a girls' night out",
 	},
 ] as {
-	traits: {[key in keyof typeof FEATURES]?: "asc" | "desc"}
-	description: `${string}{{type}}${string}` | `{{Type}}${string}`
+	traits: {[key in keyof typeof FEATURES]?: keyof typeof FEATURES[key]}
+	description: string,
 	ignore?: (keyof typeof FEATURES)[]
 }[]

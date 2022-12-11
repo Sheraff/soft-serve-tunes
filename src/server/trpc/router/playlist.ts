@@ -1,6 +1,6 @@
 import { router, publicProcedure, protectedProcedure } from "server/trpc/trpc"
 import { z } from "zod"
-import { getSpotifyTracksByMultiTraits, zTrackTraits } from "./track"
+import { getSpotifyTracksByMultiTraitsWithTarget, zTrackTraits } from "./track"
 import { TRPCError } from "@trpc/server"
 import extractPlaylistCredits from "client/db/utils/extractPlaylistCredits"
 import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
@@ -78,7 +78,7 @@ const generate = publicProcedure.input(z.union([
     type: z.literal('by-multi-traits'),
     traits: z.array(z.object({
       trait: zTrackTraits,
-      order: z.enum(['desc', 'asc']),
+      value: z.string(),
     })),
   }),
 ])).query(async ({ input, ctx }) => {
@@ -110,7 +110,7 @@ const generate = publicProcedure.input(z.union([
     return data.tracks
   }
   if (input.type === 'by-multi-traits') {
-    const spotifyTracks = await getSpotifyTracksByMultiTraits(input.traits, 30)
+    const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 30)
     const ids = spotifyTracks.map((t) => t.trackId)
     const tracks = await ctx.prisma.track.findMany({
       where: {id: { in: ids }},

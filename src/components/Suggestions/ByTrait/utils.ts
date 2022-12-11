@@ -1,26 +1,31 @@
 import { startTransition } from "react"
 import { COMBINED_FEATURES, FEATURES } from "./dictionaries"
 
-export type Trait = {
-	trait: keyof typeof FEATURES
-	order: "asc" | "desc"
+type GenericTrait<T extends keyof typeof FEATURES> = {
+	trait: T
+	value: keyof typeof FEATURES[T]
 }
+
+export type Trait = GenericTrait<keyof typeof FEATURES>
 
 export type Option = {
 	label: string,
-	key: keyof typeof FEATURES, type: keyof typeof FEATURES[keyof typeof FEATURES]
+	key: keyof typeof FEATURES,
+	value: keyof typeof FEATURES[keyof typeof FEATURES],
 }
-export const options = Object.entries(FEATURES).map(([key, {asc, desc}]) => ([
-	{label: asc.qualifier, key, type: "asc"},
-	{label: desc.qualifier, key, type: "desc"},
-])) as [Option, Option][]
+
+export const options = Object.entries(FEATURES).map(
+	([key, targets]) => (Object.entries(targets).map(
+		([value, {qualifier}]) => ({key, label: qualifier, value})
+	).sort(({value: a}, {value: b}) => Number(a) - Number(b)))
+) as [Option, Option, ...Option[]][]
 
 function capitalize(str: string) {
 	return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 function moustache(
-	description: `${string}{{type}}${string}` | `{{Type}}${string}`,
+	description: string,
 	type: "tracks" | "albums",
 	fillers: Trait[] = []
 ) {
@@ -36,7 +41,7 @@ function moustache(
 		} else {
 			const fillerTrait = fillers.find(({trait}) => trait === traitName)
 			if (fillerTrait) {
-				const qualifier = FEATURES[fillerTrait.trait][fillerTrait.order].qualifier
+				const qualifier = FEATURES[fillerTrait.trait][fillerTrait.value]!.qualifier
 				replaced = replaced.replace(full, qualifier)
 			} else {
 				replaced = replaced.replace(full, "")
@@ -48,30 +53,27 @@ function moustache(
 }
 
 export function titleFromSelectedOptions(options: Trait[], entity: "tracks" | "albums") {
-	if (options.length === 1) {
-		return moustache(FEATURES[options[0]!.trait][options[0]!.order].description, entity)
-	}
 	const exactMatch = COMBINED_FEATURES.find(({traits, ignore = []}) => {
 		const filtered = options.filter(({trait}) => !ignore.includes(trait))
 		const entries = Object.entries(traits)
 		if (entries.length !== filtered.length) {
 			return false
 		}
-		return filtered.every(({trait, order}) => traits[trait] === order)
+		return filtered.every(({trait, value}) => traits[trait] === value)
 	})
 	if (exactMatch) {
 		return moustache(exactMatch.description, entity, options)
 	}
 	const list = [...options]
-		.sort((a, b) => FEATURES[a.trait][a.order].listOrder - FEATURES[b.trait][b.order].listOrder)
+		.sort((a, b) => FEATURES[a.trait][a.value].listOrder - FEATURES[b.trait][b.value].listOrder)
 	
-	const words = list.map(({trait, order}, i, arr) => i === arr.length - 1 && "entity" in FEATURES[trait][order]
+	const words = list.map(({trait, value}, i, arr) => i === arr.length - 1 && "entity" in FEATURES[trait][value]
 			// @ts-expect-error -- "entity" was tested to be present just above
-			? FEATURES[trait][order].entity
-			: FEATURES[trait][order].qualifier
+			? FEATURES[trait][value].entity
+			: FEATURES[trait][value].qualifier
 		)
 	
-	if (!("entity" in FEATURES[list.at(-1)!.trait][list.at(-1)!.order])) {
+	if (!("entity" in FEATURES[list.at(-1)!.trait][list.at(-1)!.value])) {
 		words.push(entity)
 	}
 	
@@ -80,7 +82,7 @@ export function titleFromSelectedOptions(options: Trait[], entity: "tracks" | "a
 }
 
 export function selectionFromSelectedOptions(options: Trait[]) {
-	return options.map(({trait, order}) => FEATURES[trait][order].qualifier)
+	return options.map(({trait, value}) => FEATURES[trait][value].qualifier)
 }
 
 export function addNewTraitByOption(setTraits: (cb: (prev?: Trait[] | undefined) => Trait[]) => void) {
@@ -90,8 +92,8 @@ export function addNewTraitByOption(setTraits: (cb: (prev?: Trait[] | undefined)
 			setTraits((traits = []) => {
 				const clone = [...traits]
 				const traitIndex = clone.findIndex(({trait}) => trait === option.key)
-				if (traitIndex < 0 || clone[traitIndex]!.order !== option.type) {
-					clone.push({trait: option.key, order: option.type})
+				if (traitIndex < 0 || clone[traitIndex]!.value !== option.value) {
+					clone.push({trait: option.key, value: option.value})
 				}
 				if (traitIndex >= 0 && clone.length > 1) {
 					clone.splice(traitIndex, 1)

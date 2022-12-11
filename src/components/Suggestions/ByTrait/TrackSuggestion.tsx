@@ -14,7 +14,7 @@ import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSe
 
 const preferredTrackList = suspensePersistedState<Trait[]>("preferredTrackList", [{
 	trait: "danceability",
-	order: "desc"
+	value: "1",
 }])
 
 export default function TracksByTraitSuggestion() {

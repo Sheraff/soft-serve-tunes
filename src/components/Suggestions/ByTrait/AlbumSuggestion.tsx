@@ -11,7 +11,7 @@ import AlbumList from "components/AlbumList"
 
 const preferredAlbumList = suspensePersistedState<Trait[]>("preferredAlbumList", [{
 	trait: "danceability",
-	order: "desc"
+	value: "1",
 }])
 
 export default function AlbumsByTraitSuggestion() {
