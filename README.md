@@ -83,6 +83,8 @@ freebox > box settings > ports >
 
 ### ports
 freebox > static local IP for server
+- freebox settings > advanced > DHCP > static
+- assign raspberry pi to static IP
 configure DynDNS w/ OVH + freebox
 freebox > box settings > ports > 
 - 443 > 3000 (https)
