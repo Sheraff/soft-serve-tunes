@@ -98,7 +98,7 @@ export default forwardRef(function ArtistView({
 				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
-			{palette && (
+			{palette && artist.open && (
 				<Head>
 					<meta name="theme-color" content={palette['--palette-bg-main']} />
 				</Head>

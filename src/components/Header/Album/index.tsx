@@ -110,7 +110,7 @@ export default forwardRef(function AlbumView({
 				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
-			{palette && (
+			{palette && album.open && (
 				<Head>
 					<meta name="theme-color" content={palette['--palette-bg-main']} />
 				</Head>
