@@ -167,7 +167,7 @@ const leastRecentListen = publicProcedure.query(async ({ ctx }) => {
     return neverListened
   }
   const oldestListened = await ctx.prisma.artist.findMany({
-    where: { userData: { isNot: null } },
+    where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "asc" } },
     take: 10 - neverListened.length,
     select: { id: true, name: true },
@@ -177,7 +177,7 @@ const leastRecentListen = publicProcedure.query(async ({ ctx }) => {
 
 const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
-    where: { userData: { isNot: null } },
+    where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
     take: 10,
     select: { id: true, name: true },

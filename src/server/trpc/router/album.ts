@@ -144,7 +144,7 @@ const mostFav = publicProcedure.query(({ ctx }) => {
 
 const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.album.findMany({
-    where: { userData: { isNot: null } },
+    where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
     take: 10,
     select: { id: true, name: true },
@@ -163,9 +163,7 @@ const mostRecentAdd = publicProcedure.query(async ({ ctx }) => {
   })
   if (recent.length < 10) {
     recent.concat(await ctx.prisma.album.findMany({
-      where: {OR: [
-        { userData: {playcount: {gt: 0} } },
-      ]},
+      where: { userData: {playcount: {gt: 0} } },
       orderBy: { createdAt: "desc" },
       take: 10 - recent.length,
       select: { id: true, name: true },
