@@ -1,15 +1,42 @@
 .main {
 	grid-area: 1 / 1 / 4 / 2;
 	z-index: var(--z, 2);
-	transition: transform 350ms;
-	transform: translateY(-100vh);
 	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+}
+.main > * {
 	background-color: var(--palette-primary);
 	color: var(--palette-bg-main);
-
-	will-change: transform, clip-path;
+	pointer-events: none;
 }
-.main[data-open="true"] {
-	transform: translateY(calc(-100vh + 48px));
+
+.head {
+	transition: transform 350ms;
+	transform: translateY(-100%);
+	will-change: transform;
+}
+.main[data-open="true"] .head {
+	transform: translateY(0);
 	pointer-events: auto;
+}
+
+.menu {
+	display: flex;
+	justify-content: space-between;
+}
+
+.body {
+	flex: 1;
+	clip-path: inset(0 0 100% 0);
+	transition: clip-path 350ms;
+	will-change: clip-path;
+}
+.body[data-open="true"] {
+	clip-path: inset(0 0 0 0);
+	pointer-events: auto;
+}
+.main:not([data-open="true"]) .body[data-open="true"] {
+	pointer-events: none;
+	clip-path: inset(100% 0 0 0);
 }
