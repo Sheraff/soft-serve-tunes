@@ -216,7 +216,7 @@ const modify = protectedProcedure.input(z.union([
     id: z.string(),
     type: z.enum(["add-track"]),
     params: z.object({
-      id: z.string(),
+      id: z.union([z.string(), z.array(z.string())]),
       index: z.number().optional(),
     }),
   }),
@@ -304,28 +304,33 @@ const modify = protectedProcedure.input(z.union([
     })
     log("info", "200", "trpc", `playlist track removed "${input.params.id}"`)
   } else if (input.type === "add-track") {
+    const ids = Array.isArray(input.params.id) ? input.params.id : [input.params.id]
     if (typeof input.params.index === "number") {
+      const index = input.params.index!
       await ctx.prisma.$transaction(async (tx) => {
         const entries = await tx.playlistEntry.findMany({
-          where: {
-            playlistId: input.id,
-            index: {gte: input.params.index},
-          },
-          select: {id: true, index: true},
+          where: {playlistId: input.id},
+          select: {id: true, index: true, trackId: true},
         })
+        const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))
         for (const entry of entries) {
-          await tx.playlistEntry.update({
-            where: { id: entry.id },
-            data: { index: entry.index + 1 },
+          if (entry.index >= index) {
+            await tx.playlistEntry.update({
+              where: { id: entry.id },
+              data: { index: entry.index + newIds.length },
+            })
+          }
+        }
+        for (let i = 0; i < newIds.length; i++) {
+          const id = newIds[i]!
+          await tx.playlistEntry.create({
+            data: {
+              index: index + i,
+              playlistId: input.id,
+              trackId: id,
+            }
           })
         }
-        await tx.playlistEntry.create({
-          data: {
-            index: input.params.index!,
-            playlistId: input.id,
-            trackId: input.params.id,
-          }
-        })
         await tx.playlist.update({
           where: { id: input.id },
           data: { modifiedAt: new Date().toISOString() },
@@ -333,25 +338,29 @@ const modify = protectedProcedure.input(z.union([
       })
     } else {
       await ctx.prisma.$transaction(async (tx) => {
-        const [last] = await tx.playlistEntry.findMany({
+        const entries = await tx.playlistEntry.findMany({
           where: { playlistId: input.id },
           orderBy: { index: "desc" },
-          take: 1,
-          select: {index: true},
+          select: {index: true, trackId: true},
         })
+        const last = entries[0]
         if (!last) {
           throw new TRPCError({
             message: `playlist ${input.id} not found during add-track w/o params.index`,
             code: 'NOT_FOUND',
           })
         }
-        await tx.playlistEntry.create({
-          data: {
-            index: last.index + 1,
-            playlistId: input.id,
-            trackId: input.params.id,
-          }
-        })
+        const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))
+        for (let i = 0; i < newIds.length; i++) {
+          const id = newIds[i]!
+          await tx.playlistEntry.create({
+            data: {
+              index: last.index + 1 + i,
+              playlistId: input.id,
+              trackId: id,
+            }
+          })
+        }
         await tx.playlist.update({
           where: { id: input.id },
           data: { modifiedAt: new Date().toISOString() },

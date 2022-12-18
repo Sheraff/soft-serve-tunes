@@ -1,7 +1,8 @@
 import classNames from "classnames"
 import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState, useMemo } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
-import { editOverlay, useShowHome } from "components/AppContext"
+import { useShowHome } from "components/AppContext"
+import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import styles from "./index.module.css"
 import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
@@ -12,6 +13,8 @@ import DragIcon from "icons/drag_indicator.svg"
 import ExplicitIcon from "icons/explicit.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import NewIcon from "icons/fiber_new.svg"
+import CheckboxOnIcon from "icons/check_box_on.svg"
+import CheckboxOffIcon from "icons/check_box_off.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
@@ -38,6 +41,8 @@ function TrackItem({
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
 	index,
+	selection,
+	selected,
 }: {
 	track: TrackListItem
 	enableSiblings?: () => void
@@ -50,6 +55,8 @@ function TrackItem({
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 	index: number
+	selection: boolean
+	selected: boolean
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const {data} = trpc.track.miniature.useQuery({id: track.id})
@@ -100,7 +107,7 @@ function TrackItem({
 	callbacks.current.onLong = () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			state => ({...state, selection: [...state.selection, {type: "track", id: track.id}]}),
+			editOverlaySetter({type: "track", id: track.id}),
 			queryClient
 		)
 	}
@@ -122,6 +129,7 @@ function TrackItem({
 		<div ref={item} className={classNames(styles.wrapper, {
 			[styles.liked]: data?.userData?.favorite,
 			[styles.draggable]: draggable,
+			[styles.selection]: selection,
 		})}>
 			<button
 				className={classNames(styles.button, {
@@ -149,8 +157,14 @@ function TrackItem({
 					console.error('Tried to add track to playlist, but data was not loaded yet')
 				}}
 			>
-				{draggable && (
+				{!selection && draggable && (
 					<DragIcon className={styles.handle} data-handle/>
+				)}
+				{selection && !selected && (
+					<CheckboxOffIcon className={styles.selected} />
+				)}
+				{selection && selected && (
+					<CheckboxOnIcon className={styles.selected} />
 				)}
 				{!isEmpty && (
 					<div className={styles.img}>
@@ -238,6 +252,10 @@ export default function TrackList({
 
 	const [itemToAdd, setItemToAdd] = useState<TrackListItem | null>(null)
 
+	const _editViewState = editOverlay.useValue()
+	const editViewState = useDeferredValue(_editViewState)
+	const isSelection = editViewState.type === "track"
+
 	return (
 		<>
 			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
@@ -263,6 +281,8 @@ export default function TrackList({
 								quickSwipeIcon={quickSwipeIcon}
 								quickSwipeDeleteAnim={quickSwipeDeleteAnim}
 								index={i}
+								selection={isSelection}
+								selected={isSelection && editViewState.selection.some(({id}) => id === track.id)}
 							/>
 						)}
 					</li>

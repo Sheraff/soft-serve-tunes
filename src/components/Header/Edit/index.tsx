@@ -1,4 +1,4 @@
-import { editOverlay } from "components/AppContext"
+import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { type ForwardedRef, forwardRef, useDeferredValue, type CSSProperties, useState, useRef } from "react"
 import pluralize from "utils/pluralize"
 import styles from "./index.module.css"
@@ -6,6 +6,7 @@ import CloseIcon from "icons/close.svg"
 import EditIcon from "icons/edit.svg"
 import DeleteIcon from "icons/delete.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
+import AddToPlaylist from "./AddToPlaylist"
 
 /**
  * create `editOverlay` state setter function
@@ -37,17 +38,41 @@ export default forwardRef(function EditOverlay({
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
-	const [{selection}, setState] = editOverlay.useState()
-	const [editOpen, setEditOpen] = useState(false)
+	const [editState, setState] = editOverlay.useState()
 
-	const stableSelection = useRef<typeof selection>(selection)
-	if (selection.length !== 0) {
-		stableSelection.current = selection
+	const stableEditState = useRef<typeof editState>(editState)
+	if (editState.selection.length !== 0) {
+		stableEditState.current = editState
 	}
-	const type = stableSelection.current.every(item => item.type === stableSelection.current[0]!.type)
-		? stableSelection.current[0]!.type
-		: "error"
-	const selectionSummary = `${stableSelection.current.length} ${type}${pluralize(stableSelection.current.length)} selected`
+	const {selection, type} = stableEditState.current
+	const selectionSummary = `${selection.length} ${type}${pluralize(selection.length)} selected`
+
+	const [_body, _setBody] = useState<"playlist" | "edit" | "delete" | null>(null)
+	const stableBody = useRef<typeof _body>(_body)
+	if (_body !== null) {
+		stableBody.current = _body
+	}
+	const body = stableBody.current
+
+	const bodyRef = useRef<HTMLDivElement>(null)
+	const setBody = async (next: typeof _body) => {
+		navigator.vibrate(1)
+		if (next === _body) return _setBody(null)
+		if (_body === null) return _setBody(next)
+
+		_setBody(null)
+		const animation = bodyRef.current!.animate([
+			{clipPath: "inset(0 0 0 0)"},
+			{clipPath: "inset(100% 0 0 0)"},
+		], {
+			fill: "both",
+			duration: 350,
+			easing: "ease-in"
+		})
+		await animation.finished
+		animation.cancel()
+		_setBody(next)
+	}
 
 	return (
 		<div
@@ -59,38 +84,53 @@ export default forwardRef(function EditOverlay({
 			} as CSSProperties}
 		>
 			<div className={styles.head}>
+			<p className={styles.summary}>{selectionSummary}</p>
 				<div className={styles.menu}>
 					<button
 						type="button"
-						onClick={() => setEditOpen(prev => !prev)}
+						onClick={() => setBody("delete")}
 					>
-						<DeleteIcon />
+						<DeleteIcon className={styles.trash} />
 					</button>
 					<button
 						type="button"
-						onClick={() => setEditOpen(prev => !prev)}
+						onClick={() => setBody("edit")}
 					>
-						<EditIcon />
+						<EditIcon className={styles.pen} />
 					</button>
 					{type === "track" && (
 						<button
 							type="button"
-							onClick={() => setEditOpen(prev => !prev)}
+							onClick={() => setBody("playlist")}
 						>
 							<PlaylistAddIcon />
 						</button>
 					)}
 					<button
 						type="button"
-						onClick={() => setState(prev => ({...prev, selection: []}))}
+						onClick={() => {
+							navigator.vibrate(1)
+							setState(editOverlaySetter(null))
+						}}
 					>
 						<CloseIcon />
 					</button>
 				</div>
-				<p>{selectionSummary}</p>
+				
 			</div>
-			<div className={styles.body} data-open={editOpen}>
-				{/* edit */}
+			<div className={styles.body} data-open={Boolean(_body)} ref={bodyRef}>
+				{body === "playlist" && (
+					<AddToPlaylist
+						items={selection}
+						onSelect={() => setState(editOverlaySetter(null))}
+					/>
+				)}
+				{body === "edit" && (
+					<p>edit</p>
+				)}
+				{body === "delete" && (
+					<p>delete</p>
+				)}
 			</div>
 		</div>
 	)

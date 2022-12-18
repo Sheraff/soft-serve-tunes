@@ -15,6 +15,15 @@
 	transition: transform 350ms;
 	transform: translateY(-100%);
 	will-change: transform;
+	font-size: 10px;
+	padding:
+		max(8px, env(safe-area-inset-top))
+		max(8px, env(safe-area-inset-right))
+		8px
+		max(8px, env(safe-area-inset-left));
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
 .main[data-open="true"] .head {
 	transform: translateY(0);
@@ -23,13 +32,28 @@
 
 .menu {
 	display: flex;
-	justify-content: space-between;
+	justify-content: space-around;
+	align-items: center;
+	font-size: 20px;
+}
+.menu > button {
+	display: flex;
+}
+.trash {
+	font-size: 0.9em;
+}
+.pen {
+	font-size: 0.8em;
+}
+
+.summary {
+	text-align: center;
 }
 
 .body {
 	flex: 1;
 	clip-path: inset(0 0 100% 0);
-	transition: clip-path 350ms;
+	transition: clip-path 350ms ease-out;
 	will-change: clip-path;
 }
 .body[data-open="true"] {

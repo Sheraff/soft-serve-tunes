@@ -272,7 +272,8 @@
 	color: var(--palette-primary);
 	touch-action: pan-x pan-y;
 }
-.draggable .button {
+.draggable .button,
+.selection .button {
 	padding-left: 4px;
 }
 .empty::before {
@@ -298,7 +299,8 @@
 	object-fit: cover;
 }
 
-.handle {
+.handle,
+.selected {
 	font-size: 28px;
 	flex-shrink: 0;
 	height: 48px;
@@ -323,7 +325,8 @@
 	align-items: center;
 }
 
-.draggable .play {
+.draggable .play,
+.selection .play {
 	left: calc(4px + 20px + 4px);
 }
 
@@ -341,7 +344,8 @@
 	text-align: left;
 	flex-direction: column;
 }
-.draggable .span {
+.draggable .span,
+.selection .span {
 	padding-right: 42px;
 }
 .name {

@@ -1,24 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect } from "react"
+import { editOverlay, editOverlaySetter } from "./editOverlay"
 import globalState from "./globalState"
-
-type EditOverlay = {
-	selection: {
-		id: string,
-		type: "artist" | "album" | "track",
-	}[]
-}
-
-export const editOverlay = globalState<EditOverlay>("editOverlay", {
-	selection: [],
-})
 
 type Panel = "artist" | "album" | "search"
 export const panelStack = globalState<Panel[]>(
 	"panelStack",
 	[],
-	(value, queryClient) => {
-		editOverlay.setState((state) => ({...state, selection: []}), queryClient)
+	(_, queryClient) => {
+		editOverlay.setState(editOverlaySetter(null), queryClient)
 	}
 )
 
@@ -90,8 +80,8 @@ type MainView = "suggestions" | "home"
 export const mainView = globalState<MainView>(
 	"mainView",
 	"suggestions",
-	(value, queryClient) => {
-		editOverlay.setState((state) => ({...state, selection: []}), queryClient)
+	(_, queryClient) => {
+		editOverlay.setState(editOverlaySetter(null), queryClient)
 	}
 )
 

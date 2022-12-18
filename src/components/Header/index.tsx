@@ -3,12 +3,12 @@ import styles from "./index.module.css"
 import {
 	albumView,
 	artistView,
-	editOverlay,
 	mainView,
 	panelStack,
 	searchView,
 	useShowHome,
 } from "components/AppContext"
+import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
 import { CSSProperties, useRef } from "react"
