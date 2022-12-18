@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState, useMemo } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
-import { useShowHome } from "components/AppContext"
+import { editOverlay, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
 import FavoriteIcon from "icons/favorite.svg"
@@ -17,6 +17,7 @@ import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useCachedTrack"
+import { useQueryClient } from "@tanstack/react-query"
 
 const emptyFunction = () => {}
 
@@ -80,6 +81,7 @@ function TrackItem({
 		onLike: emptyFunction,
 		onAdd: emptyFunction,
 		onNext: emptyFunction,
+		onLong: emptyFunction,
 	})
 	callbacks.current.onLike = () => {
 		likeMutation({
@@ -93,6 +95,14 @@ function TrackItem({
 	callbacks.current.onNext = () => {
 		if (data)
 			onNext?.(data)
+	}
+	const queryClient = useQueryClient()
+	callbacks.current.onLong = () => {
+		navigator.vibrate(1)
+		editOverlay.setState(
+			state => ({...state, selection: [...state.selection, {type: "track", id: track.id}]}),
+			queryClient
+		)
 	}
 	useSlideTrack(item, callbacks, {quickSwipeDeleteAnim})
 
@@ -120,17 +130,23 @@ function TrackItem({
 				type="button"
 				onClick={() => {
 					navigator.vibrate(1)
+					if (editOverlay.getValue(queryClient).selection.length > 0) {
+						callbacks.current.onLong!()
+						return
+					}
 					data && onSelect?.(data)
 					if (onClick) {
 						onClick(track.id, track.name)
-					} else if (data) {
+						return
+					}
+					if (data) {
 						startTransition(() => {
 							addNextToPlaylist(data, true)
 							showHome("home")
 						})
-					} else {
-						console.error('Tried to add track to playlist, but data was not loaded yet')
+						return
 					}
+					console.error('Tried to add track to playlist, but data was not loaded yet')
 				}}
 			>
 				{draggable && (

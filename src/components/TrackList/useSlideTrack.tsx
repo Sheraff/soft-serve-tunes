@@ -10,11 +10,13 @@ function getTouchFromId(list: TouchList, id: number) {
 }
 
 const DELAYED_SWITCH_DURATION = 300
+const LONG_PRESS_DURATION = 1_000
 
 export type Callbacks = {
 	onLike: () => void
 	onAdd: () => void
 	onNext: () => void
+	onLong?: () => void
 }
 
 export default function useSlideTrack(
@@ -138,18 +140,41 @@ export default function useSlideTrack(
 			uxController = controller
 			isDragging = true
 			let capture = false
+			let longPressTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 			const end = () => {
 				if (timeoutId) {
 					clearTimeout(timeoutId)
 					timeoutId = null
 				}
+				if (longPressTimeoutId) {
+					clearTimeout(longPressTimeoutId)
+					longPressTimeoutId = null
+				}
 				controller.abort()
 				uxController = null
 				isDragging = false
 			}
 
+			if (callbacks.current.onLong) {
+				longPressTimeoutId = setTimeout(() => {
+					longPressTimeoutId = null
+					if (callbacks.current.onLong) {
+						end()
+						callbacks.current.onLong()
+					}
+				}, LONG_PRESS_DURATION)
+
+				window.addEventListener('contextmenu', (event) => {
+					event.preventDefault()
+				}, {signal})
+			}
+
 			window.addEventListener('touchmove', (event) => {
+				if (longPressTimeoutId) {
+					clearTimeout(longPressTimeoutId)
+					longPressTimeoutId = null
+				}
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				const dx = match.clientX - touch.clientX

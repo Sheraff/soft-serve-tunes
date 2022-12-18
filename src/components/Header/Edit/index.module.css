@@ -1,0 +1,15 @@
+.main {
+	grid-area: 1 / 1 / 4 / 2;
+	z-index: var(--z, 2);
+	transition: transform 350ms;
+	transform: translateY(-100vh);
+	pointer-events: none;
+	background-color: var(--palette-primary);
+	color: var(--palette-bg-main);
+
+	will-change: transform, clip-path;
+}
+.main[data-open="true"] {
+	transform: translateY(calc(-100vh + 48px));
+	pointer-events: auto;
+}

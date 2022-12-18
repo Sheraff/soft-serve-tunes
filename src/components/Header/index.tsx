@@ -1,11 +1,20 @@
 import Search from "./Search"
 import styles from "./index.module.css"
-import { albumView, artistView, mainView, panelStack, searchView, useShowHome } from "components/AppContext"
+import {
+	albumView,
+	artistView,
+	editOverlay,
+	mainView,
+	panelStack,
+	searchView,
+	useShowHome,
+} from "components/AppContext"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
 import { CSSProperties, useRef } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
+import EditOverlay from "./Edit"
 import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
 import LogoutIcon from "icons/logout.svg"
@@ -22,6 +31,7 @@ export default function Header() {
 	const [search, setSearch] = searchView.useState()
 	const [artist, setArtist] = artistView.useState()
 	const [album, setAlbum] = albumView.useState()
+	const edit = editOverlay.useValue()
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle, () => {
@@ -40,6 +50,9 @@ export default function Header() {
 		setSearch(prev => ({...prev, open: false}))
 		setArtist(prev => ({...prev, open: false}))
 	})
+
+	const editToggle = useRef<HTMLDivElement>(null)
+	const editState = useDisplayAndShow(Boolean(edit.selection.length), editToggle)
 
 	// prefetch select queries
 	trpc.track.searchable.useQuery()
@@ -108,6 +121,13 @@ export default function Header() {
 					open={albumState.show}
 					id={album.id}
 					ref={albumToggle}
+				/>
+			)}
+			{editState.display && (
+				<EditOverlay
+					z={Math.max(searchZ, artistZ, albumZ) + 20}
+					open={editState.show}
+					ref={editToggle}
 				/>
 			)}
 		</>
