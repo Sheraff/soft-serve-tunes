@@ -6,17 +6,6 @@
 	transform-style: preserve-3d;
 }
 
-.main::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	background: currentColor;
-	opacity: calc(var(--progress));
-	filter: blur(20vmin);
-	transform: scale(calc(1 + 0.1 * var(--progress)));
-	will-change: transform, opacity;
-}
-
 .button {
 	display: flex;
 	align-items: center;
@@ -28,7 +17,8 @@
 	will-change: transform;
 	transform:
 		rotate(calc(2deg * var(--progress)))
-		rotateY(calc(8deg * var(--progress)))
+		rotateX(calc(-4deg * var(--progress)))
+		rotateY(calc(10deg * var(--progress)))
 		scale(calc(1 - 0.1 * var(--progress)));
 }
 
@@ -38,9 +28,21 @@
 		opacity 850ms ease-in;
 	transform:
 		rotate(10deg)
-		rotateY(40deg)
-		scale(0.3);
+		rotateX(-20deg)
+		rotateY(50deg)
+		scale(0.35);
 	opacity: 0;
+}
+
+.main::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: currentColor;
+	opacity: calc(var(--progress));
+	filter: blur(20vmin);
+	transform: scale(calc(1 + 0.1 * var(--progress)));
+	will-change: transform, opacity;
 }
 
 .icon {

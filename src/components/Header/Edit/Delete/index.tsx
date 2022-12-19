@@ -75,6 +75,7 @@ export default function Delete({
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (match) {
 					_end()
+					element!.style.removeProperty("--progress")
 				}
 			}
 
@@ -83,7 +84,6 @@ export default function Delete({
 		}
 
 		element.addEventListener("touchstart", (event) => {
-			console.log("touchstart")
 			if (!isPressing) {
 				const touch = event.changedTouches.item(0) as Touch
 				start(touch)
