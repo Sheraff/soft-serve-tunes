@@ -7,6 +7,7 @@ import EditIcon from "icons/edit.svg"
 import DeleteIcon from "icons/delete.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
 import AddToPlaylist from "./AddToPlaylist"
+import Delete from "./Delete"
 
 /**
  * create `editOverlay` state setter function
@@ -129,7 +130,10 @@ export default forwardRef(function EditOverlay({
 					<p>edit</p>
 				)}
 				{body === "delete" && (
-					<p>delete</p>
+					<Delete
+						ids={selection.map(({id}) => id)}
+						onDone={() => setState(editOverlaySetter(null))}
+					/>
 				)}
 			</div>
 		</div>

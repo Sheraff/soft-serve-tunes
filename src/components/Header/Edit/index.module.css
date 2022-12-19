@@ -55,6 +55,11 @@
 	clip-path: inset(0 0 100% 0);
 	transition: clip-path 350ms ease-out;
 	will-change: clip-path;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
 }
 .body[data-open="true"] {
 	clip-path: inset(0 0 0 0);
