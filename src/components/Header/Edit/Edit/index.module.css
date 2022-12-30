@@ -1,0 +1,33 @@
+.form {
+	width: 100%;
+	display: grid;
+	grid-template-columns: auto 1fr;
+	font-size: 12px;
+	padding: 4px 0;
+}
+
+.submit {
+	margin-top: 4px;
+	grid-column: 1 / -1;
+	justify-self: center;
+
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 12px;
+	border-radius: 4px;
+	border: 1px solid currentColor;
+	padding: 16px 32px;
+}
+
+.icon {
+	font-size: 20px;
+}
+
+.label {
+	padding: 4px 8px;
+}
+
+.input {
+	padding: 4px 8px 4px 0;
+}
