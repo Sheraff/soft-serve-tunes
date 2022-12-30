@@ -25,13 +25,14 @@ function isPaletteDefinition(palette?: Prisma.JsonValue): palette is PaletteDefi
 	return Boolean(palette)
 }
 
-export function paletteToCSSProperties(palette?: Prisma.JsonValue) {
+type CSSPalette = CSSProperties & {[key in typeof keys[number]]: string}
+export function paletteToCSSProperties(palette?: Prisma.JsonValue): CSSPalette {
 	if (!isPaletteDefinition(palette)) {
-		return undefined
+		return paletteToCSSProperties(defaultValues)
 	}
 	return Object.fromEntries(
 		palette.map((value, i) => [keys[i], hslToCss(value)])
-	) as unknown as CSSProperties & {[key in typeof keys[number]]: string}
+	) as unknown as CSSPalette
 }
 
 export default function Palette({

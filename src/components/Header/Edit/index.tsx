@@ -9,6 +9,8 @@ import PlaylistAddIcon from "icons/playlist_add.svg"
 import AddToPlaylist from "./AddToPlaylist"
 import Delete from "./Delete"
 import Edit from "./Edit"
+import { useCurrentTrackDetails } from "client/db/useMakePlaylist"
+import { paletteToCSSProperties } from "components/Palette"
 
 /**
  * create `editOverlay` state setter function
@@ -39,6 +41,9 @@ export default forwardRef(function EditOverlay({
 	z: number
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const currentTrack = useCurrentTrackDetails()
+	const palette = paletteToCSSProperties(currentTrack?.cover?.palette)
+
 	const open = useDeferredValue(_open)
 	const [editState, setState] = editOverlay.useState()
 
@@ -85,6 +90,10 @@ export default forwardRef(function EditOverlay({
 			data-open={open}
 			style={{
 				"--z": z,
+				"--palette-bg-main": palette['--palette-primary'],
+				"--palette-bg-gradient": palette['--palette-secondary'],
+				"--palette-secondary": palette['--palette-bg-gradient'],
+				"--palette-primary": palette['--palette-bg-main'],
 			} as CSSProperties}
 		>
 			<div className={styles.head}>

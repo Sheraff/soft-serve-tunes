@@ -3,11 +3,10 @@
 	display: grid;
 	grid-template-columns: auto 1fr;
 	font-size: 12px;
-	padding: 4px 0;
 }
 
 .submit {
-	margin-top: 4px;
+	margin-top: 8px;
 	grid-column: 1 / -1;
 	justify-self: center;
 
@@ -30,4 +29,9 @@
 
 .input {
 	padding: 4px 8px 4px 0;
+}
+
+.full {
+	grid-column: 1 / -1;
+	padding: 4px 0;
 }

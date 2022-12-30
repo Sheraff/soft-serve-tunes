@@ -6,8 +6,8 @@
 	flex-direction: column;
 }
 .main > * {
-	background-color: var(--palette-primary);
-	color: var(--palette-bg-main);
+	background-color: var(--palette-bg-main);
+	color: var(--palette-primary);
 	pointer-events: none;
 }
 

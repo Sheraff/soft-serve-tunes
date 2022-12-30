@@ -1,8 +1,11 @@
-import { useId, type FormEvent } from "react"
+import { useId, useRef, type FormEvent } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
 import styles from "./index.module.css"
 import { type Prisma } from "@prisma/client"
+import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputFilter"
+import ArtistList from "components/ArtistList"
+import { simplifiedName } from "utils/sanitizeString"
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
 
@@ -66,6 +69,8 @@ function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(t
 	return {value, unique: true}
 }
 
+const defaultArray = [] as never[]
+
 export default function Edit({
 	ids,
 	onDone,
@@ -79,8 +84,12 @@ export default function Edit({
 	}
 	const {tracks, isLoading} = useTracks(ids)
 	const htmlId = useId()
+
+	const artistInput = useRef<HTMLInputElement>(null)
+	const {data: artistsRaw} = trpc.artist.searchable.useQuery(undefined)
+	const artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
 	return (
-		<form action="/" onSubmit={onSubmit} className={styles.form}>
+		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
 				<>
 					{tracks.length === 1 && (
@@ -100,9 +109,23 @@ export default function Edit({
 					})()}
 					{(() => {
 						const {value, unique} = aggregateTracks(tracks, ["artist", "name"])
+						const exact = Boolean(unique && value && artists[0] && simplifiedName(value) === simplifiedName(artists[0].name))
 						return <>
 							<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
-							<input id={`artist${htmlId}`} type="text" className={styles.input} defaultValue={value} placeholder={unique ? undefined : 'Multiple values'}/>
+							<input id={`artist${htmlId}`} ref={artistInput} type="text" className={styles.input} defaultValue={value} placeholder={unique ? undefined : 'Multiple values'}/>
+							{artists.length > 0 && (
+								<div className={styles.full}>
+									<ArtistList
+										lines={1}
+										artists={artists.slice(0, 21)}
+										selected={exact ? artists[0]!.id : undefined}
+										onClick={(artist) => {
+											artistInput.current!.value = artist.name
+											artistInput.current!.dispatchEvent(new Event('input'))
+										}}
+									/>
+								</div>
+							)}
 						</>
 					})()}
 					{(() => {
