@@ -1,4 +1,4 @@
-import { useId, useRef, type FormEvent } from "react"
+import { useEffect, useId, useRef, useState, type FormEvent } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
 import styles from "./index.module.css"
@@ -58,7 +58,7 @@ function getIn<T extends Record<string, Value>, K extends DeepKeyof<DeepExcludeN
 	return getIn(next as any, rest as any) as any
 }
 
-function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: TrackMiniature[], key: K): {value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, unique: boolean} {
+function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: (TrackMiniature | null | undefined)[], key: K): {value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, unique: boolean} {
 	const [first, ...rest] = (tracks.filter(Boolean) as Exclude<TrackMiniature, null>[])
 	if (!first) return {value: undefined, unique: true}
 	const value = getIn(first, key)
@@ -88,6 +88,13 @@ export default function Edit({
 	const artistInput = useRef<HTMLInputElement>(null)
 	const {data: artistsRaw} = trpc.artist.searchable.useQuery(undefined)
 	const artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
+	const artistAggregate = isLoading ? {value: undefined, unique: undefined} : aggregateTracks(tracks, ["artist", "name"])
+	const [artistState, setArtistState] = useState(artistAggregate.value)
+	useEffect(() => {
+		setArtistState(artistAggregate.value)
+		artistInput.current!.value = artistAggregate.value ?? ''
+		artistInput.current!.dispatchEvent(new Event('input'))
+	}, [artistAggregate.value])
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
@@ -108,11 +115,10 @@ export default function Edit({
 						</>
 					})()}
 					{(() => {
-						const {value, unique} = aggregateTracks(tracks, ["artist", "name"])
-						const exact = Boolean(unique && value && artists[0] && simplifiedName(value) === simplifiedName(artists[0].name))
+						const exact = Boolean(artistState && artists[0] && simplifiedName(artistState) === simplifiedName(artists[0].name))
 						return <>
 							<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
-							<input id={`artist${htmlId}`} ref={artistInput} type="text" className={styles.input} defaultValue={value} placeholder={unique ? undefined : 'Multiple values'}/>
+							<input id={`artist${htmlId}`} ref={artistInput} type="text" className={styles.input} value={artistState} onChange={() => setArtistState(artistInput.current!.value)} placeholder={artistAggregate.unique ? undefined : 'Multiple values'}/>
 							{artists.length > 0 && (
 								<div className={styles.full}>
 									<ArtistList
@@ -120,6 +126,7 @@ export default function Edit({
 										artists={artists.slice(0, 21)}
 										selected={exact ? artists[0]!.id : undefined}
 										onClick={(artist) => {
+											setArtistState(artist.name)
 											artistInput.current!.value = artist.name
 											artistInput.current!.dispatchEvent(new Event('input'))
 										}}
