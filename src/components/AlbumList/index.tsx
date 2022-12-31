@@ -14,12 +14,16 @@ function AlbumItem({
 	album,
 	enableSiblings,
 	onSelect,
+	onClick,
 	index,
+	selected,
 }: {
 	album: AlbumListItem
 	enableSiblings?: () => void
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
+	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	index: number
+	selected: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.album.miniature.useQuery({id: album.id})
@@ -52,10 +56,14 @@ function AlbumItem({
 	return (
 		<button
 			ref={enableSiblings ? item : undefined}
-			className={styles.button}
+			className={classNames(styles.button, {[styles.selected]: selected})}
 			type="button"
 			onClick={(event) => {
 				navigator.vibrate(1)
+				if (onClick) {
+					data && onClick(data)
+					return
+				}
 				data && onSelect?.(data)
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
@@ -89,20 +97,24 @@ function AlbumItem({
 export default forwardRef(function AlbumList({
 	albums,
 	onSelect,
+	onClick,
 	scrollable = false,
 	lines = 2,
 	loading = false,
+	selected,
 }: {
 	albums: AlbumListItem[]
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
+	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	scrollable?: boolean
 	lines?: 1 | 2
 	loading?: boolean
+	selected?: string
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
 	return (
-		<div className={classNames(styles.wrapper, {[styles.scrollable as string]: scrollable})} ref={ref}>
+		<div className={classNames(styles.wrapper, {[styles.scrollable]: scrollable})} ref={ref}>
 			<ul className={
 				classNames(styles.main, {
 					[styles.loading]: loading,
@@ -116,7 +128,9 @@ export default forwardRef(function AlbumList({
 								album={album}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 								onSelect={onSelect}
+								onClick={onClick}
 								index={i}
+								selected={selected === album.id}
 							/>
 						)}
 					</li>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react"
+import { useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
 import styles from "./index.module.css"
@@ -6,6 +6,7 @@ import { type Prisma } from "@prisma/client"
 import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputFilter"
 import ArtistList from "components/ArtistList"
 import { simplifiedName } from "utils/sanitizeString"
+import AlbumList from "components/AlbumList"
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
 
@@ -58,7 +59,7 @@ function getIn<T extends Record<string, Value>, K extends DeepKeyof<DeepExcludeN
 	return getIn(next as any, rest as any) as any
 }
 
-function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: (TrackMiniature | null | undefined)[], key: K): {value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, unique: boolean} {
+function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: (TrackMiniature | null | undefined)[], key: K): {readonly value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, readonly unique: boolean} {
 	const [first, ...rest] = (tracks.filter(Boolean) as Exclude<TrackMiniature, null>[])
 	if (!first) return {value: undefined, unique: true}
 	const value = getIn(first, key)
@@ -70,6 +71,7 @@ function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(t
 }
 
 const defaultArray = [] as never[]
+const defaultAggregate = {value: undefined, unique: undefined} as const
 
 export default function Edit({
 	ids,
@@ -86,15 +88,47 @@ export default function Edit({
 	const htmlId = useId()
 
 	const artistInput = useRef<HTMLInputElement>(null)
-	const {data: artistsRaw} = trpc.artist.searchable.useQuery(undefined)
+	const {data: artistsRaw} = trpc.artist.searchable.useQuery()
 	const artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
-	const artistAggregate = isLoading ? {value: undefined, unique: undefined} : aggregateTracks(tracks, ["artist", "name"])
+	const artistAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["artist", "name"])
 	const [artistState, setArtistState] = useState(artistAggregate.value)
-	useEffect(() => {
-		setArtistState(artistAggregate.value)
-		artistInput.current!.value = artistAggregate.value ?? ''
+	const setArtistInputName = useCallback((name: string | undefined) => {
+		setArtistState(name)
+		artistInput.current!.value = name ?? ''
 		artistInput.current!.dispatchEvent(new Event('input'))
-	}, [artistAggregate.value])
+	}, [])
+	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
+	const exactArtist = Boolean(artistState && artists[0] && simplifiedName(artistState) === simplifiedName(artists[0].name))
+
+	const albumInput = useRef<HTMLInputElement>(null)
+	const {data: albumsRaw} = trpc.album.searchable.useQuery()
+	const rawFromArtist = (artists[0]?.albums?.length && albumsRaw) ? albumsRaw.filter(({id}) => artists[0]!.albums.some((a) => a.id === id)) : undefined
+	const albumsUnfiltered = useAsyncInputStringDistance(albumInput, rawFromArtist || albumsRaw || defaultArray)
+	console.log(artists[0])
+	const _albums = useMemo(
+		() => exactArtist && artistState
+			? albumsUnfiltered.filter(album =>
+				(album.artist?.name && simplifiedName(album.artist.name) === simplifiedName(artistState))
+				|| (artists[0]!.albums.some(a => a.id === album.id))
+			)
+			: albumsUnfiltered,
+		[exactArtist, albumsUnfiltered, artistState, artists[0]]
+	)
+	const albums = useDeferredValue(_albums)
+	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
+	const [albumState, setAlbumState] = useState(albumAggregate.value)
+	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
+		if (typeof artistName === 'string') setArtistInputName(artistName)
+		setAlbumState(name)
+		albumInput.current!.value = name ?? ''
+		albumInput.current!.dispatchEvent(new Event('input'))
+	}, [setArtistInputName])
+	useEffect(() => {setAlbumInputName(albumAggregate.value)}, [setAlbumInputName, albumAggregate.value])
+	const exactAlbum = Boolean(
+		albumState && albums[0] && simplifiedName(albumState) === simplifiedName(albums[0].name)
+		&& (!albums[0].artist?.name || (exactArtist && artistState && simplifiedName(albums[0].artist.name) === simplifiedName(artistState)))
+	)
+
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
@@ -107,34 +141,49 @@ export default function Edit({
 							<input id={`position${htmlId}`} type="number" className={styles.input} defaultValue={tracks[0]?.position ?? tracks[0]?.spotify?.trackNumber ?? tracks[0]?.audiodb?.intTrackNumber ?? undefined}/>
 						</>
 					)}
-					{(() => {
-						const {value, unique} = aggregateTracks(tracks, ["album", "name"])
-						return <>
-							<label htmlFor={`album${htmlId}`} className={styles.label}>Album</label>
-							<input id={`album${htmlId}`} type="text" className={styles.input} defaultValue={value} placeholder={unique ? undefined : 'Multiple values'}/>
-						</>
-					})()}
-					{(() => {
-						const exact = Boolean(artistState && artists[0] && simplifiedName(artistState) === simplifiedName(artists[0].name))
-						return <>
-							<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
-							<input id={`artist${htmlId}`} ref={artistInput} type="text" className={styles.input} value={artistState} onChange={() => setArtistState(artistInput.current!.value)} placeholder={artistAggregate.unique ? undefined : 'Multiple values'}/>
-							{artists.length > 0 && (
-								<div className={styles.full}>
-									<ArtistList
-										lines={1}
-										artists={artists.slice(0, 21)}
-										selected={exact ? artists[0]!.id : undefined}
-										onClick={(artist) => {
-											setArtistState(artist.name)
-											artistInput.current!.value = artist.name
-											artistInput.current!.dispatchEvent(new Event('input'))
-										}}
-									/>
-								</div>
-							)}
-						</>
-					})()}
+					{/* Album */}
+					<label htmlFor={`album${htmlId}`} className={styles.label}>Album</label>
+					<input
+						id={`album${htmlId}`}
+						ref={albumInput}
+						type="text"
+						className={styles.input}
+						value={albumState}
+						onChange={() => setAlbumState(albumInput.current!.value)}
+						placeholder={albumAggregate.unique ? undefined : 'Multiple values'}
+					/>
+					{albums.length > 0 && (
+						<div className={styles.full}>
+							<AlbumList
+								lines={1}
+								scrollable
+								albums={albums.slice(0, 10)}
+								selected={exactAlbum ? albums[0]!.id : undefined}
+								onClick={album => setAlbumInputName(album.name, album.artist?.name ?? '')}
+							/>
+						</div>
+					)}
+					{/* Artist */}
+					<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
+					<input
+						id={`artist${htmlId}`}
+						ref={artistInput}
+						type="text"
+						className={styles.input}
+						value={artistState}
+						onChange={() => setArtistState(artistInput.current!.value)}
+						placeholder={artistAggregate.unique ? undefined : 'Multiple values'}
+					/>
+					{artists.length > 0 && (
+						<div className={styles.full}>
+							<ArtistList
+								lines={1}
+								artists={artists.slice(0, 10)}
+								selected={exactArtist ? artists[0]!.id : undefined}
+								onClick={(artist) => {setArtistInputName(artist.name)}}
+							/>
+						</div>
+					)}
 					{(() => {
 						const {value, unique} = aggregateTracks(tracks, ["cover", "id"])
 						return <>
