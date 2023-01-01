@@ -96,43 +96,65 @@ export default function Edit({
 		setArtistState(name)
 		artistInput.current!.value = name ?? ''
 		artistInput.current!.dispatchEvent(new Event('input'))
+		albumInput.current!.dispatchEvent(new Event('input'))
 	}, [])
 	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
-	const exactArtist = Boolean(artistState && artists[0] && simplifiedName(artistState) === simplifiedName(artists[0].name))
+	const artistSimplified = artistState ? simplifiedName(artistState) : ''
+	const exactArtist = Boolean(artistSimplified && artists[0] && artistSimplified === simplifiedName(artists[0].name))
 
 	const albumInput = useRef<HTMLInputElement>(null)
 	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
 	const [albumState, setAlbumState] = useState(albumAggregate.value)
 	const {data: albumsRaw} = trpc.album.searchable.useQuery()
-	const rawFromArtist = useMemo(
-		() => (artists[0]?.albums?.length && albumsRaw)
-			? albumsRaw.filter(({id}) => artists[0]!.albums.some((a) => a.id === id))
-			: undefined,
-		[artists[0]?.albums, albumsRaw]
-	)
-	const albumsUnfiltered = useAsyncInputStringDistance(albumInput, rawFromArtist || albumsRaw || defaultArray)
-	const _albums = useMemo(
-		() => exactArtist && artistState
-			? (Boolean(albumState) ? albumsUnfiltered : (rawFromArtist || defaultArray)).filter(album =>
-				(album.artist?.name && simplifiedName(album.artist.name) === simplifiedName(artistState))
-				|| (artists[0]!.albums.some(a => a.id === album.id))
-			)
-			: albumsUnfiltered,
-		[exactArtist, albumsUnfiltered, artistState, artists[0], Boolean(albumState), rawFromArtist]
-	)
-	console.log(albumInput.current?.value, _albums[0], albumsUnfiltered[0], rawFromArtist?.[0])
-	const albums = useDeferredValue(_albums)
+	const fakeAlbumInput = useRef<HTMLInputElement>({} as HTMLInputElement)
+	useEffect(() => {
+		const input = albumInput.current!
+		fakeAlbumInput.current = {
+			get value() {
+				return `${input.value} ${artistInput.current!.value}`
+			},
+			get addEventListener() {
+				return input.addEventListener.bind(input)
+			},
+			get removeEventListener() {
+				return input.removeEventListener.bind(input)
+			},
+		} as HTMLInputElement
+	}, [])
+	const _albums = useAsyncInputStringDistance(fakeAlbumInput, albumsRaw || defaultArray, ["name", "artists"])
+	const albums = useDeferredValue(_albums).slice(0, 10)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
-		if (typeof artistName === 'string') setArtistInputName(artistName)
-		setAlbumState(name)
 		albumInput.current!.value = name ?? ''
+		setAlbumState(name)
+		if (typeof artistName === 'string') setArtistInputName(artistName)
 		albumInput.current!.dispatchEvent(new Event('input'))
 	}, [setArtistInputName])
 	useEffect(() => {setAlbumInputName(albumAggregate.value)}, [setAlbumInputName, albumAggregate.value])
-	const exactAlbum = Boolean(
-		albumState && albums[0] && simplifiedName(albumState) === simplifiedName(albums[0].name)
-		&& (!albums[0].artist?.name || (exactArtist && artistState && simplifiedName(albums[0].artist.name) === simplifiedName(artistState)))
-	)
+	const albumSimplified = albumState ? simplifiedName(albumState) : ''
+	albums.sort((a, b) => {
+		// if an album has exact title and artist, put it first. If an album has exact title, put it second
+		if (!albumSimplified) return 0
+		const aName = simplifiedName(a.name) === albumSimplified
+		const bName = simplifiedName(b.name) === albumSimplified
+		if (aName && bName) {
+			const aArtist = a.artists.some(artist => simplifiedName(artist) === artistSimplified)
+			const bArtist = b.artists.some(artist => simplifiedName(artist) === artistSimplified)
+			if (aArtist && bArtist) {
+				return 0
+			} else if (aArtist) {
+				return -1
+			} else if (bArtist) {
+				return 1
+			}
+			return 0
+		} else if (aName) {
+			return -1
+		} else if (bName) {
+			return 1
+		}
+		return 0
+	})
+	const exactAlbum = Boolean(albumSimplified && albums[0] && albumSimplified === simplifiedName(albums[0].name))
 
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
@@ -161,7 +183,7 @@ export default function Edit({
 						<AlbumList
 							lines={1}
 							scrollable
-							albums={albums.slice(0, 10)}
+							albums={albums}
 							selected={exactAlbum ? albums[0]!.id : undefined}
 							onClick={album => setAlbumInputName(album.name, album.artist?.name)}
 							loading
