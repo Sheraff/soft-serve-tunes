@@ -2,6 +2,7 @@ import classNames from "classnames"
 import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { albumView } from "components/AppContext"
+import CheckIcon from "icons/done.svg"
 import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -85,10 +86,14 @@ function AlbumItem({
 					decoding={index > 1 ? "async" : undefined}
 				/>
 			)}
-			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
+			<p className={classNames(styles.span, {
+				[styles.empty]: isEmpty,
+				[styles.two]: !data?.artist?.name,
+			})}>
 				<span className={styles.name}>{data?.name || album.name}</span>
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
 				<span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>
+				{selected && <CheckIcon className={styles.icon} />}
 			</p>
 		</button>
 	)

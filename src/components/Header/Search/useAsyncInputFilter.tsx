@@ -76,6 +76,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		}
 		workerMemo.addEventListener("message", onMessage)
 		return () => {
+			isWorking.current = false
 			workerMemo.removeEventListener("message", onMessage)
 			workerMemo.terminate()
 		}

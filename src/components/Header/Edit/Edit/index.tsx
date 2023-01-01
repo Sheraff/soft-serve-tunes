@@ -101,22 +101,27 @@ export default function Edit({
 	const exactArtist = Boolean(artistState && artists[0] && simplifiedName(artistState) === simplifiedName(artists[0].name))
 
 	const albumInput = useRef<HTMLInputElement>(null)
+	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
+	const [albumState, setAlbumState] = useState(albumAggregate.value)
 	const {data: albumsRaw} = trpc.album.searchable.useQuery()
-	const rawFromArtist = (artists[0]?.albums?.length && albumsRaw) ? albumsRaw.filter(({id}) => artists[0]!.albums.some((a) => a.id === id)) : undefined
+	const rawFromArtist = useMemo(
+		() => (artists[0]?.albums?.length && albumsRaw)
+			? albumsRaw.filter(({id}) => artists[0]!.albums.some((a) => a.id === id))
+			: undefined,
+		[artists[0]?.albums, albumsRaw]
+	)
 	const albumsUnfiltered = useAsyncInputStringDistance(albumInput, rawFromArtist || albumsRaw || defaultArray)
-	console.log(artists[0])
 	const _albums = useMemo(
 		() => exactArtist && artistState
-			? albumsUnfiltered.filter(album =>
+			? (Boolean(albumState) ? albumsUnfiltered : (rawFromArtist || defaultArray)).filter(album =>
 				(album.artist?.name && simplifiedName(album.artist.name) === simplifiedName(artistState))
 				|| (artists[0]!.albums.some(a => a.id === album.id))
 			)
 			: albumsUnfiltered,
-		[exactArtist, albumsUnfiltered, artistState, artists[0]]
+		[exactArtist, albumsUnfiltered, artistState, artists[0], Boolean(albumState), rawFromArtist]
 	)
+	console.log(albumInput.current?.value, _albums[0], albumsUnfiltered[0], rawFromArtist?.[0])
 	const albums = useDeferredValue(_albums)
-	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
-	const [albumState, setAlbumState] = useState(albumAggregate.value)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
 		if (typeof artistName === 'string') setArtistInputName(artistName)
 		setAlbumState(name)
@@ -152,17 +157,16 @@ export default function Edit({
 						onChange={() => setAlbumState(albumInput.current!.value)}
 						placeholder={albumAggregate.unique ? undefined : 'Multiple values'}
 					/>
-					{albums.length > 0 && (
-						<div className={styles.full}>
-							<AlbumList
-								lines={1}
-								scrollable
-								albums={albums.slice(0, 10)}
-								selected={exactAlbum ? albums[0]!.id : undefined}
-								onClick={album => setAlbumInputName(album.name, album.artist?.name ?? '')}
-							/>
-						</div>
-					)}
+					<div className={styles.full}>
+						<AlbumList
+							lines={1}
+							scrollable
+							albums={albums.slice(0, 10)}
+							selected={exactAlbum ? albums[0]!.id : undefined}
+							onClick={album => setAlbumInputName(album.name, album.artist?.name)}
+							loading
+						/>
+					</div>
 					{/* Artist */}
 					<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
 					<input
@@ -174,16 +178,15 @@ export default function Edit({
 						onChange={() => setArtistState(artistInput.current!.value)}
 						placeholder={artistAggregate.unique ? undefined : 'Multiple values'}
 					/>
-					{artists.length > 0 && (
-						<div className={styles.full}>
-							<ArtistList
-								lines={1}
-								artists={artists.slice(0, 10)}
-								selected={exactArtist ? artists[0]!.id : undefined}
-								onClick={(artist) => {setArtistInputName(artist.name)}}
-							/>
-						</div>
-					)}
+					<div className={styles.full}>
+						<ArtistList
+							lines={1}
+							artists={artists.slice(0, 10)}
+							selected={exactArtist ? artists[0]!.id : undefined}
+							onClick={(artist) => {setArtistInputName(artist.name)}}
+							loading
+						/>
+					</div>
 					{(() => {
 						const {value, unique} = aggregateTracks(tracks, ["cover", "id"])
 						return <>
