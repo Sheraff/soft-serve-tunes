@@ -60,6 +60,8 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
+
+	overflow-y: hidden;
 }
 .body[data-open="true"] {
 	clip-path: inset(0 0 0 0);

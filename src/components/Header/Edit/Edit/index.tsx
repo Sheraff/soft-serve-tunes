@@ -164,6 +164,14 @@ export default function Edit({
 	})
 	const exactAlbum = Boolean(albumSimplified && albums[0] && albumSimplified === simplifiedName(albums[0].name))
 
+	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["cover", "id"])
+	const {data: {covers: trackCovers}} = trpc.cover.fromTracks.useQuery({ids}, {placeholderData: {covers: []}})
+	const {data: {covers: albumCovers}} = trpc.cover.fromAlbums.useQuery({ids: [albums[0]?.id!]}, {placeholderData: {covers: []}, enabled: exactAlbum}) // eslint-disable-line @typescript-eslint/no-non-null-asserted-optional-chain -- `enabled` takes care of the undefined case
+	const covers = [...trackCovers]
+	albumCovers.forEach(cover => {
+		if (!covers.some(c => c.id === cover.id)) covers.push(cover)
+	})
+
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
@@ -217,13 +225,28 @@ export default function Edit({
 							loading
 						/>
 					</div>
-					{(() => {
-						const {value, unique} = aggregateTracks(tracks, ["cover", "id"])
-						return <>
-							<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
-							<input id={`cover${htmlId}`} type="text" className={styles.input} defaultValue={value} placeholder={unique ? undefined : 'Multiple values'}/>
-						</>
-					})()}
+					
+					{/* Cover */}
+					<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
+					<input
+						id={`cover${htmlId}`}
+						type="text"
+						className={styles.input}
+						defaultValue={coverAggregate.value}
+						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
+					/>
+					<div className={styles.full}>
+						{covers.map((cover) => (
+							<div key={cover.id} className={styles.cover}>
+								<img
+									src={`/api/cover/${cover.id}`}
+									alt=""
+								/>
+								<p>{cover.width}x{cover.height}</p>
+							</div>
+						))}
+					</div>
+					
 					<button type="submit" className={styles.submit}>
 						<SaveIcon className={styles.icon} />
 						Save

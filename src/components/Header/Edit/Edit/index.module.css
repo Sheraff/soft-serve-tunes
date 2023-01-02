@@ -1,4 +1,7 @@
 .form {
+	overflow-y: scroll;
+	max-height: 100%;
+
 	width: 100%;
 	display: grid;
 	grid-template-columns: auto 1fr;
@@ -34,4 +37,14 @@
 .full {
 	grid-column: 1 / -1;
 	padding: 4px 0;
+}
+
+.cover {
+	display: inline-block;
+}
+
+.cover img {
+	width: 50vw;
+	height: 50vw;
+	object-fit: cover;
 }
