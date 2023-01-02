@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react"
+import { useCallback, useDeferredValue, useEffect, useId, useRef, useState, type FormEvent } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
 import styles from "./index.module.css"
@@ -14,6 +14,7 @@ import AlbumList from "components/AlbumList"
  * 	- track name shouldn't already exist in album
  * TODO: summarize changes before mutation
  * 	- ex: "add 2 tracks to album" | "create album with 2 tracks"
+ * TODO: fix sharp queue in api/cover because this component might request many big covers at once
  */
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
