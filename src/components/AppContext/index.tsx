@@ -120,7 +120,9 @@ export function AppState() {
 	useEffect(() => {
 		const controller = new AbortController()
 		const customNav = () => {
-			if (stack.length) {
+			if (editOverlay.getValue(queryClient).type !== null) {
+				editOverlay.setState(editOverlaySetter(null), queryClient)
+			} else if (stack.length) {
 				showHome()
 			} else {
 				mainView.setState(value => value === "home" ? "suggestions" : "home", queryClient)
