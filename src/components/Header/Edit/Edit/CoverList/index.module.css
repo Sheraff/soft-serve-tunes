@@ -1,0 +1,43 @@
+.wrapper {
+	width: 100%;
+	height: min-content;
+	z-index: 0;
+	overflow: scroll hidden;
+	scroll-padding-left: 8px;
+}
+.wrapper::-webkit-scrollbar {
+	display: none;
+}
+
+.main {
+	display: flex;
+	gap: 8px;
+	padding: 0 8px;
+	width: fit-content;
+}
+
+.cover {
+	display: flex;
+	flex-direction: column;
+}
+
+.cover img {
+	width: 75vw;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+}
+
+.palette {
+	display: flex;
+	color: var(--palette-primary);
+}
+
+.palette > * {
+	flex: 3;
+	background-color: var(--color);
+	padding: 4px 8px;
+}
+
+.palette > *:empty {
+	flex: 1;
+}

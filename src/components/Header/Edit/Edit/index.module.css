@@ -38,13 +38,3 @@
 	grid-column: 1 / -1;
 	padding: 4px 0;
 }
-
-.cover {
-	display: inline-block;
-}
-
-.cover img {
-	width: 50vw;
-	height: 50vw;
-	object-fit: cover;
-}

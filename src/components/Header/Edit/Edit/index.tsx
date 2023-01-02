@@ -7,6 +7,7 @@ import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputF
 import ArtistList from "components/ArtistList"
 import { simplifiedName } from "utils/sanitizeString"
 import AlbumList from "components/AlbumList"
+import CoverList from "./CoverList"
 
 /**
  * TODO: list covers
@@ -18,18 +19,6 @@ import AlbumList from "components/AlbumList"
  */
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
-
-function useTracks(ids: string[]) {
-	return ids.reduce<{
-		tracks: (TrackMiniature | undefined)[],
-		isLoading: boolean
-	}>((acc, id) => {
-		const {data, isLoading} = trpc.track.miniature.useQuery({id})
-		acc.tracks.push(data)
-		acc.isLoading = acc.isLoading || isLoading
-		return acc
-	}, {tracks: [], isLoading: false})
-}
 
 function isLoaded(tracks: (TrackMiniature | undefined)[], isLoading: boolean): tracks is TrackMiniature[] {
 	return !isLoading
@@ -93,7 +82,18 @@ export default function Edit({
 		e.preventDefault()
 		onDone()
 	}
-	const {tracks, isLoading} = useTracks(ids)
+
+	const {tracks, isLoading} = trpc
+		.useQueries((t) => ids.map((id) => t.track.miniature({id})))
+		.reduce<{
+			tracks: (TrackMiniature | undefined)[],
+			isLoading: boolean
+		}>((acc, {data, isLoading}) => {
+			acc.tracks.push(data)
+			acc.isLoading = acc.isLoading || isLoading
+			return acc
+		}, {tracks: [], isLoading: false})
+
 	const htmlId = useId()
 
 	const artistInput = useRef<HTMLInputElement>(null)
@@ -166,12 +166,6 @@ export default function Edit({
 	const exactAlbum = Boolean(albumSimplified && albums[0] && albumSimplified === simplifiedName(albums[0].name))
 
 	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["cover", "id"])
-	const {data: {covers: trackCovers}} = trpc.cover.fromTracks.useQuery({ids}, {placeholderData: {covers: []}})
-	const {data: {covers: albumCovers}} = trpc.cover.fromAlbums.useQuery({ids: [albums[0]?.id!]}, {placeholderData: {covers: []}, enabled: exactAlbum}) // eslint-disable-line @typescript-eslint/no-non-null-asserted-optional-chain -- `enabled` takes care of the undefined case
-	const covers = [...trackCovers]
-	albumCovers.forEach(cover => {
-		if (!covers.some(c => c.id === cover.id)) covers.push(cover)
-	})
 
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
@@ -237,15 +231,11 @@ export default function Edit({
 						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
 					/>
 					<div className={styles.full}>
-						{covers.map((cover) => (
-							<div key={cover.id} className={styles.cover}>
-								<img
-									src={`/api/cover/${cover.id}`}
-									alt=""
-								/>
-								<p>{cover.width}x{cover.height}</p>
-							</div>
-						))}
+						<CoverList
+							tracks={ids}
+							albums={exactAlbum ? [albums[0]!.id] : []}
+							selected={coverAggregate.unique ? coverAggregate.value : undefined}
+						/>
 					</div>
 					
 					<button type="submit" className={styles.submit}>
