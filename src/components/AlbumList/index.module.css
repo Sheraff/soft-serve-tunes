@@ -121,9 +121,7 @@
 	height: var(--side);
 	padding: 10%;
 	background-color: var(--palette-primary);
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	align-content: center;
 	color: var(--palette-bg-main);
 }
 .empty::before {
@@ -145,6 +143,9 @@
 	grid-row: 1 / -1;
 	align-self: end;
 	justify-self: end;
+}
+.empty .icon {
+	align-self: center;
 }
 
 

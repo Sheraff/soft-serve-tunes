@@ -8,6 +8,14 @@ import ArtistList from "components/ArtistList"
 import { simplifiedName } from "utils/sanitizeString"
 import AlbumList from "components/AlbumList"
 
+/**
+ * TODO: list covers
+ * TODO: validation
+ * 	- track name shouldn't already exist in album
+ * TODO: summarize changes before mutation
+ * 	- ex: "add 2 tracks to album" | "create album with 2 tracks"
+ */
+
 type TrackMiniature = RouterOutputs["track"]["miniature"]
 
 function useTracks(ids: string[]) {
