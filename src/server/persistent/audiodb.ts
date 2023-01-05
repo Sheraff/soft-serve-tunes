@@ -392,11 +392,11 @@ class AudioDb {
 			}
 		})
 		if (existingConnection && existingConnection.entity) {
-			log("warn", "500", "audiodb", `
-				AudioDb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
+			log("warn", "500", "audiodb",
+				`AudioDb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
 				but another track is already associated with the data found ("${existingConnection.entity.name}" in "${existingConnection.entity.album?.name}" by "${existingConnection.entity.artist?.name}")
-				Will not associate data: ${data.strTrack} idTrack#${data.idTrack}
-			`)
+				Will not associate data: ${data.strTrack} idTrack#${data.idTrack}`
+			)
 			return
 		}
 		if (existingConnection) {
@@ -408,10 +408,11 @@ class AudioDb {
 					}
 				}))
 			} catch (e) {
-				console.error(new Error(`
-					audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
-					it already existed, so we tried to connect it to the track, but this seems to fail too (${data.strTrack} idTrack#${data.idTrack})
-				`, {cause: e}))
+				console.error(new Error(
+					`audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
+					it already existed, so we tried to connect it to the track, but this seems to fail too (${data.strTrack} idTrack#${data.idTrack})`,
+					{cause: e}
+				))
 			}
 			return
 		}
