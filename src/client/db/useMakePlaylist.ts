@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useMemo, startTransition } from "react"
+import { type RefObject, useCallback, useMemo, startTransition, useEffect } from "react"
 import { trpc, type RouterInputs, type RouterOutputs } from "utils/trpc"
 import {
 	deleteAllFromIndexedDB,
@@ -9,7 +9,7 @@ import {
 	storeInIndexedDB,
 	storeListInIndexedDB,
 } from "./utils"
-import { useQuery } from "@tanstack/react-query"
+import { type QueryClient, useQuery } from "@tanstack/react-query"
 import extractPlaylistCredits from "./utils/extractPlaylistCredits"
 import { repeat, shuffle } from "components/Player"
 import generateUniqueName from "utils/generateUniqueName"
@@ -126,6 +126,34 @@ export function useMakePlaylist() {
 	}, [trpcClient, queryClient])
 }
 
+async function playlistQueryFn(queryClient: QueryClient) {
+	const cache = queryClient.getQueryData<Playlist>(["playlist"])
+	if (cache) return cache
+	const [results, meta] = await Promise.all([
+		listAllFromIndexedDB<PlaylistDBEntry>("playlist"),
+		retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
+	])
+	const tracks = results
+		.sort((a, b) => a.index - b.index)
+		.map((item) => item.track)
+	return {
+		id: meta?.id || null,
+		current: meta?.current || tracks[0]?.id,
+		name: meta?.name || "New Playlist",
+		tracks,
+		order: meta?.order || tracks.map(({id}) => id),
+	}
+}
+
+export function usePreloadPlaylist() {
+	const queryClient = useQueryClient()
+	useEffect(() => {
+		playlistQueryFn(queryClient).then((playlist) => {
+			queryClient.setQueryData<Playlist>(["playlist"], playlist)
+		})
+	}, [queryClient])
+}
+
 export function usePlaylist<T = Playlist>({
 	select,
 	enabled = true,
@@ -135,23 +163,8 @@ export function usePlaylist<T = Playlist>({
 } = {}) {
 	const queryClient = useQueryClient()
 	return useQuery<Playlist, unknown, T>(["playlist"], {
-		async queryFn() {
-			const cache = queryClient.getQueryData<Playlist>(["playlist"])
-			if (cache) return cache
-			const [results, meta] = await Promise.all([
-				listAllFromIndexedDB<PlaylistDBEntry>("playlist"),
-				retrieveFromIndexedDB<PlaylistMeta>("appState", "playlist-meta")
-			])
-			const tracks = results
-				.sort((a, b) => a.index - b.index)
-				.map((item) => item.track)
-			return {
-				id: meta?.id || null,
-				current: meta?.current || tracks[0]?.id,
-				name: meta?.name || "New Playlist",
-				tracks,
-				order: meta?.order || tracks.map(({id}) => id),
-			}
+		queryFn() {
+			return playlistQueryFn(queryClient)
 		},
 		enabled,
 		cacheTime: 0,

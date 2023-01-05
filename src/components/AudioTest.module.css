@@ -13,4 +13,11 @@
 		"foot";
 	width: 100vw;
 	overflow: hidden;
+
+	perspective: 1000px;
+	transform-style: preserve-3d;
+}
+
+.content {
+	display: contents;
 }
