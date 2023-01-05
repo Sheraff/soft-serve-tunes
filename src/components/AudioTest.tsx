@@ -54,28 +54,14 @@ export default function AudioTest() {
 		}
 	}, [main, display])
 
-	const homeNode = (main !== display || display === "home") && (
-		<NowPlaying key="home" ref={home} />
-	)
-
-	const suggestionsNode = (main !== display || display === "suggestions") && (
-		<Suggestions key="suggestions" ref={suggestions} />
-	)
-
 	return (
 		<div className={styles.container}>
 			<Header/>
-			{display === "home" && (
-				<>
-					{suggestionsNode}
-					{homeNode}
-				</>
+			{(main !== display || display === "home") && (
+				<NowPlaying key="home" ref={home} />
 			)}
-			{display === "suggestions" && (
-				<>
-					{homeNode}
-					{suggestionsNode}
-				</>
+			{(main !== display || display === "suggestions") && (
+				<Suggestions key="suggestions" ref={suggestions} />
 			)}
 			<Player />
 		</div>
