@@ -61,7 +61,7 @@ freebox > box settings > ports >
   chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-darwin
   chmod u+rx .src/server/persistent/bin/fpcalc/fpcalc-linux
   ```
-  also, I could not find a self-contained `fpcalc` for linux, so we need to install 250Mo of dependencies (which will include fpcalc itself)
+  also, I could not find a self-contained `fpcalc` for linux, so we need to install 250Mo of dependencies (which will include fpcalc itself) (see [server/bin readme](src/server/persistent/bin/fpcalc/README.md) for more information)
   ```sh
   apt-get install libchromaprint-tools
   ```
