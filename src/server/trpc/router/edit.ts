@@ -27,6 +27,10 @@ const trackInputSchema = z.object({
 		id: z.string().optional(),
 		name: z.string(),
 	}).optional(),
+	artist: z.object({
+		id: z.string().optional(),
+		name: z.string(),
+	}).optional(),
 	position: z.number().optional(),
 })
 
@@ -68,7 +72,7 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 	if (!track.file) {
 		throw new TRPCError({
 			code: "NOT_FOUND",
-			message: `Track ${input.id} has no associated file`,
+			message: `Track ${input.id} (${track.name}) has no associated file`,
 		})
 	}
 
@@ -76,7 +80,7 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 	if (input.coverId && track.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
-			select: {},
+			select: { id: true },
 		})
 		if (!cover) {
 			throw new TRPCError({
@@ -85,6 +89,29 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 			})
 		}
 	}
+
+	// validate artist (id or name)
+	const linkArtist = await (async () => {
+		if (!input.artist?.id && !input.artist?.name) return
+		if (input.artist?.id) {
+			const artist = await prisma.artist.findUnique({
+				where: { id: input.artist.id },
+				select: { id: true, name: true },
+			})
+			if (!artist) throw new TRPCError({
+				code: "NOT_FOUND",
+				message: `Artist ${input.artist.id} (${input.artist.name}) not found`,
+			})
+			return artist
+		}
+		const artist = await prisma.artist.findFirst({
+			where: {
+				simplified: simplifiedName(input.artist.name),
+			},
+			select: { id: true, name: true },
+		})
+		return artist
+	})()
 
 	// validate album (id or name)
 	const linkAlbum = await (async () => {
@@ -96,14 +123,14 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 			})
 			if (!album) throw new TRPCError({
 				code: "NOT_FOUND",
-				message: `Album ${input.album.id} not found`,
+				message: `Album ${input.album.id} (${input.album.name}) not found`,
 			})
 			return album
 		}
 		const album = await prisma.album.findFirst({
 			where: {
 				simplified: simplifiedName(input.album.name),
-				artistId: track.artist?.id,
+				artistId: linkArtist?.id ?? track.artist?.id,
 			},
 			select: { id: true, name: true },
 		})
@@ -124,18 +151,14 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 			where: {
 				simplified: simplifiedName(name),
 				id: { not: input.id },
-				artistId: track.artist?.id,
-				album: linkAlbum
-					? { id: linkAlbum.id }
-					: track.album?.id
-						? { id: track.album.id }
-						: undefined,
+				artistId: linkArtist?.id ?? track.artist?.id,
+				albumId: linkAlbum?.id ?? track.album?.id,
 			},
 		})
 		if (other > 0) {
 			throw new TRPCError({
 				code: "CONFLICT",
-				message: `Track ${input.name} already exists for artist "${track.artist?.name}" and album "${linkAlbum?.name || input.album?.name || track.album?.name}"`,
+				message: `Track "${input.name}" already exists for artist "${track.artist?.name}" and album "${linkAlbum?.name || input.album?.name || track.album?.name}"`,
 			})
 		}
 	}
@@ -176,6 +199,14 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 		}
 		return fingerprinted.id
 	})()
+
+	console.log({
+		name,
+		linkArtist,
+		linkAlbum,
+		mbid,
+		cover: input.coverId,
+	})
 
 	// update entities
 	// if relevant, remove mbid (and replace w/ acoustid revalidated mbid if possible)

@@ -8,13 +8,11 @@ import ArtistList from "components/ArtistList"
 import { simplifiedName } from "utils/sanitizeString"
 import AlbumList from "components/AlbumList"
 import CoverList from "./CoverList"
+import pluralize from "utils/pluralize"
 
 /**
- * TODO: list covers
  * TODO: validation
  * 	- track name shouldn't already exist in album
- * TODO: summarize changes before mutation
- * 	- ex: "add 2 tracks to album" | "create album with 2 tracks"
  * TODO: fix sharp queue in api/cover because this component might request many big covers at once
  */
 
@@ -78,11 +76,6 @@ export default function Edit({
 	ids: string[]
 	onDone: () => void
 }) {
-	const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault()
-		onDone()
-	}
-
 	const {tracks, isLoading} = trpc
 		.useQueries((t) => ids.map((id) => t.track.miniature({id})))
 		.reduce<{
@@ -95,6 +88,11 @@ export default function Edit({
 		}, {tracks: [], isLoading: false})
 
 	const htmlId = useId()
+
+	const [nameState, setNameState] = useState<null | string>(tracks[0]?.name ?? null)
+	useEffect(() => {setNameState(tracks[0]?.name ?? null)}, [tracks[0]?.name])
+	const [positionState, setPositionState] = useState<null | number>(tracks[0]?.position ?? null)
+	useEffect(() => {setPositionState(tracks[0]?.position ?? null)}, [tracks[0]?.position])
 
 	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
 	const [albumState, setAlbumState] = useState(albumAggregate.value)
@@ -214,22 +212,109 @@ export default function Edit({
 	}, [])
 	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
 
+	const isAlbumModified = Boolean(albumSimplified && (!albumAggregate.value || albumSimplified !== simplifiedName(albumAggregate.value)))
+	const isArtistModified = Boolean(artistSimplified && (!artistAggregate.value || artistSimplified !== simplifiedName(artistAggregate.value)))
+	const isCoverModified = Boolean(coverState && coverState !== coverAggregate.value)
+	const isSingleTrack = tracks.length === 1
+	const isNameModified = isSingleTrack && Boolean(nameState && (!tracks[0]?.name || simplifiedName(nameState) !== simplifiedName(tracks[0].name)))
+	const isPositionModified = isSingleTrack && Boolean(positionState !== null && positionState !== tracks[0]?.position)
+
+	const {mutateAsync: updateTrack} = trpc.edit.track.useMutation()
+	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const editData: Omit<Parameters<typeof updateTrack>[0], 'id'> = {}
+		let hasEdits = false
+		if (isNameModified) {
+			hasEdits = true
+			editData.name = nameState!
+		}
+		if (isPositionModified) {
+			hasEdits = true
+			editData.position = positionState!
+		}
+		if (isAlbumModified) {
+			hasEdits = true
+			if (exactAlbum) {
+				editData.album = {
+					id: albums[0]!.id,
+					name: albums[0]!.name,
+				}
+			} else {
+				editData.album = {
+					name: albumState!,
+				}
+			}
+		}
+		if (isArtistModified) {
+			hasEdits = true
+			if (exactArtist) {
+				editData.artist = {
+					id: artists[0]!.id,
+					name: artists[0]!.name,
+				}
+			} else {
+				editData.artist = {
+					name: artistState!,
+				}
+			}
+		}
+		if (isCoverModified) {
+			hasEdits = true
+			editData.coverId = coverState!
+		}
+		if (hasEdits) {
+			const allExist = tracks.every(track => track)
+			if (!allExist) {
+				console.error('Some tracks are missing at the time of editing. This should not happen.')
+				return
+			}
+			try {
+				for (const track of tracks) {
+					await updateTrack({
+						id: track!.id,
+						...editData
+					})
+				}
+			} catch {
+				return
+			}
+		}
+		// onDone()
+	}
+
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
 				<>
-					{tracks.length === 1 && (
+					{isSingleTrack && (
 						<>
 							<label htmlFor={`name${htmlId}`} className={styles.label}>Name</label>
-							<input id={`name${htmlId}`} type="text" className={styles.input} defaultValue={tracks[0]?.name}/>
+							<input
+								id={`name${htmlId}`}
+								name="name"
+								type="text"
+								className={styles.input}
+								value={nameState ?? ''}
+								onChange={(e) => setNameState(e.target.value)}
+								placeholder={tracks[0]?.name}
+							/>
 							<label htmlFor={`position${htmlId}`} className={styles.label}>#</label>
-							<input id={`position${htmlId}`} type="number" className={styles.input} defaultValue={tracks[0]?.position ?? tracks[0]?.spotify?.trackNumber ?? tracks[0]?.audiodb?.intTrackNumber ?? undefined}/>
+							<input
+								id={`position${htmlId}`}
+								name="position"
+								type="number"
+								className={styles.input}
+								value={positionState ?? ''}
+								onChange={(e) => setPositionState(e.target.value !== '' ? Number(e.target.value) : null)}
+								placeholder={String(tracks[0]?.position ?? tracks[0]?.spotify?.trackNumber ?? tracks[0]?.audiodb?.intTrackNumber) || undefined}
+							/>
 						</>
 					)}
 					{/* Album */}
 					<label htmlFor={`album${htmlId}`} className={styles.label}>Album</label>
 					<input
 						id={`album${htmlId}`}
+						name="album"
 						ref={albumInput}
 						type="text"
 						className={styles.input}
@@ -257,6 +342,7 @@ export default function Edit({
 					<label htmlFor={`artist${htmlId}`} className={styles.label}>Artist</label>
 					<input
 						id={`artist${htmlId}`}
+						name="artist"
 						ref={artistInput}
 						type="text"
 						className={styles.input}
@@ -284,6 +370,7 @@ export default function Edit({
 					<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
 					<input
 						id={`cover${htmlId}`}
+						name="cover"
 						ref={coverInput}
 						type="text"
 						className={styles.input}
@@ -307,23 +394,33 @@ export default function Edit({
 					</div>
 					
 					<div className={styles.summary}>
-						{albumState && albumState !== albumAggregate.value && (
+						{isNameModified && (
+							<p>{
+								`rename track to "${nameState}"`
+							}</p>
+						)}
+						{isPositionModified && (
+							<p>{
+								`set track position to #${String(positionState).padStart(2, '0')}`
+							}</p>
+						)}
+						{isAlbumModified && (
 							<p>{
 								exactAlbum
-									? `assigning album "${albumState}" to ${tracks.length} tracks`
-									: `creating new album "${albumState}" for ${tracks.length} tracks`
+									? `assigning album "${albumState}" to ${tracks.length} track${pluralize(tracks.length)}`
+									: `creating new album "${albumState}" for ${tracks.length} track${pluralize(tracks.length)}`
 							}</p>
 						)}
-						{artistState && artistState !== artistAggregate.value && (
+						{isArtistModified && (
 							<p>{
 								exactArtist
-									? `assigning artist "${artistState}" to ${tracks.length} tracks`
-									: `creating new artist "${artistState}" for ${tracks.length} tracks`
+									? `assigning artist "${artistState}" to ${tracks.length} track${pluralize(tracks.length)}`
+									: `creating new artist "${artistState}" for ${tracks.length} track${pluralize(tracks.length)}`
 							}</p>
 						)}
-						{coverState && coverState !== coverAggregate.value && (
+						{isCoverModified && (
 							<p>{
-								`forcing selected cover on ${tracks.length} tracks`
+								`forcing selected cover on ${tracks.length} track${pluralize(tracks.length)}`
 							}</p>
 						)}
 					</div>
