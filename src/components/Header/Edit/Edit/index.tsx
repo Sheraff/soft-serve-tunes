@@ -1,6 +1,10 @@
-import { useCallback, useDeferredValue, useEffect, useId, useRef, useState, type FormEvent } from "react"
+import { type CSSProperties, useCallback, useDeferredValue, useEffect, useId, useRef, useState, type FormEvent } from "react"
 import { type AppRouter, trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
+import ErrorIcon from "icons/emergency_home.svg"
+import ModifIcon from "icons/edit_square.svg"
+import AssignIcon from "icons/link.svg"
+import CreateIcon from "icons/add_circle.svg"
 import styles from "./index.module.css"
 import { type Prisma } from "@prisma/client"
 import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputFilter"
@@ -10,6 +14,7 @@ import AlbumList from "components/AlbumList"
 import CoverList from "./CoverList"
 import pluralize from "utils/pluralize"
 import { type TRPCClientError } from "@trpc/client"
+import classNames from "classnames"
 
 /**
  * TODO: validation
@@ -222,8 +227,11 @@ export default function Edit({
 
 	const {mutateAsync: updateTrack} = trpc.edit.track.modify.useMutation()
 	const {mutateAsync: validateTrack} = trpc.edit.track.validate.useMutation({retry: 0})
+	const [submitProgress, setSubmitProgress] = useState<number | null>(null)
+	const [errors, setErrors] = useState<string[]>([])
 	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		if (submitProgress !== null) return
 		const editData: Omit<Parameters<typeof updateTrack>[0], 'id'> = {}
 		let hasEdits = false
 		if (isNameModified) {
@@ -273,11 +281,21 @@ export default function Edit({
 			console.error('Some tracks are missing at the time of editing. This should not happen.')
 			return
 		}
+		const totalSteps = tracks.length * 2 + 1
+		const increment = () => {
+			setSubmitProgress(prev => (prev ?? 0) + 1 / totalSteps)
+		}
+		increment()
 		const allValidResponse = await Promise.allSettled(
 			tracks.map(track =>
 				validateTrack({
 					id: track!.id,
 					...editData
+				})
+				// @ts-expect-error -- this is fine
+				.finally((any) => {
+					increment()
+					return any
 				})
 			)
 		)
@@ -289,6 +307,8 @@ export default function Edit({
 		}, [])
 		if (rejections.length > 0) {
 			console.log(rejections)
+			setSubmitProgress(null)
+			setErrors(rejections.map(err => err.message))
 			return
 		}
 		try {
@@ -297,6 +317,7 @@ export default function Edit({
 					id: track!.id,
 					...editData
 				})
+				increment()
 			}
 		} catch {
 			return
@@ -308,6 +329,7 @@ export default function Edit({
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
 				<>
+					<h2 className={classNames(styles.full, styles.title)}>Edit track{pluralize(tracks.length)}</h2>
 					{isSingleTrack && (
 						<>
 							<label htmlFor={`name${htmlId}`} className={styles.label}>Name</label>
@@ -394,7 +416,7 @@ export default function Edit({
 						id={`cover${htmlId}`}
 						name="cover"
 						ref={coverInput}
-						type="text"
+						type="hidden"
 						className={styles.input}
 						value={coverState}
 						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
@@ -415,41 +437,74 @@ export default function Edit({
 						/>
 					</div>
 					
-					<div className={styles.summary}>
+					<div className={classNames(styles.full, styles.summary)}>
 						{isNameModified && (
-							<p>{
-								`rename track to "${nameState}"`
-							}</p>
+							<p>
+								<ModifIcon className={styles.icon}/>
+								{`Rename track to "${nameState}"`}
+							</p>
 						)}
 						{isPositionModified && (
-							<p>{
-								`set track position to #${String(positionState).padStart(2, '0')}`
-							}</p>
+							<p>
+								<ModifIcon className={styles.icon}/>
+								{`Set track position to #${String(positionState).padStart(2, '0')}`}
+							</p>
 						)}
 						{isAlbumModified && (
-							<p>{
-								exactAlbum
-									? `assigning album "${albumState}" to ${tracks.length} track${pluralize(tracks.length)}`
-									: `creating new album "${albumState}" for ${tracks.length} track${pluralize(tracks.length)}`
-							}</p>
+							<p>
+								{exactAlbum && (
+									<>
+										<AssignIcon className={styles.icon}/>
+										{`Add ${tracks.length} track${pluralize(tracks.length)} to "${albumState}" album`}
+									</>
+								)}
+								{!exactAlbum && (
+									<>
+										<CreateIcon className={styles.icon}/>
+										{`Create new album "${albumState}" with ${tracks.length} track${pluralize(tracks.length)}`}
+									</>
+								)}
+							</p>
 						)}
 						{isArtistModified && (
-							<p>{
-								exactArtist
-									? `assigning artist "${artistState}" to ${tracks.length} track${pluralize(tracks.length)}`
-									: `creating new artist "${artistState}" for ${tracks.length} track${pluralize(tracks.length)}`
-							}</p>
+							<p>
+								{exactArtist && (
+									<>
+										<AssignIcon className={styles.icon}/>
+										{`Assign artist "${artistState}" to ${tracks.length} track${pluralize(tracks.length)}`}
+									</>
+								)}
+								{!exactArtist && (
+									<>
+										<CreateIcon className={styles.icon}/>
+										{`Create new artist "${artistState}" with ${tracks.length} track${pluralize(tracks.length)}`}
+									</>
+								)}
+							</p>
 						)}
 						{isCoverModified && (
-							<p>{
-								`forcing selected cover on ${tracks.length} track${pluralize(tracks.length)}`
-							}</p>
+							<p>
+								<ModifIcon className={styles.icon}/>
+								{`Force selected cover on ${tracks.length} track${pluralize(tracks.length)}`}
+							</p>
 						)}
+						{errors.length > 0 && errors.map((error, index) => (
+							<p key={index} className={styles.error}>
+								<ErrorIcon className={styles.icon}/>
+								{error}
+							</p>
+						))}
 					</div>
 
 					<button type="submit" className={styles.submit}>
 						<SaveIcon className={styles.icon} />
 						Save
+						{submitProgress !== null && (
+							<div className={styles.progress} style={{'--progress': submitProgress} as CSSProperties}>
+								<SaveIcon className={styles.icon} />
+								Save
+							</div>
+						)}
 					</button>
 				</>
 			)}
