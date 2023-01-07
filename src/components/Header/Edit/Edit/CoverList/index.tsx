@@ -18,12 +18,16 @@ export default function CoverList({
 	selected?: string,
 	onClick: (cover: Cover) => void,
 }) {
-	const {data: {covers: trackCovers} = {covers: []}} = trpc.cover.fromTracks.useQuery({ids: tracks}, {enabled: tracks.length > 0})
-	const {data: {covers: albumCovers} = {covers: []}} = trpc.cover.fromAlbums.useQuery({ids: albums}, {enabled: albums.length > 0})
+	const {data: {covers: trackCovers} = {covers: []}, isLoading: loadingTracks} = trpc.cover.fromTracks.useQuery({ids: tracks}, {enabled: tracks.length > 0})
+	const {data: {covers: albumCovers} = {covers: []}, isLoading: loadingAlbums} = trpc.cover.fromAlbums.useQuery({ids: albums}, {enabled: albums.length > 0})
 	const covers = [...albumCovers]
 	trackCovers.forEach(cover => {
 		if (!covers.some(c => c.id === cover.id)) covers.push(cover)
 	})
+	const {data: selectedCover} = trpc.cover.byId.useQuery({id: selected!}, {
+		enabled: Boolean(selected && !loadingTracks && !loadingAlbums && !covers.some(cover => cover.id === selected)),
+	})
+	if (selectedCover) covers.unshift(selectedCover)
 
 	return (
 		<div className={styles.wrapper}>

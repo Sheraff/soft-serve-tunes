@@ -23,6 +23,13 @@ async function coverData(id: string) {
     }
 }
 
+const byId = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input }) => {
+  const data = await coverData(input.id)
+  return data
+})
+
 const fromTracks = publicProcedure.input(z.object({
   ids: z.array(z.string()),
 })).query(async ({ input, ctx }) => {
@@ -64,6 +71,7 @@ const fromAlbums = publicProcedure.input(z.object({
 })
 
 export const coverRouter = router({
+  byId,
   fromAlbums,
   fromTracks,
 })
