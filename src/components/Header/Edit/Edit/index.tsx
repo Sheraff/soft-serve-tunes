@@ -17,8 +17,6 @@ import { type TRPCClientError } from "@trpc/client"
 import classNames from "classnames"
 
 /**
- * TODO: validation
- * 	- track name shouldn't already exist in album
  * TODO: fix sharp queue in api/cover because this component might request many big covers at once
  */
 
@@ -273,7 +271,7 @@ export default function Edit({
 			editData.coverId = coverState!
 		}
 		if (!hasEdits) {
-			// onDone()
+			onDone()
 			return
 		}
 		const allExist = tracks.every(track => track)
@@ -322,7 +320,7 @@ export default function Edit({
 		} catch {
 			return
 		}
-		// onDone()
+		onDone()
 	}
 
 	return (
