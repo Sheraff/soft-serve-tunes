@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useId, useRef, useState, type FormEvent } from "react"
-import { trpc, type RouterOutputs } from "utils/trpc"
+import { type AppRouter, trpc, type RouterOutputs } from "utils/trpc"
 import SaveIcon from "icons/save.svg"
 import styles from "./index.module.css"
 import { type Prisma } from "@prisma/client"
@@ -9,6 +9,7 @@ import { simplifiedName } from "utils/sanitizeString"
 import AlbumList from "components/AlbumList"
 import CoverList from "./CoverList"
 import pluralize from "utils/pluralize"
+import { type TRPCClientError } from "@trpc/client"
 
 /**
  * TODO: validation
@@ -219,7 +220,8 @@ export default function Edit({
 	const isNameModified = isSingleTrack && Boolean(nameState && (!tracks[0]?.name || simplifiedName(nameState) !== simplifiedName(tracks[0].name)))
 	const isPositionModified = isSingleTrack && Boolean(positionState !== null && positionState !== tracks[0]?.position)
 
-	const {mutateAsync: updateTrack} = trpc.edit.track.useMutation()
+	const {mutateAsync: updateTrack} = trpc.edit.track.modify.useMutation()
+	const {mutateAsync: validateTrack} = trpc.edit.track.validate.useMutation({retry: 0})
 	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 		const editData: Omit<Parameters<typeof updateTrack>[0], 'id'> = {}
@@ -262,22 +264,42 @@ export default function Edit({
 			hasEdits = true
 			editData.coverId = coverState!
 		}
-		if (hasEdits) {
-			const allExist = tracks.every(track => track)
-			if (!allExist) {
-				console.error('Some tracks are missing at the time of editing. This should not happen.')
-				return
+		if (!hasEdits) {
+			// onDone()
+			return
+		}
+		const allExist = tracks.every(track => track)
+		if (!allExist) {
+			console.error('Some tracks are missing at the time of editing. This should not happen.')
+			return
+		}
+		const allValidResponse = await Promise.allSettled(
+			tracks.map(track =>
+				validateTrack({
+					id: track!.id,
+					...editData
+				})
+			)
+		)
+		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter['edit']['track']['validate']>[]>((acc, res) => {
+			if (res.status === 'rejected') {
+				acc.push(res.reason)
 			}
-			try {
-				for (const track of tracks) {
-					await updateTrack({
-						id: track!.id,
-						...editData
-					})
-				}
-			} catch {
-				return
+			return acc
+		}, [])
+		if (rejections.length > 0) {
+			console.log(rejections)
+			return
+		}
+		try {
+			for (const track of tracks) {
+				await updateTrack({
+					id: track!.id,
+					...editData
+				})
 			}
+		} catch {
+			return
 		}
 		// onDone()
 	}

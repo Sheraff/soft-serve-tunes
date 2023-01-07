@@ -1,12 +1,11 @@
-import { router, protectedProcedure } from "server/trpc/trpc"
+import { router, protectedProcedure, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
 import { prisma } from "server/db/client"
-import { type Prisma } from "@prisma/client"
 import { TRPCError } from "@trpc/server"
 import { simplifiedName } from "utils/sanitizeString"
 import { lastFm } from "server/persistent/lastfm"
 import { acoustId } from "server/persistent/acoustId"
-import { IAudioMetadata } from "music-metadata"
+import { type IAudioMetadata } from "music-metadata"
 import similarStrings from "utils/similarStrings"
 
 	/*
@@ -34,8 +33,10 @@ const trackInputSchema = z.object({
 	position: z.number().optional(),
 })
 
-const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input, ctx }) => {
-	const track = await prisma.track.findUnique({
+type Input = z.infer<typeof trackInputSchema>
+
+function getTrack(input: Input) {
+	return prisma.track.findUnique({
 		where: { id: input.id },
 		select: {
 			id: true,
@@ -61,8 +62,13 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 			}},
 		}
 	})
+}
 
-	// validate track id
+type Track = Omit<Exclude<Awaited<ReturnType<typeof getTrack>>, null>, 'file'> & {
+	file: Exclude<Exclude<Awaited<ReturnType<typeof getTrack>>, null>['file'], null>
+}
+
+function validateTrack(input: Input, track: Awaited<ReturnType<typeof getTrack>>): track is Track {
 	if (!track) {
 		throw new TRPCError({
 			code: "NOT_FOUND",
@@ -75,8 +81,10 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 			message: `Track ${input.id} (${track.name}) has no associated file`,
 		})
 	}
+	return true
+}
 
-	// validate cover id
+async function getCover(input: Input, track: Track) {
 	if (input.coverId && track.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
@@ -88,80 +96,108 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 				message: `Cover ${input.coverId} not found`,
 			})
 		}
+		return cover
 	}
+}
 
-	// validate artist (id or name)
-	const linkArtist = await (async () => {
-		if (!input.artist?.id && !input.artist?.name) return
-		if (input.artist?.id) {
-			const artist = await prisma.artist.findUnique({
-				where: { id: input.artist.id },
-				select: { id: true, name: true },
-			})
-			if (!artist) throw new TRPCError({
-				code: "NOT_FOUND",
-				message: `Artist ${input.artist.id} (${input.artist.name}) not found`,
-			})
-			return artist
-		}
-		const artist = await prisma.artist.findFirst({
-			where: {
-				simplified: simplifiedName(input.artist.name),
-			},
+async function getArtist(input: Input) {
+	if (!input.artist?.id && !input.artist?.name) return
+	if (input.artist?.id) {
+		const artist = await prisma.artist.findUnique({
+			where: { id: input.artist.id },
 			select: { id: true, name: true },
+		})
+		if (!artist) throw new TRPCError({
+			code: "NOT_FOUND",
+			message: `Artist ${input.artist.id} (${input.artist.name}) not found`,
 		})
 		return artist
-	})()
+	}
+	const artist = await prisma.artist.findFirst({
+		where: {
+			simplified: simplifiedName(input.artist.name),
+		},
+		select: { id: true, name: true },
+	})
+	return artist ?? undefined
+}
 
-	// validate album (id or name)
-	const linkAlbum = await (async () => {
-		if (!input.album?.id && !input.album?.name) return
-		if (input.album?.id) {
-			const album = await prisma.album.findUnique({
-				where: { id: input.album.id },
-				select: { id: true, name: true },
-			})
-			if (!album) throw new TRPCError({
-				code: "NOT_FOUND",
-				message: `Album ${input.album.id} (${input.album.name}) not found`,
-			})
-			return album
-		}
-		const album = await prisma.album.findFirst({
-			where: {
-				simplified: simplifiedName(input.album.name),
-				artistId: linkArtist?.id ?? track.artist?.id,
-			},
+async function getAlbum(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+	if (!input.album?.id && !input.album?.name) return
+	if (input.album?.id) {
+		const album = await prisma.album.findUnique({
+			where: { id: input.album.id },
 			select: { id: true, name: true },
 		})
+		if (!album) throw new TRPCError({
+			code: "NOT_FOUND",
+			message: `Album ${input.album.id} (${input.album.name}) not found`,
+		})
 		return album
-	})()
+	}
+	const album = await prisma.album.findFirst({
+		where: {
+			simplified: simplifiedName(input.album.name),
+			artistId: artist?.id ?? track.artist?.id,
+		},
+		select: { id: true, name: true },
+	})
+	return album ?? undefined
+}
 
-	// validate name
-	const name = await (async () => {
-		if (!input.name) return
-		if (track.artist?.name) {
-			const correctedName = await lastFm.correctTrack(track.artist.name, input.name)
-			return correctedName
-		}
-		return input.name
-	})()
+async function getName(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+	if (!input.name) return
+	const artistName = artist?.name ?? input.artist?.name ?? track.artist?.name
+	if (artistName) {
+		const correctedName = await lastFm.correctTrack(artistName, input.name)
+		return correctedName
+	}
+	return input.name
+}
+
+async function checkNameConflict(
+	input: Input,
+	track: Track,
+	name: string | undefined,
+	artist: Awaited<ReturnType<typeof getArtist>>,
+	album: Awaited<ReturnType<typeof getAlbum>>,
+) {
 	if (name) {
 		const other = await prisma.track.count({
 			where: {
 				simplified: simplifiedName(name),
 				id: { not: input.id },
-				artistId: linkArtist?.id ?? track.artist?.id,
-				albumId: linkAlbum?.id ?? track.album?.id,
+				artistId: artist?.id ?? (input.artist ? undefined : track.artist?.id),
+				albumId: album?.id ?? (input.album ? undefined : track.album?.id),
 			},
 		})
 		if (other > 0) {
 			throw new TRPCError({
 				code: "CONFLICT",
-				message: `Track "${input.name}" already exists for artist "${track.artist?.name}" and album "${linkAlbum?.name || input.album?.name || track.album?.name}"`,
+				message: `Track "${input.name}" already exists for artist "${artist?.name ?? input.artist?.name ?? track.artist?.name}" and album "${album?.name ?? input.album?.name ?? track.album?.name}"`,
 			})
 		}
 	}
+}
+
+const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ input, ctx }) => {
+	const track = await getTrack(input)
+
+	// validate track id
+	if (!validateTrack(input, track)) return
+
+	// validate cover id
+	await getCover(input, track)
+
+	// validate artist (id or name)
+	const linkArtist = await getArtist(input)
+
+	// validate album (id or name)
+	const linkAlbum = await getAlbum(input, track, linkArtist)
+
+	// validate name
+	const name = await getName(input, track, linkArtist)
+	await checkNameConflict(input, track, name, linkArtist, linkAlbum)
 
 	// validate position ?
 
@@ -174,15 +210,15 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 		}
 		const metadata = {
 			format: {
-				duration: track.file!.duration,
+				duration: track.file.duration,
 			} as IAudioMetadata["format"],
 			common: {
 				title: name || track.name,
 				album: linkAlbum?.name || input.album?.name || track.album?.name,
-				artist: track.artist?.name,
+				artist: linkArtist?.name || input.artist?.name || track.artist?.name,
 			} as IAudioMetadata["common"],
 		}
-		const fingerprinted = await acoustId.identify(track.file!.path, metadata)
+		const fingerprinted = await acoustId.identify(track.file.path, metadata)
 		if (!fingerprinted || !fingerprinted.title) return null
 		const sameName = similarStrings(fingerprinted.title, name || track.name)
 		if (!sameName) return null
@@ -219,6 +255,29 @@ const track = protectedProcedure.input(trackInputSchema).mutation(async ({ input
 	// ws invalidation of affected entities (potentially: track, album, artist, by-trait, playlist, searchable)
 })
 
-export const editRouter = router({
-	track,
+const validate = publicProcedure.input(trackInputSchema).mutation(async ({ input }) => {
+	const track = await getTrack(input)
+
+	// validate track id
+	if (!validateTrack(input, track)) return
+
+	// validate cover id
+	await getCover(input, track)
+
+	// validate artist (id or name)
+	const linkArtist = await getArtist(input)
+
+	// validate album (id or name)
+	const linkAlbum = await getAlbum(input, track, linkArtist)
+
+	// validate name
+	const name = await getName(input, track, linkArtist)
+	await checkNameConflict(input, track, name, linkArtist, linkAlbum)
+
+	return true
+})
+
+export const trackEditRouter = router({
+	modify,
+	validate,
 })
