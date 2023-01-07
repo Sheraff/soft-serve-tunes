@@ -115,6 +115,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
     where: { id },
     select: {
       coverId: true,
+      coverLocked: true,
       albumId: true,
       artistId: true,
       metaImageId: true,
@@ -122,6 +123,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
   }))
 
   if (!track) return
+  if (track.coverLocked) return false
 
   const changed = await retryable(() => getAndSetTrackCover(id, track))
 

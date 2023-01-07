@@ -18,6 +18,8 @@ import classNames from "classnames"
 
 /**
  * TODO: fix sharp queue in api/cover because this component might request many big covers at once
+ * 
+ * TODO: since selecting a cover will lock the cover to the track, add way to unlock it
  */
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]

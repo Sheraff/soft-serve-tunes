@@ -52,6 +52,7 @@ model Track {
   playlistEntries PlaylistEntry[]
   coverId         String?
   cover           Image?          @relation(name: "cover", fields: [coverId], references: [id])
+  coverLocked     Boolean         @default(false)
 
   @@unique([simplified, artistId, albumId])
 }
