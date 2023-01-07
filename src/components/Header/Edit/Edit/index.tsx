@@ -96,11 +96,21 @@ export default function Edit({
 
 	const htmlId = useId()
 
-	const artistInput = useRef<HTMLInputElement>(null)
-	const {data: artistsRaw} = trpc.artist.searchable.useQuery()
-	const artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
+	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
+	const [albumState, setAlbumState] = useState(albumAggregate.value)
+	const albumSimplified = albumState ? simplifiedName(albumState) : ''
+
 	const artistAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["artist", "name"])
 	const [artistState, setArtistState] = useState(artistAggregate.value)
+	const artistSimplified = artistState ? simplifiedName(artistState) : ''
+
+	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["cover", "id"])
+	const [coverState, setCoverState] = useState(coverAggregate.value)
+
+	const artistInput = useRef<HTMLInputElement>(null)
+	const {data: artistsRaw} = trpc.artist.searchable.useQuery()
+	const _artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
+	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
 		artistInput.current!.value = name ?? ''
@@ -108,12 +118,37 @@ export default function Edit({
 		albumInput.current!.dispatchEvent(new Event('input'))
 	}, [])
 	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
-	const artistSimplified = artistState ? simplifiedName(artistState) : ''
+	artists.sort((a, b) => {
+		if (!albumSimplified && !artistSimplified) return 0
+		const aName = simplifiedName(a.name) === artistSimplified
+		const bName = simplifiedName(b.name) === artistSimplified
+		if (aName === bName) {
+			const aArtist = a.albums?.some(album => simplifiedName(album.name) === albumSimplified)
+			const bArtist = b.albums?.some(album => simplifiedName(album.name) === albumSimplified)
+			if (aArtist && bArtist) {
+				return 0
+			} else if (aArtist) {
+				return -1
+			} else if (bArtist) {
+				return 1
+			}
+		} else if (aName) {
+			return -1
+		} else if (bName) {
+			return 1
+		}
+		const aIsInTracks = tracks.some(track => track?.artist?.id === a.id)
+		const bIsInTracks = tracks.some(track => track?.artist?.id === b.id)
+		if (aIsInTracks && !bIsInTracks) {
+			return -1
+		} else if (!aIsInTracks && bIsInTracks) {
+			return 1
+		}
+		return 0
+	})
 	const exactArtist = Boolean(artistSimplified && artists[0] && artistSimplified === simplifiedName(artists[0].name))
 
 	const albumInput = useRef<HTMLInputElement>(null)
-	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
-	const [albumState, setAlbumState] = useState(albumAggregate.value)
 	const {data: albumsRaw} = trpc.album.searchable.useQuery()
 	const fakeAlbumInput = useRef<HTMLInputElement>({} as HTMLInputElement)
 	useEffect(() => {
@@ -130,8 +165,9 @@ export default function Edit({
 			},
 		} as HTMLInputElement
 	}, [])
-	const _albums = useAsyncInputStringDistance(fakeAlbumInput, albumsRaw || defaultArray, ["name", "artists"])
-	const albums = useDeferredValue(_albums).slice(0, 10)
+	const __albums = useAsyncInputStringDistance(fakeAlbumInput, albumsRaw || defaultArray, ["name", "artists"])
+	const _albums = __albums.length === 0 ? albumsRaw || defaultArray : __albums
+	const albums = useDeferredValue(_albums)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
 		albumInput.current!.value = name ?? ''
 		setAlbumState(name)
@@ -139,15 +175,14 @@ export default function Edit({
 		albumInput.current!.dispatchEvent(new Event('input'))
 	}, [setArtistInputName])
 	useEffect(() => {setAlbumInputName(albumAggregate.value)}, [setAlbumInputName, albumAggregate.value])
-	const albumSimplified = albumState ? simplifiedName(albumState) : ''
 	albums.sort((a, b) => {
 		// if an album has exact title and artist, put it first. If an album has exact title, put it second
-		if (!albumSimplified) return 0
+		if (!albumSimplified && !artistSimplified) return 0
 		const aName = simplifiedName(a.name) === albumSimplified
 		const bName = simplifiedName(b.name) === albumSimplified
-		if (aName && bName) {
-			const aArtist = a.artists.some(artist => simplifiedName(artist) === artistSimplified)
-			const bArtist = b.artists.some(artist => simplifiedName(artist) === artistSimplified)
+		if (aName === bName) {
+			const aArtist = a.artists?.some(artist => simplifiedName(artist) === artistSimplified)
+			const bArtist = b.artists?.some(artist => simplifiedName(artist) === artistSimplified)
 			if (aArtist && bArtist) {
 				return 0
 			} else if (aArtist) {
@@ -155,17 +190,29 @@ export default function Edit({
 			} else if (bArtist) {
 				return 1
 			}
-			return 0
 		} else if (aName) {
 			return -1
 		} else if (bName) {
+			return 1
+		}
+		const aIsInTracks = tracks.some(track => track?.album?.id === a.id)
+		const bIsInTracks = tracks.some(track => track?.album?.id === b.id)
+		if (aIsInTracks && !bIsInTracks) {
+			return -1
+		} else if (!aIsInTracks && bIsInTracks) {
 			return 1
 		}
 		return 0
 	})
 	const exactAlbum = Boolean(albumSimplified && albums[0] && albumSimplified === simplifiedName(albums[0].name))
 
-	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["cover", "id"])
+	const coverInput = useRef<HTMLInputElement>(null)
+	const setCoverInputId = useCallback((id: string | undefined) => {
+		setCoverState(id)
+		coverInput.current!.value = id ?? ''
+		coverInput.current!.dispatchEvent(new Event('input'))
+	}, [])
+	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
 
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
@@ -194,9 +241,15 @@ export default function Edit({
 						<AlbumList
 							lines={1}
 							scrollable
-							albums={albums}
+							albums={albums.slice(0, 10)}
 							selected={exactAlbum ? albums[0]!.id : undefined}
-							onClick={album => setAlbumInputName(album.name, album.artist?.name)}
+							onClick={album => {
+								if (album.name === albumState && album.artist?.name === artistState) {
+									setAlbumInputName(albumAggregate.value, artistState)
+								} else {
+									setAlbumInputName(album.name, album.artist?.name)
+								}
+							}}
 							loading
 						/>
 					</div>
@@ -216,7 +269,13 @@ export default function Edit({
 							lines={1}
 							artists={artists.slice(0, 10)}
 							selected={exactArtist ? artists[0]!.id : undefined}
-							onClick={(artist) => {setArtistInputName(artist.name)}}
+							onClick={(artist) => {
+								if (artist.name === artistState) {
+									setArtistInputName(artistAggregate.value)
+								} else {
+									setArtistInputName(artist.name)
+								}
+							}}
 							loading
 						/>
 					</div>
@@ -225,16 +284,25 @@ export default function Edit({
 					<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
 					<input
 						id={`cover${htmlId}`}
+						ref={coverInput}
 						type="text"
 						className={styles.input}
-						defaultValue={coverAggregate.value}
+						value={coverState}
 						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
+						disabled
 					/>
 					<div className={styles.full}>
 						<CoverList
 							tracks={ids}
 							albums={exactAlbum ? [albums[0]!.id] : []}
-							selected={coverAggregate.unique ? coverAggregate.value : undefined}
+							selected={coverState}
+							onClick={(cover) => {
+								if (cover.id === coverState) {
+									setCoverInputId(coverAggregate.value)
+								} else {
+									setCoverInputId(cover.id)
+								}
+							}}
 						/>
 					</div>
 					

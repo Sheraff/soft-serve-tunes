@@ -19,25 +19,39 @@
 .cover {
 	display: flex;
 	flex-direction: column;
+	width: 75vw;
+}
+
+.selected {
+	border: 1px solid var(--palette-secondary);
 }
 
 .cover img {
-	width: 75vw;
+	width: 100%;
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 }
 
 .palette {
 	display: flex;
-	color: var(--palette-primary);
 }
 
 .palette > * {
-	flex: 3;
-	background-color: var(--color);
+	flex: 1;
 	padding: 4px 8px;
+	background-color: var(--color);
 }
 
-.palette > *:empty {
-	flex: 1;
+.palette > *:first-child {
+	flex: 3;
+	color: var(--palette-primary);
+}
+
+.palette > *:last-child {
+	padding: 0 4px 0 12px;
+	font-size: 20px;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	color: var(--palette-bg-main);
 }
