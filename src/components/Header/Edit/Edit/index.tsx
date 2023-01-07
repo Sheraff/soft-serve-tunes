@@ -306,6 +306,28 @@ export default function Edit({
 						/>
 					</div>
 					
+					<div className={styles.summary}>
+						{albumState && albumState !== albumAggregate.value && (
+							<p>{
+								exactAlbum
+									? `assigning album "${albumState}" to ${tracks.length} tracks`
+									: `creating new album "${albumState}" for ${tracks.length} tracks`
+							}</p>
+						)}
+						{artistState && artistState !== artistAggregate.value && (
+							<p>{
+								exactArtist
+									? `assigning artist "${artistState}" to ${tracks.length} tracks`
+									: `creating new artist "${artistState}" for ${tracks.length} tracks`
+							}</p>
+						)}
+						{coverState && coverState !== coverAggregate.value && (
+							<p>{
+								`forcing selected cover on ${tracks.length} tracks`
+							}</p>
+						)}
+					</div>
+
 					<button type="submit" className={styles.submit}>
 						<SaveIcon className={styles.icon} />
 						Save

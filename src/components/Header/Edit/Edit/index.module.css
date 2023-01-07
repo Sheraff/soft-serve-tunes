@@ -8,6 +8,10 @@
 	font-size: 12px;
 }
 
+.summary {
+	grid-column: 1 / -1;
+}
+
 .submit {
 	margin-top: 8px;
 	grid-column: 1 / -1;
