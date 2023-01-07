@@ -373,7 +373,7 @@ export default function Edit({
 							albums={albums.slice(0, 10)}
 							selected={exactAlbum ? albums[0]!.id : undefined}
 							onClick={album => {
-								if (album.name === albumState && album.artist?.name === artistState) {
+								if (album.name === albumState && (!album.artist || album.artist?.name === artistState)) {
 									setAlbumInputName(albumAggregate.value, artistState)
 								} else {
 									setAlbumInputName(album.name, album.artist?.name)
