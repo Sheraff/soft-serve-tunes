@@ -25,10 +25,19 @@ https://user-images.githubusercontent.com/1325721/187885105-8002f0d3-81d2-4ae6-8
 
 ## RESOURCES
 - favicon: https://realfavicongenerator.net/
-- maskable icons: https://maskable.app/editor
-- icon: https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
+- app icon: https://huggingface.co/spaces/stabilityai/stable-diffusion-1
+- maskable app icon: https://maskable.app/editor
+- icons:
+  - https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
+  - [internal readme](src/icons/README.md)
 - eased gradients: https://larsenwork.com/easing-gradients/
 - postgres.app: https://postgresapp.com/
+- acoustid fingerprinting:
+  - fpcalc binary: https://github.com/acoustid/chromaprint/releases
+  - [internal readme](src/server/persistent/bin/fpcalc/README.md)
+- texts: https://chat.openai.com/
+- svg loaders: https://github.com/SamHerbert/SVG-Loaders
+- logos: https://www.vectorlogo.zone/
 
 ## Deploy to raspberry
 
