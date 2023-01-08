@@ -1,0 +1,73 @@
+.main {
+	grid-area: 1 / 1 / 4 / 2;
+	z-index: var(--z, 2);
+	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+}
+.main > * {
+	background-color: var(--palette-bg-main);
+	color: var(--palette-primary);
+	pointer-events: none;
+}
+
+.head {
+	transition: transform 350ms;
+	transform: translateY(-100%);
+	will-change: transform;
+	font-size: 10px;
+	padding:
+		max(8px, env(safe-area-inset-top))
+		max(8px, env(safe-area-inset-right))
+		8px
+		max(8px, env(safe-area-inset-left));
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.main[data-open="true"] .head {
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.menu {
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
+	font-size: 20px;
+}
+.menu > button {
+	display: flex;
+}
+.trash {
+	font-size: 0.9em;
+}
+.pen {
+	font-size: 0.8em;
+}
+
+.summary {
+	text-align: center;
+}
+
+.body {
+	flex: 1;
+	clip-path: inset(0 0 100% 0);
+	transition: clip-path 350ms ease-out;
+	will-change: clip-path;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	overflow-y: hidden;
+}
+.body[data-open="true"] {
+	clip-path: inset(0 0 0 0);
+	pointer-events: auto;
+}
+.main:not([data-open="true"]) .body[data-open="true"] {
+	pointer-events: none;
+	clip-path: inset(100% 0 0 0);
+}

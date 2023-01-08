@@ -6,8 +6,8 @@ import log from "utils/logger"
 import { zTrackTraits } from "./track"
 import { prisma } from "server/db/client"
 
-const searchable = publicProcedure.query(({ ctx }) => 
-  ctx.prisma.album.findMany({
+const searchable = publicProcedure.query(async ({ ctx }) => {
+  const data = await ctx.prisma.album.findMany({
     where: {
       tracks: {
         some: {}
@@ -16,14 +16,24 @@ const searchable = publicProcedure.query(({ ctx }) =>
     select: {
       id: true,
       name: true,
-      artist: {
-        select: {
-          name: true,
-        }
-      },
+      artist: { select: { name: true } },
+      tracks: { select: { artist: { select: { name: true } } } },
     }
   })
-)
+  return data.map(({ id, name, artist, tracks }) => {
+    const artists = new Set<string>()
+    if (artist?.name) artists.add(artist.name)
+    tracks.forEach(({ artist }) => {
+      if (artist?.name) artists.add(artist.name)
+    })
+    return {
+      id,
+      name,
+      artist,
+      artists: Array.from(artists),
+    }
+  })
+})
 
 const miniature = publicProcedure.input(z.object({
   id: z.string(),

@@ -3,6 +3,7 @@ import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useS
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
+import CheckIcon from "icons/done.svg"
 import { useQueryClient } from "@tanstack/react-query"
 
 type ArtistListItem = {
@@ -14,12 +15,16 @@ function ArtistItem({
 	artist,
 	enableSiblings,
 	onSelect,
+	onClick,
 	index,
+	selected,
 }: {
 	artist: ArtistListItem
 	enableSiblings?: () => void
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
+	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	index: number
+	selected: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.artist.miniature.useQuery({id: artist.id})
@@ -51,10 +56,14 @@ function ArtistItem({
 	return (
 		<button
 			ref={enableSiblings ? item : undefined}
-			className={styles.button}
+			className={classNames(styles.button, {[styles.selected]: selected})}
 			type="button"
 			onClick={(event) => {
 				navigator.vibrate(1)
+				if (onClick) {
+					data && onClick(data)
+					return
+				}
 				data && onSelect?.(data)
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
@@ -80,12 +89,16 @@ function ArtistItem({
 					)}
 				</div>
 			)}
-			<p className={classNames(styles.span, {[styles.empty as string]: isEmpty})}>
+			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
 				<span className={styles.name}>{artist.name}</span>
 				{!data && <span>&nbsp;</span>}
 				{albumCount > 1 && <span>{albumCount} albums</span>}
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
 			</p>
+
+			{selected && (
+				<CheckIcon className={styles.check} />
+			)}
 		</button>
 	)
 }
@@ -93,13 +106,17 @@ function ArtistItem({
 export default forwardRef(function ArtistList({
 	artists,
 	onSelect,
+	onClick,
 	lines = 3,
 	loading = false,
+	selected,
 }: {
 	artists: ArtistListItem[]
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
+	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	lines?: 1 | 3
 	loading?: boolean
+	selected?: string
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
 
@@ -116,7 +133,9 @@ export default forwardRef(function ArtistList({
 								artist={artist}
 								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
 								onSelect={onSelect}
+								onClick={onClick}
 								index={i}
+								selected={selected === artist.id}
 							/>
 						)}
 					</li>

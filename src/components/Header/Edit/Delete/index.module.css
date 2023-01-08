@@ -1,0 +1,50 @@
+.main {
+	--progress: 0;
+	position: relative;
+	user-select: none;
+	perspective: 100px;
+	transform-style: preserve-3d;
+}
+
+.button {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 12px;
+	border-radius: 4px;
+	border: 1px solid currentColor;
+	padding: 16px 32px;
+	will-change: transform;
+	transform:
+		rotate(calc(2deg * var(--progress)))
+		rotateX(calc(-4deg * var(--progress)))
+		rotateY(calc(10deg * var(--progress)))
+		scale(calc(1 - 0.1 * var(--progress)));
+}
+
+.fall .button {
+	transition:
+		transform 850ms ease-in,
+		opacity 850ms ease-in;
+	transform:
+		rotate(10deg)
+		rotateX(-20deg)
+		rotateY(50deg)
+		scale(0.35);
+	opacity: 0;
+}
+
+.main::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: currentColor;
+	opacity: calc(var(--progress));
+	filter: blur(20vmin);
+	transform: scale(calc(1 + 0.1 * var(--progress)));
+	will-change: transform, opacity;
+}
+
+.icon {
+	font-size: 20px;
+}

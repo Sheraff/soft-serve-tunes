@@ -146,7 +146,7 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify(absolutePath: string, metadata: IAudioMetadata): Promise<AugmentedResult | null> {
+	async identify(absolutePath: string, metadata: Pick<IAudioMetadata, 'common' | 'format'>): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
@@ -245,7 +245,7 @@ class AcoustId {
 		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: IAudioMetadata) {
+	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, 'common' | 'format'>) {
 		if (results.length === 0) {
 			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
 			return null
@@ -514,7 +514,7 @@ class AcoustId {
 	}
 
 	// handle cases where there is a single track whose main artist is not that of the rest of the album
-	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: IAudioMetadata) {
+	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: Pick<IAudioMetadata, 'common' | 'format'>) {
 		if (!result.artists || result.artists.length <= 1) {
 			return
 		}

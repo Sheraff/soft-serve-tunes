@@ -8,10 +8,12 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
     select: {
       coverId: true,
       artistId: true,
+      coverLocked: true,
     }
   }))
 
   if (!album) return
+  if (album.coverLocked) return false
 
   const changed = await retryable(() => getAndSetAlbumCover(id, album))
 
@@ -35,6 +37,31 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
   }
 
   return changed
+}
+
+export async function listAlbumCovers(id: string, include: {tracks?: boolean} = {}) {
+  const data = await prisma.album.findUnique({
+    where: { id },
+    select: {
+      spotify: { select: { imageId: true } },
+      audiodb: { select: { thumbHqId: true, thumbId: true } },
+      lastfm: { select: { coverId: true } },
+      ...(include.tracks && { tracks: { select: { id: true } } }),
+    },
+  })
+  if (!data) throw new Error(`Album ${id} not found`)
+  const covers = new Set<string>()
+  if (data?.spotify?.imageId) covers.add(data.spotify.imageId)
+  if (data?.audiodb?.thumbHqId) covers.add(data.audiodb.thumbHqId)
+  if (data?.audiodb?.thumbId) covers.add(data.audiodb.thumbId)
+  if (data?.lastfm?.coverId) covers.add(data.lastfm.coverId)
+  if (include.tracks) {
+    for (const track of data.tracks!) {
+      const trackCovers = await listTrackCovers(track.id, {album: false})
+      trackCovers.forEach(covers.add, covers)
+    }
+  }
+  return Array.from(covers)
 }
 
 async function getAndSetAlbumCover(id: string, album: { artistId: string | null; coverId: string | null }) {
@@ -90,6 +117,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
     where: { id },
     select: {
       coverId: true,
+      coverLocked: true,
       albumId: true,
       artistId: true,
       metaImageId: true,
@@ -97,6 +125,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
   }))
 
   if (!track) return
+  if (track.coverLocked) return false
 
   const changed = await retryable(() => getAndSetTrackCover(id, track))
 
@@ -116,6 +145,30 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
   }
 
   return changed
+}
+
+export async function listTrackCovers(id: string, include: {album?: boolean} = {}) {
+  const data = await prisma.track.findUnique({
+    where: { id },
+    select: {
+      spotify: { select: { album: { select: { imageId: true } } } },
+      audiodb: { select: { thumbId: true } },
+      lastfm: { select: { album: { select: { coverId: true } } } },
+      metaImageId: true,
+      ...(include.album && { album: { select: { id: true } } }),
+    },
+  })
+  if (!data) throw new Error(`Track ${id} not found`)
+  const covers = new Set<string>()
+  if (data?.spotify?.album?.imageId) covers.add(data.spotify.album.imageId)
+  if (data?.audiodb?.thumbId) covers.add(data.audiodb.thumbId)
+  if (data?.lastfm?.album?.coverId) covers.add(data.lastfm.album.coverId)
+  if (data?.metaImageId) covers.add(data.metaImageId)
+  if (include.album) {
+    const albumCovers = await listAlbumCovers(data.album!.id, {tracks: false})
+    albumCovers.forEach(covers.add, covers)
+  }
+  return Array.from(covers)
 }
 
 async function getAndSetTrackCover(id: string, track: {

@@ -285,6 +285,7 @@ class MyWatcher {
 			select: {
 				id: true,
 				name: true,
+				artistId: true,
 			},
 		})
 		const orphanedAlbumsIds = orphanedAlbums.map(album => album.id)
@@ -294,6 +295,9 @@ class MyWatcher {
 		for (const album of orphanedAlbums) {
 			log("event", "event", "fswatcher", `remove album ${album.name} because it wasn't linked to any tracks anymore`)
 			socketServer.emit("remove", { type: "album", id: album.id })
+			if (album.artistId) {
+				socketServer.emit("invalidate", { type: "artist", id: album.artistId })
+			}
 		}
 		const orphanedArtists = await prisma.artist.findMany({
 			where: {

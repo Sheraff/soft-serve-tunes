@@ -35,7 +35,7 @@ export default function Search({
 	const {data: playlistsRaw} = trpc.playlist.searchable.useQuery(undefined, {enabled})
 
 	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
-	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artist.name"])
+	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artists"])
 	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
 	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
 	const playlists = useAsyncInputStringDistance(input, playlistsRaw || defaultArray, ["name", "artists"])

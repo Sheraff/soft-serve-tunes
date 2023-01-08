@@ -4,8 +4,8 @@ import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 
-const searchable = publicProcedure.query(({ctx}) => {
-  return ctx.prisma.artist.findMany({
+const searchable = publicProcedure.query(async ({ctx}) => {
+  const raw = await ctx.prisma.artist.findMany({
     where: { OR: [
       { tracks: {some: {}} },
       { albums: {some: {}} },
@@ -13,6 +13,34 @@ const searchable = publicProcedure.query(({ctx}) => {
     select: {
       id: true,
       name: true,
+      albums: {
+        select: {
+          id: true,
+          name: true,
+        }
+      },
+      tracks: {
+        select: {
+          album: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
+        }
+      }
+    }
+  })
+  return raw.map(({id, name, albums, tracks}) => {
+    tracks.forEach(({album}) => {
+      if (album && !albums.some(({id}) => id === album.id)) {
+        albums.push(album)
+      }
+    })
+    return {
+      id,
+      name,
+      albums,
     }
   })
 })

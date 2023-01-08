@@ -1,9 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect } from "react"
+import { editOverlay, editOverlaySetter } from "./editOverlay"
 import globalState from "./globalState"
 
 type Panel = "artist" | "album" | "search"
-export const panelStack = globalState<Panel[]>("panelStack", [])
+export const panelStack = globalState<Panel[]>(
+	"panelStack",
+	[],
+	(_, queryClient) => {
+		editOverlay.setState(editOverlaySetter(null), queryClient)
+	}
+)
 
 type ArtistView = {
 	id: string,
@@ -70,7 +77,13 @@ export const searchView = globalState<SearchView>("searchView", {
 })
 
 type MainView = "suggestions" | "home"
-export const mainView = globalState<MainView>("mainView", "suggestions")
+export const mainView = globalState<MainView>(
+	"mainView",
+	"suggestions",
+	(_, queryClient) => {
+		editOverlay.setState(editOverlaySetter(null), queryClient)
+	}
+)
 
 export function useIsHome() {
 	const stack = panelStack.useValue()
@@ -107,7 +120,9 @@ export function AppState() {
 	useEffect(() => {
 		const controller = new AbortController()
 		const customNav = () => {
-			if (stack.length) {
+			if (editOverlay.getValue(queryClient).type !== null) {
+				editOverlay.setState(editOverlaySetter(null), queryClient)
+			} else if (stack.length) {
 				showHome()
 			} else {
 				mainView.setState(value => value === "home" ? "suggestions" : "home", queryClient)

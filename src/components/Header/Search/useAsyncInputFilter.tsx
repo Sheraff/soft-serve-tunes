@@ -76,6 +76,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		}
 		workerMemo.addEventListener("message", onMessage)
 		return () => {
+			isWorking.current = false
 			workerMemo.removeEventListener("message", onMessage)
 			workerMemo.terminate()
 		}
@@ -86,8 +87,10 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		if (!worker.current || !inputMemo) return
 
 		worker.current.postMessage({ type: "list", list: namedObjects })
+		let lastInputValue: string
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
+				if (lastInputValue === inputMemo.value) return
 				if (!isWorking.current) {
 					worker.current.postMessage({ type: "input", input: inputMemo.value })
 					isWorking.current = true
@@ -99,6 +102,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 					setList([])
 				})
 			}
+			lastInputValue = inputMemo.value
 		}
 		onInput()
 
