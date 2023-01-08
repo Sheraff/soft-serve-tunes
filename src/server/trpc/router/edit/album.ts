@@ -26,6 +26,7 @@ async function getAlbum(input: {id: string}) {
 		where: { id: input.id },
 		select: {
 			id: true,
+			name: true,
 			coverId: true,
 			artist: { select: { id: true, name: true } },
 			tracks: { select: { id: true } },
@@ -98,10 +99,10 @@ async function checkNameConflict(
 	name: Awaited<ReturnType<typeof getName>>,
 	artist: Awaited<ReturnType<typeof getArtist>>,
 ) {
-	if (name) {
+	if (name || artist) {
 		const other = await prisma.album.count({
 			where: {
-				simplified: simplifiedName(name),
+				simplified: simplifiedName(name || album.name),
 				id: { not: input.id },
 				artistId: artist?.id ?? (input.artist ? undefined : album.artist?.id),
 			},
@@ -109,7 +110,7 @@ async function checkNameConflict(
 		if (other > 0) {
 			throw new TRPCError({
 				code: "CONFLICT",
-				message: `Album "${input.name}" already exists for artist "${artist?.name ?? input.artist?.name ?? album.artist?.name}"`,
+				message: `Album "${input.name || album.name}" already exists for artist "${artist?.name ?? input.artist?.name ?? album.artist?.name}"`,
 			})
 		}
 	}

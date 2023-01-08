@@ -160,10 +160,10 @@ async function checkNameConflict(
 	artist: Awaited<ReturnType<typeof getArtist>>,
 	album: Awaited<ReturnType<typeof getAlbum>>,
 ) {
-	if (name) {
+	if (name || artist || album) {
 		const other = await prisma.track.count({
 			where: {
-				simplified: simplifiedName(name),
+				simplified: simplifiedName(name || track.name),
 				id: { not: input.id },
 				artistId: artist?.id ?? (input.artist ? undefined : track.artist?.id),
 				albumId: album?.id ?? (input.album ? undefined : track.album?.id),
@@ -172,7 +172,7 @@ async function checkNameConflict(
 		if (other > 0) {
 			throw new TRPCError({
 				code: "CONFLICT",
-				message: `Track "${input.name}" already exists for artist "${artist?.name ?? input.artist?.name ?? track.artist?.name}" and album "${album?.name ?? input.album?.name ?? track.album?.name}"`,
+				message: `Track "${input.name || track.name}" already exists for artist "${artist?.name ?? input.artist?.name ?? track.artist?.name}" and album "${album?.name ?? input.album?.name ?? track.album?.name}"`,
 			})
 		}
 	}
@@ -431,7 +431,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 
 	// ws invalidation of affected entities, new and old, and computed endpoints
 	socketServer.emit("invalidate", {type: "track", id: track.id})
-	if (input.album && track.album) socketServer.emit("invalidate", {type: "album", id: track.album.id})
+	if ((input.album || input.position) && track.album) socketServer.emit("invalidate", {type: "album", id: track.album.id})
 	if (input.album && newTrack.album) {
 		if (data.album?.disconnect) {
 			socketServer.emit("add", {type: "album", id: newTrack.album.id})
@@ -439,7 +439,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		}
 		else socketServer.emit("invalidate", {type: "album", id: newTrack.album.id})
 	}
-	if (input.artist && track.artist) socketServer.emit("invalidate", {type: "artist", id: track.artist.id})
+	if ((input.artist || input.album) && track.artist) socketServer.emit("invalidate", {type: "artist", id: track.artist.id})
 	if (input.artist && newTrack.artist) {
 		if (data.artist?.create) socketServer.emit("add", {type: "artist", id: newTrack.artist.id})
 		else socketServer.emit("invalidate", {type: "artist", id: newTrack.artist.id})
