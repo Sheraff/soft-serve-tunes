@@ -22,6 +22,7 @@ import classNames from "classnames"
  * TODO: since selecting a cover will lock the cover to the track, add way to unlock it
  * 
  * TODO: ability to edit feats. by adding/removing arbitrary amount of artists
+ *   => this is also important to be able to handle multi-artist albums (and avoid creating duplicate albums)
  */
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
@@ -57,6 +58,7 @@ type GetFieldType<T extends Record<string, Value> | null, P extends DeepKeyof<T>
 		: undefined
 
 function getIn<T extends Record<string, Value>, K extends DeepKeyof<DeepExcludeNull<T>>>(obj: T, key: K): GetFieldType<DeepExcludeNull<T>, K> | undefined {
+	if (!obj) return undefined
 	const [first, ...rest] = key as [keyof T, ...string[]]
 	const next = obj[first]
 	if (rest.length === 0) return next as GetFieldType<DeepExcludeNull<T>, K>
@@ -364,7 +366,7 @@ export default function Edit({
 						ref={albumInput}
 						type="text"
 						className={styles.input}
-						value={albumState}
+						value={albumState ?? ''}
 						onChange={() => setAlbumState(albumInput.current!.value)}
 						placeholder={albumAggregate.unique ? undefined : 'Multiple values'}
 					/>
@@ -392,7 +394,7 @@ export default function Edit({
 						ref={artistInput}
 						type="text"
 						className={styles.input}
-						value={artistState}
+						value={artistState ?? ''}
 						onChange={() => setArtistState(artistInput.current!.value)}
 						placeholder={artistAggregate.unique ? undefined : 'Multiple values'}
 					/>
@@ -420,7 +422,7 @@ export default function Edit({
 						ref={coverInput}
 						type="hidden"
 						className={styles.input}
-						value={coverState}
+						value={coverState ?? ''}
 						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
 						disabled
 					/>

@@ -98,6 +98,8 @@
 	color: var(--palette-primary);
 }
 .empty {
+	grid-row: 1 / 2;
+	grid-column: 1 / 2;
 	width: 100%;
 	height: var(--side);
 	border-radius: 50%;

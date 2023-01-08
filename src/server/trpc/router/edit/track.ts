@@ -12,12 +12,8 @@ import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server
 import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 
-/*
-* should we do the same checks we do for `createTrack`?
-* - correct names w/ lastfm
-* - prevent useless names
-* - match on acoustid (if name changes, maybe another suggestion might be selected)
-*/
+// TODO: handle multi-artist album (both when linking and creating)
+// TODO: maybe now disconnected album isn't multi-artist anymore?
 
 const trackInputSchema = z.object({
 	id: z.string(),
@@ -61,6 +57,9 @@ async function getTrack(input: Input) {
 				playcount: true,
 				favorite: true,
 			}},
+			spotify: {select: {id: true}},
+			lastfm: {select: {id: true}},
+			audiodb: {select: {entityId: true}},
 		}
 	})
 	if (!track) {
@@ -284,9 +283,6 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		}
 	}
 
-	// TODO: handle multi-artist album (both when linking and creating)
-	// TODO: maybe now disconnected album isn't multi-artist anymore?
-
 	if (linkAlbum) {
 		data.album = { connect: { id: linkAlbum.id } }
 	} else if (input.album?.name) {
@@ -296,11 +292,11 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 
 	if (input.name || input.artist || input.album) {
 		data.lastfmDate = null
-		data.lastfm = {delete: true}
+		if (track.lastfm) data.lastfm = {delete: true}
 		data.audiodbDate = null
-		data.audiodb = {delete: true}
+		if (track.audiodb) data.audiodb = {delete: true}
 		data.spotifyDate = null
-		data.spotify = {delete: true}
+		if (track.spotify) data.spotify = {delete: true}
 	}
 
 	const newTrack = await prisma.$transaction(async (tx) => {
@@ -310,7 +306,10 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 			select: {
 				id: true,
 				artist: {select: {id: true}},
-				album: {select: {id: true}},
+				album: {select: {
+					id: true,
+					artistId: true,
+				}},
 			}
 		})
 
@@ -355,7 +354,10 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 					}
 				},
 				select: {
-					album: {select: {id: true}},
+					album: {select: {
+						id: true,
+						artistId: true,
+					}},
 				}
 			})
 			newTrack.album = extraTrackData.album
@@ -374,9 +376,15 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 			if (newTrack.artist) {
 				await tx.artist.update({
 					where: { id: newTrack.artist.id },
-					data: { userData: { update: {
-						favorite: { increment: track.userData.favorite ? 1 : 0 },
-						playcount: { increment: track.userData.playcount },
+					data: { userData: { upsert: {
+						update: {
+							favorite: { increment: track.userData.favorite ? 1 : 0 },
+							playcount: { increment: track.userData.playcount },
+						},
+						create: {
+							favorite: track.userData.favorite ? 1 : 0,
+							playcount: track.userData.playcount,
+						}
 					} } }
 				})
 			}
@@ -395,9 +403,15 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 			if (newTrack.album) {
 				await tx.album.update({
 					where: { id: newTrack.album.id },
-					data: { userData: { update: {
-						favorite: { increment: track.userData.favorite ? 1 : 0 },
-						playcount: { increment: track.userData.playcount },
+					data: { userData: { upsert: {
+						update: {
+							favorite: { increment: track.userData.favorite ? 1 : 0 },
+							playcount: { increment: track.userData.playcount },
+						},
+						create: {
+							favorite: track.userData.favorite ? 1 : 0,
+							playcount: track.userData.playcount,
+						}
 					} } }
 				})
 			}
@@ -418,7 +432,10 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	socketServer.emit("invalidate", {type: "track", id: track.id})
 	if (input.album && track.album) socketServer.emit("invalidate", {type: "album", id: track.album.id})
 	if (input.album && newTrack.album) {
-		if (data.album?.disconnect) socketServer.emit("add", {type: "album", id: newTrack.album.id})
+		if (data.album?.disconnect) {
+			socketServer.emit("add", {type: "album", id: newTrack.album.id})
+			if (newTrack.album.artistId) socketServer.emit("invalidate", {type: "artist", id: newTrack.album.artistId})
+		}
 		else socketServer.emit("invalidate", {type: "album", id: newTrack.album.id})
 	}
 	if (input.artist && track.artist) socketServer.emit("invalidate", {type: "artist", id: track.artist.id})
@@ -433,22 +450,9 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	fileWatcher.scheduleCleanup()
 
 	console.log({
-		name,
-		linkArtist,
-		linkAlbum,
-		fingerprinted,
-		cover: input.coverId,
+		input,
+		newTrack
 	})
-
-	// +update entities
-	// +if relevant, remove mbid (and replace w/ acoustid revalidated mbid if possible)
-	// +if name changed, update "simplified" too
-	// +update user data (likes counter and listen counter for album & artist, disconnected and newly connected)
-	// +revalidate covers (if coverId changed, or if linked album / linked artist changed) (we should add a "static cover" column on UserData to avoid auto-selecting covers when the user has manually selected one)
-	// +disconnect lastfm, audiodb, spotify, etc. if [what condition?]
-	// +db cleanup (like after watcher deletion)
-	// +remove "last checked" dates for lastfm, audiodb, spotify, etc. and trigger recheck
-	// +ws invalidation of affected entities (potentially: track, album, artist, by-trait, playlist, searchable)
 })
 
 const validate = publicProcedure.input(trackInputSchema).mutation(async ({ input }) => {
