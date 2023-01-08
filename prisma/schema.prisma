@@ -161,9 +161,10 @@ model Album {
   spotifyDate DateTime?
   audiodbDate DateTime?
 
-  userData UserAlbum? @relation
-  coverId  String?
-  cover    Image?     @relation(fields: [coverId], references: [id])
+  userData    UserAlbum? @relation
+  coverId     String?
+  cover       Image?     @relation(fields: [coverId], references: [id])
+  coverLocked Boolean    @default(false)
 
   @@unique([simplified, artistId])
 }

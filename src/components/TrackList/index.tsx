@@ -118,7 +118,7 @@ function TrackItem({
 	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
 	const explicit = Boolean(data?.spotify?.explicit)
 	const recent = useMemo(
-		() => data?.createdAt && Date.now() - 0.3 * 24 * 60 * 60 * 1000 < data.createdAt.getTime(), // TODO: should be more, maybe 2-3 days?
+		() => data?.createdAt && Date.now() - 3 * 24 * 60 * 60 * 1000 < data.createdAt.getTime(),
 		[data?.createdAt]
 	)
 	const online = useIsOnline()
@@ -137,11 +137,11 @@ function TrackItem({
 				})}
 				type="button"
 				onClick={() => {
-					navigator.vibrate(1)
-					if (editOverlay.getValue(queryClient).selection.length > 0) {
+					if (editOverlay.getValue(queryClient).type === "track") {
 						callbacks.current.onLong!()
 						return
 					}
+					navigator.vibrate(1)
 					data && onSelect?.(data)
 					if (onClick) {
 						onClick(track.id, track.name)

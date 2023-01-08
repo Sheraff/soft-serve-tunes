@@ -5,7 +5,7 @@ import ErrorIcon from "icons/emergency_home.svg"
 import ModifIcon from "icons/edit_square.svg"
 import AssignIcon from "icons/link.svg"
 import CreateIcon from "icons/add_circle.svg"
-import styles from "./index.module.css"
+import styles from "../Entities/index.module.css"
 import { type Prisma } from "@prisma/client"
 import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputFilter"
 import ArtistList from "components/ArtistList"
@@ -15,6 +15,8 @@ import CoverList from "./CoverList"
 import pluralize from "utils/pluralize"
 import { type TRPCClientError } from "@trpc/client"
 import classNames from "classnames"
+import isLoaded from "./isLoaded"
+import getIn, { type DeepExcludeNull, type DeepKeyof, type GetFieldType } from "./getIn"
 
 /**
  * TODO: fix sharp queue in api/cover because this component might request many big covers at once
@@ -26,44 +28,6 @@ import classNames from "classnames"
  */
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
-
-function isLoaded(tracks: (TrackMiniature | undefined)[], isLoading: boolean): tracks is TrackMiniature[] {
-	return !isLoading
-}
-
-type Value = number | string | boolean | null | undefined | ValueObject | Prisma.JsonValue | Date
-
-type ValueObject = {
-	[key: string]: Value
-}
-
-type DeepKeyof<T extends Record<string, Value> | null> = {
-	[K in keyof T]: K extends string ? T[K] extends Record<string, Value> ? [K, ...DeepKeyof<T[K]>] : [K] : never
-}[keyof T]
-
-type DeepExcludeNull<T extends Record<string, Value> | null> = T extends null ? never : {
-	[K in keyof T]: Exclude<T[K], null> extends Record<string, Value> ? DeepExcludeNull<Exclude<T[K], null>> : Exclude<T[K], null>
-}
-
-type GetFieldType<T extends Record<string, Value> | null, P extends DeepKeyof<T>> = P extends [keyof T]
-	? T[P[0]]
-	: P extends [infer Left, ...infer Right]
-		? Left extends keyof T
-			? T[Left] extends Record<string, Value>
-				? Right extends DeepKeyof<T[Left]>
-					? GetFieldType<T[Left], Right>
-					: never
-				: never
-			: undefined
-		: undefined
-
-function getIn<T extends Record<string, Value>, K extends DeepKeyof<DeepExcludeNull<T>>>(obj: T, key: K): GetFieldType<DeepExcludeNull<T>, K> | undefined {
-	if (!obj) return undefined
-	const [first, ...rest] = key as [keyof T, ...string[]]
-	const next = obj[first]
-	if (rest.length === 0) return next as GetFieldType<DeepExcludeNull<T>, K>
-	return getIn(next as any, rest as any) as any
-}
 
 function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: (TrackMiniature | null | undefined)[], key: K): {readonly value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, readonly unique: boolean} {
 	const [first, ...rest] = (tracks.filter(Boolean) as Exclude<TrackMiniature, null>[])
@@ -79,7 +43,7 @@ function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(t
 const defaultArray = [] as never[]
 const defaultAggregate = {value: undefined, unique: undefined} as const
 
-export default function Edit({
+export default function EditTrack({
 	ids,
 	onDone,
 }: {
@@ -235,6 +199,7 @@ export default function Edit({
 	const [errors, setErrors] = useState<string[]>([])
 	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		navigator.vibrate(1)
 		if (submitProgress !== null) return
 		const editData: Omit<Parameters<typeof updateTrack>[0], 'id'> = {}
 		let hasEdits = false
@@ -377,6 +342,7 @@ export default function Edit({
 							albums={albums.slice(0, 10)}
 							selected={exactAlbum ? albums[0]!.id : undefined}
 							onClick={album => {
+								navigator.vibrate(1)
 								if (album.name === albumState && (!album.artist || album.artist?.name === artistState)) {
 									setAlbumInputName(albumAggregate.value, artistState)
 								} else {
@@ -384,6 +350,7 @@ export default function Edit({
 								}
 							}}
 							loading
+							selectable={false}
 						/>
 					</div>
 					{/* Artist */}
@@ -404,6 +371,7 @@ export default function Edit({
 							artists={artists.slice(0, 10)}
 							selected={exactArtist ? artists[0]!.id : undefined}
 							onClick={(artist) => {
+								navigator.vibrate(1)
 								if (artist.name === artistState) {
 									setArtistInputName(artistAggregate.value)
 								} else {
@@ -432,6 +400,7 @@ export default function Edit({
 							albums={exactAlbum ? [albums[0]!.id] : []}
 							selected={coverState}
 							onClick={(cover) => {
+								navigator.vibrate(1)
 								if (cover.id === coverState) {
 									setCoverInputId(coverAggregate.value)
 								} else {

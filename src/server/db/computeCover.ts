@@ -8,10 +8,12 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
     select: {
       coverId: true,
       artistId: true,
+      coverLocked: true,
     }
   }))
 
   if (!album) return
+  if (album.coverLocked) return false
 
   const changed = await retryable(() => getAndSetAlbumCover(id, album))
 

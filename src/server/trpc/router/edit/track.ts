@@ -420,7 +420,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		return newTrack
 	})
 
-	await computeTrackCover(track.id, {album: true, artist: true})
+	await computeTrackCover(track.id, {album: false, artist: false})
 	if (input.album && track.album) {
 		await computeAlbumCover(track.album.id, {tracks: false, artist: true})
 	}
@@ -448,11 +448,6 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	
 
 	fileWatcher.scheduleCleanup()
-
-	console.log({
-		input,
-		newTrack
-	})
 })
 
 const validate = publicProcedure.input(trackInputSchema).mutation(async ({ input }) => {

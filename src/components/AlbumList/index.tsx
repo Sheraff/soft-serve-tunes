@@ -1,10 +1,12 @@
 import classNames from "classnames"
-import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef } from "react"
+import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef, useDeferredValue } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { albumView } from "components/AppContext"
 import CheckIcon from "icons/done.svg"
 import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
+import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
+import useLongPress from "./useLongPress"
 
 type AlbumListItem = {
 	id: string
@@ -18,6 +20,7 @@ function AlbumItem({
 	onClick,
 	index,
 	selected,
+	selectable,
 }: {
 	album: AlbumListItem
 	enableSiblings?: () => void
@@ -25,6 +28,7 @@ function AlbumItem({
 	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	index: number
 	selected: boolean
+	selectable: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.album.miniature.useQuery({id: album.id})
@@ -46,20 +50,31 @@ function AlbumItem({
 		return () => observer.disconnect()
 	}, [enableSiblings])
 
-	
-
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2)}` : ""
 
 	const queryClient = useQueryClient()
 
+	const onLong = selectable ? () => {
+		navigator.vibrate(1)
+		editOverlay.setState(
+			editOverlaySetter({type: "album", id: album.id}),
+			queryClient
+		)
+	} : undefined
+	useLongPress({onLong, item})
+
 	return (
 		<button
-			ref={enableSiblings ? item : undefined}
+			ref={item}
 			className={classNames(styles.button, {[styles.selected]: selected})}
 			type="button"
 			onClick={(event) => {
+				if (onLong && editOverlay.getValue(queryClient).type === "album") {
+					onLong()
+					return
+				}
 				navigator.vibrate(1)
 				if (onClick) {
 					data && onClick(data)
@@ -107,6 +122,7 @@ export default forwardRef(function AlbumList({
 	lines = 2,
 	loading = false,
 	selected,
+	selectable = true,
 }: {
 	albums: AlbumListItem[]
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
@@ -115,8 +131,13 @@ export default forwardRef(function AlbumList({
 	lines?: 1 | 2
 	loading?: boolean
 	selected?: string
+	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
+
+	const _editViewState = editOverlay.useValue()
+	const editViewState = useDeferredValue(_editViewState)
+	const isSelection = selectable && editViewState.type === "album"
 
 	return (
 		<div className={classNames(styles.wrapper, {[styles.scrollable]: scrollable})} ref={ref}>
@@ -135,7 +156,8 @@ export default forwardRef(function AlbumList({
 								onSelect={onSelect}
 								onClick={onClick}
 								index={i}
-								selected={selected === album.id}
+								selected={selected === album.id || (isSelection && editViewState.selection.some(({id}) => id === album.id))}
+								selectable={selectable}
 							/>
 						)}
 					</li>

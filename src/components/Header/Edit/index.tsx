@@ -8,7 +8,8 @@ import DeleteIcon from "icons/delete.svg"
 import PlaylistAddIcon from "icons/playlist_add.svg"
 import AddToPlaylist from "./AddToPlaylist"
 import Delete from "./Delete"
-import Edit from "./Edit"
+import EditTrack from "./Entities/Track"
+import EditAlbum from "./Entities/Album"
 import { useCurrentTrackDetails } from "client/db/useMakePlaylist"
 import { paletteToCSSProperties } from "components/Palette"
 
@@ -143,8 +144,14 @@ export default forwardRef(function EditOverlay({
 						onSelect={() => setState(editOverlaySetter(null))}
 					/>
 				)}
-				{body === "edit" && (
-					<Edit
+				{body === "edit" && type === "track" && (
+					<EditTrack
+						ids={ids}
+						onDone={() => setState(editOverlaySetter(null))}
+					/>
+				)}
+				{body === "edit" && type === "album" && (
+					<EditAlbum
 						ids={ids}
 						onDone={() => setState(editOverlaySetter(null))}
 					/>
@@ -152,6 +159,7 @@ export default forwardRef(function EditOverlay({
 				{body === "delete" && (
 					<Delete
 						ids={ids}
+						type={type}
 						onDone={() => setState(editOverlaySetter(null))}
 					/>
 				)}

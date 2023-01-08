@@ -1,13 +1,6 @@
 import { RefObject, useEffect } from "react"
+import getTouchFromId from "utils/getTouchFromId"
 import styles from "./index.module.css"
-
-function getTouchFromId(list: TouchList, id: number) {
-	for (let i = 0; i < list.length; i++) {
-		const item = list.item(i)
-		if(item?.identifier === id)
-			return item
-	}
-}
 
 const DELAYED_SWITCH_DURATION = 300
 const LONG_PRESS_DURATION = 1_000

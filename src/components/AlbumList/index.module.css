@@ -57,6 +57,8 @@
 	justify-content: flex-end;
 	overflow: hidden;
 	border-radius: 4px;
+	touch-action: pan-x pan-y;
+	user-select: none;
 }
 .selected {
 	border: 1px solid var(--palette-secondary);
