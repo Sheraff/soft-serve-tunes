@@ -27,7 +27,7 @@ export default function useSlideTrack(
 		let uxController: AbortController | null = null
 		let animController: AbortController | null = null
 		let switchController: AbortController | null = null
-		let timeoutId: ReturnType<typeof setTimeout> | null = null
+		let delayedSwitchTimeoutId: ReturnType<typeof setTimeout> | null = null
 		let triggerSecondaryAction = false
 
 		let isDragging = false
@@ -73,14 +73,13 @@ export default function useSlideTrack(
 
 		function delayedSwitch(which: 'left' | 'right' = 'left', end: () => void) {
 			if (!element) return
+			if (which === 'right') return
 
 			triggerSecondaryAction = false
 
-			if (which === 'right') return
-
-			timeoutId = setTimeout(() => {
-				timeoutId = null
-				element.classList.add(styles['switch-left'] as string)
+			delayedSwitchTimeoutId = setTimeout(() => {
+				delayedSwitchTimeoutId = null
+				element.classList.add(styles['switch-left'])
 				const controller = new AbortController()
 				const {signal} = controller
 				switchController = controller
@@ -95,6 +94,21 @@ export default function useSlideTrack(
 					callbacks.current.onAdd()
 				}, {signal})
 			}, DELAYED_SWITCH_DURATION)
+		}
+
+		function cancelDelayedSwitch(which: 'left' | 'right' = 'left') {
+			if (!element) return
+			if (which === 'right') return
+			triggerSecondaryAction = false
+			if (delayedSwitchTimeoutId) {
+				clearTimeout(delayedSwitchTimeoutId)
+				delayedSwitchTimeoutId = null
+			}
+			if (switchController) {
+				element.classList.remove(styles['switch-left'])
+				switchController?.abort()
+				switchController = null
+			}
 		}
 
 		function playlist() {
@@ -136,9 +150,9 @@ export default function useSlideTrack(
 			let longPressTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 			const end = () => {
-				if (timeoutId) {
-					clearTimeout(timeoutId)
-					timeoutId = null
+				if (delayedSwitchTimeoutId) {
+					clearTimeout(delayedSwitchTimeoutId)
+					delayedSwitchTimeoutId = null
 				}
 				if (longPressTimeoutId) {
 					clearTimeout(longPressTimeoutId)
@@ -184,12 +198,11 @@ export default function useSlideTrack(
 					element.classList.add(styles.will as string)
 				}
 				const valid = dx > 48 || dx < -48
-				if (valid && !timeoutId) {
+				if (valid && !delayedSwitchTimeoutId) {
 					delayedSwitch(dx > 48 ? 'left' : 'right', end)
 				}
-				if (!valid && timeoutId) {
-					clearTimeout(timeoutId)
-					timeoutId = null
+				if (!valid && delayedSwitchTimeoutId) {
+					cancelDelayedSwitch(dx <= 48 ? 'left' : 'right')
 				}
 				const r = Math.abs(dx) / 48
 				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
@@ -230,7 +243,7 @@ export default function useSlideTrack(
 			if (uxController) uxController.abort()
 			if (animController) animController.abort()
 			if (switchController) switchController.abort()
-			if (timeoutId) clearTimeout(timeoutId)
+			if (delayedSwitchTimeoutId) clearTimeout(delayedSwitchTimeoutId)
 		}
 	}, [ref, callbacks, opts.quickSwipeDeleteAnim])
 
