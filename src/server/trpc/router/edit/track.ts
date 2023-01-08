@@ -11,6 +11,7 @@ import similarStrings from "utils/similarStrings"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
+import { unlink } from "fs/promises"
 
 // TODO: handle multi-artist album (both when linking and creating)
 // TODO: maybe now disconnected album isn't multi-artist anymore?
@@ -32,7 +33,7 @@ const trackInputSchema = z.object({
 
 type Input = z.infer<typeof trackInputSchema>
 
-async function getTrack(input: Input) {
+async function getTrack(input: {id: string}) {
 	const track = await prisma.track.findUnique({
 		where: { id: input.id },
 		select: {
@@ -469,7 +470,15 @@ const validate = publicProcedure.input(trackInputSchema).mutation(async ({ input
 	return true
 })
 
+const deleteTrack = protectedProcedure.input(z.object({
+	id: z.string(),
+})).mutation(async ({ input }) => {
+	const track = await getTrack(input)
+	await unlink(track.file.path)
+})
+
 export const trackEditRouter = router({
 	modify,
 	validate,
+	delete: deleteTrack,
 })

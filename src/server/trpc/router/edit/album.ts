@@ -7,6 +7,7 @@ import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server
 import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 import { simplifiedName } from "utils/sanitizeString"
+import { unlink } from "fs/promises"
 
 const albumInputSchema = z.object({
 	id: z.string(),
@@ -20,7 +21,7 @@ const albumInputSchema = z.object({
 
 type Input = z.infer<typeof albumInputSchema>
 
-async function getAlbum(input: Input) {
+async function getAlbum(input: {id: string}) {
 	const album = await prisma.album.findUnique({
 		where: { id: input.id },
 		select: {
@@ -221,7 +222,22 @@ const validate = publicProcedure.input(albumInputSchema).mutation(async ({ input
 	return true
 })
 
+const deleteAlbum = protectedProcedure.input(z.object({
+	id: z.string(),
+})).mutation(async ({ input }) => {
+	const album = await getAlbum(input)
+	for (const track of album.tracks) {
+		const trackData = await prisma.track.findUnique({
+			where: { id: track.id },
+			select: { file: { select: { path: true } } },
+		})
+		if (!trackData?.file) continue
+		await unlink(trackData.file.path)
+	}
+})
+
 export const albumEditRouter = router({
 	modify,
 	validate,
+	delete: deleteAlbum,
 })

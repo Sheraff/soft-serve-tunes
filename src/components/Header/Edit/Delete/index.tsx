@@ -1,7 +1,8 @@
 import { type editOverlay } from "components/AppContext/editOverlay"
 import DeleteIcon from "icons/delete.svg"
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import getTouchFromId from "utils/getTouchFromId"
+import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 
 const DELETE_TIMEOUT = 2_000
@@ -16,6 +17,16 @@ export default function Delete({
 	onDone: () => void
 }) {
 	const button = useRef<HTMLButtonElement>(null)
+
+	const {mutateAsync: deleteTrack} = trpc.edit.track.delete.useMutation({retry: 0})
+	const {mutateAsync: deleteAlbum} = trpc.edit.album.delete.useMutation({retry: 0})
+	const deleteOther = useCallback(() => console.warn(`No delete mutation for type ${type}`), [type])
+	const mutate = type === "track"
+		? deleteTrack
+		: type === "album"
+		? deleteAlbum
+		: deleteOther
+
 	useEffect(() => {
 		const element = button.current
 		if (!element) return
@@ -30,9 +41,22 @@ export default function Delete({
 			element.classList.add(styles.fall)
 			navigator.vibrate(1)
 
-			element.addEventListener("transitionend", () => {
-				onDone?.()
-			}, {once: true})
+			const transition = new Promise<void>(resolve =>
+				element.addEventListener("transitionend", () => {resolve()}, {once: true})
+			)
+			const deletion = new Promise<void>(async (resolve) => {
+				for (const id of ids) {
+					try {
+						await mutate({id})
+					} catch (error) {
+						console.error(error)
+					}
+				}
+				resolve()
+			})
+			if (onDone) {
+				Promise.all([transition, deletion]).then(onDone)
+			}
 		}
 
 		function start(touch: Touch) {
@@ -90,7 +114,7 @@ export default function Delete({
 			controller.abort()
 			if (end) end()
 		}
-	}, [ids, onDone])
+	}, [ids, onDone, mutate])
 	return (
 		<button type="button" className={styles.main} ref={button}>
 			<div className={styles.button}>

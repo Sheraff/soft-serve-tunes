@@ -277,13 +277,13 @@ export default function EditAlbum({
 								{exactArtist && (
 									<>
 										<AssignIcon className={styles.icon}/>
-										{`Assign artist "${artistState}" to ${albums.length} album${pluralize(albums.length)}`}
+										{`Assign artist "${artistState}" to ${albums.length} album${pluralize(albums.length)} (will not change tracks artist)`}
 									</>
 								)}
 								{!exactArtist && (
 									<>
 										<CreateIcon className={styles.icon}/>
-										{`Create new artist "${artistState}" with ${albums.length} album${pluralize(albums.length)}`}
+										{`Create new artist "${artistState}" with ${albums.length} album${pluralize(albums.length)} (will not change tracks artist)`}
 									</>
 								)}
 							</p>
