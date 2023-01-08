@@ -111,13 +111,6 @@ export default function trpcRevalidation<
 	batch.timeoutId = setTimeout(processBatch, 10)
 }
 
-
-workerSocketClient.metrics.subscribe({
-	onData(data) {
-		console.log('SW: metrics', data)
-	},
-})
-
 workerSocketClient.add.subscribe({
 	onData({type, id}) {
 		console.log(`added ${type} ${id}`)

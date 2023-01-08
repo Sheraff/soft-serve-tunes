@@ -4,23 +4,20 @@ import { type Prisma } from "@prisma/client"
 import { prisma } from "server/db/client"
 import { TRPCError } from "@trpc/server"
 import { cleanGenreList, simplifiedName } from "utils/sanitizeString"
-import { lastFm } from "server/persistent/lastfm"
+// import { lastFm } from "server/persistent/lastfm"
 import { acoustId } from "server/persistent/acoustId"
-import { type IAudioMetadata } from "music-metadata"
+import { parseFile, type IAudioMetadata } from "music-metadata"
 import similarStrings from "utils/similarStrings"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 
-	/*
-	 * should we do the same checks we do for `createTrack`?
-	 * - correct names w/ lastfm
-	 * - prevent useless names
-	 * - match on acoustid (if name changes, maybe another suggestion might be selected)
-	 */
-
-
-// maybe create a GET endpoint that does all of those checks and just returns whether it would be valid or not
+/*
+* should we do the same checks we do for `createTrack`?
+* - correct names w/ lastfm
+* - prevent useless names
+* - match on acoustid (if name changes, maybe another suggestion might be selected)
+*/
 
 const trackInputSchema = z.object({
 	id: z.string(),
@@ -148,11 +145,11 @@ async function getAlbum(input: Input, track: Track, artist: Awaited<ReturnType<t
 
 async function getName(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
 	if (!input.name) return
-	const artistName = artist?.name ?? input.artist?.name ?? track.artist?.name
-	if (artistName) {
-		const correctedName = await lastFm.correctTrack(artistName, input.name)
-		return correctedName
-	}
+	// const artistName = artist?.name ?? input.artist?.name ?? track.artist?.name
+	// if (artistName) {
+	// 	const correctedName = await lastFm.correctTrack(artistName, input.name)
+	// 	return correctedName
+	// }
 	return input.name
 }
 
@@ -186,21 +183,22 @@ async function getFingerprinted(
 	track: Track,
 	name: Awaited<ReturnType<typeof getName>>,
 	album: Awaited<ReturnType<typeof getAlbum>>,
-	artist: Awaited<ReturnType<typeof getArtist>>
+	artist: Awaited<ReturnType<typeof getArtist>>,
+	metadata: IAudioMetadata
 ) {
 	// if none of [name, artist, album] has changed, keep the same mbid
 	if (!input.name && !input.artist && !input.album) {
 		return undefined
 	}
-	const metadata = {
-		format: {
-			duration: track.file.duration,
-		} as IAudioMetadata["format"],
-		common: {
-			title: name || track.name,
-			album: album?.name || input.album?.name || track.album?.name,
-			artist: artist?.name || input.artist?.name || track.artist?.name,
-		} as IAudioMetadata["common"],
+	metadata.format = {
+		...metadata.format,
+		duration: track.file.duration ?? metadata.format.duration,
+	}
+	metadata.common = {
+		...metadata.common,
+		title: name || track.name || metadata.common.title,
+		artist: artist?.name || input.artist?.name || track.artist?.name || metadata.common.artist,
+		album: album?.name || input.album?.name || track.album?.name || metadata.common.album,
 	}
 
 	const fingerprinted = await acoustId.identify(track.file.path, metadata)
@@ -241,7 +239,8 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	await checkNameConflict(input, track, name, linkArtist, linkAlbum)
 
 	// validate mbid (re-check acoustid w/ new data to see if we can obtain a new mbid)
-	const fingerprinted = await getFingerprinted(input, track, name, linkAlbum, linkArtist)
+	const metadata = await parseFile(track.file.path, {duration: true})
+	const fingerprinted = await getFingerprinted(input, track, name, linkAlbum, linkArtist, metadata)
 
 	const data: Prisma.TrackUpdateArgs['data'] = {}
 
@@ -258,6 +257,11 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	if (input.coverId) {
 		data.cover = { connect: { id: input.coverId } }
 		data.coverLocked = true
+	}
+
+	if (fingerprinted) {
+		// we need to first disconnect all genres, then connect the new ones
+		data.genres = { set: [] }
 	}
 
 	if (linkArtist) {
@@ -280,22 +284,17 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		}
 	}
 
+	// TODO: handle multi-artist album (both when linking and creating)
+	// TODO: maybe now disconnected album isn't multi-artist anymore?
+
 	if (linkAlbum) {
 		data.album = { connect: { id: linkAlbum.id } }
 	} else if (input.album?.name) {
-		data.album = {
-			create: {
-				name: input.album.name,
-				simplified: simplifiedName(input.album.name),
-				mbid: fingerprinted?.album?.id,
-				tracksCount: fingerprinted?.of,
-				// artistId
-				// genres: fingerprinted.album.genres
-			}
-		}
+		// album should only be created once we have an artist, to avoid duplicates
+		data.album = { disconnect: true }
 	}
 
-	if (name || input.artist || input.album) {
+	if (input.name || input.artist || input.album) {
 		data.lastfmDate = null
 		data.lastfm = {delete: true}
 		data.audiodbDate = null
@@ -304,57 +303,108 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		data.spotify = {delete: true}
 	}
 
-	const newTrack = await prisma.track.update({
-		where: { id: input.id },
-		data,
-		select: {
-			id: true,
-			artist: {select: {id: true}},
-			album: {select: {id: true}},
+	const newTrack = await prisma.$transaction(async (tx) => {
+		const newTrack = await tx.track.update({
+			where: { id: input.id },
+			data,
+			select: {
+				id: true,
+				artist: {select: {id: true}},
+				album: {select: {id: true}},
+			}
+		})
+
+		if (data.genres?.set) {
+			await tx.track.update({
+				where: { id: input.id },
+				data: {
+					genres: {
+						connectOrCreate: cleanGenreList([
+							...(metadata.common.genre ?? []),
+							...(fingerprinted?.genres?.map(({name}) => name) ?? []),
+						]).map(({name, simplified}) => ({
+							where: { simplified },
+							create: { name, simplified }
+						}))
+					}
+				}
+			})
 		}
+
+		if (data.album?.disconnect && input.album?.name) {
+			const extraTrackData = await tx.track.update({
+				where: { id: input.id },
+				data: {
+					album: {
+						create: {
+							name: input.album.name,
+							simplified: simplifiedName(input.album.name),
+							mbid: fingerprinted?.album?.id,
+							tracksCount: fingerprinted?.of ?? metadata.common.track.of ?? undefined,
+							artistId: newTrack.artist?.id,
+							year: metadata.common.year,
+							genres: {
+								connectOrCreate: cleanGenreList(
+									fingerprinted?.album?.genres?.map(({name}) => name) ?? []
+								).map(({name, simplified}) => ({
+									where: { simplified },
+									create: { name, simplified }
+								}))
+							}
+						}
+					}
+				},
+				select: {
+					album: {select: {id: true}},
+				}
+			})
+			newTrack.album = extraTrackData.album
+		}
+	
+		if (track.userData && data.artist) {
+			if (track.artist) {
+				await tx.artist.update({
+					where: { id: track.artist.id },
+					data: { userData: { update: {
+						favorite: { decrement: track.userData.favorite ? 1 : 0 },
+						playcount: { decrement: track.userData.playcount },
+					} } }
+				})
+			}
+			if (newTrack.artist) {
+				await tx.artist.update({
+					where: { id: newTrack.artist.id },
+					data: { userData: { update: {
+						favorite: { increment: track.userData.favorite ? 1 : 0 },
+						playcount: { increment: track.userData.playcount },
+					} } }
+				})
+			}
+		}
+	
+		if (track.userData && data.album) {
+			if (track.album) {
+				await tx.album.update({
+					where: { id: track.album.id },
+					data: { userData: { update: {
+						favorite: { decrement: track.userData.favorite ? 1 : 0 },
+						playcount: { decrement: track.userData.playcount },
+					} } }
+				})
+			}
+			if (newTrack.album) {
+				await tx.album.update({
+					where: { id: newTrack.album.id },
+					data: { userData: { update: {
+						favorite: { increment: track.userData.favorite ? 1 : 0 },
+						playcount: { increment: track.userData.playcount },
+					} } }
+				})
+			}
+		}
+
+		return newTrack
 	})
-
-	if (track.userData && data.artist) {
-		if (track.artist) {
-			await prisma.artist.update({
-				where: { id: track.artist.id },
-				data: { userData: { update: {
-					favorite: { decrement: track.userData.favorite ? 1 : 0 },
-					playcount: { decrement: track.userData.playcount },
-				} } }
-			})
-		}
-		if (newTrack.artist) {
-			await prisma.artist.update({
-				where: { id: newTrack.artist.id },
-				data: { userData: { update: {
-					favorite: { increment: track.userData.favorite ? 1 : 0 },
-					playcount: { increment: track.userData.playcount },
-				} } }
-			})
-		}
-	}
-
-	if (track.userData && data.album) {
-		if (track.album) {
-			await prisma.album.update({
-				where: { id: track.album.id },
-				data: { userData: { update: {
-					favorite: { decrement: track.userData.favorite ? 1 : 0 },
-					playcount: { decrement: track.userData.playcount },
-				} } }
-			})
-		}
-		if (newTrack.album) {
-			await prisma.album.update({
-				where: { id: newTrack.album.id },
-				data: { userData: { update: {
-					favorite: { increment: track.userData.favorite ? 1 : 0 },
-					playcount: { increment: track.userData.playcount },
-				} } }
-			})
-		}
-	}
 
 	await computeTrackCover(track.id, {album: true, artist: true})
 	if (input.album && track.album) {
@@ -364,11 +414,21 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		await computeArtistCover(track.artist.id, {album: false, tracks: false})
 	}
 
-	// ws invalidation of affected entities, new and old, and computed endpoints (potentially: track, album, artist, by-trait, playlist, searchable)
-	// socketServer.emit("add", {type: "track", id: track.id})
-	// if (track.artistId) socketServer.emit("add", {type: "artist", id: track.artistId})
-	// const albumId = track.albumId ?? linkedAlbum?.albumId
-	// if (albumId) socketServer.emit("add", {type: "album", id: albumId})
+	// ws invalidation of affected entities, new and old, and computed endpoints
+	socketServer.emit("invalidate", {type: "track", id: track.id})
+	if (input.album && track.album) socketServer.emit("invalidate", {type: "album", id: track.album.id})
+	if (input.album && newTrack.album) {
+		if (data.album?.disconnect) socketServer.emit("add", {type: "album", id: newTrack.album.id})
+		else socketServer.emit("invalidate", {type: "album", id: newTrack.album.id})
+	}
+	if (input.artist && track.artist) socketServer.emit("invalidate", {type: "artist", id: track.artist.id})
+	if (input.artist && newTrack.artist) {
+		if (data.artist?.create) socketServer.emit("add", {type: "artist", id: newTrack.artist.id})
+		else socketServer.emit("invalidate", {type: "artist", id: newTrack.artist.id})
+	}
+	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", {type: "likes"})
+	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", {type: "listen-count"})
+	
 
 	fileWatcher.scheduleCleanup()
 
@@ -388,7 +448,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	// +disconnect lastfm, audiodb, spotify, etc. if [what condition?]
 	// +db cleanup (like after watcher deletion)
 	// +remove "last checked" dates for lastfm, audiodb, spotify, etc. and trigger recheck
-	// ws invalidation of affected entities (potentially: track, album, artist, by-trait, playlist, searchable)
+	// +ws invalidation of affected entities (potentially: track, album, artist, by-trait, playlist, searchable)
 })
 
 const validate = publicProcedure.input(trackInputSchema).mutation(async ({ input }) => {
