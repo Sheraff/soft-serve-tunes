@@ -491,7 +491,7 @@ export function useAddNextToPlaylist() {
 					track,
 				}).then(() => {
 					if (forceCurrent) {
-						return reorderListInIndexedDB(cache.tracks.length, 0)
+						return deleteAndReorderListInIndexedDB(newOrder)
 					}
 				}),
 				modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
@@ -559,7 +559,7 @@ export function useAddNextToPlaylist() {
 			storeInIndexedDB<PlaylistDBEntry>("playlist", track.id, {
 				index: cache.tracks.length,
 				track,
-			}).then(() => reorderListInIndexedDB(cache.tracks.length, tracksIndex)),
+			}).then(() => deleteAndReorderListInIndexedDB(newOrder)),
 			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current: forceCurrent ? track.id : cache.current,
@@ -615,7 +615,7 @@ export function useReorderPlaylist() {
 				order: newOrder,
 			}))
 		}
-		await reorderListInIndexedDB(oldIndex, newIndex)
+		await deleteAndReorderListInIndexedDB(newOrder)
 		if (playlist.id) {
 			await mutateAsync({
 				id: playlist.id,
@@ -629,11 +629,7 @@ export function useReorderPlaylist() {
 	}, [queryClient, mutateAsync])
 }
 
-async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
-	const minIndex = Math.min(oldIndex, newIndex)
-	const maxIndex = Math.max(oldIndex, newIndex)
-	const direction = oldIndex < newIndex ? -1 : 1
-
+async function deleteAndReorderListInIndexedDB(order: string[]) {
 	const db = await openDB()
 	const tx = db.transaction("playlist", "readwrite")
 	const store = tx.objectStore("playlist")
@@ -647,13 +643,12 @@ async function reorderListInIndexedDB(oldIndex: number, newIndex: number) {
 			const cursor = cursorRequest.result
 			if (cursor) {
 				const item = cursor.value.result as PlaylistDBEntry
-				if (item.index >= minIndex && item.index <= maxIndex) {
-					if (item.index === oldIndex) {
-						item.index = newIndex
-					} else {
-						item.index += direction
-					}
-					store.put({key: cursor.value.key, result: item})
+				const index = order.indexOf(item.track.id)
+				if (index !== -1) {
+					item.index = index
+					cursor.update({key: cursor.value.key, result: item})
+				} else {
+					cursor.delete()
 				}
 				cursor.continue()
 			}
@@ -690,7 +685,7 @@ export function useRemoveFromPlaylist() {
 			order: newOrder,
 		})
 		await Promise.all([
-			deleteFromListInIndexedDB(id),
+			deleteAndReorderListInIndexedDB(newOrder),
 			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 				...meta,
 				current: newCurrent,
@@ -707,35 +702,6 @@ export function useRemoveFromPlaylist() {
 			})
 		}
 	}, [queryClient, mutateAsync])
-}
-
-async function deleteFromListInIndexedDB(id: string) {
-	const db = await openDB()
-	const tx = db.transaction("playlist", "readwrite")
-	const store = tx.objectStore("playlist")
-	const cursorRequest = store.openCursor()
-	return new Promise((resolve, reject) => {
-		cursorRequest.onerror = () => {
-			console.error(new Error(`couldn't open cursor on in indexedDB "playlist" to delete item`, {cause: tx.error}))
-			reject(tx.error)
-		}
-		let hasDeleted = false
-		cursorRequest.onsuccess = () => {
-			const cursor = cursorRequest.result
-			if (cursor) {
-				const item = cursor.value.result as PlaylistDBEntry
-				if (!hasDeleted && item.track.id === id) {
-					cursor.delete()
-					hasDeleted = true
-				}
-				if (hasDeleted) {
-					store.put({key: cursor.value.key, result: {...item, index: item.index - 1}})
-				}
-				cursor.continue()
-			}
-		}
-		tx.oncomplete = resolve
-	})
 }
 
 export function useShufflePlaylist() {
