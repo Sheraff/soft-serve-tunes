@@ -147,7 +147,7 @@ const mostFav = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.album.findMany({
     where: { userData: { favorite: { gt: 0 } } },
     orderBy: { userData: { favorite: "desc" } },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
 })
@@ -156,7 +156,7 @@ const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.album.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
 })
@@ -168,14 +168,14 @@ const mostRecentAdd = publicProcedure.query(async ({ ctx }) => {
       { userData: {playcount: {equals: 0} } },
     ]},
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
-  if (recent.length < 10) {
+  if (recent.length < 20) {
     recent.concat(await ctx.prisma.album.findMany({
       where: { userData: {playcount: {gt: 0} } },
       orderBy: { createdAt: "desc" },
-      take: 10 - recent.length,
+      take: 20 - recent.length,
       select: { id: true, name: true },
     }))
   }
@@ -215,7 +215,7 @@ const byMultiTraits = publicProcedure.input(z.object({
   const ids = spotifyAlbums
     .filter(({score}) => score)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10)
+    .slice(0, 20)
     .map(a => a.albumId)
 
   const albums = await ctx.prisma.album.findMany({
@@ -255,7 +255,7 @@ const byMultiTraits = publicProcedure.input(z.object({
 //       const delta = (a._avg[trait] as unknown as number) - (b._avg[trait] as unknown as number)
 //       return orderMultiplier * delta
 //     })
-//     .slice(0, 10)
+//     .slice(0, 20)
 //     .map(a => a.albumId) as string[]
 //   return ctx.prisma.album.findMany({
 //     where: {spotify: {id: { in: spotifyAlbumId }}},

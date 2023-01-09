@@ -171,7 +171,7 @@ const mostFav = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
     where: { userData: { favorite: { gt: 0 } } },
     orderBy: { userData: { favorite: "desc" } },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
 })
@@ -188,16 +188,16 @@ const leastRecentListen = publicProcedure.query(async ({ ctx }) => {
         { albums: {some: {}} },
       ]}
     ]},
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
-  if (neverListened.length === 10) {
+  if (neverListened.length === 20) {
     return neverListened
   }
   const oldestListened = await ctx.prisma.artist.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "asc" } },
-    take: 10 - neverListened.length,
+    take: 20 - neverListened.length,
     select: { id: true, name: true },
   })
   return neverListened.concat(oldestListened)
@@ -207,7 +207,7 @@ const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
 })
@@ -219,7 +219,7 @@ const mostRecentAdd = publicProcedure.query(({ ctx }) => {
       { albums: {some: {}} },
     ]},
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 20,
     select: { id: true, name: true },
   })
 })
