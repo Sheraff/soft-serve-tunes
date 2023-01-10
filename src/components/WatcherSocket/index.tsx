@@ -41,14 +41,14 @@ export default function WatcherSocket() {
 			}
 			navigator.serviceWorker.addEventListener("message", (event) => {
 				const message = event.data
-				if (message.type === 'sw-notify-when-track-cached') {
-					const id = message.payload.url.split('/').at(-1)
-					queryClient.invalidateQueries(['sw-cached-track', id])
-					queryClient.invalidateQueries(['sw-first-cached-track'])
-				} else if (message.type === 'sw-trpc-invalidation') {
+				if (message.type === "sw-notify-when-track-cached") {
+					const id = message.payload.url.split("/").at(-1)
+					queryClient.invalidateQueries(["sw-cached-track", id])
+					queryClient.invalidateQueries(["sw-first-cached-track"])
+				} else if (message.type === "sw-trpc-invalidation") {
 					const queryKey = message.payload.key
 					const queryParams = {
-						type: 'query',
+						type: "query",
 						...(message.payload.params ? {input: message.payload.params} : {}),
 					}
 					queryClient.invalidateQueries([queryKey, queryParams])
@@ -68,11 +68,11 @@ export default function WatcherSocket() {
 			if (!target) {
 				return
 			}
-			target.postMessage({type: 'sw-trpc-offline-post'})
+			target.postMessage({type: "sw-trpc-offline-post"})
 		}
-		addEventListener('online', onOnline)
+		addEventListener("online", onOnline)
 		return () => {
-			removeEventListener('online', onOnline)
+			removeEventListener("online", onOnline)
 		}
 	}, [])
 

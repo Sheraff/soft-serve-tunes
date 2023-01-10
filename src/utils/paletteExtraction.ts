@@ -155,7 +155,7 @@ function extractPalette(imageData: Uint8ClampedArray, channels: 3 | 4) {
 		const r = imageData[i]!
 		const g = imageData[i + 1]!
 		const b = imageData[i + 2]!
-		const key = r + ',' + g + ',' + b
+		const key = r + "," + g + "," + b
 
 		if (colorCount[key]) {
 			colorCount[key]!.count += 1

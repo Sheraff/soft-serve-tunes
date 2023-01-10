@@ -1,5 +1,5 @@
-import longestCommonSubstring from "./lcs.js";
-import damLev from "./damLev.js";
+import longestCommonSubstring from "./lcs.js"
+import damLev from "./damLev.js"
 
 /**
  * @typedef {{
@@ -14,7 +14,7 @@ import damLev from "./damLev.js";
  */
 
 /** @type {Map<string, Map<string, DistanceObject>>} */
-const memoizedInputDistances = new Map();
+const memoizedInputDistances = new Map()
 
 /**
  * @param {string} input
@@ -22,14 +22,14 @@ const memoizedInputDistances = new Map();
  * @returns {DistanceObject | null}
  */
 function getMemoized(input, candidate) {
-  const inputDistances = memoizedInputDistances.get(input);
+  const inputDistances = memoizedInputDistances.get(input)
   if (inputDistances) {
-    const candidateDistances = inputDistances.get(candidate);
+    const candidateDistances = inputDistances.get(candidate)
     if (candidateDistances) {
-      return candidateDistances;
+      return candidateDistances
     }
   }
-  return null;
+  return null
 }
 
 /**
@@ -38,16 +38,16 @@ function getMemoized(input, candidate) {
  * @param {DistanceObject} object
  */
 function setMemoized(input, candidate, object) {
-  let inputDistances = memoizedInputDistances.get(input);
+  let inputDistances = memoizedInputDistances.get(input)
   if (!inputDistances) {
-    inputDistances = new Map();
-    memoizedInputDistances.set(input, inputDistances);
+    inputDistances = new Map()
+    memoizedInputDistances.set(input, inputDistances)
   }
-  inputDistances.set(candidate, object);
+  inputDistances.set(candidate, object)
 }
 
 function cleanupString(str) {
-  return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  return str.normalize("NFD").replace(/\p{Diacritic}/gu, "")
 }
 
 /**
@@ -56,20 +56,20 @@ function cleanupString(str) {
  * @returns {DistanceObject}
  */
 function classify(_input, _candidate) {
-  const input = cleanupString(_input);
-  const candidate = cleanupString(_candidate);
-  const { length: inputMax } = input;
-  const { length: candidateMax } = candidate;
-  const maxLength = Math.max(inputMax, candidateMax);
+  const input = cleanupString(_input)
+  const candidate = cleanupString(_candidate)
+  const { length: inputMax } = input
+  const { length: candidateMax } = candidate
+  const maxLength = Math.max(inputMax, candidateMax)
   const lcsDistanceNormalized =
-    (inputMax - longestCommonSubstring(input, candidate).length) / inputMax;
-  const levenshteinDistanceNormalized = damLev(input, candidate) / maxLength;
-  const start = candidate.startsWith(input);
+    (inputMax - longestCommonSubstring(input, candidate).length) / inputMax
+  const levenshteinDistanceNormalized = damLev(input, candidate) / maxLength
+  const start = candidate.startsWith(input)
   return {
     lcs: lcsDistanceNormalized,
     levenshtein: levenshteinDistanceNormalized,
     start
-  };
+  }
 }
 
 /**
@@ -78,17 +78,17 @@ function classify(_input, _candidate) {
  * @returns {DistanceObject}
  */
 function getDistances(input, candidate) {
-  const memoized = getMemoized(input, candidate);
+  const memoized = getMemoized(input, candidate)
   if (memoized) {
-    return memoized;
+    return memoized
   }
-  const computed = classify(input, candidate);
-  setMemoized(input, candidate, computed);
-  return computed;
+  const computed = classify(input, candidate)
+  setMemoized(input, candidate, computed)
+  return computed
 }
 
 /** @type {NamedInterface[]} */
-let dataList = [];
+let dataList = []
 
 /**
  * @param {Object} param
@@ -104,32 +104,32 @@ function handleList({ list }) {
  */
 function handleInput({ input }) {
   const list = dataList.sort((aItem, bItem) => {
-    const aName = aItem.name;
-    const bName = bItem.name;
-    const a = getDistances(input, aName);
-    const b = getDistances(input, bName);
+    const aName = aItem.name
+    const bName = bItem.name
+    const a = getDistances(input, aName)
+    const b = getDistances(input, bName)
     if (a.lcs !== b.lcs) {
-      return a.lcs - b.lcs;
+      return a.lcs - b.lcs
     }
     if (a.start !== b.start) {
-      return a.start ? -1 : 1;
+      return a.start ? -1 : 1
     }
-    return a.levenshtein - b.levenshtein;
-  });
-  postMessage({ input, list: list.slice(0, 50) });
+    return a.levenshtein - b.levenshtein
+  })
+  postMessage({ input, list: list.slice(0, 50) })
 }
 
 onmessage = function ({ data }) {
   switch (data.type) {
     case "list":
-      handleList(data);
-      break;
+      handleList(data)
+      break
     case "input":
-      handleInput(data);
-      break;
+      handleInput(data)
+      break
     default:
       throw new Error(
         `unknown message type ${data.type} in useAsyncInputStringDistance worker`
-      );
+      )
   }
-};
+}

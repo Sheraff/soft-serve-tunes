@@ -118,10 +118,10 @@ export default class MusicBrainz {
 	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS>(type: T, id: string): Promise<undefined | z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
 		const url = `https://musicbrainz.org/ws/2/${type}/${id}`
 		const params = new URLSearchParams()
-		if (type === 'recording') {
-			params.set('inc', 'releases+media+genres+artist-credits+release-groups')
+		if (type === "recording") {
+			params.set("inc", "releases+media+genres+artist-credits+release-groups")
 		} else {
-			params.set('inc', 'genres')
+			params.set("inc", "genres")
 		}
 		const json = await this.#makeRequest(`${url}?${params}`)
 		if (typeof json === "undefined") {

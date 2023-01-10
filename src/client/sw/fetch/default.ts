@@ -40,7 +40,7 @@ export default function defaultFetch(event: FetchEvent, request: Request) {
 			return new Response(STATIC_OFFLINE_PAGE, {
 				status: 200,
 				headers: {
-					'Content-Type': 'text/html; charset=utf-8'
+					"Content-Type": "text/html; charset=utf-8"
 				}
 			})
 		})

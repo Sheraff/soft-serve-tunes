@@ -35,5 +35,11 @@
 			"trpc"
 		],
 		"typescript.tsdk": "node_modules/typescript/lib",
-	}
+		"editor.indentSize": "tabSize",
+		"editor.tabSize": 3,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": true
+		},
+		"template-string-converter.convertOutermostQuotes": true
+	},
 }

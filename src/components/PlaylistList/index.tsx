@@ -1,8 +1,8 @@
-import { useSetPlaylist } from 'client/db/useMakePlaylist'
-import { useShowHome } from 'components/AppContext'
-import { startTransition } from 'react'
-import { type RouterOutputs, trpc } from 'utils/trpc'
-import styles from './index.module.css'
+import { useSetPlaylist } from "client/db/useMakePlaylist"
+import { useShowHome } from "components/AppContext"
+import { startTransition } from "react"
+import { type RouterOutputs, trpc } from "utils/trpc"
+import styles from "./index.module.css"
 
 function PlaylistItem({
 	playlist,
@@ -59,7 +59,7 @@ export default function PlaylistList({
 	onSelect,
 }: {
 	playlists: {id: string, name: string}[]
-	onSelect?: Parameters<typeof PlaylistItem>[0]['onSelect']
+	onSelect?: Parameters<typeof PlaylistItem>[0]["onSelect"]
 }) {
 	return (
 		<ul className={styles.list}>

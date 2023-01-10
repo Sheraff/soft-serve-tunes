@@ -4,13 +4,13 @@ import onFetch from "./fetch"
 import onMessage from "./messages"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
 	event.waitUntil((async () => {
 		const cache = await caches.open(CACHES.next)
-		await cache.add('/')
+		await cache.add("/")
 		await self.skipWaiting()
 
-		console.log('SW: installed')
+		console.log("SW: installed")
 	})())
 })
 
@@ -28,9 +28,9 @@ self.addEventListener("activate", (event) => {
 		// immediately claim clients to avoid de-sync
 		await self.clients.claim()
 
-		console.log('SW: active')
+		console.log("SW: active")
 	})())
 })
 
-self.addEventListener('fetch', onFetch)
+self.addEventListener("fetch", onFetch)
 self.addEventListener("message", onMessage)

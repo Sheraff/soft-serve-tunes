@@ -76,7 +76,7 @@ export async function getServerSideProps({
 	res: NextApiResponse
 }) {
 	const providers = await getProviders()
-	const session = await getServerSession(req, res, nextAuthOptions);
+	const session = await getServerSession(req, res, nextAuthOptions)
 	const shouldAwaitServer = !loadingStatus.populated
 	return {
 		props: {

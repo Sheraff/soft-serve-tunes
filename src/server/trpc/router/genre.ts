@@ -3,7 +3,7 @@ import { z } from "zod"
 import { prisma } from "server/db/client"
 import { type Prisma } from "@prisma/client"
 
-const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs['where'], undefined> = {
+const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs["where"], undefined> = {
   OR: [
     {tracks: {some: {}}},
     {subgenres: {some: {}}}
@@ -26,7 +26,7 @@ export async function recursiveSubGenres<
     select: {
       tracks: tracksArg,
       audiodbTracks: {
-        ...('where' in tracksArg ? {where: {entity: tracksArg.where}} : {}),
+        ...("where" in tracksArg ? {where: {entity: tracksArg.where}} : {}),
         select: { entity: { select: tracksArg.select } }
       },
       subgenres: {
@@ -68,7 +68,7 @@ function extendFromRecursive<
   keepTracks: Keep
 ): Meta & {
   _count: {tracks: number, from: number}
-  tracks: Keep extends true ? Awaited<ReturnType<typeof recursiveSubGenres>>['tracks'] : never
+  tracks: Keep extends true ? Awaited<ReturnType<typeof recursiveSubGenres>>["tracks"] : never
 } {
   if (keepTracks) {
     return {

@@ -4,18 +4,18 @@ import trpcRevalidation from "../messages/trpcRevalidation"
 import { CACHES } from "../utils/constants"
 
 function trpcUrlToCacheKeys(url: URL) {
-	const [,,,parts] = url.pathname.split('/')
+	const [,,,parts] = url.pathname.split("/")
 	if (!parts) {
 		throw new Error (`function called on the wrong url, no trpc endpoints found @${url}`)
 	}
-	const endpoints = parts.split(',') as AllRoutesString[]
-	const inputString = url.searchParams.get('input')
+	const endpoints = parts.split(",") as AllRoutesString[]
+	const inputString = url.searchParams.get("input")
 	const input = inputString
 		? JSON.parse(inputString) as {[key: number]: {json: any}}
 		: {}
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)
-		if (input[i]) altUrl.searchParams.set('input', JSON.stringify(input[i]))
+		if (input[i]) altUrl.searchParams.set("input", JSON.stringify(input[i]))
 		return altUrl
 	})
 	return {keys, endpoints, input}
@@ -38,21 +38,21 @@ async function formatBatchResponses(
 				"id": null,
 				"error": {
 					"json": {
-						"message": `This is a fake TRPCError`,
+						"message": "This is a fake TRPCError",
 						"code": -32600,
 						"data": {
 							"code": "BAD_REQUEST",
 							"httpStatus": 400,
-							"stack": `TRPCError: []`,
+							"stack": "TRPCError: []",
 							"path": endpoints[i]
 						}
 					}
 				}
 			})
 	}))
-	return new Response(`[${body.join(',')}]`, {
+	return new Response(`[${body.join(",")}]`, {
 		headers: {
-			'Content-Type': 'application/json'
+			"Content-Type": "application/json"
 		}
 	})
 }
@@ -73,21 +73,21 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 	}, [] as number[])
 	if (fetchIndices.length) {
 		// some of the endpoints requested were missing from cache, make a single batched call to fetch them
-		const fetchEndpoints = fetchIndices.map((i) => endpoints[i]).join(',')
+		const fetchEndpoints = fetchIndices.map((i) => endpoints[i]).join(",")
 		const fetchInput = fetchIndices.reduce((object, i, j) => {
 			object[j] = input[i]!
 			return object
 		}, {} as {[key: number]: {json: any}})
 		const fetchUrl = new URL(`/api/trpc/${fetchEndpoints}`, self.location.origin)
-		fetchUrl.searchParams.set('batch', '1')
-		fetchUrl.searchParams.set('input', JSON.stringify(fetchInput))
+		fetchUrl.searchParams.set("batch", "1")
+		fetchUrl.searchParams.set("input", JSON.stringify(fetchInput))
 		const fetchResponse = await fetch(fetchUrl)
 		if (fetchResponse.status === 200 || fetchResponse.status === 207) {
 			handleTrpcFetchResponse(fetchResponse.clone(), fetchUrl)
 			const fetchData = await fetchResponse.json()
 			fetchIndices.forEach((i, j) => cacheResponses[i] = {text: () => JSON.stringify(fetchData[j])})
 		} else if (fetchResponse.status > 200 && fetchResponse.status < 300) {
-			console.warn('SW: unexpected 2xx response status', fetchResponse)
+			console.warn("SW: unexpected 2xx response status", fetchResponse)
 		}
 		if (fetchIndices.length < endpoints.length) {
 			// fetch from server to refresh SW cache, some requested endpoints were missing from cache so they've already been fetched
@@ -121,17 +121,17 @@ export function handleTrpcFetchResponse(response: Response, url: URL) {
 		const {keys} = trpcUrlToCacheKeys(url)
 		const data = await response.json()
 		const headers = new Headers()
-		const contentType = response.headers.get('Content-Type')
-		if (contentType) headers.set('Content-Type', contentType)
-		const date = response.headers.get('Date')
-		if (date) headers.set('Date', date)
+		const contentType = response.headers.get("Content-Type")
+		if (contentType) headers.set("Content-Type", contentType)
+		const date = response.headers.get("Date")
+		if (date) headers.set("Date", date)
 		return Promise.all(keys.map((key, i) => {
-			if ('result' in data[i]) {
+			if ("result" in data[i]) {
 				return cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
-			} else if ('error' in data[i]) {
+			} else if ("error" in data[i]) {
 				console.error(new Error(data[i].error.json.message))
 			} else {
-				console.error('SW: unknown trpc response format', data[i])
+				console.error("SW: unknown trpc response format", data[i])
 			}
 		}))
 	})
@@ -144,7 +144,7 @@ function fetchFromServer(request: Request, url: URL) {
 			const cacheResponse = response.clone()
 			handleTrpcFetchResponse(cacheResponse, url)
 		} else if (response.status > 200 && response.status < 300) {
-			console.warn('SW: unexpected 2xx response status', response)
+			console.warn("SW: unexpected 2xx response status", response)
 		}
 		return response
 	})

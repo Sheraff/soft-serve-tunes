@@ -17,7 +17,7 @@ export function openDB(): Promise<IDBDatabase> {
 			resolve(openRequest.result)
 		}
 		openRequest.onerror = () => {
-			console.error(new Error(`failed to open db`, {cause: openRequest.error}))
+			console.error(new Error("failed to open db", {cause: openRequest.error}))
 			reject(openRequest.error)
 			dbPromise = null
 		}
@@ -33,7 +33,7 @@ function onUpgradeNeeded(
 	const db = event.target.result
 	db.onerror = () => {
 		const dbWithError = db as IDBDatabase & {error: Error}
-		console.error(new Error(`failed to upgrade db`, {cause: dbWithError.error}))
+		console.error(new Error("failed to upgrade db", {cause: dbWithError.error}))
 		reject(dbWithError.error)
 		dbPromise = null
 	}

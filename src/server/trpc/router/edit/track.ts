@@ -75,8 +75,8 @@ async function getTrack(input: {id: string}) {
 			message: `Track ${input.id} (${track.name}) has no associated file`,
 		})
 	}
-	return track as Omit<typeof track, 'file'> & {
-		file: Exclude<typeof track['file'], null>
+	return track as Omit<typeof track, "file"> & {
+		file: Exclude<typeof track["file"], null>
 	}
 }
 
@@ -242,7 +242,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	const metadata = await parseFile(track.file.path, {duration: true})
 	const fingerprinted = await getFingerprinted(input, track, name, linkAlbum, linkArtist, metadata)
 
-	const data: Prisma.TrackUpdateArgs['data'] = {}
+	const data: Prisma.TrackUpdateArgs["data"] = {}
 
 	if (name) {
 		data.name = name

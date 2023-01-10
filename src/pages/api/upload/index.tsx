@@ -17,7 +17,7 @@ import { acoustId } from "server/persistent/acoustId"
 import { socketServer } from "utils/typedWs/server"
 
 export default async function upload(req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerSession(req, res, nextAuthOptions);
+	const session = await getServerSession(req, res, nextAuthOptions)
 	if (!session) {
 		return res.status(401).json({ error: "authentication required" })
 	}
@@ -38,12 +38,12 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		res.status(400).end()
 		return
 	}
-	const uploads = Array.isArray(files['file[]']) ? files['file[]'] : [files['file[]']]
-	const names = Array.isArray(fields['name']) ? fields['name'] : [fields['name']]
-	const indexes = (Array.isArray(fields['index']) ? fields['index'] : [fields['index']]).map(Number)
-	const of = (Array.isArray(fields['of']) ? fields['of'] : [fields['of']]).map(Number)
-	const wakeUpSignal = Array.isArray(fields['wakeup']) ? fields['wakeup'][0] : fields['wakeup']
-	socketServer.emit('upload', getProgress(0, indexes, of))
+	const uploads = Array.isArray(files["file[]"]) ? files["file[]"] : [files["file[]"]]
+	const names = Array.isArray(fields["name"]) ? fields["name"] : [fields["name"]]
+	const indexes = (Array.isArray(fields["index"]) ? fields["index"] : [fields["index"]]).map(Number)
+	const of = (Array.isArray(fields["of"]) ? fields["of"] : [fields["of"]]).map(Number)
+	const wakeUpSignal = Array.isArray(fields["wakeup"]) ? fields["wakeup"][0] : fields["wakeup"]
+	socketServer.emit("upload", getProgress(0, indexes, of))
 
 	// make sure watcher is awake
 	if (wakeUpSignal) {
@@ -51,7 +51,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 	}
 
 	for (let i = 0; i < uploads.length; i++) {
-		socketServer.emit('upload', getProgress(i, indexes, of))
+		socketServer.emit("upload", getProgress(i, indexes, of))
 		const upload = uploads[i]
 		const name = names[i]
 		if (!upload || !name) {
@@ -96,7 +96,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 			const search = spotify.sanitize(metadata.common.title || pathToSearch(name))
 			log("info", "wait", "spotify", `upload paused for metadata from ${search}`)
 			const response = await spotify.fetch(`search?type=track&q=${search}`)
-			if ('tracks' in response) {
+			if ("tracks" in response) {
 				const bestEffort = response.tracks.items[0]
 				if (bestEffort) {
 					metadata.common.title ||= bestEffort.name
@@ -150,7 +150,7 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		}
 	}
 	if (indexes.at(-1) === of.at(-1)) {
-		socketServer.emit('upload', 1)
+		socketServer.emit("upload", 1)
 	}
 	return res.status(201).end()
 }
@@ -195,17 +195,17 @@ function directoryFromOriginal(original: string) {
 }
 
 function directoryFromRandom() {
-	const stablePrefix = Number([...Math.round(Date.now() / 10_000).toString()].reverse().join('')).toString(36)
+	const stablePrefix = Number([...Math.round(Date.now() / 10_000).toString()].reverse().join("")).toString(36)
 	const variableSuffix = Math.round(Math.random() * 36_000_000).toString(36)
 	const string = `${stablePrefix}${variableSuffix}` as (string & {0: string, 1: string, 2: string})
-	return join('__soft-served', string[0], string[1], string[2], string)
+	return join("__soft-served", string[0], string[1], string[2], string)
 }
 
 function getFileName(metadata: IAudioMetadata, original: string) {
 	const { title, track: {no} } = metadata.common
-	if (title && typeof no === 'number') {
+	if (title && typeof no === "number") {
 		const sanitizedTitle = sanitize(title)
-		const numberString = String(no).padStart(2, '0')
+		const numberString = String(no).padStart(2, "0")
 		return `${numberString} ${sanitizedTitle}.${dumbExtensionGuessing(metadata, original)}`
 	}
 	if (title) {
@@ -218,21 +218,21 @@ function getFileName(metadata: IAudioMetadata, original: string) {
 function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 	const { codec, container } = metadata.format
 	switch (true) {
-		case codec?.includes('MPEG-4'):
-			return 'mp4'
-		case codec?.includes('MPEG'):
-			return 'mp3'
-		case codec?.includes('FLAC'):
-			return 'flac'
-		case codec?.includes('AAC'):
-		case codec?.includes('ALAC'):
-		case container?.includes('matroska'):
-			return 'm4a'
-		case container?.includes('WAVE') && codec?.includes('PCM'):
-			return 'wav'
+		case codec?.includes("MPEG-4"):
+			return "mp4"
+		case codec?.includes("MPEG"):
+			return "mp3"
+		case codec?.includes("FLAC"):
+			return "flac"
+		case codec?.includes("AAC"):
+		case codec?.includes("ALAC"):
+		case container?.includes("matroska"):
+			return "m4a"
+		case container?.includes("WAVE") && codec?.includes("PCM"):
+			return "wav"
 	}
 	const extension = extname(original)
-	const withoutDot = extension.replace(/^\./, '')
+	const withoutDot = extension.replace(/^\./, "")
 	return withoutDot
 }
 

@@ -8,7 +8,7 @@ export async function messageCheckTrackCache({id}: {id: string}, {source}: Exten
 		ignoreSearch: true,
 		cacheName: CACHES.media,
 	})
-	source.postMessage({type: 'sw-cached-track', payload: {
+	source.postMessage({type: "sw-cached-track", payload: {
 		id,
 		cached: Boolean(cache),
 	}})
@@ -55,7 +55,7 @@ export async function messageCheckFirstCachedTrack({
 			break
 		}
 	}
-	source.postMessage({type: 'sw-first-cached-track', payload: {
+	source.postMessage({type: "sw-first-cached-track", payload: {
 		id,
 		next,
 	}})

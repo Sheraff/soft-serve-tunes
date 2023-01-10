@@ -118,41 +118,41 @@ type SpotifyApiUrl =
 	| `audio-features/${string}`
 
 type SpotifyApiSuccessResponse<URL extends SpotifyApiUrl> =
-	URL extends `search?${string}type=track${string}` ? typeof trackSearchSchema['_type']
-	: URL extends `search?${string}type=artist${string}` ? typeof artistSearchSchema['_type']
-	: URL extends `search?${string}type=album${string}` ? typeof albumSearchSchema['_type']
-	: URL extends `artists/${string}/albums` ? typeof albumsListSchema['_type']
-	: URL extends `artists/${string}` ? typeof artistSchema['_type']
-	: URL extends `albums/${string}` ? typeof albumSchema['_type']
-	: URL extends `tracks/${string}` ? typeof trackSchema['_type']
-	: URL extends `audio-features/${string}` ? typeof audioFeaturesSchema['_type']
+	URL extends `search?${string}type=track${string}` ? typeof trackSearchSchema["_type"]
+	: URL extends `search?${string}type=artist${string}` ? typeof artistSearchSchema["_type"]
+	: URL extends `search?${string}type=album${string}` ? typeof albumSearchSchema["_type"]
+	: URL extends `artists/${string}/albums` ? typeof albumsListSchema["_type"]
+	: URL extends `artists/${string}` ? typeof artistSchema["_type"]
+	: URL extends `albums/${string}` ? typeof albumSchema["_type"]
+	: URL extends `tracks/${string}` ? typeof trackSchema["_type"]
+	: URL extends `audio-features/${string}` ? typeof audioFeaturesSchema["_type"]
 	: never
 
-type SpotifyApiResponse<URL extends SpotifyApiUrl> = SpotifyApiSuccessResponse<URL> | typeof notFoundSchema['_type']
+type SpotifyApiResponse<URL extends SpotifyApiUrl> = SpotifyApiSuccessResponse<URL> | typeof notFoundSchema["_type"]
 
 function getSchema(url: SpotifyApiUrl) {
 	switch (true) {
-		case url.startsWith('tracks/'): return trackSchema
-		case url.startsWith('audio-features/'): return audioFeaturesSchema
-		case url.startsWith('albums/'): return albumSchema
-		case url.startsWith('artists/') && url.endsWith('/albums'): return albumsListSchema
-		case url.startsWith('artists/'): return artistSchema
-		case url.startsWith('search?') && url.includes('type=track'): return trackSearchSchema
-		case url.startsWith('search?') && url.includes('type=artist'): return artistSearchSchema
-		case url.startsWith('search?') && url.includes('type=album'): return albumSearchSchema
+		case url.startsWith("tracks/"): return trackSchema
+		case url.startsWith("audio-features/"): return audioFeaturesSchema
+		case url.startsWith("albums/"): return albumSchema
+		case url.startsWith("artists/") && url.endsWith("/albums"): return albumsListSchema
+		case url.startsWith("artists/"): return artistSchema
+		case url.startsWith("search?") && url.includes("type=track"): return trackSearchSchema
+		case url.startsWith("search?") && url.includes("type=artist"): return artistSearchSchema
+		case url.startsWith("search?") && url.includes("type=album"): return albumSearchSchema
 	}
 }
 
 function isListRequest(url: SpotifyApiUrl) {
 	switch (true) {
-		case url.startsWith('tracks/'): return false
-		case url.startsWith('audio-features/'): return false
-		case url.startsWith('albums/'): return false
-		case url.startsWith('artists/') && url.endsWith('/albums'): return true
-		case url.startsWith('artists/'): return false
-		case url.startsWith('search?') && url.includes('type=track'): return true
-		case url.startsWith('search?') && url.includes('type=artist'): return true
-		case url.startsWith('search?') && url.includes('type=album'): return true
+		case url.startsWith("tracks/"): return false
+		case url.startsWith("audio-features/"): return false
+		case url.startsWith("albums/"): return false
+		case url.startsWith("artists/") && url.endsWith("/albums"): return true
+		case url.startsWith("artists/"): return false
+		case url.startsWith("search?") && url.includes("type=track"): return true
+		case url.startsWith("search?") && url.includes("type=artist"): return true
+		case url.startsWith("search?") && url.includes("type=album"): return true
 	}
 }
 
@@ -164,18 +164,18 @@ class Spotify {
 
 	#authOptions: RequestInit = {
 		headers: {
-			'Authorization': 'Basic ' + (Buffer.from(env.SPOTIFY_CLIENT_ID + ':' + env.SPOTIFY_CLIENT_SECRET).toString('base64')),
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Accept': 'application/json',
+			"Authorization": "Basic " + (Buffer.from(env.SPOTIFY_CLIENT_ID + ":" + env.SPOTIFY_CLIENT_SECRET).toString("base64")),
+			"Content-Type": "application/x-www-form-urlencoded",
+			"Accept": "application/json",
 		},
-		method: 'POST',
+		method: "POST",
 	}
 
 	#queue: Queue
 
 	constructor() {
 		this.#authOptions.body = new URLSearchParams()
-		this.#authOptions.body.append('grant_type', 'client_credentials')
+		this.#authOptions.body.append("grant_type", "client_credentials")
 		this.#queue = new Queue(Spotify.RATE_LIMIT)
 	}
 
@@ -191,7 +191,7 @@ class Spotify {
 		if (!resolve)
 			this.#refreshing = new Promise(r => resolve = r)
 		try {
-			const response = await fetch('https://accounts.spotify.com/api/token', this.#authOptions)
+			const response = await fetch("https://accounts.spotify.com/api/token", this.#authOptions)
 			const data = await response.json()
 			this.#accessToken = data.access_token
 			this.#refreshing = null
@@ -228,19 +228,19 @@ class Spotify {
 			schema,
 		])
 		const isList = isListRequest(url)
-		const fullURL = `https://api.spotify.com/v1/${url}${isList ? '&limit=1' : ''}`
+		const fullURL = `https://api.spotify.com/v1/${url}${isList ? "&limit=1" : ""}`
 		await this.#queue.next()
 		await this.#refreshToken()
 		return retryable(async () => {
 			const response = await fetch(fullURL, {
 				headers: {
-					'Authorization': `Bearer ${this.#accessToken}`,
-					'Accept': 'application/json',
+					"Authorization": `Bearer ${this.#accessToken}`,
+					"Accept": "application/json",
 				}
 			})
 			const json = await response.json()
 			const data = union.parse(json)
-			if (!('error' in data)) {
+			if (!("error" in data)) {
 				this.#storeResponse(url, data as SpotifyApiSuccessResponse<URL>)
 			}
 			return data as SpotifyApiResponse<URL>
@@ -253,7 +253,7 @@ class Spotify {
 	 * For example `+` (plus) shouldn't be encoded, and ` ` (space) encoded into a `'+'` doesn't always work
 	 */
 	sanitize(string: string): string {
-		return sanitizeString(string).replace(/&/g, '%26')
+		return sanitizeString(string).replace(/&/g, "%26")
 	}
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
@@ -297,7 +297,7 @@ class Spotify {
 				}
 			})
 			if (!datedTrack || !datedTrack.name) {
-				log("warn", "409", "spotify", `not enough information to find track, need better strategy`)
+				log("warn", "409", "spotify", "not enough information to find track, need better strategy")
 				this.#running.delete(trackDbId)
 				return
 			}
@@ -366,7 +366,7 @@ class Spotify {
 				}
 			})
 			if (!track) {
-				log("error", "409", "spotify", `could not find a track we just had a second ago`)
+				log("error", "409", "spotify", "could not find a track we just had a second ago")
 				this.#running.delete(trackDbId)
 				return
 			}
@@ -394,18 +394,18 @@ class Spotify {
 			let changedTrack = false
 			trackCreate: if (!spotifyTrack) {
 				const search = fuzzySearch
-					|| `track:${this.sanitize(track.name)}${artistName ? ` artist:${this.sanitize(artistName)}` : ''}${albumName ? ` album:${this.sanitize(albumName)}` : ''}`
-				log("info", "fetch", "spotify", `${fuzzySearch ? 'fuzzy ' : ''}search: ${search}`)
+					|| `track:${this.sanitize(track.name)}${artistName ? ` artist:${this.sanitize(artistName)}` : ""}${albumName ? ` album:${this.sanitize(albumName)}` : ""}`
+				log("info", "fetch", "spotify", `${fuzzySearch ? "fuzzy " : ""}search: ${search}`)
 				const trackData = await this.fetch(`search?type=track&q=${search}`)
-				let candidate = ('tracks' in trackData)
+				let candidate = ("tracks" in trackData)
 					? trackData.tracks.items[0]
 					: undefined
 				if (!candidate) {
-					if (artistName && albumName && typeof track.position === 'number') {
+					if (artistName && albumName && typeof track.position === "number") {
 						const search = `artist:${this.sanitize(artistName)} album:${this.sanitize(albumName)}`
 						log("info", "fetch", "spotify", `fallback search: #${track.position} of ${search}`)
 						const albumData = await this.fetch(`search?type=track&q=${search}`)
-						if ('error' in albumData) {
+						if ("error" in albumData) {
 							log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
 							break trackCreate
 						}
@@ -659,7 +659,7 @@ class Spotify {
 						))
 					}
 					const albumData = await this.fetch(`albums/${albumObject.id}`)
-					if ('error' in albumData) {
+					if ("error" in albumData) {
 						break albumFill
 					}
 					albumImageData = albumData.images
@@ -711,7 +711,7 @@ class Spotify {
 					))
 				}
 				const artistData = await this.fetch(`artists/${artistObject.id}`)
-				if ('error' in artistData) {
+				if ("error" in artistData) {
 					break artistFill
 				}
 				const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
@@ -774,7 +774,7 @@ class Spotify {
 			}
 			featuresFill: if (!spotifyTrack?.tempo && spotifyTrackId) {
 				const featuresData = await this.fetch(`audio-features/${spotifyTrackId}`)
-				if ('error' in featuresData) {
+				if ("error" in featuresData) {
 					log("error", "500", "spotify", `Could not find audio-features for ${spotifyTrackId}`)
 					break featuresFill
 				}

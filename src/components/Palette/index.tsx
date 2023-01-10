@@ -4,10 +4,10 @@ import { type CSSProperties } from "react"
 import { type PaletteDefinition } from "utils/paletteExtraction"
 
 const keys = [
-	'--palette-bg-main',
-	'--palette-bg-gradient',
-	'--palette-secondary',
-	'--palette-primary',
+	"--palette-bg-main",
+	"--palette-bg-gradient",
+	"--palette-secondary",
+	"--palette-primary",
 ] as const
 
 const defaultValues = [
@@ -49,12 +49,12 @@ export default function Palette({
 						inherits: true;
 						initial-value: ${hslToCss(value)};
 					}
-				`).join('')}
+				`).join("")}
 			</style>
 			<style key="palette-values">
-				{`body {\n`}
+				{"body {\n"}
 				{palette.map((value, i) => `${keys[i]}: ${hslToCss(value)};`).join("\n")}
-				{`}\n`}
+				{"}\n"}
 			</style>
 			<meta name="theme-color" content={hslToCss(palette[0])} />
 		</Head>

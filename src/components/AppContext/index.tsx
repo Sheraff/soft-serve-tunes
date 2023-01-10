@@ -129,14 +129,14 @@ export function AppState() {
 			}
 			history.pushState({}, "just-allow-back-button")
 		}
-		addEventListener('popstate', event => {
+		addEventListener("popstate", event => {
 			customNav()
 			event.preventDefault()
 		}, {capture: true, signal: controller.signal})
-		window.addEventListener('keydown', (event) => {
+		window.addEventListener("keydown", (event) => {
 			// @ts-expect-error -- it's fine if contentEditable doesn't exist, the value will just be undefined and it works
 			const editable = event.target?.contentEditable as string | undefined
-			if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && editable !== 'true') {
+			if (event.key === "Escape" && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && editable !== "true") {
 				event.preventDefault()
 				event.stopPropagation()
 				customNav()

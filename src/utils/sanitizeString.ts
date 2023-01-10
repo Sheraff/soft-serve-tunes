@@ -1,19 +1,19 @@
-import toTitleCase from 'titlecase'
+import toTitleCase from "titlecase"
 
 export default function sanitizeString(string: string) {
 	return string
-		.replace(/\$/g, 's') // Ke$ha
-		.replace(/ï/g, 'ii') // Hawaï
+		.replace(/\$/g, "s") // Ke$ha
+		.replace(/ï/g, "ii") // Hawaï
 		.replace(/’/g, "'")
-		.replace(/[^\p{L}\p{N}\s'&]+/gu, ' ') // remove all non-alphanumeric characters (any language) except for "' &"
-		.replace(/\s+/g, ' ') // concatenate consecutive spaces
+		.replace(/[^\p{L}\p{N}\s'&]+/gu, " ") // remove all non-alphanumeric characters (any language) except for "' &"
+		.replace(/\s+/g, " ") // concatenate consecutive spaces
 		.trim()
 }
 
 export function simplifiedName(name: string) {
-	const removeThe = name.replace(/\bthe\b/gi, '').replace(/\s+/g, '')
+	const removeThe = name.replace(/\bthe\b/gi, "").replace(/\s+/g, "")
 	const noEmpty = removeThe || name
-	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, '')
+	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, "")
 }
 
 const USELESS_GENRES = new Set([
@@ -33,7 +33,7 @@ const GENRES_MAP = new Map([
 ])
 const GENRE_REPLACERS = [
 	["hip-hop", "hip hop"],
-	["'n'", '&'],
+	["'n'", "&"],
 	[/\balt\b/g, "alternative"],
 ] as const
 

@@ -56,7 +56,7 @@ const lastFmArtistSchema = z
 			mbid: z.string().optional(),
 			url: z.string(),
 			image: z.array(z.object({
-				'#text': z.string(),
+				"#text": z.string(),
 				size: z.string(),
 			})),
 			stats: z.object({
@@ -67,7 +67,7 @@ const lastFmArtistSchema = z
 	})
 
 const lastFmImageSchema = z.object({
-	'#text': z.string(),
+	"#text": z.string(),
 	size: z.string(),
 })
 
@@ -105,14 +105,14 @@ const lastFmTrackSchema = z
 	.object({
 		track: z.object({
 			album: z.object({
-				'@attr': z.object({
+				"@attr": z.object({
 					position: z.string(),
 				}).optional(),
 				title: z.string(),
 				mbid: z.string().optional(),
 				artist: z.string(),
 				image: z.array(z.object({
-					'#text': z.string(),
+					"#text": z.string(),
 					size: z.string(),
 				})),
 				url: z.string(),
@@ -129,7 +129,7 @@ const lastFmTrackSchema = z
 				})),
 			}),
 			streamable: z.object({
-				'#text': z.string(),
+				"#text": z.string(),
 				fulltrack: z.string(),
 			}),
 			duration: z.string().transform(Number),
@@ -381,7 +381,7 @@ class LastFM {
 		if (track.album?.artist?.name && !notArtistName(track.album.artist.name)) {
 			urls.push(makeTrackUrl({ artist: sanitizeString(track.album.artist.name), track: sanitizeString(track.name) }))
 		}
-		let _trackData: z.infer<typeof lastFmTrackSchema>['track'] | null = null
+		let _trackData: z.infer<typeof lastFmTrackSchema>["track"] | null = null
 		const fetchUrls = async (urls: URL[]) => {
 			for (const url of urls) {
 				const lastfm = await this.fetch(url, lastFmTrackSchema)
@@ -549,7 +549,7 @@ class LastFM {
 			urls.push(makeArtistUrl({ mbid: artist.audiodb.strMusicBrainzID }))
 		}
 		urls.push(makeArtistUrl({ artist: artist.name }))
-		let artistData: z.infer<typeof lastFmArtistSchema>['artist'] | null = null
+		let artistData: z.infer<typeof lastFmArtistSchema>["artist"] | null = null
 		for (const url of urls) {
 			const lastfm = await this.fetch(url, lastFmArtistSchema)
 			if (lastfm.artist && lastfm.artist.url) {
@@ -697,7 +697,7 @@ class LastFM {
 		if (album.artist) {
 			urls.push(makeAlbumUrl({ album: album.name, artist: album.artist.name }))
 		}
-		let albumData: z.infer<typeof lastFmAlbumSchema>['album'] | null = null
+		let albumData: z.infer<typeof lastFmAlbumSchema>["album"] | null = null
 		const fetchUrls = async (urls: URL[]) => {
 			for (const url of urls) {
 				const lastfm = await this.fetch(url, lastFmAlbumSchema)
@@ -815,25 +815,25 @@ class LastFM {
 }
 
 function makeApiUrl() {
-	const url = new URL('/2.0', 'http://ws.audioscrobbler.com')
-	url.searchParams.set('format', 'json')
-	url.searchParams.set('api_key', env.LAST_FM_API_KEY)
-	url.searchParams.set('autocorrect', '1')
+	const url = new URL("/2.0", "http://ws.audioscrobbler.com")
+	url.searchParams.set("format", "json")
+	url.searchParams.set("api_key", env.LAST_FM_API_KEY)
+	url.searchParams.set("autocorrect", "1")
 	return url
 }
 
 function makeArtistCorrectionUrl(artist: string) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'artist.getcorrection')
-	url.searchParams.set('artist', artist)
+	url.searchParams.set("method", "artist.getcorrection")
+	url.searchParams.set("artist", artist)
 	return url
 }
 
 function makeTrackCorrectionUrl(artist: string, track: string) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'track.getcorrection')
-	url.searchParams.set('artist', artist)
-	url.searchParams.set('track', track)
+	url.searchParams.set("method", "track.getcorrection")
+	url.searchParams.set("artist", artist)
+	url.searchParams.set("track", track)
 	return url
 }
 
@@ -844,12 +844,12 @@ function makeTrackUrl(params: {
 	mbid: string,
 }) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'track.getInfo')
-	if ('mbid' in params) {
-		url.searchParams.set('mbid', params.mbid)
+	url.searchParams.set("method", "track.getInfo")
+	if ("mbid" in params) {
+		url.searchParams.set("mbid", params.mbid)
 	} else {
-		url.searchParams.set('track', params.track)
-		url.searchParams.set('artist', params.artist)
+		url.searchParams.set("track", params.track)
+		url.searchParams.set("artist", params.artist)
 	}
 	return url
 }
@@ -859,9 +859,9 @@ function makeTrackSearchUrl(params: {
 	album: string,
 }) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'track.search')
-	url.searchParams.set('track', sanitizeString(params.track) || params.track)
-	url.searchParams.set('album', sanitizeString(params.album) || params.album)
+	url.searchParams.set("method", "track.search")
+	url.searchParams.set("track", sanitizeString(params.track) || params.track)
+	url.searchParams.set("album", sanitizeString(params.album) || params.album)
 	return url
 }
 
@@ -872,12 +872,12 @@ function makeAlbumUrl(params: {
 	mbid: string,
 }) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'album.getInfo')
-	if ('mbid' in params) {
-		url.searchParams.set('mbid', params.mbid)
+	url.searchParams.set("method", "album.getInfo")
+	if ("mbid" in params) {
+		url.searchParams.set("mbid", params.mbid)
 	} else {
-		url.searchParams.set('album', sanitizeString(params.album) || params.album)
-		url.searchParams.set('artist', sanitizeString(params.artist) || params.artist)
+		url.searchParams.set("album", sanitizeString(params.album) || params.album)
+		url.searchParams.set("artist", sanitizeString(params.artist) || params.artist)
 	}
 	return url
 }
@@ -886,8 +886,8 @@ function makeAlbumSearchUrl(params: {
 	album: string,
 }) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'album.search')
-	url.searchParams.set('album', sanitizeString(params.album) || params.album)
+	url.searchParams.set("method", "album.search")
+	url.searchParams.set("album", sanitizeString(params.album) || params.album)
 	return url
 }
 
@@ -897,16 +897,16 @@ function makeArtistUrl(params: {
 	mbid: string,
 }) {
 	const url = makeApiUrl()
-	url.searchParams.set('method', 'artist.getInfo')
-	if ('mbid' in params) {
-		url.searchParams.set('mbid', params.mbid)
+	url.searchParams.set("method", "artist.getInfo")
+	if ("mbid" in params) {
+		url.searchParams.set("mbid", params.mbid)
 	} else {
-		url.searchParams.set('artist', sanitizeString(params.artist) || params.artist)
+		url.searchParams.set("artist", sanitizeString(params.artist) || params.artist)
 	}
 	return url
 }
 
-async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>['track'], undefined>) {
+async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.artist?.url) {
 		return undefined
 	}
@@ -920,7 +920,7 @@ async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof la
 	return artist.id
 }
 
-async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>['track'], undefined>) {
+async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.album?.url) {
 		return undefined
 	}
@@ -934,7 +934,7 @@ async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof las
 	return album.id
 }
 
-async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof lastFmAlbumSchema>['album'], undefined>) {
+async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof lastFmAlbumSchema>["album"], undefined>) {
 	const tracks = albumData.tracks?.track
 	if (!tracks || !Array.isArray(tracks) || !tracks.length) {
 		return []

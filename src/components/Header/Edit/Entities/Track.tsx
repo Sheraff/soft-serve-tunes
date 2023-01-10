@@ -70,11 +70,11 @@ export default function EditTrack({
 
 	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
 	const [albumState, setAlbumState] = useState(albumAggregate.value)
-	const albumSimplified = albumState ? simplifiedName(albumState) : ''
+	const albumSimplified = albumState ? simplifiedName(albumState) : ""
 
 	const artistAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["artist", "name"])
 	const [artistState, setArtistState] = useState(artistAggregate.value)
-	const artistSimplified = artistState ? simplifiedName(artistState) : ''
+	const artistSimplified = artistState ? simplifiedName(artistState) : ""
 
 	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["cover", "id"])
 	const [coverState, setCoverState] = useState(coverAggregate.value)
@@ -85,9 +85,9 @@ export default function EditTrack({
 	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
-		artistInput.current!.value = name ?? ''
-		artistInput.current!.dispatchEvent(new Event('input'))
-		albumInput.current!.dispatchEvent(new Event('input'))
+		artistInput.current!.value = name ?? ""
+		artistInput.current!.dispatchEvent(new Event("input"))
+		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
 	artists.sort((a, b) => {
@@ -141,10 +141,10 @@ export default function EditTrack({
 	const _albums = __albums.length === 0 ? albumsRaw || defaultArray : __albums
 	const albums = useDeferredValue(_albums)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
-		albumInput.current!.value = name ?? ''
+		albumInput.current!.value = name ?? ""
 		setAlbumState(name)
-		if (typeof artistName === 'string') setArtistInputName(artistName)
-		albumInput.current!.dispatchEvent(new Event('input'))
+		if (typeof artistName === "string") setArtistInputName(artistName)
+		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [setArtistInputName])
 	useEffect(() => {setAlbumInputName(albumAggregate.value)}, [setAlbumInputName, albumAggregate.value])
 	albums.sort((a, b) => {
@@ -181,8 +181,8 @@ export default function EditTrack({
 	const coverInput = useRef<HTMLInputElement>(null)
 	const setCoverInputId = useCallback((id: string | undefined) => {
 		setCoverState(id)
-		coverInput.current!.value = id ?? ''
-		coverInput.current!.dispatchEvent(new Event('input'))
+		coverInput.current!.value = id ?? ""
+		coverInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
 
@@ -201,7 +201,7 @@ export default function EditTrack({
 		e.preventDefault()
 		navigator.vibrate(1)
 		if (submitProgress !== null) return
-		const editData: Omit<Parameters<typeof updateTrack>[0], 'id'> = {}
+		const editData: Omit<Parameters<typeof updateTrack>[0], "id"> = {}
 		let hasEdits = false
 		if (isNameModified) {
 			hasEdits = true
@@ -247,7 +247,7 @@ export default function EditTrack({
 		}
 		const allExist = tracks.every(track => track)
 		if (!allExist) {
-			console.error('Some tracks are missing at the time of editing. This should not happen.')
+			console.error("Some tracks are missing at the time of editing. This should not happen.")
 			return
 		}
 		const totalSteps = tracks.length * 2 + 1
@@ -268,8 +268,8 @@ export default function EditTrack({
 				})
 			)
 		)
-		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter['edit']['track']['validate']>[]>((acc, res) => {
-			if (res.status === 'rejected') {
+		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter["edit"]["track"]["validate"]>[]>((acc, res) => {
+			if (res.status === "rejected") {
 				acc.push(res.reason)
 			}
 			return acc
@@ -307,7 +307,7 @@ export default function EditTrack({
 								name="name"
 								type="text"
 								className={styles.input}
-								value={nameState ?? ''}
+								value={nameState ?? ""}
 								onChange={(e) => setNameState(e.target.value)}
 								placeholder={tracks[0]?.name}
 							/>
@@ -317,8 +317,8 @@ export default function EditTrack({
 								name="position"
 								type="number"
 								className={styles.input}
-								value={positionState ?? ''}
-								onChange={(e) => setPositionState(e.target.value !== '' ? Number(e.target.value) : null)}
+								value={positionState ?? ""}
+								onChange={(e) => setPositionState(e.target.value !== "" ? Number(e.target.value) : null)}
 								placeholder={String(tracks[0]?.position ?? tracks[0]?.spotify?.trackNumber ?? tracks[0]?.audiodb?.intTrackNumber) || undefined}
 							/>
 						</>
@@ -331,9 +331,9 @@ export default function EditTrack({
 						ref={albumInput}
 						type="text"
 						className={styles.input}
-						value={albumState ?? ''}
+						value={albumState ?? ""}
 						onChange={() => setAlbumState(albumInput.current!.value)}
-						placeholder={albumAggregate.unique ? undefined : 'Multiple values'}
+						placeholder={albumAggregate.unique ? undefined : "Multiple values"}
 					/>
 					<div className={styles.full}>
 						<AlbumList
@@ -361,9 +361,9 @@ export default function EditTrack({
 						ref={artistInput}
 						type="text"
 						className={styles.input}
-						value={artistState ?? ''}
+						value={artistState ?? ""}
 						onChange={() => setArtistState(artistInput.current!.value)}
-						placeholder={artistAggregate.unique ? undefined : 'Multiple values'}
+						placeholder={artistAggregate.unique ? undefined : "Multiple values"}
 					/>
 					<div className={styles.full}>
 						<ArtistList
@@ -390,8 +390,8 @@ export default function EditTrack({
 						ref={coverInput}
 						type="hidden"
 						className={styles.input}
-						value={coverState ?? ''}
-						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
+						value={coverState ?? ""}
+						placeholder={coverAggregate.unique ? undefined : "Multiple values"}
 						disabled
 					/>
 					<div className={styles.full}>
@@ -420,7 +420,7 @@ export default function EditTrack({
 						{isPositionModified && (
 							<p>
 								<ModifIcon className={styles.icon}/>
-								{`Set track position to #${String(positionState).padStart(2, '0')}`}
+								{`Set track position to #${String(positionState).padStart(2, "0")}`}
 							</p>
 						)}
 						{isAlbumModified && (
@@ -473,7 +473,7 @@ export default function EditTrack({
 						<SaveIcon className={styles.icon} />
 						Save
 						{submitProgress !== null && (
-							<div className={styles.progress} style={{'--progress': submitProgress} as CSSProperties}>
+							<div className={styles.progress} style={{"--progress": submitProgress} as CSSProperties}>
 								<SaveIcon className={styles.icon} />
 								Save
 							</div>

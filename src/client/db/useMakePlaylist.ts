@@ -51,10 +51,10 @@ export type Playlist = PlaylistMeta & {
 
 async function setPlaylist(
 	queryClient: ReturnType<typeof useQueryClient>,
-	name: Playlist['name'],
-	id: Playlist['id'],
-	tracks: Playlist['tracks'],
-	current?: Playlist['current'],
+	name: Playlist["name"],
+	id: Playlist["id"],
+	tracks: Playlist["tracks"],
+	current?: Playlist["current"],
 ) {
 	const regularOrder = tracks.map(({id}) => id)
 	const order = shuffle.getValue(queryClient)
@@ -90,9 +90,9 @@ async function setPlaylist(
 export function useSetPlaylist() {
 	const queryClient = useQueryClient()
 	return useCallback(async (
-		name: Playlist['name'],
-		id: Exclude<Playlist['id'], null>,
-		tracks: Playlist['tracks']
+		name: Playlist["name"],
+		id: Exclude<Playlist["id"], null>,
+		tracks: Playlist["tracks"]
 	) => {
 		await setPlaylist(queryClient, name, id, tracks)
 	}, [queryClient])
@@ -201,7 +201,7 @@ export function useGetCurrentIndex() {
 	return useCallback(() => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
-			throw new Error(`trying to find "playlist" index, but query doesn't exist yet`)
+			throw new Error("trying to find \"playlist\" index, but query doesn't exist yet")
 		}
 		const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
 		if (index < 0) return undefined
@@ -255,7 +255,7 @@ export function useSetPlaylistIndex() {
 		async setPlaylistIndex(index: number) {
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
-				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")
 			}
 			const newIndex = index < 0
 				? playlist.tracks.length - 1
@@ -283,7 +283,7 @@ export function useSetPlaylistIndex() {
 			}
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
-				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")
 			}
 			const index = playlist.current
 				? playlist.order.indexOf(playlist.current)
@@ -328,7 +328,7 @@ export function useSetPlaylistIndex() {
 		async prevPlaylistIndex() {
 			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 			if (!playlist) {
-				throw new Error(`trying to change "playlist" query, but query doesn't exist yet`)
+				throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")
 			}
 			const index = playlist.current
 				? playlist.order.indexOf(playlist.current)
@@ -401,7 +401,7 @@ export function useAddToPlaylist() {
 		}
 		const _fullTracks = tracks.map((track) => trpcClient.track.miniature.getData({id: track.id}))
 		if (_fullTracks.includes(undefined) || _fullTracks.includes(null)) {
-			console.error(`We shouldn't be able to be here, adding a track to a playlist should only happen from the track, so it must be in the trpc cache`)
+			console.error("We shouldn't be able to be here, adding a track to a playlist should only happen from the track, so it must be in the trpc cache")
 			return
 		}
 		const fullTracks = _fullTracks as Exclude<typeof _fullTracks[number], undefined | null>[]
@@ -469,7 +469,7 @@ export function useAddNextToPlaylist() {
 			return
 		}
 		// playlist is inactive, just add track to the end (or to the start if `forceCurrent`)
-		if (typeof cache.current === 'undefined') {
+		if (typeof cache.current === "undefined") {
 			const baseOrder = cache.tracks.map(({id}) => id)
 			const newOrder = shuffle.getValue(queryClient)
 				? forceCurrent
@@ -579,7 +579,7 @@ export function useAddNextToPlaylist() {
 	}, [trpcClient, queryClient, mutateAsync])
 }
 
-function findEndOfStack(order: Playlist['order'], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
+function findEndOfStack(order: Playlist["order"], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
 	const index = currentIndex + 1
 	if (index === order.length) {
 		return {index, isStack}
@@ -594,9 +594,9 @@ export function useReorderPlaylist() {
 	const queryClient = useQueryClient()
 	const {mutateAsync} = trpc.playlist.modify.useMutation()
 	return useCallback(async (oldIndex: number, newIndex: number) => {
-		const playlist = queryClient.getQueryData<Playlist>(['playlist'])
+		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
-			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+			throw new Error("trying to reorder \"playlist\" query, but query doesn't exist yet")
 		}
 		const newItems = [...playlist.tracks]
 		const [item] = newItems.splice(oldIndex, 1)
@@ -636,7 +636,7 @@ async function deleteAndReorderListInIndexedDB(order: string[]) {
 	const cursorRequest = store.openCursor()
 	return new Promise((resolve, reject) => {
 		cursorRequest.onerror = () => {
-			console.error(new Error(`couldn't open cursor on in indexedDB "playlist" to reorder list`, {cause: tx.error}))
+			console.error(new Error("couldn't open cursor on in indexedDB \"playlist\" to reorder list", {cause: tx.error}))
 			reject(tx.error)
 		}
 		cursorRequest.onsuccess = () => {
@@ -663,7 +663,7 @@ export function useRemoveFromPlaylist() {
 	return useCallback(async (id: string) => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
-			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+			throw new Error("trying to reorder \"playlist\" query, but query doesn't exist yet")
 		}
 		let newCurrent = playlist.current
 		if (id === playlist.current) {
@@ -709,7 +709,7 @@ export function useShufflePlaylist() {
 	return useCallback(() => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
-			throw new Error(`trying to reorder "playlist" query, but query doesn't exist yet`)
+			throw new Error("trying to reorder \"playlist\" query, but query doesn't exist yet")
 		}
 		const isShuffle = shuffle.getValue(queryClient)
 		if (!isShuffle) {
@@ -749,7 +749,7 @@ export function useRenamePlaylist() {
 	return useCallback(async (id: string, name: string) => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 		if (!playlist) {
-			throw new Error(`trying to rename "playlist" query, but query doesn't exist yet`)
+			throw new Error("trying to rename \"playlist\" query, but query doesn't exist yet")
 		}
 		const uniqueName = await uniqueNameFromName(trpcClient, name)
 		queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
@@ -771,7 +771,7 @@ export async function onPlaylistSaved(
 ) {
 	queryClient.setQueryData<Playlist>(["playlist"], (data) => {
 		if (!data) {
-			throw new Error(`trying to add ID to "playlist" query, but query doesn't exist yet`)
+			throw new Error("trying to add ID to \"playlist\" query, but query doesn't exist yet")
 		}
 		return {
 			...data,

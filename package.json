@@ -14,7 +14,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "NODE_OPTIONS=--max_old_space_size=768 next start",
-    "lint": "next lint",
+    "lint": "next lint --fix",
     "check": "tsc --noEmit",
     "postinstall": "prisma generate",
     "db": "prisma format && prisma generate && prisma db push",

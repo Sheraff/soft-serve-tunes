@@ -74,10 +74,10 @@ export default forwardRef(function ArtistView({
 	const initialImageSrc = useRef<string | null>(null)
 	if (open && !initialPositionRef.current && artist.rect) {
 		initialPositionRef.current = {
-			'--top': `${artist.rect.top}px`,
-			'--left': `${artist.rect.left}px`,
-			'--scale': `${artist.rect.width / innerWidth}`,
-			'--end': `${Math.hypot(innerWidth, innerHeight)}px`,
+			"--top": `${artist.rect.top}px`,
+			"--left": `${artist.rect.left}px`,
+			"--scale": `${artist.rect.width / innerWidth}`,
+			"--end": `${Math.hypot(innerWidth, innerHeight)}px`,
 		} as CSSProperties
 		initialImageSrc.current = artist.rect.src || null
 	}
@@ -100,7 +100,7 @@ export default forwardRef(function ArtistView({
 		>
 			{palette && artist.open && (
 				<Head>
-					<meta name="theme-color" content={palette['--palette-bg-main']} />
+					<meta name="theme-color" content={palette["--palette-bg-main"]} />
 				</Head>
 			)}
 			<img
@@ -136,7 +136,7 @@ export default forwardRef(function ArtistView({
 							className={styles.toggle}
 							type="button"
 						>
-							{seeBio ? '...Less' : 'More...'}
+							{seeBio ? "...Less" : "More..."}
 						</button>
 					</div>
 				)}

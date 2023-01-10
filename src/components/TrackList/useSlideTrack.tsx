@@ -37,14 +37,14 @@ export default function useSlideTrack(
 			const controller = new AbortController()
 			const {signal} = controller
 			animController = controller
-			element.classList.add(styles['like-anim'] as string)
+			element.classList.add(styles["like-anim"] as string)
 			navigator.vibrate(1)
 
-			element.addEventListener('animationend', (e) => {
-				if (e.animationName !== styles['like-slide'] && e.animationName !== styles['dislike-slide']) return
-				element.style.removeProperty('--x')
-				element.classList.remove(styles['like-anim'] as string)
-				element.classList.remove(styles['switch-left'] as string)
+			element.addEventListener("animationend", (e) => {
+				if (e.animationName !== styles["like-slide"] && e.animationName !== styles["dislike-slide"]) return
+				element.style.removeProperty("--x")
+				element.classList.remove(styles["like-anim"] as string)
+				element.classList.remove(styles["switch-left"] as string)
 				element.classList.toggle(styles.liked as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
@@ -58,33 +58,33 @@ export default function useSlideTrack(
 			const controller = new AbortController()
 			const {signal} = controller
 			animController = controller
-			element.classList.add(styles['reset-anim'] as string)
+			element.classList.add(styles["reset-anim"] as string)
 
-			element.addEventListener('animationend', (e) => {
-				if (e.animationName !== styles['reset-slide']) return
-				element.style.removeProperty('--x')
-				element.classList.remove(styles['reset-anim'] as string)
-				element.classList.remove(styles['switch-left'] as string)
+			element.addEventListener("animationend", (e) => {
+				if (e.animationName !== styles["reset-slide"]) return
+				element.style.removeProperty("--x")
+				element.classList.remove(styles["reset-anim"] as string)
+				element.classList.remove(styles["switch-left"] as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
 				animController = null
 			}, {signal})
 		}
 
-		function delayedSwitch(which: 'left' | 'right' = 'left', end: () => void) {
+		function delayedSwitch(which: "left" | "right" = "left", end: () => void) {
 			if (!element) return
-			if (which === 'right') return
+			if (which === "right") return
 
 			triggerSecondaryAction = false
 
 			delayedSwitchTimeoutId = setTimeout(() => {
 				delayedSwitchTimeoutId = null
-				element.classList.add(styles['switch-left'])
+				element.classList.add(styles["switch-left"])
 				const controller = new AbortController()
 				const {signal} = controller
 				switchController = controller
-				element.addEventListener('animationend', (e) => {
-					if (e.animationName !== styles['switch']) return
+				element.addEventListener("animationend", (e) => {
+					if (e.animationName !== styles["switch"]) return
 					triggerSecondaryAction = true
 					controller.abort()
 					switchController = null
@@ -96,16 +96,16 @@ export default function useSlideTrack(
 			}, DELAYED_SWITCH_DURATION)
 		}
 
-		function cancelDelayedSwitch(which: 'left' | 'right' = 'left') {
+		function cancelDelayedSwitch(which: "left" | "right" = "left") {
 			if (!element) return
-			if (which === 'right') return
+			if (which === "right") return
 			triggerSecondaryAction = false
 			if (delayedSwitchTimeoutId) {
 				clearTimeout(delayedSwitchTimeoutId)
 				delayedSwitchTimeoutId = null
 			}
 			if (switchController) {
-				element.classList.remove(styles['switch-left'])
+				element.classList.remove(styles["switch-left"])
 				switchController?.abort()
 				switchController = null
 			}
@@ -117,20 +117,20 @@ export default function useSlideTrack(
 			const {signal} = controller
 			animController = controller
 			if (opts.quickSwipeDeleteAnim && !triggerSecondaryAction) {
-				element.style.setProperty('--height', `${element.offsetHeight}px`)
-				element.classList.add(styles['remove-anim'] as string)
+				element.style.setProperty("--height", `${element.offsetHeight}px`)
+				element.classList.add(styles["remove-anim"] as string)
 			} else {
-				element.classList.add(styles['add-anim'] as string)
+				element.classList.add(styles["add-anim"] as string)
 			}
 			navigator.vibrate(1)
 
-			element.addEventListener('animationend', (e) => {
-				if (e.animationName !== styles['add-anim-body'] && e.animationName !== styles['remove-anim-body']) return
-				element.style.removeProperty('--x')
-				element.classList.remove(styles['add-anim'] as string)
+			element.addEventListener("animationend", (e) => {
+				if (e.animationName !== styles["add-anim-body"] && e.animationName !== styles["remove-anim-body"]) return
+				element.style.removeProperty("--x")
+				element.classList.remove(styles["add-anim"] as string)
 				// WARNING: not removing the "remove-anim" class only works if the quickSwipeAction callback deletes the item
 				// element.classList.remove(styles['remove-anim'] as string)
-				element.classList.remove(styles['switch-left'] as string)
+				element.classList.remove(styles["switch-left"] as string)
 				element.classList.remove(styles.will as string)
 				controller.abort()
 				animController = null
@@ -172,12 +172,12 @@ export default function useSlideTrack(
 					}
 				}, LONG_PRESS_DURATION)
 
-				window.addEventListener('contextmenu', (event) => {
+				window.addEventListener("contextmenu", (event) => {
 					event.preventDefault()
 				}, {signal})
 			}
 
-			window.addEventListener('touchmove', (event) => {
+			window.addEventListener("touchmove", (event) => {
 				if (longPressTimeoutId) {
 					clearTimeout(longPressTimeoutId)
 					longPressTimeoutId = null
@@ -199,17 +199,17 @@ export default function useSlideTrack(
 				}
 				const valid = dx > 48 || dx < -48
 				if (valid && !delayedSwitchTimeoutId) {
-					delayedSwitch(dx > 48 ? 'left' : 'right', end)
+					delayedSwitch(dx > 48 ? "left" : "right", end)
 				}
 				if (!valid && delayedSwitchTimeoutId) {
-					cancelDelayedSwitch(dx <= 48 ? 'left' : 'right')
+					cancelDelayedSwitch(dx <= 48 ? "left" : "right")
 				}
 				const r = Math.abs(dx) / 48
 				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
-				element.style.setProperty('--x', `${total}px`)
+				element.style.setProperty("--x", `${total}px`)
 			}, {signal})
 
-			window.addEventListener('touchend', (event) => {
+			window.addEventListener("touchend", (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				
@@ -227,7 +227,7 @@ export default function useSlideTrack(
 			}, {signal, passive: false})
 		}
 
-		element.addEventListener('touchstart', (event) => {
+		element.addEventListener("touchstart", (event) => {
 			if (!isDragging) {
 				const touch = event.changedTouches.item(0) as Touch
 				if (touch.clientX < 20 || touch.clientX > innerWidth - 20) {

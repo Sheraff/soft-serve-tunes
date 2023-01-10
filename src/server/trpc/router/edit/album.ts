@@ -129,7 +129,7 @@ const modify = protectedProcedure.input(albumInputSchema).mutation(async ({ inpu
 	const name = await getName(input)
 	await checkNameConflict(input, album, name, linkArtist)
 
-	const data: Prisma.AlbumUpdateArgs['data'] = {}
+	const data: Prisma.AlbumUpdateArgs["data"] = {}
 
 	if (name) {
 		data.name = name

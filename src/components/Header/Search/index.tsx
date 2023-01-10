@@ -66,22 +66,22 @@ export default function Search({
 				input.current.blur()
 			}
 		}, {signal: controller.signal})
-		input.current.addEventListener('focus', () => {
+		input.current.addEventListener("focus", () => {
 			results.current?.scroll({
 				top: 0,
-				behavior: 'smooth',
+				behavior: "smooth",
 			})
 			artistList.current?.scroll({
 				left: 0,
-				behavior: 'smooth'
+				behavior: "smooth"
 			})
 			albumList.current?.scroll({
 				left: 0,
-				behavior: 'smooth'
+				behavior: "smooth"
 			})
 		}, {signal: controller.signal, passive: true})
 		let lastScroll = 0
-		results.current.addEventListener('scroll', () => {
+		results.current.addEventListener("scroll", () => {
 			const scroll = results.current?.scrollTop || 0
 			if (scroll > lastScroll) {
 				input.current?.blur()
@@ -118,7 +118,7 @@ export default function Search({
 				className={styles.results}
 				data-open={open}
 				htmlFor={id}
-				style={{'--z': z} as CSSProperties}
+				style={{"--z": z} as CSSProperties}
 			>
 				{showPast && latestSearches.length > 0 && (
 					<div>
@@ -134,7 +134,7 @@ export default function Search({
 						<ArtistList
 							ref={artistList}
 							artists={artists.slice(0, 21)}
-							onSelect={({id}) => id && onSelect({type: 'artist', id})}
+							onSelect={({id}) => id && onSelect({type: "artist", id})}
 							loading={!artists.length}
 						/>
 					</div>
@@ -146,7 +146,7 @@ export default function Search({
 							ref={albumList}
 							scrollable
 							albums={albums.slice(0, 28)}
-							onSelect={({id}) => id && onSelect({type: 'album', id})}
+							onSelect={({id}) => id && onSelect({type: "album", id})}
 							loading={!albums.length}
 						/>
 					</div>
@@ -156,7 +156,7 @@ export default function Search({
 						<SectionTitle>Genres</SectionTitle>
 						<GenreList
 							genres={genres.slice(0, 21)}
-							onSelect={({id}) => id && onSelect({type: 'genre', id})}
+							onSelect={({id}) => id && onSelect({type: "genre", id})}
 						/>
 					</div>
 				)}
@@ -165,7 +165,7 @@ export default function Search({
 						<SectionTitle>Playlists</SectionTitle>
 						<PlaylistList
 							playlists={playlists.slice(0, 6)}
-							onSelect={({id}) => id && onSelect({type: 'playlist', id})}
+							onSelect={({id}) => id && onSelect({type: "playlist", id})}
 						/>
 					</div>
 				)}
@@ -174,7 +174,7 @@ export default function Search({
 						<SectionTitle>Tracks</SectionTitle>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
-							onSelect={({id}) => id && onSelect({type: 'track', id})}
+							onSelect={({id}) => id && onSelect({type: "track", id})}
 						/>
 					</div>
 				)}

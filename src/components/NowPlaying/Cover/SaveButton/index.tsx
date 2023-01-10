@@ -3,8 +3,8 @@ import { type Playlist, onPlaylistSaved } from "client/db/useMakePlaylist"
 import { memo, startTransition, useRef, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
-import SaveIcon from 'icons/library_add.svg'
-import SavedIcon from 'icons/collections_bookmark.svg'
+import SaveIcon from "icons/library_add.svg"
+import SavedIcon from "icons/collections_bookmark.svg"
 import { useQueryClient } from "@tanstack/react-query"
 
 function SaveButton({id, className}: {
@@ -28,18 +28,18 @@ function SaveButton({id, className}: {
 		let conditions = 0
 
 		const intro = target.animate([
-			{ transform: 'scale(1) rotateY(0)'},
-			{ transform: 'scale(1.5) rotateY(1turn)'},
-		], { duration: 600, iterations: 1, easing: 'ease-in' })
+			{ transform: "scale(1) rotateY(0)"},
+			{ transform: "scale(1.5) rotateY(1turn)"},
+		], { duration: 600, iterations: 1, easing: "ease-in" })
 		intro.finished.then(() => {
 			target.animate([
-				{ transform: 'scale(1.5)'},
-				{ transform: 'scale(1.2)'},
-			], { duration: 800, iterations: Infinity, easing: 'linear', direction: 'alternate', composite: 'add' })
+				{ transform: "scale(1.5)"},
+				{ transform: "scale(1.2)"},
+			], { duration: 800, iterations: Infinity, easing: "linear", direction: "alternate", composite: "add" })
 			target.animate([
-				{ transform: 'rotateY(0)'},
-				{ transform: 'rotateY(1turn)'},
-			], { duration: 400, iterations: Infinity, easing: 'linear', composite: 'add' })
+				{ transform: "rotateY(0)"},
+				{ transform: "rotateY(1turn)"},
+			], { duration: 400, iterations: Infinity, easing: "linear", composite: "add" })
 		})
 		setTimeout(() => {
 			conditions++
@@ -48,9 +48,9 @@ function SaveButton({id, className}: {
 		const onEnd = () => {
 			if (conditions < 2) return
 			const animation = target.animate([
-				{ transform: 'translateY(0)', opacity: 1 },
-				{ transform: 'translateY(-60vh)', opacity: 0 },
-			], { duration: 500, iterations: 1, easing: 'ease-in', composite: 'add' })
+				{ transform: "translateY(0)", opacity: 1 },
+				{ transform: "translateY(-60vh)", opacity: 0 },
+			], { duration: 500, iterations: 1, easing: "ease-in", composite: "add" })
 			animation.finished.then(() => {
 				target.getAnimations().forEach(anim => anim.cancel())
 				element.classList.remove(styles.save)
@@ -65,7 +65,7 @@ function SaveButton({id, className}: {
 				target.getAnimations().forEach(anim => anim.cancel())
 				element.classList.remove(styles.save)
 				setFreezeId(null)
-				throw new Error('Trying to save a playlist, but none found in trpc cache')
+				throw new Error("Trying to save a playlist, but none found in trpc cache")
 			}
 			savePlaylistMutation({
 				name: cache.name,
@@ -73,7 +73,7 @@ function SaveButton({id, className}: {
 			}, {
 				onSuccess(playlist) {
 					if (!playlist) {
-						throw new Error('Trying to save a playlist, but mutation returned null')
+						throw new Error("Trying to save a playlist, but mutation returned null")
 					}
 					trpcClient.playlist.get.setData({id: playlist.id}, playlist)
 					onPlaylistSaved(queryClient, playlist.id, playlist.name)
@@ -91,7 +91,7 @@ function SaveButton({id, className}: {
 
 	const deletePlaylist = () => {
 		if (!id) {
-			throw new Error('Trying to delete a playlist, but no ID provided')
+			throw new Error("Trying to delete a playlist, but no ID provided")
 		}
 		const element = button.current!
 		element.classList.add(styles.delete)
@@ -101,14 +101,14 @@ function SaveButton({id, className}: {
 		let conditions = 0
 
 		const intro = target.animate([
-			{ transform: 'rotate(0)'},
-			{ transform: 'rotate(65deg)'},
-		], { duration: 300, iterations: 1, easing: 'ease-in' })
+			{ transform: "rotate(0)"},
+			{ transform: "rotate(65deg)"},
+		], { duration: 300, iterations: 1, easing: "ease-in" })
 		intro.finished.then(() => {
 			target.animate([
-				{ transform: 'rotate(65deg)'},
-				{ transform: 'rotate(25deg)'},
-			], { duration: 500, iterations: Infinity, easing: 'ease-in-out', direction: 'alternate' })
+				{ transform: "rotate(65deg)"},
+				{ transform: "rotate(25deg)"},
+			], { duration: 500, iterations: Infinity, easing: "ease-in-out", direction: "alternate" })
 		})
 		setTimeout(() => {
 			conditions++
@@ -117,9 +117,9 @@ function SaveButton({id, className}: {
 		const onEnd = () => {
 			if (conditions < 2) return
 			const animation = target.animate([
-				{ transform: 'translateY(0)', opacity: 1 },
-				{ transform: 'translateY(40vh)', opacity: 0 },
-			], { duration: 600, iterations: 1, easing: 'ease-in', composite: 'add' })
+				{ transform: "translateY(0)", opacity: 1 },
+				{ transform: "translateY(40vh)", opacity: 0 },
+			], { duration: 600, iterations: 1, easing: "ease-in", composite: "add" })
 			animation.finished.then(() => {
 				target.getAnimations().forEach(anim => anim.cancel())
 				element.classList.remove(styles.delete)

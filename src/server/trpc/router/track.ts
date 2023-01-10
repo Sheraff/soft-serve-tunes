@@ -73,7 +73,7 @@ const playcount = protectedProcedure.input(z.object({
   id: z.string(),
 })).mutation(async ({ input, ctx }) => {
   if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+    throw new TRPCError({ code: "UNAUTHORIZED" })
   }
   const now = new Date().toISOString()
   const track = await retryable(() => ctx.prisma.track.findUnique({
@@ -128,7 +128,7 @@ const like = protectedProcedure.input(z.object({
   toggle: z.boolean(),
 })).mutation(async ({ input, ctx }) => {
   if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+    throw new TRPCError({ code: "UNAUTHORIZED" })
   }
   const track = await retryable(() => ctx.prisma.track.findUnique({
     where: { id: input.id },
@@ -139,7 +139,7 @@ const like = protectedProcedure.input(z.object({
     return
   }
 
-  const kind = input.toggle ? 'increment' : 'decrement'
+  const kind = input.toggle ? "increment" : "decrement"
   const init = input.toggle ? 1 : 0
   const {albumId, artistId} = track
   await ctx.prisma.$transaction([

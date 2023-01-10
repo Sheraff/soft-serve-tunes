@@ -37,13 +37,13 @@ function SingleTest({id}: {id: string}) {
 	useEffect(() => {
 		const controller = new AbortController()
 		const img = ref.current!
-		img.addEventListener('load', () => {
+		img.addEventListener("load", () => {
 			const cut = 0.05
 			const side = 300
-			const canvas = document.createElement('canvas')
+			const canvas = document.createElement("canvas")
 			canvas.height = side
 			canvas.width = side
-			const context = canvas.getContext('2d')
+			const context = canvas.getContext("2d")
 			context!.drawImage(
 				img,
 				img.naturalWidth * cut,
@@ -72,19 +72,19 @@ function SingleTest({id}: {id: string}) {
 
 	return (
 		<div className={styles.item}>
-			<div style={{'--color': palette[0]} as CSSProperties}></div>
-			<div style={{'--color': palette[1]} as CSSProperties}></div>
-			<div style={{'--color': palette[2]} as CSSProperties}></div>
-			<div style={{'--color': palette[3]} as CSSProperties}></div>
+			<div style={{"--color": palette[0]} as CSSProperties}></div>
+			<div style={{"--color": palette[1]} as CSSProperties}></div>
+			<div style={{"--color": palette[2]} as CSSProperties}></div>
+			<div style={{"--color": palette[3]} as CSSProperties}></div>
 			<img
 				ref={ref}
 				src={`/api/cover/${img?.id}`}
 				alt=""
 			/>
 			<span style={{
-				'--bg': palette[0],
-				'--color': palette[3],
-				'--border': palette[2],
+				"--bg": palette[0],
+				"--color": palette[3],
+				"--border": palette[2],
 			} as CSSProperties}>test</span>
 		</div>
 	)

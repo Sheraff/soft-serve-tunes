@@ -33,7 +33,7 @@ export default class SocketClient<
 		this.#onOffline = () => this.socket?.close()
 		this.#onFocus = () => this.#retryOnFocus()
 		this.#onMessage = <K extends Route>(event: MessageEvent<any>) => {
-			if (event.data === '') {
+			if (event.data === "") {
 				this.#onPong()
 				return
 			}
@@ -44,8 +44,8 @@ export default class SocketClient<
 			this.target.dispatchEvent(new CustomEvent(type, { detail: payload }))
 		}
 
-		addEventListener('online', this.#onOnline)
-		addEventListener('offline', this.#onOffline)
+		addEventListener("online", this.#onOnline)
+		addEventListener("offline", this.#onOffline)
 		this.serverState = navigator.onLine
 		
 		this.#initSocket()
@@ -91,7 +91,7 @@ export default class SocketClient<
 					return
 				}
 				this.#pongState = false
-				socket.send('')
+				socket.send("")
 			}, 10_000)
 		}
 		socket.onclose = () => {
@@ -154,7 +154,7 @@ export default class SocketClient<
 		if (this.#pongIntervalId) {
 			clearInterval(this.#pongIntervalId)
 		}
-		removeEventListener('online', this.#onOnline)
-		removeEventListener('offline', this.#onOffline)
+		removeEventListener("online", this.#onOnline)
+		removeEventListener("offline", this.#onOffline)
 	}
 }

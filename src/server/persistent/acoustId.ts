@@ -20,7 +20,7 @@ import { socketServer } from "utils/typedWs/server"
 
 const modulePath = dirname(new URL(import.meta.url).pathname)
 const origin = process.cwd()
-const fpcalc = join(relative(origin, modulePath), 'bin', 'fpcalc', `fpcalc-${process.platform}`)
+const fpcalc = join(relative(origin, modulePath), "bin", "fpcalc", `fpcalc-${process.platform}`)
 
 type FPcalcResult = {
 	fingerprint: string
@@ -30,19 +30,19 @@ type FPcalcResult = {
 function execFPcalc(file: string): Promise<FPcalcResult> {
 	return new Promise((resolve, reject) => {
 		// https://github.com/acoustid/chromaprint/blob/master/src/cmd/fpcalc.cpp
-		const cmd = spawn(join(process.cwd(), fpcalc), [file, '-json'])
+		const cmd = spawn(join(process.cwd(), fpcalc), [file, "-json"])
 
-		let accuData = ''
-		cmd.stdout.on('data', (data) => {
+		let accuData = ""
+		cmd.stdout.on("data", (data) => {
 			accuData+=data
 		})
 
-		let accuErr = ''
-		cmd.stderr.on('data', (data) => {
+		let accuErr = ""
+		cmd.stderr.on("data", (data) => {
 			accuErr+=data
 		})
 
-		cmd.on('close', (code) => {
+		cmd.on("close", (code) => {
 			if (accuErr) {
 				reject(accuErr)
 			} else {
@@ -53,7 +53,7 @@ function execFPcalc(file: string): Promise<FPcalcResult> {
 						fingerprint,
 					})
 				} catch (e) {
-					console.log('error in execFPcalc', file)
+					console.log("error in execFPcalc", file)
 					console.log(fpcalc)
 					console.log(process.cwd())
 					console.log(modulePath)
@@ -128,11 +128,11 @@ const acoustiIdLookupSchema = z.object({
 type Candidate = z.infer<typeof acoustIdRecordingSchema> & {score: number}
 type Result = Omit<Candidate, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>}
 type ValidatedResult = Result & {of?: number, no?: number}
-type AugmentedResult = Omit<ValidatedResult, 'artists'> 
+type AugmentedResult = Omit<ValidatedResult, "artists"> 
 	& {genres?: {name: string}[]}
 	& {
-		artists?: (Exclude<ValidatedResult['artists'], undefined>[number] & {genres?: {name: string}[]})[]
-		album?: Omit<Exclude<ValidatedResult['album'], undefined>, 'artists'> & {genres?: {name: string}[]} & {artists?: (Exclude<Exclude<ValidatedResult['album'], undefined>['artists'], undefined>[number] & {genres?: {name: string}[]})[]}
+		artists?: (Exclude<ValidatedResult["artists"], undefined>[number] & {genres?: {name: string}[]})[]
+		album?: Omit<Exclude<ValidatedResult["album"], undefined>, "artists"> & {genres?: {name: string}[]} & {artists?: (Exclude<Exclude<ValidatedResult["album"], undefined>["artists"], undefined>[number] & {genres?: {name: string}[]})[]}
 	}
 
 class AcoustId {
@@ -146,7 +146,7 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify(absolutePath: string, metadata: Pick<IAudioMetadata, 'common' | 'format'>): Promise<AugmentedResult | null> {
+	async identify(absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
@@ -245,7 +245,7 @@ class AcoustId {
 		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, 'common' | 'format'>) {
+	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (results.length === 0) {
 			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
 			return null
@@ -333,8 +333,8 @@ class AcoustId {
 			confidentCandidates.forEach(candidate => (
 				console.log({
 					...candidate,
-					releasegroups: candidate.releasegroups?.map(({title}) => title).join(' --- '),
-					artists: candidate.artists?.map(({name}) => name).join(' --- ')
+					releasegroups: candidate.releasegroups?.map(({title}) => title).join(" --- "),
+					artists: candidate.artists?.map(({name}) => name).join(" --- ")
 				})
 			))
 			return null
@@ -432,7 +432,7 @@ class AcoustId {
 	}
 
 	async #musicBrainzComplete(result: Candidate): Promise<Candidate> {
-		const data = await this.#musicBrainz.fetch('recording', result.id)
+		const data = await this.#musicBrainz.fetch("recording", result.id)
 		if (!data) return result
 		result.title = data.title
 		if (!result.releasegroups) {
@@ -468,7 +468,7 @@ class AcoustId {
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
 	async #musicBrainzValidation(result: AugmentedResult): Promise<AugmentedResult> {
 		{
-			const data = await this.#musicBrainz.fetch('recording', result.id)
+			const data = await this.#musicBrainz.fetch("recording", result.id)
 			if (data) {
 				const {title, releases, genres} = data
 				result.title = title
@@ -482,7 +482,7 @@ class AcoustId {
 			}
 		}
 		if (result.album?.id) {
-			const data = await this.#musicBrainz.fetch('release-group', result.album.id)
+			const data = await this.#musicBrainz.fetch("release-group", result.album.id)
 			if (data) {
 				const {title, genres} = data
 				if (title)
@@ -492,7 +492,7 @@ class AcoustId {
 		}
 		if (result.artists) {
 			for (const artist of result.artists) {
-				const data = await this.#musicBrainz.fetch('artist', artist.id)
+				const data = await this.#musicBrainz.fetch("artist", artist.id)
 				if (data) {
 					const {name, genres} = data
 					if (name)
@@ -502,7 +502,7 @@ class AcoustId {
 			}
 		}
 		if (result.album?.artists?.[0]?.id) {
-			const data = await this.#musicBrainz.fetch('artist', result.album.artists[0].id)
+			const data = await this.#musicBrainz.fetch("artist", result.album.artists[0].id)
 			if (data) {
 				const {name, genres} = data
 				if (name)
@@ -514,7 +514,7 @@ class AcoustId {
 	}
 
 	// handle cases where there is a single track whose main artist is not that of the rest of the album
-	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: Pick<IAudioMetadata, 'common' | 'format'>) {
+	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (!result.artists || result.artists.length <= 1) {
 			return
 		}

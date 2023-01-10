@@ -9,21 +9,21 @@ import extractPaletteFromUint8 from "utils/paletteExtraction"
 import retryable from "./retryable"
 import { type Prisma } from "@prisma/client"
 
-export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string) {
-	const hash = crypto.createHash('md5').update(buffer).digest('hex') as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
-	const fileName = `${hash}${extension.startsWith('.') ? '' : '.'}${extension}`
-	const imagePath = join('.meta', hash[0], hash[1], hash[2], fileName)
+export async function writeImage(buffer: Buffer, extension = "jpg", url?: string) {
+	const hash = crypto.createHash("md5").update(buffer).digest("hex") as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
+	const fileName = `${hash}${extension.startsWith(".") ? "" : "."}${extension}`
+	const imagePath = join(".meta", hash[0], hash[1], hash[2], fileName)
 	const existingImage = await retryable(() => prisma.image.findUnique({ where: { id: hash } }))
 	let palette = existingImage?.palette as undefined | Exclude<Prisma.JsonValue, null>
 	if (!existingImage) {
 		const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, imagePath)
 		const dir = dirname(fullPath)
 		access(dir, constants.F_OK, async (error) => {
-			if (error && error.code === 'ENOENT') {
+			if (error && error.code === "ENOENT") {
 				await mkdir(dirname(fullPath), { recursive: true })
 			}
-			writeFile(fullPath, buffer, { flag: 'wx' }, (error) => {
-				if (error && error.code !== 'EEXIST') {
+			writeFile(fullPath, buffer, { flag: "wx" }, (error) => {
+				if (error && error.code !== "EEXIST") {
 					console.error(new Error(`Error writing image: ${extension}, ${url}`, {cause: error}))
 				}
 			})
@@ -31,7 +31,7 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 		try {
 			palette = await extractPalette(buffer)
 			if (!palette) {
-				console.warn('Could not extract palette', extension, url)
+				console.warn("Could not extract palette", extension, url)
 			}
 		} catch (error) {
 			console.error(new Error(`Error extracting palette: ${extension}, ${url}`, {cause: error}))
@@ -47,14 +47,14 @@ export async function writeImage(buffer: Buffer, extension = 'jpg', url?: string
 
 export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 	(Awaited<ReturnType<typeof writeImage>> & {mimetype: string})
-	| {mimetype: '',hash: '',path: '',palette: undefined,exists: undefined}
+	| {mimetype: "",hash: "",path: "",palette: undefined,exists: undefined}
 > {
 	if (url) {
 		let step = 0
 		try {
 			const response = await fetch(url)
 			step = 1
-			const mimetype = response.headers.get('content-type') ?? 'image/*'
+			const mimetype = response.headers.get("content-type") ?? "image/*"
 			step = 2
 			const buffer = await response.arrayBuffer()
 			step = 3
@@ -75,9 +75,9 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 		}
 	}
 	return {
-		mimetype: '',
-		hash: '',
-		path: '',
+		mimetype: "",
+		hash: "",
+		path: "",
 		palette: undefined,
 		exists: undefined,
 	}
@@ -99,11 +99,11 @@ export async function extractPalette(buffer: Buffer) {
 	
 	return start
 		.resize(300, 300, {
-			fit: 'cover',
+			fit: "cover",
 			fastShrinkOnLoad: true,
 			kernel: sharp.kernel.nearest
 		})
-		.raw({ depth: 'uchar' })
+		.raw({ depth: "uchar" })
 		.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
 			if (info.channels !== 3 && info.channels !== 4) {
 				return undefined

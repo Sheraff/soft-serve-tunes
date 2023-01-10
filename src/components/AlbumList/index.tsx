@@ -144,7 +144,7 @@ export default forwardRef(function AlbumList({
 			<ul className={
 				classNames(styles.main, {
 					[styles.loading]: loading,
-					[styles['lines-2']]: lines === 2,
+					[styles["lines-2"]]: lines === 2,
 				})
 			}>
 				{albums.map((album, i) => (

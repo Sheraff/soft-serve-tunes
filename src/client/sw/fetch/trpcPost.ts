@@ -11,7 +11,7 @@ export async function retryPostOnOnline() {
 			await fetch(requests[0])
 			requests.shift()
 		} catch (e) {
-			console.warn(new Error('SW: error with delayed POST request', {cause: e}))
+			console.warn(new Error("SW: error with delayed POST request", {cause: e}))
 			processing = false
 			return
 		}
@@ -25,7 +25,7 @@ export default function trpcPost(event: FetchEvent, request: Request) {
 		fetch(request)
 		.catch(() => {
 			requests.push(clone)
-			return new Response('', {status: 503, statusText: 'Service unavailable, retrying later'})
+			return new Response("", {status: 503, statusText: "Service unavailable, retrying later"})
 		})
 	)
 }

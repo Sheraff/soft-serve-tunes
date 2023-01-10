@@ -21,7 +21,7 @@ export default memo(function Notification({
 				{
 					src: `/api/cover/${data.cover.id}`,
 					type: "image/avif",
-					sizes: `786x786`,
+					sizes: "786x786",
 				},
 			]} : {}),
 		})
@@ -29,8 +29,8 @@ export default memo(function Notification({
 
 	useEffect(() => {
 		if(!hasData) return
-		navigator.mediaSession.setActionHandler('previoustrack', () => prevPlaylistIndex(audio))
-		navigator.mediaSession.setActionHandler('nexttrack', () => nextPlaylistIndex(audio))
+		navigator.mediaSession.setActionHandler("previoustrack", () => prevPlaylistIndex(audio))
+		navigator.mediaSession.setActionHandler("nexttrack", () => nextPlaylistIndex(audio))
 	}, [hasData, prevPlaylistIndex, nextPlaylistIndex, audio])
 
 	return null

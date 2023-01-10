@@ -12,7 +12,7 @@ export function ProgressBarSingleton() {
 				[styles.done]: progress === 1,
 			})}
 			style={{
-				'--progress': progress
+				"--progress": progress
 			} as React.CSSProperties}
 		/>
 	)

@@ -1,26 +1,26 @@
-import { type AppType } from "next/dist/shared/lib/utils";
-import { type Session } from "next-auth";
-import { SessionProvider } from "next-auth/react";
-import { trpc } from "utils/trpc";
-import "styles/globals.css";
-import Head from "next/head";
+import { type AppType } from "next/dist/shared/lib/utils"
+import { type Session } from "next-auth"
+import { SessionProvider } from "next-auth/react"
+import { trpc } from "utils/trpc"
+import "styles/globals.css"
+import Head from "next/head"
 // import { ReactQueryDevtools } from 'react-query/devtools';
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', async () => {
+if (typeof window !== "undefined") {
+  window.addEventListener("load", async () => {
     try {
       if (!("serviceWorker" in navigator)) return
       const registration = await navigator.serviceWorker.register(
-        new URL('../client/sw/sw.ts', import.meta.url),
+        new URL("../client/sw/sw.ts", import.meta.url),
         {
-          scope: '/',
-          type: 'module'
+          scope: "/",
+          type: "module"
         }
       )
       await registration.update()
-      console.log('SW: registered')
+      console.log("SW: registered")
     } catch (e) {
-      console.log('Service Worker registration failed: ', e)
+      console.log("Service Worker registration failed: ", e)
     }
   }, {once: true})
 }
@@ -44,7 +44,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
         <Component {...pageProps} />
       </SessionProvider>
     </>
-  );
-};
+  )
+}
 
-export default trpc.withTRPC(MyApp);
+export default trpc.withTRPC(MyApp)

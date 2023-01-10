@@ -48,12 +48,12 @@ export default function useLongPress({
 				end()
 			}, LONG_PRESS_DURATION)
 
-			window.addEventListener('contextmenu', (event) => {
+			window.addEventListener("contextmenu", (event) => {
 				event.preventDefault()
 			}, { signal: uxController.signal })
 
-			window.addEventListener('touchmove', cancel, { signal: uxController.signal })
-			window.addEventListener('touchend', cancel, { signal: uxController.signal })
+			window.addEventListener("touchmove", cancel, { signal: uxController.signal })
+			window.addEventListener("touchend", cancel, { signal: uxController.signal })
 		}
 
 		element.addEventListener("touchstart", (event) => {

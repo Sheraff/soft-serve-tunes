@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 export function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) {
 	const query = useQuery({
 		enabled: Boolean(id) && enabled !== false,
-		queryKey: ['sw-cached-track', id],
+		queryKey: ["sw-cached-track", id],
 		queryFn({ signal }) {
 			if (!("serviceWorker" in navigator)) return false
 			const controller = new AbortController()
@@ -13,17 +13,17 @@ export function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) 
 				const registration = await navigator.serviceWorker.ready
 				const target = registration.active
 				if (!target) {
-					return reject(new Error('no active SW registration'))
+					return reject(new Error("no active SW registration"))
 				}
 				navigator.serviceWorker.addEventListener("message", (event) => {
 					const message = event.data
-					if (message.type === 'sw-cached-track' && message.payload.id === id) {
+					if (message.type === "sw-cached-track" && message.payload.id === id) {
 						resolve(message.payload.cached)
 						controller.abort()
 					}
 				}, {signal: controller.signal})
-				target.postMessage({type: 'sw-cached-track', payload: {id}})
-				controller.signal.onabort = () => reject(new Error('stale SW query'))
+				target.postMessage({type: "sw-cached-track", payload: {id}})
+				controller.signal.onabort = () => reject(new Error("stale SW query"))
 			})
 		},
 	})
@@ -49,17 +49,17 @@ export async function findFirstCachedTrack(
 		const registration = await navigator.serviceWorker.ready
 		const target = registration.active
 		if (!target) {
-			return reject(new Error('no active SW registration'))
+			return reject(new Error("no active SW registration"))
 		}
 		navigator.serviceWorker.addEventListener("message", (event) => {
 			const message = event.data
-			if (message.type === 'sw-first-cached-track' && message.payload.id === id) {
+			if (message.type === "sw-first-cached-track" && message.payload.id === id) {
 				resolve(message.payload.next as string | null)
 				controller.abort()
 			}
 		} , {signal: controller.signal})
-		target.postMessage({type: 'sw-first-cached-track', payload: {params, id}})
-		controller.signal.onabort = () => reject(new Error('stale SW query'))
+		target.postMessage({type: "sw-first-cached-track", payload: {params, id}})
+		controller.signal.onabort = () => reject(new Error("stale SW query"))
 	})
 	return found
 }
@@ -73,7 +73,7 @@ export function useNextCachedTrack(params: {
 }) {
 	const query = useQuery({
 		enabled: params.tracks.length > 0 && params.enabled !== false,
-		queryKey: ['sw-first-cached-track', params],
+		queryKey: ["sw-first-cached-track", params],
 		queryFn({ signal }) {
 			return findFirstCachedTrack(params, signal)
 		},

@@ -20,7 +20,7 @@ function makeSubscription<K extends keyof Router>(prop: K): Subscription<K> {
 			signal: controller.signal,
 			passive: true,
 		})
-		wsClient.target.addEventListener('__socket-client-error__', (event) => {
+		wsClient.target.addEventListener("__socket-client-error__", (event) => {
 			if (!onError) return
 			onError(event)
 		}, {

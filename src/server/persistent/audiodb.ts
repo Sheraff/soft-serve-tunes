@@ -85,8 +85,8 @@ class AudioDb {
 		"searchtrack": audiodbTrackSchema, // ?s=artist&t=track
 	} as const
 
-	async #audiodbFetch(endpoint: keyof typeof AudioDb['ENDPOINT_SCHEMAS'], ...params: [string, string][]) {
-		const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, 'https://theaudiodb.com')
+	async #audiodbFetch(endpoint: keyof typeof AudioDb["ENDPOINT_SCHEMAS"], ...params: [string, string][]) {
+		const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, "https://theaudiodb.com")
 		params.forEach(([key, value]) => {
 			url.searchParams.append(key, value)
 		})
@@ -141,14 +141,14 @@ class AudioDb {
 		const artistsJson = await (async () => {
 			log("event", "event", "audiodb", `Looking up artist "${artist.name}"`)
 			if (artist.mbid) {
-				const json = await this.#audiodbFetch('artist-mb', ['i', artist.mbid])
+				const json = await this.#audiodbFetch("artist-mb", ["i", artist.mbid])
 				if (json?.artists && json.artists.length > 0) return json
 			}
 			if (artist.lastfm?.mbid) {
-				const json = await this.#audiodbFetch('artist-mb', ['i', artist.lastfm.mbid])
+				const json = await this.#audiodbFetch("artist-mb", ["i", artist.lastfm.mbid])
 				if (json?.artists && json.artists.length > 0) return json
 			}
-			const json = await this.#audiodbFetch('search', ['s', sanitizeString(artist.name)])
+			const json = await this.#audiodbFetch("search", ["s", sanitizeString(artist.name)])
 			if (json?.artists && json.artists.length > 0) return json
 		})()
 
@@ -159,7 +159,7 @@ class AudioDb {
 
 		const audiodbArtists = audiodbArtistSchema.parse(artistsJson)
 
-		let audiodbArtist: typeof audiodbArtists['artists'][number] | undefined = undefined
+		let audiodbArtist: typeof audiodbArtists["artists"][number] | undefined = undefined
 		if (audiodbArtists.artists.length === 1) {
 			audiodbArtist = audiodbArtists.artists[0]
 		} else if (artist.mbid) {
@@ -175,12 +175,12 @@ class AudioDb {
 		}
 
 		const imageIds = await keysAndInputToImageIds(audiodbArtist, [
-			'strArtistThumb',
-			'strArtistLogo',
-			'strArtistCutout',
-			'strArtistClearart',
-			'strArtistWideThumb',
-			'strArtistBanner',
+			"strArtistThumb",
+			"strArtistLogo",
+			"strArtistCutout",
+			"strArtistClearart",
+			"strArtistWideThumb",
+			"strArtistBanner",
 		])
 		await retryable(async () => prisma.audioDbArtist.create({
 				data: {
@@ -240,15 +240,15 @@ class AudioDb {
 		const albumsJson = await (async () => {
 			log("event", "event", "audiodb", `Looking up album "${album.name}" by "${album.artist?.name}"`)
 			if (album.mbid) {
-				const json = await this.#audiodbFetch('album-mb', ['i', album.mbid])
+				const json = await this.#audiodbFetch("album-mb", ["i", album.mbid])
 				if (json?.album && json.album.length > 0) return json
 			}
 			if (album.lastfm?.mbid) {
-				const json = await this.#audiodbFetch('album-mb', ['i', album.lastfm.mbid])
+				const json = await this.#audiodbFetch("album-mb", ["i", album.lastfm.mbid])
 				if (json?.album && json.album.length > 0) return json
 			}
 			if (album.artist?.name) {
-				const json = await this.#audiodbFetch('searchalbum', ['s', sanitizeString(album.name)], ['a', sanitizeString(album.artist.name)])
+				const json = await this.#audiodbFetch("searchalbum", ["s", sanitizeString(album.name)], ["a", sanitizeString(album.artist.name)])
 				if (json?.album && json.album.length > 0) return json
 			}
 		})()
@@ -260,7 +260,7 @@ class AudioDb {
 
 		const audiodbAlbums = audiodbAlbumSchema.parse(albumsJson)
 
-		let audiodbAlbum: typeof audiodbAlbums['album'][number] | undefined = undefined
+		let audiodbAlbum: typeof audiodbAlbums["album"][number] | undefined = undefined
 		if (audiodbAlbums.album.length === 1) {
 			audiodbAlbum = audiodbAlbums.album[0]
 		} else if (album.mbid) {
@@ -276,9 +276,9 @@ class AudioDb {
 		}
 
 		const imageIds = await keysAndInputToImageIds(audiodbAlbum, [
-			'strAlbumThumb',
-			'strAlbumThumbHQ',
-			'strAlbumCDart',
+			"strAlbumThumb",
+			"strAlbumThumbHQ",
+			"strAlbumCDart",
 		])
 		await retryable(async () => prisma.audioDbAlbum.create({
 				data: {
@@ -336,22 +336,22 @@ class AudioDb {
 		const tracksJson = await (async () => {
 			log("event", "event", "audiodb", `Looking up track "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"`)
 			if (track.mbid) {
-				const json = await this.#audiodbFetch('track-mb', ['i', track.mbid])
+				const json = await this.#audiodbFetch("track-mb", ["i", track.mbid])
 				if (json?.track && json.track.length > 0) return json
 			}
 			if (track.lastfm?.mbid) {
-				const json = await this.#audiodbFetch('track-mb', ['i', track.lastfm.mbid])
+				const json = await this.#audiodbFetch("track-mb", ["i", track.lastfm.mbid])
 				if (json?.track && json.track.length > 0) return json
 			}
 			if (track.artist?.name) {
 				const params = [
-					['s', sanitizeString(track.artist.name)],
-					['t', sanitizeString(track.name)],
+					["s", sanitizeString(track.artist.name)],
+					["t", sanitizeString(track.name)],
 				] as [string, string][]
 				if (track.album?.name) {
-					params.push(['a', sanitizeString(track.album.name)])
+					params.push(["a", sanitizeString(track.album.name)])
 				}
-				const json = await this.#audiodbFetch('searchtrack', ...params)
+				const json = await this.#audiodbFetch("searchtrack", ...params)
 				if (json?.track && json.track.length > 0) return json
 			}
 		})()
@@ -363,7 +363,7 @@ class AudioDb {
 
 		const audiodbTracks = audiodbTrackSchema.parse(tracksJson)
 
-		let audiodbTrack: typeof audiodbTracks['track'][number] | undefined = undefined
+		let audiodbTrack: typeof audiodbTracks["track"][number] | undefined = undefined
 		if (audiodbTracks.track.length === 1) {
 			audiodbTrack = audiodbTracks.track[0]
 		} else if (track.mbid) {
@@ -417,7 +417,7 @@ class AudioDb {
 			return
 		}
 		const genres = cleanGenreList(strGenre ? [strGenre] : [])
-		const imageIds = await keysAndInputToImageIds(data, ['strTrackThumb'])
+		const imageIds = await keysAndInputToImageIds(data, ["strTrackThumb"])
 		await retryable(async () => prisma.audioDbTrack.create({
 			data: {
 				entityId: id,
@@ -461,7 +461,7 @@ async function keysAndInputToImageIds<
 			}
 		}
 	}))
-	const fulfilled = imageIds.filter((result) => result.status === 'fulfilled') as PromiseFulfilledResult<[Key, string] | undefined>[]
+	const fulfilled = imageIds.filter((result) => result.status === "fulfilled") as PromiseFulfilledResult<[Key, string] | undefined>[]
 	const values = fulfilled.map(({value}) => value)
 	const content = values.filter(Boolean) as [Key, string][]
 	return Object.fromEntries(content) as Result

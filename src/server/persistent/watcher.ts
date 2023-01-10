@@ -48,13 +48,13 @@ class MyWatcher {
 				stabilityThreshold: MyWatcher.DELAY - 100,
 			},
 		})
-		this.watcher.on('add', this.onAdd)
-		this.watcher.on('unlink', this.onUnlink)
-		this.watcher.on('unlinkDir', this.onUnlinkMany)
-		this.watcher.on('error', this.onError)
+		this.watcher.on("add", this.onAdd)
+		this.watcher.on("unlink", this.onUnlink)
+		this.watcher.on("unlinkDir", this.onUnlinkMany)
+		this.watcher.on("error", this.onError)
 
 		return new Promise((resolve) => {
-			this.watcher?.once('ready', resolve)
+			this.watcher?.once("ready", resolve)
 			log("ready", "ready", "fswatcher", `watching ${this.rootFolder}`)
 		})
 	}
@@ -386,7 +386,7 @@ class MyWatcher {
 				try {
 					await unlink(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path))
 				} catch (e) {
-					if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+					if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
 						throw e
 					}
 				}

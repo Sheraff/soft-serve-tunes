@@ -26,7 +26,7 @@ async function act() {
 			await computeCoversByTrackEntrypoint(track.id)
 		}
 	} while (tracks.length === chunkSize)
-	console.log('DONE --------------------------------')
+	console.log("DONE --------------------------------")
 }
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {

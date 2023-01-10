@@ -33,7 +33,7 @@ export default memo(function DropTarget({
 			const fileEntries = await getAllFileEntries(itemList)
 			uploadLoop(fileEntries, async (fileEntry: FileSystemFileEntry) => {
 				const file = await fileFromFileEntry(fileEntry)
-				if (file && !file.name.startsWith('.') && file.type.startsWith('audio/')) {
+				if (file && !file.name.startsWith(".") && file.type.startsWith("audio/")) {
 					return {
 						size: file.size,
 						file,

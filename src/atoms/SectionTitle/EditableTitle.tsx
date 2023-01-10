@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import EditIcon from 'icons/edit.svg'
+import EditIcon from "icons/edit.svg"
 import styles from "./index.module.css"
 
 export default function EditableTitle({
@@ -23,7 +23,7 @@ export default function EditableTitle({
 		if (!editing || !ref.current) return
 		const element = ref.current
 		
-		const startName = name || ''
+		const startName = name || ""
 		element.focus()
 		element.innerText = startName
 		
@@ -43,11 +43,11 @@ export default function EditableTitle({
 		}
 
 		const controller = new AbortController()
-		element.addEventListener('blur', () => {
+		element.addEventListener("blur", () => {
 			onEnd()
 		}, {passive: true, signal: controller.signal, once: true})
-		element.addEventListener('keydown', (event) => {
-			if (event.key === 'Escape' || event.key === 'Enter') {
+		element.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" || event.key === "Enter") {
 				event.preventDefault()
 				event.stopPropagation()
 				onEnd()

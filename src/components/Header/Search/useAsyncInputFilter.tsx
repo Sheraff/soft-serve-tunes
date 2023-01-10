@@ -7,15 +7,15 @@ type Obj = {
 }
 
 function getIn(obj: Obj | string, [key, ...path]: string[]): string {
-	if (typeof obj === 'string')
+	if (typeof obj === "string")
 		return obj
 	if (!key)
-		return ''
+		return ""
 	const next = obj[key]
 	if (!next)
-		return ''
+		return ""
 	if (Array.isArray(next))
-		return next.map(branch => getIn(branch, path)).join(' ')
+		return next.map(branch => getIn(branch, path)).join(" ")
 	return getIn(next, path)
 }
 
@@ -34,7 +34,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		for (const item of dataList) {
 			map.set(item.id, item)
 			namedObjects.push({
-				name: keys.map(key => getIn(item, key.split('.'))).join(' '),
+				name: keys.map(key => getIn(item, key.split("."))).join(" "),
 				id: item.id,
 			})
 		}

@@ -74,7 +74,7 @@ export default memo(function SlidingText({
 			</button>
 			{album && (
 				<>
-					{' · '}
+					{" · "}
 					<button
 						type="button"
 						onClick={() => {
@@ -88,7 +88,7 @@ export default memo(function SlidingText({
 			)}
 			{artist && (
 				<>
-					{' · '}
+					{" · "}
 					<button
 						type="button"
 						onClick={() => {
@@ -111,9 +111,9 @@ export default memo(function SlidingText({
 				</div>
 				{separator && (
 					<div className={styles.span} key="clone">
-						{'· '}
+						{"· "}
 						{content}
-						{' · '}
+						{" · "}
 					</div>
 				)}
 			</div>

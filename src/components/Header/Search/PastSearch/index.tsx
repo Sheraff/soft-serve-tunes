@@ -112,7 +112,7 @@ export default function PastSearch({
 				navigator.vibrate(1)
 				startTransition(() => {
 					if (trackNarrow(type, entity)) {
-						if (!entity) return console.warn('PastSearch could not add track to playlist as it was not able to fetch associated data')
+						if (!entity) return console.warn("PastSearch could not add track to playlist as it was not able to fetch associated data")
 						addNextToPlaylist(entity, true)
 						showHome("home")
 					} else if (genreNarrow(type, entity)) {
@@ -123,7 +123,7 @@ export default function PastSearch({
 					} else if (artistNarrow(type, entity)) {
 						artistView.setState({id, open: true, name: entity?.name}, queryClient)
 					} else if (playlistNarrow(type, entity)) {
-						if (!entity) return console.warn('PastSearch could not start playlist as it was not able to fetch associated data')
+						if (!entity) return console.warn("PastSearch could not start playlist as it was not able to fetch associated data")
 						setPlaylist(entity.name, entity.id, entity.tracks)
 						showHome("home")
 					}
@@ -149,51 +149,51 @@ export default function PastSearch({
 	)
 }
 
-function ArtistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['artist']['key'][0]][typeof OPTIONS['artist']['key'][1]], null>) {
+function ArtistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["artist"]["key"][0]][typeof OPTIONS["artist"]["key"][1]], null>) {
 	return (
 		<p className={styles.info}>Artist{entity._count?.albums
-			? ` · ${entity._count.albums} album${entity._count.albums > 1 ? 's': ''}`
+			? ` · ${entity._count.albums} album${entity._count.albums > 1 ? "s": ""}`
 			: entity._count?.tracks
-				? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
-				: ''
+				? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
+				: ""
 		}</p>
 	)
 }
 
-function AlbumInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['album']['key'][0]][typeof OPTIONS['album']['key'][1]], null>) {
+function AlbumInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["album"]["key"][0]][typeof OPTIONS["album"]["key"][1]], null>) {
 	return (
 		<p className={styles.info}>Album{entity._count?.tracks
-			? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? 's': ''}`
-			: ''
+			? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
+			: ""
 		}</p>
 	)
 }
 
-function TrackInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['track']['key'][0]][typeof OPTIONS['track']['key'][1]], null>) {
+function TrackInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["track"]["key"][0]][typeof OPTIONS["track"]["key"][1]], null>) {
 	return (
 		<p className={styles.info}>Track{entity.artist
 			? ` · by ${entity.artist.name}`
 			: entity.album
 				? ` · from ${entity.album.name}`
-				: ''
+				: ""
 		}</p>
 	)
 }
 
-function GenreInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['genre']['key'][0]][typeof OPTIONS['genre']['key'][1]], null>) {
+function GenreInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["genre"]["key"][0]][typeof OPTIONS["genre"]["key"][1]], null>) {
 	return (
 		<p className={styles.info}>Genre{entity._count?.tracks
 			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
-			: ''
+			: ""
 		}</p>
 	)
 }
 
-function PlaylistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS['playlist']['key'][0]][typeof OPTIONS['playlist']['key'][1]], null>) {
+function PlaylistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["playlist"]["key"][0]][typeof OPTIONS["playlist"]["key"][1]], null>) {
 	return (
 		<p className={styles.info}>Playlist{entity._count.tracks
 			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
-			: ''
+			: ""
 		}</p>
 	)
 }

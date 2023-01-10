@@ -91,10 +91,10 @@ export default forwardRef(function EditOverlay({
 			data-open={open}
 			style={{
 				"--z": z,
-				"--palette-bg-main": palette['--palette-primary'],
-				"--palette-bg-gradient": palette['--palette-secondary'],
-				"--palette-secondary": palette['--palette-bg-gradient'],
-				"--palette-primary": palette['--palette-bg-main'],
+				"--palette-bg-main": palette["--palette-primary"],
+				"--palette-bg-gradient": palette["--palette-secondary"],
+				"--palette-secondary": palette["--palette-bg-gradient"],
+				"--palette-primary": palette["--palette-bg-main"],
 			} as CSSProperties}
 		>
 			<div className={styles.head}>

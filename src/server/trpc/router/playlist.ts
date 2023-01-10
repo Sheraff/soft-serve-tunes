@@ -27,7 +27,7 @@ const trackSelect = {
       name: true,
     },
   }
-} satisfies Prisma.TrackFindManyArgs['select']
+} satisfies Prisma.TrackFindManyArgs["select"]
 
 async function getResolve(id: string) {
   const result = await prisma.playlist.findUnique({
@@ -47,7 +47,7 @@ async function getResolve(id: string) {
             coverId: true
           }},
         }}},
-        orderBy: { index: 'asc' },
+        orderBy: { index: "asc" },
       },
       _count: {
         select: { tracks: true },
@@ -71,45 +71,45 @@ async function getResolve(id: string) {
 
 const generate = publicProcedure.input(z.union([
   z.object({
-    type: z.enum(['track', 'artist', 'album', 'genre']),
+    type: z.enum(["track", "artist", "album", "genre"]),
     id: z.string(),
   }),
   z.object({
-    type: z.literal('by-multi-traits'),
+    type: z.literal("by-multi-traits"),
     traits: z.array(z.object({
       trait: zTrackTraits,
       value: z.string(),
     })),
   }),
 ])).query(async ({ input, ctx }) => {
-  if (input.type === 'track') {
+  if (input.type === "track") {
     return ctx.prisma.track.findMany({
       where: { id: input.id },
       select: trackSelect,
     })
   }
-  if (input.type === 'artist') {
+  if (input.type === "artist") {
     return ctx.prisma.track.findMany({
       where: { artistId: input.id },
       orderBy: [
-        { albumId: 'asc' },
-        { position: 'asc' },
+        { albumId: "asc" },
+        { position: "asc" },
       ],
       select: trackSelect,
     })
   }
-  if (input.type === 'album') {
+  if (input.type === "album") {
     return ctx.prisma.track.findMany({
       where: { albumId: input.id },
-      orderBy: { position: 'asc' },
+      orderBy: { position: "asc" },
       select: trackSelect,
     })
   }
-  if (input.type === 'genre') {
+  if (input.type === "genre") {
     const data = await recursiveSubGenres(input.id, {select: trackSelect})
     return data.tracks
   }
-  if (input.type === 'by-multi-traits') {
+  if (input.type === "by-multi-traits") {
     const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 30)
     const ids = spotifyTracks.map((t) => t.trackId)
     const tracks = await ctx.prisma.track.findMany({
@@ -347,7 +347,7 @@ const modify = protectedProcedure.input(z.union([
         if (!last) {
           throw new TRPCError({
             message: `playlist ${input.id} not found during add-track w/o params.index`,
-            code: 'NOT_FOUND',
+            code: "NOT_FOUND",
           })
         }
         const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))

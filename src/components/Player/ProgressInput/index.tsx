@@ -125,12 +125,12 @@ export default function ProgressInput({
 		}
 
 		const controller = new AbortController()
-		inputElement.addEventListener('input', onInput, {signal: controller.signal})
-		inputElement.addEventListener('pointerdown', onInputStart, {signal: controller.signal})
-		inputElement.addEventListener('pointercancel', onInputEnd, {signal: controller.signal})
-		inputElement.addEventListener('pointerleave', onInputEnd, {signal: controller.signal})
-		inputElement.addEventListener('pointerout', onInputEnd, {signal: controller.signal})
-		document.addEventListener('pointerup', onInputEnd, {signal: controller.signal})
+		inputElement.addEventListener("input", onInput, {signal: controller.signal})
+		inputElement.addEventListener("pointerdown", onInputStart, {signal: controller.signal})
+		inputElement.addEventListener("pointercancel", onInputEnd, {signal: controller.signal})
+		inputElement.addEventListener("pointerleave", onInputEnd, {signal: controller.signal})
+		inputElement.addEventListener("pointerout", onInputEnd, {signal: controller.signal})
+		document.addEventListener("pointerup", onInputEnd, {signal: controller.signal})
 		return () => {
 			controller.abort()
 			if (timeoutId) {
@@ -146,7 +146,7 @@ export default function ProgressInput({
 				[styles.disabled]: !canSetTime,
 				[styles.loading]: loading,
 			})}
-			style={{'--progress': progress} as CSSProperties}
+			style={{"--progress": progress} as CSSProperties}
 		>
 			<input
 				ref={input}

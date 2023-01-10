@@ -24,7 +24,7 @@ export default memo(function Upload({
 		setOpen(false)
 		if (!files) return
 		uploadLoop([...files], async (file: File) => {
-			if (file && !file.name.startsWith('.') && file.type.startsWith('audio/')) {
+			if (file && !file.name.startsWith(".") && file.type.startsWith("audio/")) {
 				return {
 					size: file.size,
 					file,

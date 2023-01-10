@@ -15,9 +15,9 @@ import Notification from "components/Player/Notification"
 import { useCachedTrack } from "client/sw/useCachedTrack"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCurrentTrack, usePlaylist, useSetPlaylistIndex, useShufflePlaylist } from "client/db/useMakePlaylist"
-import ShuffleIcon from 'icons/shuffle.svg'
-import RepeatIcon from 'icons/repeat.svg'
-import RepeatOneIcon from 'icons/repeat_one.svg'
+import ShuffleIcon from "icons/shuffle.svg"
+import RepeatIcon from "icons/repeat.svg"
+import RepeatOneIcon from "icons/repeat_one.svg"
 import NextTrack from "./NextTrack"
 
 export const playerDisplayRemaining = suspensePersistedState<boolean>("playerDisplayRemaining", false)
@@ -145,12 +145,12 @@ export default memo(function Player() {
 
 	useEffect(() => {
 		const controller = new AbortController()
-		window.addEventListener('keydown', (event) => {
+		window.addEventListener("keydown", (event) => {
 			// @ts-expect-error -- it's fine if tagName doesn't exist, the value will just be undefined and it works
 			const tagName = event.target?.tagName as string | undefined
 			// @ts-expect-error -- it's fine if contentEditable doesn't exist, the value will just be undefined and it works
 			const editable = event.target?.contentEditable as string | undefined
-			if (event.key === ' ' && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && tagName !== 'INPUT' && editable !== 'true') {
+			if (event.key === " " && !event.ctrlKey && !event.shiftKey && !event.metaKey && !event.altKey && tagName !== "INPUT" && editable !== "true") {
 				event.preventDefault()
 				event.stopPropagation()
 				togglePlay()

@@ -34,7 +34,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   if (!a || !b || !c) {
     return res.status(400).json({ error: "Invalid id" })
   }
-  const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, '.meta', a, b, c, id) // this is how images are stored
+  const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
 
   const width = Math.round(dimension ? Number(dimension) : deviceWidth)
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
@@ -45,7 +45,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     const stats = await stat(exactFilePath)
     etag = stats.ino.toString()
 
-    if (req.headers['if-none-match'] === etag) {
+    if (req.headers["if-none-match"] === etag) {
       return res.status(304).end()
     }
 
@@ -66,11 +66,11 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
       log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
       const transformStream = sharp(originalFilePath)
         .resize(width, width, {
-          fit: 'cover',
+          fit: "cover",
           withoutEnlargement: true,
           fastShrinkOnLoad: false,
         })
-        .toFormat('avif')
+        .toFormat("avif")
       // store
       transformStream
         .clone()
@@ -105,7 +105,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     .setHeader("ETag", etag)
   return returnStream
     .pipe(res)
-    .on('error', (error: NodeJS.ErrnoException) => {
+    .on("error", (error: NodeJS.ErrnoException) => {
       res.status(500).json({ error })
       res.end()
     })

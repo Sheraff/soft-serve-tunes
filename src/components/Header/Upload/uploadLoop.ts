@@ -4,22 +4,22 @@ import retryable from "utils/retryable"
 function upload(formData: FormData, onProgress: (progress: number) => void) {
 	const request = new XMLHttpRequest()
 
-	request.upload.addEventListener('progress', (e) => {
+	request.upload.addEventListener("progress", (e) => {
 		if (e.lengthComputable) {
 			const progress = e.loaded / e.total
 			onProgress(progress)
 		} else {
-			console.log('progress event not computable', e)
+			console.log("progress event not computable", e)
 		}
 	})
 	const promise = new Promise<void>((resolve, reject) => {
 		const controller = new AbortController()
-		request.addEventListener('load', () => { controller.abort(), resolve() }, {signal: controller.signal})
-		request.addEventListener('error', () => { controller.abort(), reject() }, {signal: controller.signal})
-		request.addEventListener('abort', () => { controller.abort(), reject() }, {signal: controller.signal})
-		request.addEventListener('timeout', () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener("load", () => { controller.abort(), resolve() }, {signal: controller.signal})
+		request.addEventListener("error", () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener("abort", () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener("timeout", () => { controller.abort(), reject() }, {signal: controller.signal})
 	})
-	request.open('POST', '/api/upload')
+	request.open("POST", "/api/upload")
 	request.timeout = 3 * 60_000
 	request.send(formData)
 	return promise

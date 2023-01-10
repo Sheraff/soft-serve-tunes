@@ -15,7 +15,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
 
   const {id} = req.query
   if (!id || Array.isArray(id)) {
-    log("error", "400", `File request is missing an id`)
+    log("error", "400", "File request is missing an id")
     return res.status(400).json({ error: "Missing id" })
   }
 
@@ -33,9 +33,9 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   if (range === undefined) {
     const buffer = await readFile(file.path)
     res.writeHead(200, {
-      'Content-Type': `audio/${file.container}`,
-      'Content-Length': file.size,
-      'Cache-Control': "public, max-age=31536000",
+      "Content-Type": `audio/${file.container}`,
+      "Content-Length": file.size,
+      "Cache-Control": "public, max-age=31536000",
     })
     res.write(buffer)
     log("info", "200", `File request was sent in full (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
@@ -55,10 +55,10 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const content_length = (end - start) + 1
   const content_range = `bytes ${start}-${end}/${file.size}`
   res.writeHead(206, {
-    'Content-Type': content_type,
-    'Content-Length': content_length,
-    'Content-Range': content_range,
-    'Cache-Control': "public, max-age=31536000",
+    "Content-Type": content_type,
+    "Content-Length": content_length,
+    "Content-Range": content_range,
+    "Cache-Control": "public, max-age=31536000",
   })
 
   if (range === undefined) {

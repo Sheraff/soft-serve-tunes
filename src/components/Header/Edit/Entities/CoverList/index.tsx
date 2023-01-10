@@ -5,7 +5,7 @@ import CheckIcon from "icons/done.svg"
 import styles from "./index.module.css"
 import classNames from "classnames"
 
-type Cover = RouterOutputs['cover']['fromTracks']['covers'][number] | RouterOutputs['cover']['fromAlbums']['covers'][number]
+type Cover = RouterOutputs["cover"]["fromTracks"]["covers"][number] | RouterOutputs["cover"]["fromAlbums"]["covers"][number]
 
 export default function CoverList({
 	tracks = [],
@@ -45,12 +45,12 @@ export default function CoverList({
 								alt=""
 							/>
 							<div className={styles.palette} style={paletteToCSSProperties(cover.palette)}>
-								<div style={{'--color': 'var(--palette-bg-main)'} as CSSProperties}>
+								<div style={{"--color": "var(--palette-bg-main)"} as CSSProperties}>
 									<p>{cover.width}x{cover.height}</p>
 								</div>
-								<div style={{'--color': 'var(--palette-bg-gradient)'} as CSSProperties} />
-								<div style={{'--color': 'var(--palette-secondary)'} as CSSProperties} />
-								<div style={{'--color': 'var(--palette-primary)'} as CSSProperties}>
+								<div style={{"--color": "var(--palette-bg-gradient)"} as CSSProperties} />
+								<div style={{"--color": "var(--palette-secondary)"} as CSSProperties} />
+								<div style={{"--color": "var(--palette-primary)"} as CSSProperties}>
 									{isSelected && <CheckIcon />}
 								</div>
 							</div>

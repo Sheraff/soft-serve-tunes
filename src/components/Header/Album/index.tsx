@@ -89,9 +89,9 @@ export default forwardRef(function AlbumView({
 	const initialImageSrc = useRef<string | null>(null)
 	if (open && !initialPositionRef.current && album.rect) {
 		initialPositionRef.current = {
-			'--top': `${album.rect.top}px`,
-			'--left': `${album.rect.left}px`,
-			'--scale': `${album.rect.width / innerWidth}`,
+			"--top": `${album.rect.top}px`,
+			"--left": `${album.rect.left}px`,
+			"--scale": `${album.rect.width / innerWidth}`,
 		} as CSSProperties
 		initialImageSrc.current = album.rect.src || null
 	}
@@ -112,7 +112,7 @@ export default forwardRef(function AlbumView({
 		>
 			{palette && album.open && (
 				<Head>
-					<meta name="theme-color" content={palette['--palette-bg-main']} />
+					<meta name="theme-color" content={palette["--palette-bg-main"]} />
 				</Head>
 			)}
 			<img
@@ -153,7 +153,7 @@ export default forwardRef(function AlbumView({
 							className={styles.toggle}
 							type="button"
 						>
-							{seeBio ? '...Less' : 'More...'}
+							{seeBio ? "...Less" : "More..."}
 						</button>
 					</div>
 				)}

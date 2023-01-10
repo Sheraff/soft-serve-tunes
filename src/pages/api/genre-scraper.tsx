@@ -20,7 +20,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 	while (match = re.exec(indexData)) {
 		const parsed = cleanGenreList([unescapeHTML(match[2]!)])
 		if (parsed.length !== 1) {
-			console.error('invalid parsed genre list')
+			console.error("invalid parsed genre list")
 			console.log(parsed)
 			continue
 		}
@@ -47,7 +47,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 		// A subgenre of B ===> A child B
 		// A influenced genres B ===> A parent B
 		// A influenced by B ===> A child B
-		const sectionRegex = new RegExp(`<th>(${Object.keys(MB_GENRE_HIERARCHY).join('|')}):<\/th><td.*?>(.*?)<\/td>`, 'gim')
+		const sectionRegex = new RegExp(`<th>(${Object.keys(MB_GENRE_HIERARCHY).join("|")}):<\/th><td.*?>(.*?)<\/td>`, "gim")
 		let sectionMatch: RegExpExecArray | null = null
 		while (sectionMatch = sectionRegex.exec(pageData)) {
 			const kind = MB_GENRE_HIERARCHY[sectionMatch[1] as keyof typeof MB_GENRE_HIERARCHY]
@@ -58,7 +58,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 			while (itemMatch = itemRegex.exec(itemData)) {
 				const parsedItemMatch = cleanGenreList([unescapeHTML(itemMatch[2]!)])
 				if (parsedItemMatch.length !== 1) {
-					console.error('invalid parsedItemMatch genre list')
+					console.error("invalid parsedItemMatch genre list")
 					console.log(parsedItemMatch)
 					continue
 				}
@@ -122,18 +122,18 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 
 
 const htmlEntities = {
-	nbsp: ' ',
-	cent: '¢',
-	pound: '£',
-	yen: '¥',
-	euro: '€',
-	copy: '©',
-	reg: '®',
-	lt: '<',
-	gt: '>',
-	quot: '"',
-	amp: '&',
-	apos: '\''
+	nbsp: " ",
+	cent: "¢",
+	pound: "£",
+	yen: "¥",
+	euro: "€",
+	copy: "©",
+	reg: "®",
+	lt: "<",
+	gt: ">",
+	quot: "\"",
+	amp: "&",
+	apos: "'"
 } as const
 
 function unescapeHTML(str: string) {

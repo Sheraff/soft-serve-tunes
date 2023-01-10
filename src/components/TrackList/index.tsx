@@ -154,7 +154,7 @@ function TrackItem({
 						})
 						return
 					}
-					console.error('Tried to add track to playlist, but data was not loaded yet')
+					console.error("Tried to add track to playlist, but data was not loaded yet")
 				}}
 			>
 				{!selection && draggable && (
@@ -185,7 +185,7 @@ function TrackItem({
 					<span className={styles.name}>
 						{/* TODO: not always show `position`, only if relevant (in album view, or in playlist of album) */}
 						{position !== false && (
-							`${position.toString().padStart(2, '0')} · `
+							`${position.toString().padStart(2, "0")} · `
 						)}
 						{data?.name}
 					</span>

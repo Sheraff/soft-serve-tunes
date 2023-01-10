@@ -12,7 +12,7 @@ export default function Delete({
 	ids,
 	onDone,
 }: {
-	type: ReturnType<typeof editOverlay['getValue']>['type']
+	type: ReturnType<typeof editOverlay["getValue"]>["type"]
 	ids: string[]
 	onDone: () => void
 }) {

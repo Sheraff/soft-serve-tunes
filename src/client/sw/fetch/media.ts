@@ -7,7 +7,7 @@ async function cacheMediaResponse(url: string, response: Response) {
 	await cache.put(url, response)
 	const clients = await self.clients.matchAll()
 	clients.forEach((client) =>
-		client.postMessage({type: 'sw-notify-when-track-cached', payload: {url}})
+		client.postMessage({type: "sw-notify-when-track-cached", payload: {url}})
 	)
 }
 
@@ -23,8 +23,8 @@ const currentMediaStream: {
 	url: string
   } = {
 	ranges: {},
-	type: '',
-	url: '',
+	type: "",
+	url: "",
 }
 
 function resolveCurrentMediaStream() {
@@ -38,18 +38,18 @@ function resolveCurrentMediaStream() {
 		const possibleStarts = Array.from(Object.keys(ranges)).map(Number).sort((a, b) => a - b)
 		let bytePointer = 0
 		do {
-			if (typeof possibleStarts[0] === 'undefined' || possibleStarts[0] > bytePointer) {
+			if (typeof possibleStarts[0] === "undefined" || possibleStarts[0] > bytePointer) {
 				if (possibleStarts.length) {
-					console.warn('SW: sparse range data')
+					console.warn("SW: sparse range data")
 				} else {
-					console.warn('SW: range data missing end of file')
+					console.warn("SW: range data missing end of file")
 				}
 				return
 			}
 			bytePointer = possibleStarts[0]
 			const current = ranges[bytePointer]
 			if (!current) {
-				console.warn('SW: internal error during cache creation')
+				console.warn("SW: internal error during cache creation")
 				return
 			}
 			possibleStarts.shift()
@@ -63,10 +63,10 @@ function resolveCurrentMediaStream() {
 		cacheMediaResponse(url, new Response(buffer, {
 			status: 200,
 			headers: {
-				'Content-Length': String(length),
-				'Content-Type': type,
-				'Cache-Control': 'public, max-age=31536000',
-				'Date': (new Date()).toUTCString(),
+				"Content-Length": String(length),
+				"Content-Type": type,
+				"Cache-Control": "public, max-age=31536000",
+				"Date": (new Date()).toUTCString(),
 			},
 		}))
 	}, 1_000)
@@ -79,11 +79,11 @@ async function fetchFromServer(event: FetchEvent, request: Request) {
 			.arrayBuffer()
 			.then((buffer) => {
 				if (!buffer.byteLength) return
-				const range = response.headers.get('Content-Range')
-				const contentType = response.headers.get('Content-Type')
-				if (!range) return console.warn('SW: abort caching range', event.request.url)
+				const range = response.headers.get("Content-Range")
+				const contentType = response.headers.get("Content-Type")
+				if (!range) return console.warn("SW: abort caching range", event.request.url)
 				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
-				if (!parsed) return console.warn('SW: malformed 206 headers', event.request.url)
+				if (!parsed) return console.warn("SW: malformed 206 headers", event.request.url)
 				const [, _start, _end, _total] = parsed
 				const start = Number(_start)
 				const end = Number(_end)
@@ -114,14 +114,14 @@ async function fetchFromCache(event: FetchEvent, request: Request) {
 	if (!response) {
 		return fetchFromServer(event, request)
 	}
-	const range = event.request.headers.get('Range')
+	const range = event.request.headers.get("Range")
 	if (!range) {
 		return response
 	}
 	const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
 	if (!parsed) {
-		console.warn('SW: malformed request')
-		return new Response('', {status: 400})
+		console.warn("SW: malformed request")
+		return new Response("", {status: 400})
 	}
 	// still respond with a 206 byte range when bytePointer === 0
 	// because if we respond with a full 200, <audio> isn't seekable
@@ -132,15 +132,15 @@ async function fetchFromCache(event: FetchEvent, request: Request) {
 	const partial = buffer.slice(bytePointer, end)
 	const result = new Response(partial, {
 		status: 206,
-		statusText: 'Partial Content',
+		statusText: "Partial Content",
 		headers: {
-			'Content-Type': response.headers.get('Content-Type') || 'audio/*',
-			'Content-Range': `bytes ${bytePointer}-${bytePointer + partial.byteLength - 1}/${buffer.byteLength}`,
-			'Content-Length': `${partial.byteLength}`,
-			'Connection': 'keep-alive',
-			'Keep-Alive': 'timeout=5',
-			'Cache-Control': 'public, max-age=31536000',
-			'Date': (new Date()).toUTCString(),
+			"Content-Type": response.headers.get("Content-Type") || "audio/*",
+			"Content-Range": `bytes ${bytePointer}-${bytePointer + partial.byteLength - 1}/${buffer.byteLength}`,
+			"Content-Length": `${partial.byteLength}`,
+			"Connection": "keep-alive",
+			"Keep-Alive": "timeout=5",
+			"Cache-Control": "public, max-age=31536000",
+			"Date": (new Date()).toUTCString(),
 		}
 	})
 	return result
@@ -150,7 +150,7 @@ export default function mediaFetch(event: FetchEvent, request: Request) {
 	if (event.request.url !== currentMediaStream.url) {
 		resolveCurrentMediaStream()
 		currentMediaStream.ranges = {}
-		currentMediaStream.type = ''
+		currentMediaStream.type = ""
 		currentMediaStream.url = event.request.url
 	}
 	event.respondWith(fetchFromCache(event, request))

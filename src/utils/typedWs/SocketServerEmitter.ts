@@ -36,17 +36,17 @@ export default class SocketServerEmitter<
 	}
 
 	#initSocket() {
-		this.#server.on('connection', (ws) => {
+		this.#server.on("connection", (ws) => {
 			// ping
 			this.#alive.set(ws, true)
-			ws.on('pong', () => this.#alive.set(ws, true))
+			ws.on("pong", () => this.#alive.set(ws, true))
 
 			// pong
-			ws.on('message', () => ws.send(''))
+			ws.on("message", () => ws.send(""))
 
 			// logs
 			log("event", "event", `WebSocket Connection ++ (${this.#server.clients.size})`)
-			ws.once('close', () => {
+			ws.once("close", () => {
 				log("event", "event", `WebSocket Connection -- (${this.#server.clients.size})`)
 			})
 
@@ -54,11 +54,11 @@ export default class SocketServerEmitter<
 				ws.send(JSON.stringify({type, payload}))
 			})
 		})
-		this.#server.on('error', (error) => {
+		this.#server.on("error", (error) => {
 			log("error", "error", `WebSocketServer error: ${error}`)
 		})
-		this.#server.on('listening', () => {
-			log("ready", "ready", `WebSocketServer listening on ws://localhost:${env.WEBSOCKET_SERVER_PORT}`);
+		this.#server.on("listening", () => {
+			log("ready", "ready", `WebSocketServer listening on ws://localhost:${env.WEBSOCKET_SERVER_PORT}`)
 		})
 
 		const interval = setInterval(() => {
@@ -71,7 +71,7 @@ export default class SocketServerEmitter<
 			})
 		}, 30_000)
 
-		this.#server.on('close', () => {
+		this.#server.on("close", () => {
 			clearInterval(interval)
 		})
 	}

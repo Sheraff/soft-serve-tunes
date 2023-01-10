@@ -70,7 +70,7 @@ export default function useDragTrack<T extends boolean>(
 
 			item.classList.add(styles.drag as string)
 
-			window.addEventListener('contextmenu', (event) => {
+			window.addEventListener("contextmenu", (event) => {
 				event.preventDefault()
 			}, {signal})
 
@@ -85,7 +85,7 @@ export default function useDragTrack<T extends boolean>(
 
 					// compute distance traveled
 					const totalOffset = dy + scrollContainer.scrollTop - initialScroll
-					item!.style.setProperty('--y', `${totalOffset}px`)
+					item!.style.setProperty("--y", `${totalOffset}px`)
 					
 					// move siblings
 					const currentItemsOffset = totalOffset > 0
@@ -98,13 +98,13 @@ export default function useDragTrack<T extends boolean>(
 						iterateSiblings(item!, itemsOffset, (sibling, inRange) => {
 							sibling.classList.toggle(styles.slide as string, inRange)
 						})
-						item!.style.setProperty('--bg-y', `${itemsOffset}`)
+						item!.style.setProperty("--bg-y", `${itemsOffset}`)
 					}
 				})
 			}
 			scrollFrame()
 
-			window.addEventListener('touchmove', (event) => {
+			window.addEventListener("touchmove", (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 
@@ -119,12 +119,12 @@ export default function useDragTrack<T extends boolean>(
 						: 0
 			}, {signal, passive: true})
 
-			window.addEventListener('touchend', (event) => {
+			window.addEventListener("touchend", (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
 				item.classList.remove(styles.drag as string)
-				item.style.removeProperty('--y')
-				item.style.removeProperty('--bg-y')
+				item.style.removeProperty("--y")
+				item.style.removeProperty("--bg-y")
 				controller.abort()
 				uxController = null
 				isDragging = false
@@ -134,7 +134,7 @@ export default function useDragTrack<T extends boolean>(
 			}, {signal, passive: false})
 		}
 
-		element.addEventListener('touchstart', (event) => {
+		element.addEventListener("touchstart", (event) => {
 			const target = event.target as HTMLElement
 			if (!target.dataset.handle) return
 			

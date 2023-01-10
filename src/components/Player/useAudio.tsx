@@ -14,8 +14,8 @@ type TimeVector = [number, number, number]
 
 function arrayToTimeDisplayString(array: number[]) {
 	return array
-		.map((num) => num.toString().padStart(2, '0'))
-		.join(':')
+		.map((num) => num.toString().padStart(2, "0"))
+		.join(":")
 }
 
 function pairOfTimeVectorsToPairOfDisplayStrings(vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
@@ -180,25 +180,25 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				_setSeconds(0)
 				_setLoading(true)
 				_setPlayedSeconds(0)
-				currentId = src.split('/api/file/')[1]
+				currentId = src.split("/api/file/")[1]
 			}
 		})
 		observer.observe(element, {
 			attributes: true,
-			attributeFilter: ['src']
+			attributeFilter: ["src"]
 		})
 
 		const controller = new AbortController()
-		element.addEventListener('durationchange', onDuration, {signal: controller.signal})
-		element.addEventListener('timeupdate', onTimeUpdate, {signal: controller.signal})
-		element.addEventListener('play', onPlay, {signal: controller.signal})
-		element.addEventListener('ended', onEnded, {signal: controller.signal})
-		element.addEventListener('pause', onPause, {signal: controller.signal})
-		element.addEventListener('stalled', onStalled, {signal: controller.signal})
-		element.addEventListener('waiting', onWaiting, {signal: controller.signal})
-		element.addEventListener('playing', onPlaying, {signal: controller.signal})
-		element.addEventListener('seeking', onStalled, {signal: controller.signal})
-		element.addEventListener('seeked', onUnStalled, {signal: controller.signal})
+		element.addEventListener("durationchange", onDuration, {signal: controller.signal})
+		element.addEventListener("timeupdate", onTimeUpdate, {signal: controller.signal})
+		element.addEventListener("play", onPlay, {signal: controller.signal})
+		element.addEventListener("ended", onEnded, {signal: controller.signal})
+		element.addEventListener("pause", onPause, {signal: controller.signal})
+		element.addEventListener("stalled", onStalled, {signal: controller.signal})
+		element.addEventListener("waiting", onWaiting, {signal: controller.signal})
+		element.addEventListener("playing", onPlaying, {signal: controller.signal})
+		element.addEventListener("seeking", onStalled, {signal: controller.signal})
+		element.addEventListener("seeked", onUnStalled, {signal: controller.signal})
 		document.addEventListener("visibilitychange", onVisibilityChange, {signal: controller.signal})
 
 		return () => {

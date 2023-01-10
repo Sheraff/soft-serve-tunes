@@ -57,7 +57,7 @@ export default function EditAlbum({
 
 	const artistAggregate = isLoading ? defaultAggregate : aggregateTracks(albums, ["artist", "name"])
 	const [artistState, setArtistState] = useState(artistAggregate.value)
-	const artistSimplified = artistState ? simplifiedName(artistState) : ''
+	const artistSimplified = artistState ? simplifiedName(artistState) : ""
 
 	const coverAggregate = isLoading ? defaultAggregate : aggregateTracks(albums, ["cover", "id"])
 	const [coverState, setCoverState] = useState(coverAggregate.value)
@@ -68,8 +68,8 @@ export default function EditAlbum({
 	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
-		artistInput.current!.value = name ?? ''
-		artistInput.current!.dispatchEvent(new Event('input'))
+		artistInput.current!.value = name ?? ""
+		artistInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
 	artists.sort((a, b) => {
@@ -96,8 +96,8 @@ export default function EditAlbum({
 	const coverInput = useRef<HTMLInputElement>(null)
 	const setCoverInputId = useCallback((id: string | undefined) => {
 		setCoverState(id)
-		coverInput.current!.value = id ?? ''
-		coverInput.current!.dispatchEvent(new Event('input'))
+		coverInput.current!.value = id ?? ""
+		coverInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
 
@@ -114,7 +114,7 @@ export default function EditAlbum({
 		e.preventDefault()
 		navigator.vibrate(1)
 		if (submitProgress !== null) return
-		const editData: Omit<Parameters<typeof updateAlbum>[0], 'id'> = {}
+		const editData: Omit<Parameters<typeof updateAlbum>[0], "id"> = {}
 		let hasEdits = false
 		if (isNameModified) {
 			hasEdits = true
@@ -143,7 +143,7 @@ export default function EditAlbum({
 		}
 		const allExist = albums.every(album => album)
 		if (!allExist) {
-			console.error('Some albums are missing at the time of editing. This should not happen.')
+			console.error("Some albums are missing at the time of editing. This should not happen.")
 			return
 		}
 		const totalSteps = albums.length * 2 + 1
@@ -164,8 +164,8 @@ export default function EditAlbum({
 				})
 			)
 		)
-		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter['edit']['track']['validate']>[]>((acc, res) => {
-			if (res.status === 'rejected') {
+		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter["edit"]["track"]["validate"]>[]>((acc, res) => {
+			if (res.status === "rejected") {
 				acc.push(res.reason)
 			}
 			return acc
@@ -203,7 +203,7 @@ export default function EditAlbum({
 								name="name"
 								type="text"
 								className={styles.input}
-								value={nameState ?? ''}
+								value={nameState ?? ""}
 								onChange={(e) => setNameState(e.target.value)}
 								placeholder={albums[0]?.name}
 							/>
@@ -217,9 +217,9 @@ export default function EditAlbum({
 						ref={artistInput}
 						type="text"
 						className={styles.input}
-						value={artistState ?? ''}
+						value={artistState ?? ""}
 						onChange={() => setArtistState(artistInput.current!.value)}
-						placeholder={artistAggregate.unique ? undefined : 'Multiple values'}
+						placeholder={artistAggregate.unique ? undefined : "Multiple values"}
 					/>
 					<div className={styles.full}>
 						<ArtistList
@@ -246,8 +246,8 @@ export default function EditAlbum({
 						ref={coverInput}
 						type="hidden"
 						className={styles.input}
-						value={coverState ?? ''}
-						placeholder={coverAggregate.unique ? undefined : 'Multiple values'}
+						value={coverState ?? ""}
+						placeholder={coverAggregate.unique ? undefined : "Multiple values"}
 						disabled
 					/>
 					<div className={styles.full}>
@@ -306,7 +306,7 @@ export default function EditAlbum({
 						<SaveIcon className={styles.icon} />
 						Save
 						{submitProgress !== null && (
-							<div className={styles.progress} style={{'--progress': submitProgress} as CSSProperties}>
+							<div className={styles.progress} style={{"--progress": submitProgress} as CSSProperties}>
 								<SaveIcon className={styles.icon} />
 								Save
 							</div>

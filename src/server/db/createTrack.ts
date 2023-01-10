@@ -1,6 +1,6 @@
 import { access, stat, readdir } from "node:fs/promises"
 import { basename, extname, dirname, relative } from "node:path"
-import { IAudioMetadata, ICommonTagsResult, parseFile, selectCover } from 'music-metadata'
+import { IAudioMetadata, ICommonTagsResult, parseFile, selectCover } from "music-metadata"
 import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
 import { prisma } from "server/db/client"
@@ -138,8 +138,8 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		const selectedCover = selectCover(metadata.common.picture)
 		const { hash, path: imagePath, palette } = selectedCover
-			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split('/')[1], `from createTrack ${name}`)
-			: { hash: '', path: '', palette: undefined }
+			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split("/")[1], `from createTrack ${name}`)
+			: { hash: "", path: "", palette: undefined }
 
 		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
 			if (fingerprinted?.artists?.[0]) {
@@ -215,7 +215,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 						path: path,
 						size: stats.size,
 						ino: stats.ino,
-						container: metadata.format.container ?? '*',
+						container: metadata.format.container ?? "*",
 						duration: metadata.format.duration ?? fingerprinted?.duration ?? 0,
 						updatedAt: new Date(stats.mtimeMs),
 						createdAt: new Date(stats.ctimeMs),
@@ -229,7 +229,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 							create: {
 								id: hash,
 								path: imagePath,
-								mimetype: metadata.common.picture?.[0]?.format ?? 'image/*',
+								mimetype: metadata.common.picture?.[0]?.format ?? "image/*",
 								palette,
 							}
 						}
@@ -345,7 +345,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	} catch (e) {
 		const error = e as PrismaError
 		const RETRIES = 6
-		if ('errorCode' in error && error.errorCode === 'P1008' && retries < RETRIES) {
+		if ("errorCode" in error && error.errorCode === "P1008" && retries < RETRIES) {
 			// wait to avoid race: random to stagger siblings, exponential to let the rest of the library go on
 			const delay = 5 * Math.random() + 2 ** retries
 			log("info", "wait", "fswatcher", `database is busy, retry #${retries + 1} in ${Math.round(delay)}ms for ${relativePath}`)
@@ -382,22 +382,22 @@ async function tryAgainLater(path?: string, count = -1) {
 
 export function isVariousArtists(name: string) {
 	return [
-		'variousartists',
-		'various',
-		'va',
-		'artistesdivers',
+		"variousartists",
+		"various",
+		"va",
+		"artistesdivers",
 	].includes(simplifiedName(name))
 }
 
 export function notArtistName(name: string) {
 	return [
-		'',
-		'variousartists',
-		'various',
-		'va',
-		'artistesdivers',
-		'unknown',
-		'unknownartist'
+		"",
+		"variousartists",
+		"various",
+		"va",
+		"artistesdivers",
+		"unknown",
+		"unknownartist"
 	].includes(simplifiedName(name))
 }
 
@@ -417,7 +417,7 @@ async function getArtist(common: ICommonTagsResult): Promise<[string | undefined
 	return [undefined, isVarious]
 }
 
-async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs['data'], isMultiArtistAlbum: boolean) {
+async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs["data"], isMultiArtistAlbum: boolean) {
 	if (isMultiArtistAlbum) {
 		const existingAlbum = await retryable(() => prisma.album.findFirst({
 			where: {

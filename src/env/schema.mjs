@@ -1,5 +1,5 @@
 // @ts-check
-import { z } from "zod";
+import { z } from "zod"
 
 /**
  * Specify your server-side environment variables schema here.
@@ -26,7 +26,7 @@ export const serverSchema = z.object({
   DAYS_BETWEEN_REFETCH: z.string().transform(days => 1000 * 60 * 60 * 24 * Number(days)),
   ALLOWED_USERS: z.preprocess(
     (string) => {
-      if (typeof string !== "string") throw new Error('invalid ALLOWED_USERS env type')
+      if (typeof string !== "string") throw new Error("invalid ALLOWED_USERS env type")
       return string
         .split(",")
         .map((pair) => pair
@@ -39,7 +39,7 @@ export const serverSchema = z.object({
       z.string()
     ]))
   ),
-});
+})
 
 /**
  * Specify your client-side environment variables schema here.
@@ -51,7 +51,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_WEBSOCKET_URL: z.string(),
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
   NEXT_PUBLIC_ENV: z.enum(["development", "test", "production"]),
-});
+})
 
 /**
  * You can't destruct `process.env` as a regular object, so you have to do
@@ -64,4 +64,4 @@ export const clientEnv = {
   NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
   NEXT_PUBLIC_ENV: process.env.NODE_ENV,
-};
+}

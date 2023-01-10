@@ -11,7 +11,7 @@ async function redoImagePalette(image: {id: string, path: string}) {
 		const buffer = await readFile(originalFilePath)
 		const palette = await extractPalette(buffer)
 		if (!palette) {
-			console.log('could not extract from image ', image.id, image.path)
+			console.log("could not extract from image ", image.id, image.path)
 			return
 		}
 		await prisma.image.update({
@@ -39,7 +39,7 @@ async function act() {
 			await redoImagePalette(image)
 		}
 	} while (images.length === chunkSize)
-	console.log('DONE --------------------------------')
+	console.log("DONE --------------------------------")
 }
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {

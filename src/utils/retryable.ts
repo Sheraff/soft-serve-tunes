@@ -44,18 +44,18 @@ export default async function retryable<T>(callback: () => (Promise<T> | T), tri
 				// @ts-expect-error -- the line above tests for the existence of `code` key in `e`
 				&& PRISMA_NON_RETRYABLE_ERROR_CODES.has(e.code)
 			) {
-				console.error('will not retry callback, received an unrecoverable prisma error code')
+				console.error("will not retry callback, received an unrecoverable prisma error code")
 				throw e
 			}
-			const code = e && typeof e === 'object' && ('code' in e) ? ` code:${e.code}` : ''
-			const keys = e && typeof e === 'object' ? ` keys[${Object.keys(e).join(',')}]` : ''
+			const code = e && typeof e === "object" && ("code" in e) ? ` code:${e.code}` : ""
+			const keys = e && typeof e === "object" ? ` keys[${Object.keys(e).join(",")}]` : ""
 			console.warn(new Error(`Error in retryable${code}${keys}, will retry #${tries}`, {cause: e}))
 			await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 1000 * 2**tries))
 			const result = await retryable(callback, tries + 1, originalError || e)
 			return result
 		} else {
 			console.error(originalError)
-			throw new Error('Retryable failed after all retries, see above for original stack trace', {cause: e})
+			throw new Error("Retryable failed after all retries, see above for original stack trace", {cause: e})
 		}
 	}
 }

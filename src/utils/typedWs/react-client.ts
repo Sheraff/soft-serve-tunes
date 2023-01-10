@@ -5,13 +5,13 @@ import SocketClient from "./SocketClient"
 const _globalWsClient = new class {
 	wsClient: InstanceType<typeof SocketClient<Router>> | null = null
 	constructor() {
-		if (typeof window === 'undefined') return
+		if (typeof window === "undefined") return
 		this.wsClient = new SocketClient<Router>()
 	}
 }
 
 declare global {
-	var globalWsClient: typeof _globalWsClient; // eslint-disable-line no-var
+	var globalWsClient: typeof _globalWsClient // eslint-disable-line no-var
 }
 globalThis.globalWsClient = _globalWsClient
 export { _globalWsClient as globalWsClient }
@@ -37,7 +37,7 @@ function makeUseSubscription<K extends keyof Router>(prop: K): UseSubscription<K
 				signal: controller.signal,
 				passive: true,
 			})
-			globalWsClient.wsClient!.target.addEventListener('__socket-client-error__', (event) => {
+			globalWsClient.wsClient!.target.addEventListener("__socket-client-error__", (event) => {
 				if (!callbackRef.current.onError) return
 				callbackRef.current.onError(event)
 			}, {

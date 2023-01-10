@@ -22,7 +22,7 @@ export default memo(function NextTrack({
 		if (!element) return
 		const controller = new AbortController()
 		element.addEventListener("ended", () => {
-			console.log('ended', nextItem)
+			console.log("ended", nextItem)
 			if (nextItem) {
 				element.setAttribute("autoplay", "true")
 				element.src = `/api/file/${nextItem.id}`

@@ -3,7 +3,7 @@ import TrackList from "components/TrackList"
 import { type ForwardedRef, forwardRef, memo, startTransition } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
 import Cover from "./Cover"
-import styles from './index.module.css'
+import styles from "./index.module.css"
 
 export default memo(forwardRef(function NowPlaying(_, ref: ForwardedRef<HTMLDivElement>) {
 	const {data} = usePlaylist()

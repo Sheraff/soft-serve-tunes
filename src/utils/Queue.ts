@@ -56,7 +56,7 @@ export default class Queue {
 
 	next() {
 		if (this.wait) {
-			throw new Error('This is an awaited queue, you cannot call .next()')
+			throw new Error("This is an awaited queue, you cannot call .next()")
 		}
 		return new Promise((resolve) => this.push(resolve))
 	}

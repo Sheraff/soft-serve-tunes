@@ -7,7 +7,7 @@ export default async function revalidateSwCache<
 	const registration = await navigator.serviceWorker.ready
 	if (!registration.active) return
 	registration.active.postMessage({
-		type: 'sw-trpc-revalidate',
+		type: "sw-trpc-revalidate",
 		payload: {
 			key,
 			params,
