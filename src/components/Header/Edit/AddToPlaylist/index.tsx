@@ -1,6 +1,7 @@
-import { useAddToPlaylist } from "client/db/useMakePlaylist"
+import { useAddToPlaylist, useCreatePlaylist } from "client/db/useMakePlaylist"
 import { startTransition } from "react"
 import { trpc } from "utils/trpc"
+import NewIcon from "icons/library_add.svg"
 import styles from "./index.module.css"
 
 export default function AddToPlaylist({
@@ -11,14 +12,9 @@ export default function AddToPlaylist({
 	onSelect: () => void
 }) {
 	const {data} = trpc.playlist.list.useQuery()
-	const hasSomePlaylsts = Boolean(data?.length)
 	const addToPlaylist = useAddToPlaylist()
+	const createPlaylist = useCreatePlaylist()
 
-	if (!hasSomePlaylsts) {
-		return (
-			<p>No playlists were created yet</p>
-		)
-	}
 	return (
 		<ul>
 			{data!.map((playlist) => (
@@ -39,6 +35,23 @@ export default function AddToPlaylist({
 					</button>
 				</li>
 			))}
+			<li key="new">
+				<button
+					className={styles.button}
+					type="button"
+					onClick={() => {
+						navigator.vibrate(1)
+						if (!items.length) return
+						onSelect()
+						startTransition(() => {
+							createPlaylist(items.map((item) => item.id))
+						})
+					}}
+				>
+					<NewIcon className={styles.icon}/>
+					Create new playlist
+				</button>
+			</li>
 		</ul>
 	)
 }

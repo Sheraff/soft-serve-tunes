@@ -126,6 +126,24 @@ export function useMakePlaylist() {
 	}, [trpcClient, queryClient])
 }
 
+export function useCreatePlaylist() {
+	const trpcClient = trpc.useContext()
+	const queryClient = useQueryClient()
+	return useCallback(async (ids: string[]) => {
+		const tracks = ids.map(id => {
+			const track = trpcClient.track.miniature.getData({id})
+			if (!track) throw new Error("Track not found")
+			return {
+				id,
+				name: track.name,
+				artist: track.artist,
+				album: track.album,
+			}
+		})
+		await makePlaylist(trpcClient, queryClient, tracks, "New Playlist")
+	}, [trpcClient, queryClient])
+}
+
 async function playlistQueryFn(queryClient: QueryClient) {
 	const cache = queryClient.getQueryData<Playlist>(["playlist"])
 	if (cache) return cache
