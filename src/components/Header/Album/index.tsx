@@ -35,17 +35,16 @@ export default forwardRef(function AlbumView({
 	const showHome = useShowHome()
 	const queryClient = useQueryClient()
 
-	const [seeBio, setSeeBio] = useState(false)
+	const [seeBio, setSeeBio] = useState<boolean | null>(false) // null means "no need for toggle, small enough"
 	const bio = useRef<HTMLDivElement>(null)
 	useEffect(() => {
 		const element = bio.current
 		if (!element) return
-		setSeeBio(false)
 		const observer = new ResizeObserver(([entry]) => {
-			if(entry) {
-				const child = entry.target.firstElementChild as HTMLDivElement
-				if (child.offsetHeight <= entry.contentRect.height) {
-					setSeeBio(true)
+			if (entry) {
+				const parent = entry.target.parentElement as HTMLDivElement
+				if (parent.offsetHeight >= Math.floor(entry.contentRect.height)) {
+					setSeeBio(null)
 				}
 			}
 		})
@@ -138,23 +137,25 @@ export default forwardRef(function AlbumView({
 				</p>
 				{data?.audiodb?.strDescriptionEN && (
 					<div
-						className={classNames(styles.bio, {[styles.seeBio as string]: seeBio})}
-						onClick={() => {
+						className={classNames(styles.bio, {[styles.seeBio]: seeBio !== false})}
+						onClick={seeBio !== null ? () => {
 							navigator.vibrate(1)
 							setSeeBio(!seeBio)
-						}}
+						} : undefined}
 					>
-						<div ref={bio} className={styles.bioText}>
-							<div>
+						<div className={styles.bioText}>
+							<div ref={bio}>
 								{data?.audiodb?.strDescriptionEN}
 							</div>
 						</div>
-						<button
-							className={styles.toggle}
-							type="button"
-						>
-							{seeBio ? "...Less" : "More..."}
-						</button>
+						{seeBio !== null && (
+							<button
+								className={styles.toggle}
+								type="button"
+							>
+								{seeBio ? "...Less" : "More..."}
+							</button>
+						)}
 					</div>
 				)}
 				<button

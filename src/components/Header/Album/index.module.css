@@ -133,7 +133,7 @@
 
 .bioText {
 	line-height: 1.33;
-	height: calc(10px * 1.33 * 4);
+	max-height: calc(10px * 1.33 * 4);
 	overflow: hidden;
 	mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,.3) 25%, transparent);
 }
@@ -146,7 +146,7 @@
 }
 
 .seeBio .bioText{
-	height: auto;
+	max-height: none;
 	mask-image: none;
 }
 .seeBio .toggle {
