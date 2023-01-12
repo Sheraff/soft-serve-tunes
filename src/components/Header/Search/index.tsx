@@ -122,7 +122,7 @@ export default function Search({
 			>
 				{showPast && latestSearches.length > 0 && (
 					<div>
-						<SectionTitle>Recent searches</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Recent searches</SectionTitle>
 						{latestSearches.map((item) => (
 							<PastSearch key={item.id} id={item.id} type={item.type} />
 						))}
@@ -130,7 +130,7 @@ export default function Search({
 				)}
 				{!showPast && (
 					<div>
-						<SectionTitle>Artists</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
 						<ArtistList
 							ref={artistList}
 							artists={artists.slice(0, 21)}
@@ -141,7 +141,7 @@ export default function Search({
 				)}
 				{!showPast && (
 					<div>
-						<SectionTitle>Albums</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
 						<AlbumList
 							ref={albumList}
 							scrollable
@@ -153,7 +153,7 @@ export default function Search({
 				)}
 				{!showPast && Boolean(genres.length) && (
 					<div>
-						<SectionTitle>Genres</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Genres</SectionTitle>
 						<GenreList
 							genres={genres.slice(0, 21)}
 							onSelect={({id}) => id && onSelect({type: "genre", id})}
@@ -162,7 +162,7 @@ export default function Search({
 				)}
 				{!showPast && Boolean(playlists.length) && (
 					<div>
-						<SectionTitle>Playlists</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
 						<PlaylistList
 							playlists={playlists.slice(0, 6)}
 							onSelect={({id}) => id && onSelect({type: "playlist", id})}
@@ -171,7 +171,7 @@ export default function Search({
 				)}
 				{!showPast && Boolean(tracks.length) && (
 					<div>
-						<SectionTitle>Tracks</SectionTitle>
+						<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
 							onSelect={({id}) => id && onSelect({type: "track", id})}

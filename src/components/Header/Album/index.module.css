@@ -119,14 +119,17 @@
 	margin-top: -1px; /* avoids weird bug where we see the image below the background */
 }
 
+.section + .section {
+	margin-top: 10px;
+}
+
 .sectionTitle {
-	font-size: 20px;
 	padding: 0 8px;
+	margin: 0;
 }
 
 .bio {
 	position: relative;
-	margin-top: 8px;
 	font-size: 10px;
 	padding: 0 0 0 8px;
 }

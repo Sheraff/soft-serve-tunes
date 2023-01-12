@@ -126,7 +126,7 @@ export default forwardRef(function AlbumView({
 				decoding="async"
 			/>
 			<div className={styles.head}>
-				<SectionTitle>{data?.name}</SectionTitle>
+				<SectionTitle className={styles.sectionTitle}>{data?.name}</SectionTitle>
 				<p className={styles.info}>
 					{infos.map((info, i) => (
 						<Fragment key={i}>
@@ -179,7 +179,7 @@ export default forwardRef(function AlbumView({
 			</div>
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<div className={styles.section}>
-					<SectionTitle>Tracks</SectionTitle>
+					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 					<TrackList tracks={tracks} />
 				</div>
 			), [tracks])}

@@ -114,7 +114,7 @@ export default forwardRef(function ArtistView({
 				decoding="async"
 			/>
 			<div className={styles.head}>
-				<SectionTitle>{data?.name}</SectionTitle>
+				<SectionTitle className={styles.sectionTitle}>{data?.name}</SectionTitle>
 				<p className={styles.info}>
 					{infos.join(" · ")}
 				</p>
@@ -160,19 +160,19 @@ export default forwardRef(function ArtistView({
 			</div>
 			{useMemo(() => albums && Boolean(albums.length) && (
 				<div className={styles.section}>
-					<SectionTitle>Albums</SectionTitle>
+					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
 					<AlbumList albums={albums} loading={isLoading} />
 				</div>
 			), [albums, isLoading])}
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<div className={styles.section}>
-					<SectionTitle>Tracks</SectionTitle>
+					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 					<TrackList tracks={tracks} />
 				</div>
 			), [tracks])}
 			{useMemo(() => playlists && Boolean(playlists.length) && (
 				<div className={styles.section}>
-					<SectionTitle>Playlists</SectionTitle>
+					<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
 					<PlaylistList playlists={playlists} />
 				</div>
 			), [playlists])}
