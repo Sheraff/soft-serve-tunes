@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
-import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlaylistCredits"
+import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptionFromPlaylistCredits"
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
 import SectionTitle from "atoms/SectionTitle"
 import { artistView } from "components/AppContext"
@@ -15,6 +15,7 @@ export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
 
 	const trpcClient = trpc.useContext()
+	// TODO: replace with trpcClient.useQueries?
 	const {data: artistData = []} = useQuery(["playlist-artist-data", {ids: (artists?.map(({id}) => id) || [])}], {
 		enabled: Boolean(artists?.length),
 		queryFn: () => {
@@ -60,7 +61,7 @@ export default function Cover() {
 	onTitleEdit.current = (newName) => {
 		navigator.vibrate(1)
 		setEditing(false)
-		renamePlaylist(id!, newName.trim())
+		renamePlaylist(newName.trim())
 	}
 	const onTitleEditStart = useRef<() => void>(() => {})
 	onTitleEditStart.current = () => {
