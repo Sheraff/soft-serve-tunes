@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, useState, useRef, useEffect, type ReactNode, useImperativeHandle, CSSProperties, startTransition, Children, Fragment } from "react"
+import { type ForwardedRef, forwardRef, useDeferredValue, useState, useRef, useEffect, type ReactNode, useImperativeHandle, CSSProperties, startTransition, Children, Fragment, cloneElement, ReactElement } from "react"
 import { useShowHome } from "components/AppContext"
 import PlayIcon from "icons/play_arrow.svg"
 import { type Prisma } from "@prisma/client"
@@ -13,7 +13,9 @@ export default forwardRef(function PanelView({
 	z,
 	view,
 	description,
-	cover,
+	coverId,
+	coverPalette,
+	coverElement,
 	infos,
 	title,
 	onClickPlay,
@@ -26,16 +28,16 @@ export default forwardRef(function PanelView({
 		open: boolean
 		rect?: {
 			top: number,
-			left: number,
-			width: number,
+			left?: number,
+			width?: number,
+			height?: number,
 			src?: string,
 		}
 	}
-	description: string | null | undefined
-	cover: {
-		id: string
-		palette: Prisma.JsonValue
-	} | null | undefined
+	description?: string | null
+	coverId?: string
+	coverPalette?: Prisma.JsonValue
+	coverElement?: ReactElement
 	infos: ReactNode[]
 	title: string | undefined
 	onClickPlay: () => void
@@ -63,7 +65,7 @@ export default forwardRef(function PanelView({
 		return () => observer.disconnect()
 	}, [description])
 
-	const palette = paletteToCSSProperties(cover?.palette)
+	const palette = paletteToCSSProperties(coverPalette)
 
 	const main = useRef<HTMLDivElement>(null)
 	useImperativeHandle(ref, () => main.current as HTMLDivElement)
@@ -72,10 +74,12 @@ export default forwardRef(function PanelView({
 	const initialPositionRef = useRef<CSSProperties | null>(null)
 	const initialImageSrc = useRef<string | null>(null)
 	if (open && !initialPositionRef.current && view.rect) {
+		console.log("initialPositionRef", view.rect)
 		initialPositionRef.current = {
 			"--top": `${view.rect.top}px`,
-			"--left": `${view.rect.left}px`,
-			"--scale": `${view.rect.width / innerWidth}`,
+			"--left": `${view.rect.left ?? 0}px`,
+			"--scale": `${(view.rect.width ?? innerWidth) / innerWidth}`,
+			...(view.rect.height ? {"--clipY": `${view.rect.height}px`} : {}),
 			"--end": `${Math.hypot(innerWidth, innerHeight)}px`,
 		} as CSSProperties
 		initialImageSrc.current = view.rect.src || null
@@ -104,12 +108,17 @@ export default forwardRef(function PanelView({
 				src={initialImageSrc.current || ""}
 				alt=""
 			/>
-			<img
-				className={styles.img}
-				src={cover ? `/api/cover/${cover?.id}` : ""}
-				alt=""
-				decoding="async"
-			/>
+			{!coverElement && (
+				<img
+					className={styles.img}
+					src={coverId ? `/api/cover/${coverId}` : ""}
+					alt=""
+					decoding="async"
+				/>
+			)}
+			{coverElement && (
+					cloneElement(coverElement, {className: styles.img})
+			)}
 			<div className={styles.head}>
 				<SectionTitle className={styles.sectionTitle}>{title}</SectionTitle>
 				<p className={styles.info}>

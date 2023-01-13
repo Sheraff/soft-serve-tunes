@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, useMemo, Fragment } from "react"
+import { type ForwardedRef, forwardRef, useDeferredValue, useMemo } from "react"
 import pluralize from "utils/pluralize"
 import { albumView, artistView } from "components/AppContext"
 import styles from "./index.module.css"
@@ -78,7 +78,8 @@ export default forwardRef(function AlbumView({
 			z={z}
 			view={album}
 			description={data?.audiodb?.strDescriptionEN}
-			cover={data?.cover}
+			coverId={data?.cover?.id}
+			coverPalette={data?.cover?.palette}
 			infos={infos}
 			title={data?.name}
 			onClickPlay={onClickPlay}

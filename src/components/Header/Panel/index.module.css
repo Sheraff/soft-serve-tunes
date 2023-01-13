@@ -27,11 +27,13 @@
 .main[data-open="true"][data-bubble="true"] {
 	transform: translateX(0);
 	transform-origin: top left;
-	animation: bubble-zoom 650ms ease, var(--bubble-open) 500ms ease 150ms backwards;
+	animation:
+		bubble-zoom 650ms ease,
+		var(--bubble-open) 500ms ease 150ms backwards;
 	pointer-events: auto;
 }
 @keyframes bubble-zoom {
-	0%   { transform: translate(var(--left), var(--top)) scale(var(--scale)); }
+	0%   { transform: translate(var(--left), calc(var(--top) - 50vw + var(--clipY, 100vw) / 2)) scale(var(--scale)); }
 	100% { transform: translate(0) scale(1); }
 }
 
@@ -61,7 +63,7 @@
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	position: relative;
-	top: calc(-50vh);
+	top: -50vh !important;
 	z-index: 2;
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);

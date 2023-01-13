@@ -1,5 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { useSetPlaylist } from "client/db/useMakePlaylist"
-import { useShowHome } from "components/AppContext"
+import { playlistView, useShowHome } from "components/AppContext"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -15,33 +16,45 @@ function PlaylistItem({
 }) {
 	const {data} = trpc.playlist.get.useQuery({id: playlist.id})
 
-	const setPlaylist = useSetPlaylist()
-	const showHome = useShowHome()
+	// const setPlaylist = useSetPlaylist()
+	// const showHome = useShowHome()
 
 	const covers = data?.albums
 		.filter(({coverId}) => coverId)
 		|| []
 
+	const src = covers[0] ? `/api/cover/${covers[0].coverId}/${Math.round(174.5 * 2)}` : ""
+
+	const queryClient = useQueryClient()
+
 	return (
 		<button
 			className={styles.item}
 			type="button"
-			onClick={() => {
+			onClick={(event) => {
 				navigator.vibrate(1)
 				startTransition(() => {
 					if (!data) return
 					onSelect?.(data)
-					setPlaylist(playlist.name, playlist.id, data.tracks)
-					showHome("home")
+					const element = event.currentTarget
+					const {top, height} = element.getBoundingClientRect()
+					startTransition(() => {
+						playlistView.setState({
+							id: playlist.id,
+							name: data?.name || playlist.name,
+							open: true,
+							rect: {top, height, src}
+						}, queryClient)
+					})
 				})
 			}}
 		>
-			{covers[0] && (
+			{src && (
 				<img
 					className={styles.img}
-					src={`/api/cover/${covers[0].coverId}/${Math.round(174.5 * 2)}`}
+					src={src}
 					alt=""
-					key={covers[0].coverId}
+					key={src}
 					loading={index > 2 ? "lazy" : undefined}
 					decoding={index > 2 ? "async" : undefined}
 				/>
