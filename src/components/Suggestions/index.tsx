@@ -5,7 +5,7 @@ import { useIsHome } from "components/AppContext"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import PlaylistList from "components/PlaylistList"
-import { type ForwardedRef, forwardRef, memo, Suspense, useEffect } from "react"
+import { memo, Suspense, useEffect } from "react"
 import { trpc } from "utils/trpc"
 import AlbumsByTraitSuggestion from "./ByTrait/AlbumSuggestion"
 import TracksByTraitSuggestion from "./ByTrait/TrackSuggestion"
@@ -33,7 +33,7 @@ const UpdateSuggestions = () => {
 	return null
 }
 
-export default memo(forwardRef(function Suggestions(_, ref: ForwardedRef<HTMLDivElement>) {
+export default memo(function Suggestions() {
 
 	const enabled = useIsHome()
 
@@ -53,7 +53,7 @@ export default memo(forwardRef(function Suggestions(_, ref: ForwardedRef<HTMLDiv
 	})
 
 	return (
-		<div className={styles.scrollable} ref={ref}>
+		<div className={styles.scrollable}>
 			<UpdateSuggestions />
 			<div className={styles.main}>
 				<div className={styles.section}>
@@ -108,4 +108,4 @@ export default memo(forwardRef(function Suggestions(_, ref: ForwardedRef<HTMLDiv
 			</div>
 		</div>
 	)
-}))
+})

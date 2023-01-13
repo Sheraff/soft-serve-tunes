@@ -1,11 +1,11 @@
 import { usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import TrackList from "components/TrackList"
-import { type ForwardedRef, forwardRef, memo, startTransition } from "react"
+import { memo, startTransition } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
 import Cover from "./Cover"
 import styles from "./index.module.css"
 
-export default memo(forwardRef(function NowPlaying(_, ref: ForwardedRef<HTMLDivElement>) {
+export default memo(function NowPlaying() {
 	const {data} = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
 	const {setPlaylistIndex} = useSetPlaylistIndex()
@@ -15,7 +15,7 @@ export default memo(forwardRef(function NowPlaying(_, ref: ForwardedRef<HTMLDivE
 	const {tracks, current} = data
 
 	return (
-		<div className={styles.main} ref={ref}>
+		<div className={styles.main}>
 			<Cover />
 			<TrackList
 				tracks={tracks}
@@ -31,4 +31,4 @@ export default memo(forwardRef(function NowPlaying(_, ref: ForwardedRef<HTMLDivE
 			/>
 		</div>
 	)
-}))
+})
