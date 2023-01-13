@@ -20,6 +20,12 @@ function playlistArtistName(
 	return ` by ${formatter.format(nameList.concat("others"))}`
 }
 
+/**
+ * @description generates a description for a playlist based on the main artists in the playlist
+ * @param artistData artists sorted by prevalence (from `extractPlaylistCredits` for example)
+ * @param trackCount number of tracks in the playlist
+ * @param handlebars whether to use handlebars syntax for artist names (so that they can be replaced with components), or plain text
+ */
 export default function descriptionFromPlaylistCredits(
 	artistData: {name: string}[],
 	trackCount: number | undefined,

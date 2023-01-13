@@ -1,3 +1,6 @@
+/**
+ * @description reduces a list of tracks to lists of albums and artists sorted by prevalence
+ */
 export default function extractPlaylistCredits<
 	Al extends {id: string},
 	Ar extends {id: string, name: string}

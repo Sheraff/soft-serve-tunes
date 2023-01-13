@@ -123,6 +123,9 @@ export default class SocketClient<
 	}
 
 	#serverState = false
+	/**
+	 * @description true if the server is online
+	 */
 	get serverState() {
 		return this.#serverState
 	}
