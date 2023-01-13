@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { findFirstCachedTrack } from "client/sw/useCachedTrack"
 import { repeat, shuffle } from "components/Player"
 import { RefObject, useMemo } from "react"
+import shuffleArray from "utils/shuffleArray"
 import { modifyInIndexedDB } from "../utils"
 import { Playlist, PlaylistMeta } from "./types"
 
@@ -72,14 +73,22 @@ function getNextPlaylistIndex(queryClient: ReturnType<typeof useQueryClient>) {
 		}
 		
 		const current = playlist.order[newIndex]!
+		
+		const newOrder = newIndex === playlist.tracks.length - 1 && shuffle.getValue(queryClient)
+			? [current, ...shuffleArray(playlist.order.filter(id => id !== current))]
+			: playlist.order
+
 		queryClient.setQueryData<Playlist>(["playlist"], {
 			...playlist,
+			order: newOrder,
 			current,
 		})
 		modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 			...meta,
+			order: newOrder,
 			current,
 		}))
+
 		return true
 	}
 }
