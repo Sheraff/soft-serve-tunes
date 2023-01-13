@@ -25,6 +25,22 @@ export function useReorderPlaylist() {
 			? playlist.order // if playlist is already shuffled, `order` is not correlated to `tracks`, so only update tracks
 			: newItems.map(({id}) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
 
+		if (playlist.id) {
+			trpcClient.playlist.get.setData({id: playlist.id}, (old) => {
+				if (!old) return old
+				const tracks = newItems.reduce<typeof old["tracks"]>((acc, {id}) => {
+					const track = old.tracks.find((track) => track.id === id)
+					if (track) acc.push(track)
+					return acc
+				}, [])
+				console.log("new", tracks)
+				return {
+					...old,
+					tracks,
+				}
+			})
+		}
+
 		if (isLocal) {
 			queryClient.setQueryData<Playlist>(["playlist"], {
 				...playlist,
@@ -41,6 +57,7 @@ export function useReorderPlaylist() {
 		}
 
 		if (playlist.id) {
+			await new Promise((resolve) => setTimeout(resolve, 1_000))
 			await mutateAsync({
 				id: playlist.id,
 				type: "reorder",

@@ -11,8 +11,9 @@ export function useSetPlaylist() {
 	return useCallback(async (
 		name: Playlist["name"],
 		id: Exclude<Playlist["id"], null>,
-		tracks: Playlist["tracks"]
+		tracks: Playlist["tracks"],
+		current?: string
 	) => {
-		await setPlaylist(queryClient, name, id, tracks)
+		await setPlaylist(queryClient, name, id, tracks, current)
 	}, [queryClient])
 }
