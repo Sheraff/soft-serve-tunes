@@ -4,7 +4,7 @@ import styles from "./index.module.css"
 
 type AlbumMiniature = Exclude<RouterOutputs["album"]["miniature"], null>
 
-export default function Images({
+export default function CoverImages({
 	albums = [],
 	className,
 }: {
