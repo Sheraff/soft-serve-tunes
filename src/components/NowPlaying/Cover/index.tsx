@@ -9,24 +9,12 @@ import descriptionFromPlaylistCredits from "client/db/utils/descriptionFromPlayl
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
 import SectionTitle from "atoms/SectionTitle"
 import { artistView } from "components/AppContext"
+import Images from "./Images"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
 
 	const trpcClient = trpc.useContext()
-	const {data: albumData = []} = useQuery(["playlist-cover", {ids: (albums?.map(({id}) => id) || [])}], {
-		enabled: Boolean(albums?.length),
-		queryFn: () => {
-			if (!albums) return []
-			return Promise.all(albums.map(({id}) => (
-				trpcClient.album.miniature.fetch({id})
-			)))
-		},
-		select: (data) => {
-			return data.filter(a => a?.cover) as Exclude<typeof data[number], null>[]
-		},
-		keepPreviousData: true,
-	})
 	const {data: artistData = []} = useQuery(["playlist-artist-data", {ids: (artists?.map(({id}) => id) || [])}], {
 		enabled: Boolean(artists?.length),
 		queryFn: () => {
@@ -82,16 +70,7 @@ export default function Cover() {
 
 	return (
 		<>
-			<div className={classNames(styles.main, styles[`count-${albumData.length}` as keyof typeof styles])}>
-				{albumData.map((album) => (
-					<img
-						key={album.id}
-						className={styles.img}
-						src={`/api/cover/${album.cover!.id}`}
-						alt=""
-					/>
-				))}
-			</div>
+			<Images albums={albums} />
 			<div className={classNames(styles.panel, {[styles.editing]: editing})}>
 				<div className={styles.details}>
 					{id && (
