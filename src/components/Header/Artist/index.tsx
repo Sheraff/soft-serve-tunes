@@ -1,20 +1,17 @@
-import { type CSSProperties, type ForwardedRef, forwardRef, startTransition, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { type ForwardedRef, forwardRef, useDeferredValue, useMemo } from "react"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
-import { artistView, useShowHome } from "components/AppContext"
-import PlayIcon from "icons/play_arrow.svg"
+import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
-import classNames from "classnames"
-import { paletteToCSSProperties } from "components/Palette"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
-import Head from "next/head"
 import { trpc } from "utils/trpc"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
+import Panel from "../Panel"
 
 export default forwardRef(function ArtistView({
-	open: _open,
+	open,
 	id,
 	z,
 }: {
@@ -22,35 +19,13 @@ export default forwardRef(function ArtistView({
 	id: string
 	z: number
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const open = useDeferredValue(_open)
 	const artist = artistView.useValue()
-	const enabled = Boolean(id && artist.open)
 
+	const enabled = Boolean(id && artist.open)
 	const {data, isLoading} = trpc.artist.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
 	})
-
-	const makePlaylist = useMakePlaylist()
-
-	const showHome = useShowHome()
-
-	const [seeBio, setSeeBio] = useState<boolean | null>(false) // null means "no need for toggle, small enough"
-	const bio = useRef<HTMLDivElement>(null)
-	useEffect(() => {
-		const element = bio.current
-		if (!element) return
-		const observer = new ResizeObserver(([entry]) => {
-			if (entry) {
-				const parent = entry.target.parentElement as HTMLDivElement
-				if (parent.offsetHeight >= Math.floor(entry.contentRect.height)) {
-					setSeeBio(null)
-				}
-			}
-		})
-		observer.observe(element)
-		return () => observer.disconnect()
-	}, [data?.audiodb?.strBiographyEN])
 
 	const infos = []
 	if (data?.audiodb?.intFormedYear || data?.audiodb?.intBornYear) {
@@ -63,119 +38,54 @@ export default forwardRef(function ArtistView({
 		infos.push(`${data._count.tracks} track${pluralize(data._count.tracks)}`)
 	}
 
-	const palette = paletteToCSSProperties(data?.cover?.palette)
-
-	const main = useRef<HTMLDivElement>(null)
-	useImperativeHandle(ref, () => main.current as HTMLDivElement)
-	
-	// synchronously compute initial position if an `artist.rect` emitter has been set
-	const initialPositionRef = useRef<CSSProperties | null>(null)
-	const initialImageSrc = useRef<string | null>(null)
-	if (open && !initialPositionRef.current && artist.rect) {
-		initialPositionRef.current = {
-			"--top": `${artist.rect.top}px`,
-			"--left": `${artist.rect.left}px`,
-			"--scale": `${artist.rect.width / innerWidth}`,
-			"--end": `${Math.hypot(innerWidth, innerHeight)}px`,
-		} as CSSProperties
-		initialImageSrc.current = artist.rect.src || null
+	const makePlaylist = useMakePlaylist()
+	const onClickPlay = () => {
+		const playlistName = !data
+			? "New Playlist"
+			: data.name
+		makePlaylist({type: "artist", id}, playlistName)
 	}
 
 	const albums = useDeferredValue(data?.albums)
 	const tracks = useDeferredValue(data?.tracks)
 	const playlists = useDeferredValue(data?.playlists)
-
-	return (
-		<div
-			className={styles.main}
-			data-open={open}
-			data-bubble={initialPositionRef.current !== null}
-			ref={main}
-			style={{
-				"--z": z,
-				...palette,
-				...(initialPositionRef.current || {}),
-			} as CSSProperties}
-		>
-			{palette && artist.open && (
-				<Head>
-					<meta name="theme-color" content={palette["--palette-bg-main"]} />
-				</Head>
-			)}
-			<img
-				className={classNames(styles.img, styles.preview)}
-				src={initialImageSrc.current || ""}
-				alt=""
-			/>
-			<img
-				className={styles.img}
-				src={data?.cover ? `/api/cover/${data.cover.id}` : ""}
-				alt=""
-				decoding="async"
-			/>
-			<div className={styles.head}>
-				<SectionTitle className={styles.sectionTitle}>{data?.name}</SectionTitle>
-				<p className={styles.info}>
-					{infos.join(" · ")}
-				</p>
-				{data?.audiodb?.strBiographyEN && (
-					<div
-						className={classNames(styles.bio, {[styles.seeBio]: seeBio !== false})}
-						onClick={seeBio !== null ? () => {
-							navigator.vibrate(1)
-							setSeeBio(!seeBio)
-						} : undefined}
-					>
-						<div className={styles.bioText}>
-							<div ref={bio}>
-								{data?.audiodb?.strBiographyEN}
-							</div>
-						</div>
-						{seeBio !== null && (
-							<button
-								className={styles.toggle}
-								type="button"
-							>
-								{seeBio ? "...Less" : "More..."}
-							</button>
-						)}
-					</div>
-				)}
-				<button
-					className={styles.play}
-					type="button"
-					onClick={() => {
-						const playlistName = !data
-							? "New Playlist"
-							: data.name
-						navigator.vibrate(1)
-						startTransition(() => {
-							makePlaylist({type: "artist", id}, playlistName)
-							showHome("home")
-						})
-					}}
-				>
-					<PlayIcon />
-				</button>
-			</div>
+	const children = (
+		<>
 			{useMemo(() => albums && Boolean(albums.length) && (
-				<div className={styles.section}>
+				<>
 					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
 					<AlbumList albums={albums} loading={isLoading} />
-				</div>
+				</>
 			), [albums, isLoading])}
 			{useMemo(() => tracks && Boolean(tracks.length) && (
-				<div className={styles.section}>
+				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 					<TrackList tracks={tracks} />
-				</div>
+				</>
 			), [tracks])}
 			{useMemo(() => playlists && Boolean(playlists.length) && (
-				<div className={styles.section}>
+				<>
 					<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
 					<PlaylistList playlists={playlists} />
-				</div>
+				</>
 			), [playlists])}
-		</div>
+		</>
+	)
+
+	return (
+		<Panel
+			ref={ref}
+			open={open}
+			z={z}
+			view={artist}
+			description={data?.audiodb?.strBiographyEN}
+			cover={data?.cover}
+			infos={infos}
+			title={data?.name}
+			onClickPlay={onClickPlay}
+			animationName={styles["bubble-open"]}
+		>
+			{children}
+		</Panel>
 	)
 })
