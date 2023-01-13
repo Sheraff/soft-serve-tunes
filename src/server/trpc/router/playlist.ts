@@ -129,7 +129,7 @@ const list = publicProcedure.query(({ ctx }) => {
       modifiedAt: true,
     },
     orderBy: {
-      modifiedAt: "asc"
+      modifiedAt: "desc"
     }
   })
 })
