@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { useSetPlaylist } from "client/db/useMakePlaylist"
-import { playlistView, useShowHome } from "components/AppContext"
+import { playlistView } from "components/AppContext"
+import CoverImages from "components/NowPlaying/Cover/Images"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -8,22 +8,11 @@ import styles from "./index.module.css"
 function PlaylistItem({
 	playlist,
 	onSelect,
-	index,
 }: {
 	playlist: {id: string, name: string}
 	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
-	index: number
 }) {
 	const {data} = trpc.playlist.get.useQuery({id: playlist.id})
-
-	// const setPlaylist = useSetPlaylist()
-	// const showHome = useShowHome()
-
-	const covers = data?.albums
-		.filter(({coverId}) => coverId)
-		|| []
-
-	const src = covers[0] ? `/api/cover/${covers[0].coverId}/${Math.round(174.5 * 2)}` : ""
 
 	const queryClient = useQueryClient()
 
@@ -43,22 +32,16 @@ function PlaylistItem({
 							id: playlist.id,
 							name: data?.name || playlist.name,
 							open: true,
-							rect: {top, height, src}
+							rect: {top, height}
 						}, queryClient)
 					})
 				})
 			}}
 		>
-			{src && (
-				<img
-					className={styles.img}
-					src={src}
-					alt=""
-					key={src}
-					loading={index > 2 ? "lazy" : undefined}
-					decoding={index > 2 ? "async" : undefined}
-				/>
-			)}
+			<CoverImages
+				className={styles.img}
+				albums={data ? data.albums.slice(0, 6) : []}
+			/>
 			<p className={styles.text} key="text">
 				<span className={styles.title}>{playlist.name}</span>
 				<span className={styles.desc}>{data?.description}</span>
@@ -76,12 +59,11 @@ export default function PlaylistList({
 }) {
 	return (
 		<ul className={styles.list}>
-			{playlists.map((playlist, i) => (
+			{playlists.map((playlist) => (
 				<li key={playlist.id}>
 					<PlaylistItem
 						playlist={playlist}
 						onSelect={onSelect}
-						index={i}
 					/>
 				</li>
 			))}

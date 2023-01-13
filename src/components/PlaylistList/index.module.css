@@ -10,15 +10,16 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	overflow: hidden;
 }
 
 .img {
-	position: absolute;
-	inset: 0;
-	object-fit: cover;
-	height: 100%;
-	width: 100%;
-	z-index: -1;
+	position: absolute !important;
+	z-index: -1 !important;
+	inset: 50% 0 !important;
+	transform: translateY(-50%) !important;
+	height: 100vw;
+	width: 100vw;
 }
 
 .text {
@@ -34,7 +35,7 @@
 	content: '';
 	position: absolute;
 	inset: 0;
-	background-color: hsl(0, 0%, 0%, 0.4);
+	background-color: hsl(0, 0%, 0%, 0.45);
 	z-index: -1;
 }
 
