@@ -74,7 +74,6 @@ export default forwardRef(function PanelView({
 	const initialPositionRef = useRef<CSSProperties | null>(null)
 	const initialImageSrc = useRef<string | null>(null)
 	if (open && !initialPositionRef.current && view.rect) {
-		console.log("initialPositionRef", view.rect)
 		initialPositionRef.current = {
 			"--top": `${view.rect.top}px`,
 			"--left": `${view.rect.left ?? 0}px`,

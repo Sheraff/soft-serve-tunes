@@ -1,15 +1,14 @@
 import classNames from "classnames"
 import { usePlaylistExtractedDetails, useRenamePlaylist } from "client/db/useMakePlaylist"
-import { Fragment, useMemo, useRef, useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useRef, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
-import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptionFromPlaylistCredits"
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
 import SectionTitle from "atoms/SectionTitle"
-import { artistView } from "components/AppContext"
 import Images from "./Images"
+import usePlaylistDescription from "./usePlaylistDescription"
 
 export default function Cover() {
 	const {albums, artists, name, length, id} = usePlaylistExtractedDetails()
@@ -28,32 +27,7 @@ export default function Cover() {
 		keepPreviousData: true,
 	})
 	
-	const queryClient = useQueryClient()
-	const description = useMemo(() => {
-		const string = descriptionFromPlaylistCredits(artistData, length, true)
-		const parts = string.split("{{name}}")
-		return parts.flatMap((part, i) => [
-			<Fragment key={i}>{part}</Fragment>,
-			i === parts.length - 1
-				? null
-				: (
-					<button
-						key={artistData[i]!.id}
-						type="button"
-						onClick={() => {
-							navigator.vibrate(1)
-							artistView.setState({
-								id: artistData[i]!.id,
-								name: artistData[i]!.name,
-								open: true,
-							}, queryClient)
-						}}
-					>
-						{artistData[i]!.name}
-					</button>
-				)
-		])
-	}, [artistData, length, queryClient])
+	const description = usePlaylistDescription({artistData, length})
 
 	const [editing, setEditing] = useState(false)
 	const onTitleEdit = useRef<(newName: string) => void>(() => {})

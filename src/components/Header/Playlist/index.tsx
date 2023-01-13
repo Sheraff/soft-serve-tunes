@@ -3,10 +3,10 @@ import { playlistView } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import { trpc } from "utils/trpc"
-import { useReorderPlaylist } from "client/db/useMakePlaylist"
-import { useQueryClient } from "@tanstack/react-query"
+import { useReorderPlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
 import CoverImages from "components/NowPlaying/Cover/Images"
+import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 
 export default forwardRef(function PlaylistView({
 	open,
@@ -25,11 +25,16 @@ export default forwardRef(function PlaylistView({
 		keepPreviousData: true,
 	})
 
-	const queryClient = useQueryClient()
-	const infos = ["test", "yo"]
+	const description = usePlaylistDescription({
+		artistData: data?.artists ?? [],
+		length: data?.tracks?.length,
+	})
+	const infos = [description]
 
+	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
-		console.log("play", id)
+		if (data)
+			setPlaylist(data.name, id, data.tracks)
 	}
 
 	const reorderPlaylist = useReorderPlaylist()
@@ -48,7 +53,7 @@ export default forwardRef(function PlaylistView({
 
 	const coverElement = (
 		<CoverImages
-			albums={data?.albums}
+			albums={data ? data.albums.slice(0, 6) : []}
 		/>
 	)
 
