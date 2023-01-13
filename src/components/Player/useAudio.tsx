@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useMemo, useRef, useState } from "react"
+import { RefObject, useEffect, useMemo, useState } from "react"
 import { trpc } from "utils/trpc"
 
 type TimeVector = [number, number, number]
