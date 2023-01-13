@@ -17,6 +17,17 @@ export function useRemoveFromPlaylist() {
 	return useCallback(async (trackId: string, playlistId?: string) => {
 		const {playlist, isLocal} = await getPlaylistByIdRemoteOrLocal(playlistId, trpcClient, queryClient)
 
+		if (playlist.id) {
+			trpcClient.playlist.get.setData({id: playlist.id}, (old) => {
+				if (!old) return old
+				const tracks = old.tracks.filter(track => track.id !== trackId)
+				return {
+					...old,
+					tracks,
+				}
+			})
+		}
+
 		if (isLocal) {
 			let newCurrent = playlist.current
 			if (trackId === playlist.current) {
