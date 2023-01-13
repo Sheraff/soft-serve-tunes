@@ -48,7 +48,7 @@ export default forwardRef(function PlaylistView({
 
 	const reorderPlaylist = useReorderPlaylist()
 	const tracks = useDeferredValue(data?.tracks)
-	const name = data?.name
+	const name = data?.name ?? playlist.name
 	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const showHome = useShowHome()
 	return (
@@ -60,7 +60,7 @@ export default forwardRef(function PlaylistView({
 			coverPalette={current?.cover?.palette}
 			coverElement={coverElement}
 			infos={infos}
-			title={data?.name}
+			title={name}
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
 		>
