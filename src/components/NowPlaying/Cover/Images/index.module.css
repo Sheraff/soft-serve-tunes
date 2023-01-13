@@ -1,5 +1,5 @@
 .main {
-	display: grid;
+	display: grid !important;
 	position: relative;
 	z-index: 1;
 	transform-origin: center top 0;
