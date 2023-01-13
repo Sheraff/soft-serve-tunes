@@ -23,9 +23,10 @@ import NextTrack from "./NextTrack"
 export const playerDisplayRemaining = suspensePersistedState<boolean>("playerDisplayRemaining", false)
 export const shuffle = suspensePersistedState<boolean>("shuffle", false)
 /**
- * 0: false
- * 1: repeat all
- * 2: repeat one
+ * @description
+ * - 0: false
+ * - 1: repeat all
+ * - 2: repeat one
  */
 export const repeat = suspensePersistedState<0 | 1 | 2>("repeat", 0)
 
