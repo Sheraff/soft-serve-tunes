@@ -79,7 +79,8 @@ export default forwardRef(function ArtistView({
 			z={z}
 			view={artist}
 			description={data?.audiodb?.strBiographyEN}
-			cover={data?.cover}
+			coverId={data?.cover?.id}
+			coverPalette={data?.cover?.palette}
 			infos={infos}
 			title={data?.name}
 			onClickPlay={onClickPlay}

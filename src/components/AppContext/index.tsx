@@ -3,7 +3,7 @@ import { useCallback, useEffect } from "react"
 import { editOverlay, editOverlaySetter } from "./editOverlay"
 import globalState from "./globalState"
 
-type Panel = "artist" | "album" | "search"
+type Panel = "artist" | "album" | "search" | "playlist"
 export const panelStack = globalState<Panel[]>(
 	"panelStack",
 	[],
@@ -61,6 +61,29 @@ export const albumView = globalState<AlbumView>("albumView", {
 	history.pushState({}, "just-allow-back-button")
 })
 
+type PlaylistView = {
+	id: string,
+	name?: string,
+	open: boolean,
+	rect?: {
+		top: number,
+		height: number,
+		src?: string,
+	}
+}
+export const playlistView = globalState<PlaylistView>("playlistView", {
+	id: "cl7ackd5z20628354y4a90y4vn7",
+	name: "Oracular Spectacular",
+	open: false,
+}, (value, queryClient) => {
+	panelStack.setState((stack) => {
+		const newStack = stack.filter((name) => name !== "playlist")
+		if (value.open) newStack.push("playlist")
+		return newStack
+	}, queryClient)
+	history.pushState({}, "just-allow-back-button")
+})
+
 
 type SearchView = {
 	open: boolean
@@ -106,6 +129,7 @@ export function useShowHome() {
 		if (stack.includes("album")) albumView.setState(close, queryClient)
 		if (stack.includes("artist")) artistView.setState(close, queryClient)
 		if (stack.includes("search")) searchView.setState(close, queryClient)
+		if (stack.includes("playlist")) playlistView.setState(close, queryClient)
 		if (which)
 			mainView.setState(which, queryClient)
 	}, [

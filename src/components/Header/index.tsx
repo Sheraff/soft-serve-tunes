@@ -5,6 +5,7 @@ import {
 	artistView,
 	mainView,
 	panelStack,
+	playlistView,
 	searchView,
 	useShowHome,
 } from "components/AppContext"
@@ -14,6 +15,7 @@ import { signOut } from "next-auth/react"
 import { CSSProperties, useRef } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
+import PlaylistView from "./Playlist"
 import EditOverlay from "./Edit"
 import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
@@ -27,27 +29,39 @@ export default function Header() {
 	const searchZ = stack.indexOf("search")
 	const artistZ = stack.indexOf("artist")
 	const albumZ = stack.indexOf("album")
+	const playlistZ = stack.indexOf("playlist")
 	
 	const [search, setSearch] = searchView.useState()
 	const [artist, setArtist] = artistView.useState()
 	const [album, setAlbum] = albumView.useState()
+	const [playlist, setPlaylist] = playlistView.useState()
 	const edit = editOverlay.useValue()
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle, () => {
 		setArtist(prev => ({...prev, open: false}))
 		setAlbum(prev => ({...prev, open: false}))
+		setPlaylist(prev => ({...prev, open: false}))
 	})
 
 	const artistToggle = useRef<HTMLDivElement>(null)
 	const artistState = useDisplayAndShow(artist.open, artistToggle, () => {
 		setSearch(prev => ({...prev, open: false}))
 		setAlbum(prev => ({...prev, open: false}))
+		setPlaylist(prev => ({...prev, open: false}))
 	})
 
 	const albumToggle = useRef<HTMLDivElement>(null)
 	const albumState = useDisplayAndShow(album.open, albumToggle, () => {
 		setSearch(prev => ({...prev, open: false}))
+		setArtist(prev => ({...prev, open: false}))
+		setPlaylist(prev => ({...prev, open: false}))
+	})
+
+	const playlistToggle = useRef<HTMLDivElement>(null)
+	const playlistState = useDisplayAndShow(playlist.open, playlistToggle, () => {
+		setSearch(prev => ({...prev, open: false}))
+		setAlbum(prev => ({...prev, open: false}))
 		setArtist(prev => ({...prev, open: false}))
 	})
 
@@ -121,6 +135,14 @@ export default function Header() {
 					open={albumState.show}
 					id={album.id}
 					ref={albumToggle}
+				/>
+			)}
+			{playlistState.display && (
+				<PlaylistView
+					z={playlistZ + 10}
+					open={playlistState.show}
+					id={playlist.id}
+					ref={playlistToggle}
 				/>
 			)}
 			{editState.display && (

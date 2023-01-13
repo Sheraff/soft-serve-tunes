@@ -6,8 +6,10 @@ type AlbumMiniature = Exclude<RouterOutputs["album"]["miniature"], null>
 
 export default function Images({
 	albums = [],
+	className,
 }: {
 	albums?: {id: string}[]
+	className?: string
 }) {
 	const {albumData = []} = trpc
 		.useQueries((t) => albums.map(({id}) => t.album.miniature({id})))
@@ -21,7 +23,7 @@ export default function Images({
 		}, {albumData: []})
 
 	return (
-		<div className={classNames(styles.main, styles[`count-${albumData.length}` as keyof typeof styles])}>
+		<div className={classNames(styles.main, className, styles[`count-${albumData.length}` as keyof typeof styles])}>
 			{albumData.map((album) => (
 				<img
 					key={album.id}
