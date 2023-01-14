@@ -25,7 +25,8 @@
     "next-auth.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.js"
+    "**/*.js",
+    "Globals.d.ts"
   ],
   "exclude": ["node_modules"]
 }

@@ -35,6 +35,7 @@
 			"trpc"
 		],
 		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.enablePromptUseWorkspaceTsdk": true,
 		"editor.indentSize": "tabSize",
 		"editor.tabSize": 3,
 		"editor.codeActionsOnSave": {
