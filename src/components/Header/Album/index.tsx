@@ -1,6 +1,6 @@
 import { type ForwardedRef, forwardRef, useDeferredValue, useMemo } from "react"
 import pluralize from "utils/pluralize"
-import { albumView, artistView } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import SectionTitle from "atoms/SectionTitle"
@@ -13,14 +13,22 @@ export default forwardRef(function AlbumView({
 	open,
 	id,
 	z,
+	rect,
+	name,
 }: {
 	open: boolean
 	id: string
 	z: number
+	rect?: {
+		top: number,
+		left?: number,
+		width?: number,
+		height?: number,
+		src?: string,
+	}
+	name?: string
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const album = albumView.useValue()
-
-	const enabled = Boolean(id && album.open)
+	const enabled = Boolean(id && open)
 	const {data} = trpc.album.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
@@ -38,10 +46,9 @@ export default forwardRef(function AlbumView({
 			<button type="button" onClick={() => {
 				if (data.artist) {
 					navigator.vibrate(1)
-					artistView.setState({
+					openPanel("artist", {
 						id: data.artist.id,
 						name: data.artist.name,
-						open: true,
 					}, queryClient)
 				}
 			}}>
@@ -56,7 +63,7 @@ export default forwardRef(function AlbumView({
 	const makePlaylist = useMakePlaylist()
 	const onClickPlay = () => {
 		const playlistName = !data
-			? "New Playlist"
+			? (name ?? "New Playlist")
 			: !data.artist
 			? data.name
 			: `${data.name} by ${data.artist.name}`
@@ -76,12 +83,12 @@ export default forwardRef(function AlbumView({
 			ref={ref}
 			open={open}
 			z={z}
-			view={album}
+			rect={rect}
 			description={data?.audiodb?.strDescriptionEN}
 			coverId={data?.cover?.id}
 			coverPalette={data?.cover?.palette}
 			infos={infos}
-			title={data?.name}
+			title={data?.name ?? name}
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
 		>

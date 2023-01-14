@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { type AllRoutes, trpc, type RouterOutputs } from "utils/trpc"
-import { albumView, artistView, playlistView, useShowHome } from "components/AppContext"
+import { albumView, openPanel, playlistView, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { startTransition } from "react"
@@ -120,7 +120,7 @@ export default function PastSearch({
 					} else if (albumNarrow(type, entity)) {
 						albumView.setState({id, open: true, name: entity?.name}, queryClient)
 					} else if (artistNarrow(type, entity)) {
-						artistView.setState({id, open: true, name: entity?.name}, queryClient)
+						openPanel("artist", {id, name: entity?.name}, queryClient)
 					} else if (playlistNarrow(type, entity)) {
 						playlistView.setState({id, open: true, name: entity?.name}, queryClient)
 					}
