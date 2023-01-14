@@ -15,18 +15,20 @@ export default forwardRef(function ArtistView({
 	z,
 	rect,
 	name,
+	isTop,
 }: {
 	open: boolean
 	id: string
 	z: number
 	rect?: {
-		top: number,
-		left?: number,
-		width?: number,
-		height?: number,
-		src?: string,
+		top: number
+		left?: number
+		width?: number
+		height?: number
+		src?: string
 	}
 	name?: string
+	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
 	const {data, isLoading} = trpc.artist.get.useQuery({id}, {
@@ -92,6 +94,7 @@ export default forwardRef(function ArtistView({
 			title={data?.name ?? name}
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
+			isTop={isTop}
 		>
 			{children}
 		</Panel>
