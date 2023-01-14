@@ -134,7 +134,7 @@ export default function Search({
 						<ArtistList
 							ref={artistList}
 							artists={artists.slice(0, 21)}
-							onSelect={({id}) => id && onSelect({type: "artist", id})}
+							onSelect={({id}) => onSelect({type: "artist", id})}
 							loading={!artists.length}
 						/>
 					</div>
@@ -146,7 +146,7 @@ export default function Search({
 							ref={albumList}
 							scrollable
 							albums={albums.slice(0, 28)}
-							onSelect={({id}) => id && onSelect({type: "album", id})}
+							onSelect={({id}) => onSelect({type: "album", id})}
 							loading={!albums.length}
 						/>
 					</div>
@@ -156,7 +156,7 @@ export default function Search({
 						<SectionTitle className={styles.sectionTitle}>Genres</SectionTitle>
 						<GenreList
 							genres={genres.slice(0, 21)}
-							onSelect={({id}) => id && onSelect({type: "genre", id})}
+							onSelect={({id}) => onSelect({type: "genre", id})}
 						/>
 					</div>
 				)}
@@ -165,7 +165,7 @@ export default function Search({
 						<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
 						<PlaylistList
 							playlists={playlists.slice(0, 6)}
-							onSelect={({id}) => id && onSelect({type: "playlist", id})}
+							onSelect={({id}) => onSelect({type: "playlist", id})}
 						/>
 					</div>
 				)}
@@ -174,7 +174,7 @@ export default function Search({
 						<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 						<TrackList
 							tracks={tracks.slice(0, 50)}
-							onSelect={({id}) => id && onSelect({type: "track", id})}
+							onSelect={({id}) => onSelect({type: "track", id})}
 						/>
 					</div>
 				)}

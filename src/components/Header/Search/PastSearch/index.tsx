@@ -5,7 +5,7 @@ import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { ReactNode, startTransition } from "react"
 import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
-import { useRemoveFromPastSearches } from "client/db/indexedPastSearches"
+import { usePastSearchesMutation, useRemoveFromPastSearches } from "client/db/indexedPastSearches"
 import { useQueryClient } from "@tanstack/react-query"
 
 function BasePastSearch({
@@ -14,14 +14,19 @@ function BasePastSearch({
 	onClick,
 	children,
 	name,
+	id,
+	type,
 }: {
 	className?: string
 	coverId?: string | null
 	onClick: () => void
 	children: ReactNode
 	name?: string
+	id: string
+	type: keyof typeof PAST_SEARCH_COMPONENTS
 }) {
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
+	const {mutate: onSelect} = usePastSearchesMutation()
 	return (
 		<button
 			type="button"
@@ -32,7 +37,10 @@ function BasePastSearch({
 			)}
 			onClick={() => {
 				navigator.vibrate(1)
-				startTransition(onClick)
+				startTransition(() => {
+					onClick()
+					onSelect({id, type})
+				})
 			}}
 		>
 			{src && (
@@ -72,6 +80,8 @@ function PastSearchArtist({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			type="artist"
+			id={id}
 		>
 			<p className={styles.info}>
 				Artist
@@ -98,6 +108,8 @@ function PastSearchAlbum({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			type="album"
+			id={id}
 		>
 			<p className={styles.info}>
 				Album
@@ -126,6 +138,8 @@ function PastSearchGenre({
 			className={styles.list}
 			onClick={onClick}
 			name={entity?.name}
+			type="genre"
+			id={id}
 		>
 			<p className={styles.info}>
 				Genre
@@ -151,6 +165,8 @@ function PastSearchPlaylist({
 			coverId={entity?.albums?.find(a => a.coverId)?.coverId}
 			onClick={onClick}
 			name={entity?.name}
+			type="playlist"
+			id={id}
 		>
 			<p className={styles.info}>
 				Playlist
@@ -180,6 +196,8 @@ function PastSearchTrack({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			type="track"
+			id={id}
 		>
 			<p className={styles.info}>
 				Track
