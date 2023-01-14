@@ -1,5 +1,6 @@
-import { CSSProperties, useEffect, useRef, useState } from "react"
-import extractPaletteFromUint8 from "utils/paletteExtraction"
+import { type CSSProperties, useEffect, useRef, useState } from "react"
+import extractPaletteFromUint8, { type PaletteDefinition } from "utils/paletteExtraction"
+import { paletteToCSSProperties } from "components/Palette"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 
@@ -31,7 +32,12 @@ function SingleTest({id}: {id: string}) {
 	const img = data?.cover
 	// const palette = img?.palette ? JSON.parse(img.palette) : []
 
-	const [palette, setPalette] = useState<string[]>([])
+	const [palette, setPalette] = useState<PaletteDefinition>([
+		{h: 0, s: 0, l: 0},
+		{h: 0, s: 0, l: 0},
+		{h: 0, s: 0, l: 0},
+		{h: 0, s: 0, l: 0},
+	])
 
 	const ref = useRef<HTMLImageElement>(null)
 	useEffect(() => {
@@ -70,21 +76,23 @@ function SingleTest({id}: {id: string}) {
 		}
 	}, [])
 
+	const cssPalette = paletteToCSSProperties(palette)
+
 	return (
 		<div className={styles.item}>
-			<div style={{"--color": palette[0]} as CSSProperties}></div>
-			<div style={{"--color": palette[1]} as CSSProperties}></div>
-			<div style={{"--color": palette[2]} as CSSProperties}></div>
-			<div style={{"--color": palette[3]} as CSSProperties}></div>
+			<div style={{"--color": cssPalette["--palette-bg-main"]} as CSSProperties}></div>
+			<div style={{"--color": cssPalette["--palette-bg-gradient"]} as CSSProperties}></div>
+			<div style={{"--color": cssPalette["--palette-secondary"]} as CSSProperties}></div>
+			<div style={{"--color": cssPalette["--palette-primary"]} as CSSProperties}></div>
 			<img
 				ref={ref}
 				src={`/api/cover/${img?.id}`}
 				alt=""
 			/>
 			<span style={{
-				"--bg": palette[0],
-				"--color": palette[3],
-				"--border": palette[2],
+				"--bg": cssPalette["--palette-bg-main"],
+				"--color": cssPalette["--palette-primary"],
+				"--border": cssPalette["--palette-secondary"],
 			} as CSSProperties}>test</span>
 		</div>
 	)

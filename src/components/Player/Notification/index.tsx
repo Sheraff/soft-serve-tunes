@@ -29,7 +29,7 @@ export default memo(function Notification({
 
 	useEffect(() => {
 		if(!hasData) return
-		navigator.mediaSession.setActionHandler("previoustrack", () => prevPlaylistIndex(audio))
+		navigator.mediaSession.setActionHandler("previoustrack", () => prevPlaylistIndex())
 		navigator.mediaSession.setActionHandler("nexttrack", () => nextPlaylistIndex(audio))
 	}, [hasData, prevPlaylistIndex, nextPlaylistIndex, audio])
 
