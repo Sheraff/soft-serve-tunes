@@ -1,130 +1,38 @@
 import classNames from "classnames"
-import { type AllRoutes, trpc, type RouterOutputs } from "utils/trpc"
+import { trpc } from "utils/trpc"
 import { openPanel, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
-import { startTransition } from "react"
+import { ReactNode, startTransition } from "react"
 import { useAddNextToPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 import { useRemoveFromPastSearches } from "client/db/indexedPastSearches"
 import { useQueryClient } from "@tanstack/react-query"
 
-type Option<Key extends AllRoutes> = {
-	key: Key
-	Component: (entity: Exclude<RouterOutputs[Key[0]][Key[1]], null>) => JSX.Element
-	cover: (e?: RouterOutputs[Key[0]][Key[1]]) => string | undefined
-}
-
-const track: Option<["track", "miniature"]> = {
-	key: ["track", "miniature"],
-	Component: TrackInfo,
-	cover: (e) => e?.cover?.id,
-}
-const album: Option<["album", "miniature"]> = {
-	key: ["album", "miniature"],
-	Component: AlbumInfo,
-	cover: (e) => e?.cover?.id,
-}
-const artist: Option<["artist", "miniature"]> = {
-	key: ["artist", "miniature"],
-	Component: ArtistInfo,
-	cover: (e) => e?.cover?.id,
-}
-const genre: Option<["genre", "miniature"]> = {
-	key: ["genre", "miniature"],
-	Component: GenreInfo,
-	cover: () => undefined
-}
-const playlist: Option<["playlist", "get"]> = {
-	key: ["playlist", "get"],
-	Component: PlaylistInfo,
-	cover: (e) => e?.albums?.find(a => a.coverId)?.coverId
-}
-
-const OPTIONS = {
-	track,
-	album,
-	artist,
-	genre,
-	playlist,
-} as const
-
-function trackNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["track"]["miniature"] {
-	return type === "track"
-}
-function albumNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["album"]["miniature"] {
-	return type === "album"
-}
-function artistNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["artist"]["miniature"] {
-	return type === "artist"
-}
-function genreNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["genre"]["miniature"] {
-	return type === "genre"
-}
-function playlistNarrow(type: keyof typeof OPTIONS, entity: any): entity is RouterOutputs["playlist"]["get"] {
-	return type === "playlist"
-}
-
-function getTrpcProcedure(key: typeof OPTIONS[keyof typeof OPTIONS]["key"]) {
-	if (key[0] === "playlist" && key[1] === "get")
-		return trpc.playlist.get
-	return trpc[key[0]][key[1]]
-}
-
-
-export default function PastSearch({
-	id,
-	type,
+function BasePastSearch({
+	className,
+	coverId,
+	onClick,
+	children,
+	name,
 }: {
-	id: string
-	type: keyof typeof OPTIONS
+	className?: string
+	coverId?: string | null
+	onClick: () => void
+	children: ReactNode
+	name?: string
 }) {
-	const queryClient = useQueryClient()
-
-	const makePlaylist = useMakePlaylist()
-	const addNextToPlaylist = useAddNextToPlaylist()
-	const showHome = useShowHome()
-	const {mutate: deletePastSearch} = useRemoveFromPastSearches()
-
-	const {key, Component, cover} = OPTIONS[type]
-	const {data: entity} = getTrpcProcedure(key).useQuery({id}, {
-		onSettled(data) {
-			if (data) return
-			deletePastSearch({id})
-		}
-	})
-
-	const coverId = cover(entity)
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
-
 	return (
 		<button
 			type="button"
 			className={classNames(
 				styles.main,
-				{
-					[styles.empty]: !src,
-					[styles.list]: type === "playlist" || type === "genre",
-					[styles.artist]: type === "artist",
-				}
+				className,
+				{ [styles.empty]: !src }
 			)}
 			onClick={() => {
 				navigator.vibrate(1)
-				startTransition(() => {
-					if (trackNarrow(type, entity)) {
-						if (!entity) return console.warn("PastSearch could not add track to playlist as it was not able to fetch associated data")
-						addNextToPlaylist(entity, true)
-						showHome("home")
-					} else if (genreNarrow(type, entity)) {
-						makePlaylist({type: "genre", id}, entity ? entity.name : "New Playlist")
-						showHome("home")
-					} else if (albumNarrow(type, entity)) {
-						openPanel("album", {id, name: entity?.name}, queryClient)
-					} else if (artistNarrow(type, entity)) {
-						openPanel("artist", {id, name: entity?.name}, queryClient)
-					} else if (playlistNarrow(type, entity)) {
-						openPanel("playlist", {id, name: entity?.name}, queryClient)
-					}
-				})
+				startTransition(onClick)
 			}}
 		>
 			{src && (
@@ -135,10 +43,10 @@ export default function PastSearch({
 				/>
 			)}
 			<div>
-				{entity && (
+				{name && (
 					<>
-						<p className={styles.name}>{entity.name}</p>
-						<Component {...entity} />
+						<p className={styles.name}>{name}</p>
+						{children}
 					</>
 				)}
 			</div>
@@ -146,51 +54,167 @@ export default function PastSearch({
 	)
 }
 
-function ArtistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["artist"]["key"][0]][typeof OPTIONS["artist"]["key"][1]], null>) {
+type PastSearchProps = {
+	id: string
+	onSettled: (data: boolean) => void
+}
+
+function PastSearchArtist({
+	id,
+	onSettled,
+}: PastSearchProps) {
+	const {data: entity} = trpc.artist.miniature.useQuery({id}, {onSettled: (data) => onSettled(!!data)})
+	const queryClient = useQueryClient()
+	const onClick = () => openPanel("artist", {id, name: entity?.name}, queryClient)
 	return (
-		<p className={styles.info}>Artist{entity._count?.albums
-			? ` · ${entity._count.albums} album${entity._count.albums > 1 ? "s": ""}`
-			: entity._count?.tracks
-				? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
-				: ""
-		}</p>
+		<BasePastSearch
+			className={styles.artist}
+			coverId={entity?.cover?.id}
+			onClick={onClick}
+			name={entity?.name}
+		>
+			<p className={styles.info}>
+				Artist
+				{entity?._count?.albums
+					? ` · ${entity._count.albums} album${entity._count.albums > 1 ? "s": ""}`
+					: entity?._count?.tracks
+					? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
+					: ""
+				}
+			</p>
+		</BasePastSearch>
 	)
 }
 
-function AlbumInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["album"]["key"][0]][typeof OPTIONS["album"]["key"][1]], null>) {
+function PastSearchAlbum({
+	id,
+	onSettled,
+}: PastSearchProps) {
+	const {data: entity} = trpc.album.miniature.useQuery({id}, {onSettled: (data) => onSettled(!!data)})
+	const queryClient = useQueryClient()
+	const onClick = () => openPanel("album", {id, name: entity?.name}, queryClient)
 	return (
-		<p className={styles.info}>Album{entity._count?.tracks
-			? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
-			: ""
-		}</p>
+		<BasePastSearch
+			coverId={entity?.cover?.id}
+			onClick={onClick}
+			name={entity?.name}
+		>
+			<p className={styles.info}>
+				Album
+				{entity?._count?.tracks
+					? ` · ${entity._count.tracks} track${entity._count.tracks > 1 ? "s": ""}`
+					: ""
+				}
+			</p>
+		</BasePastSearch>
 	)
 }
 
-function TrackInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["track"]["key"][0]][typeof OPTIONS["track"]["key"][1]], null>) {
+function PastSearchGenre({
+	id,
+	onSettled,
+}: PastSearchProps) {
+	const {data: entity} = trpc.genre.miniature.useQuery({id}, {onSettled: (data) => onSettled(!!data)})
+	const makePlaylist = useMakePlaylist()
+	const showHome = useShowHome()
+	const onClick = () => {
+		makePlaylist({type: "genre", id}, entity ? entity.name : "New Playlist")
+		showHome("home")
+	}
 	return (
-		<p className={styles.info}>Track{entity.artist
-			? ` · by ${entity.artist.name}`
-			: entity.album
-				? ` · from ${entity.album.name}`
-				: ""
-		}</p>
+		<BasePastSearch
+			className={styles.list}
+			onClick={onClick}
+			name={entity?.name}
+		>
+			<p className={styles.info}>
+				Genre
+				{entity?._count?.tracks
+					? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
+					: ""
+				}
+			</p>
+		</BasePastSearch>
 	)
 }
 
-function GenreInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["genre"]["key"][0]][typeof OPTIONS["genre"]["key"][1]], null>) {
+function PastSearchPlaylist({
+	id,
+	onSettled,
+}: PastSearchProps) {
+	const {data: entity} = trpc.playlist.get.useQuery({id}, {onSettled: (data) => onSettled(!!data)})
+	const queryClient = useQueryClient()
+	const onClick = () => openPanel("playlist", {id, name: entity?.name}, queryClient)
 	return (
-		<p className={styles.info}>Genre{entity._count?.tracks
-			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
-			: ""
-		}</p>
+		<BasePastSearch
+			className={styles.list}
+			coverId={entity?.albums?.find(a => a.coverId)?.coverId}
+			onClick={onClick}
+			name={entity?.name}
+		>
+			<p className={styles.info}>
+				Playlist
+				{entity?._count.tracks
+					? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
+					: ""
+				}
+			</p>
+		</BasePastSearch>
 	)
 }
 
-function PlaylistInfo(entity: Exclude<RouterOutputs[typeof OPTIONS["playlist"]["key"][0]][typeof OPTIONS["playlist"]["key"][1]], null>) {
+function PastSearchTrack({
+	id,
+	onSettled,
+}: PastSearchProps) {
+	const {data: entity} = trpc.track.miniature.useQuery({id}, {onSettled: (data) => onSettled(!!data)})
+	const addNextToPlaylist = useAddNextToPlaylist()
+	const showHome = useShowHome()
+	const onClick = () => {
+		if (!entity) return console.warn("PastSearch could not add track to playlist as it was not able to fetch associated data")
+		addNextToPlaylist(entity, true)
+		showHome("home")
+	}
 	return (
-		<p className={styles.info}>Playlist{entity._count.tracks
-			? ` · ${entity._count.tracks} track${pluralize(entity._count.tracks)}`
-			: ""
-		}</p>
+		<BasePastSearch
+			coverId={entity?.cover?.id}
+			onClick={onClick}
+			name={entity?.name}
+		>
+			<p className={styles.info}>
+				Track
+				{entity?.artist
+					? ` · by ${entity.artist.name}`
+					: entity?.album
+					? ` · from ${entity.album.name}`
+					: ""
+				}
+			</p>
+		</BasePastSearch>
 	)
+}
+
+const PAST_SEARCH_COMPONENTS = {
+	artist: PastSearchArtist,
+	album: PastSearchAlbum,
+	genre: PastSearchGenre,
+	playlist: PastSearchPlaylist,
+	track: PastSearchTrack,
+}
+
+
+export default function PastSearch({
+	id,
+	type,
+}: {
+	id: string
+	type: keyof typeof PAST_SEARCH_COMPONENTS
+}) {
+	const {mutate: deletePastSearch} = useRemoveFromPastSearches()
+	const onSettled = (data: boolean) => {
+		if (data) return
+		deletePastSearch({id})
+	}
+	const Component = PAST_SEARCH_COMPONENTS[type]
+	return <Component id={id} onSettled={onSettled} />
 }
