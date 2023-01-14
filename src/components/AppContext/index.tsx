@@ -130,8 +130,7 @@ export function AppState() {
 	// useEffect(() => {
 	// 	const interval = setInterval(() => {
 	// 		const stack = panelStack.getValue(queryClient)
-	// 		const artist = artistView.getValue(queryClient)
-	// 		console.log("stack", stack, artist)
+	// 		console.log("stack", stack)
 	// 	}, 200)
 	// 	return () => clearInterval(interval)
 	// }, [queryClient])

@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { type RouterOutputs } from "utils/trpc"
-import { albumView, mainView, openPanel, useShowHome } from "components/AppContext"
+import { mainView, openPanel, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { useGetCurrentIndex } from "client/db/useMakePlaylist"
 import { useQueryClient } from "@tanstack/react-query"
@@ -79,7 +79,10 @@ export default memo(function SlidingText({
 						type="button"
 						onClick={() => {
 							navigator.vibrate(1)
-							albumView.setState({id: album.id, name: album.name, open: true}, queryClient)
+							openPanel("album", {
+								id: album.id,
+								name: album.name,
+							}, queryClient)
 						}}
 					>
 						{album.name}

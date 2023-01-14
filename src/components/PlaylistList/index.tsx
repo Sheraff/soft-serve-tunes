@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { playlistView } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import CoverImages from "components/NowPlaying/Cover/Images"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
@@ -28,10 +28,9 @@ function PlaylistItem({
 					const element = event.currentTarget
 					const {top, height} = element.getBoundingClientRect()
 					startTransition(() => {
-						playlistView.setState({
+						openPanel("playlist", {
 							id: playlist.id,
 							name: data?.name || playlist.name,
-							open: true,
 							rect: {top, height}
 						}, queryClient)
 					})
