@@ -1,18 +1,15 @@
 import Search from "./Search"
 import styles from "./index.module.css"
 import {
-	albumView,
-	artistView,
 	mainView,
 	panelStack,
-	playlistView,
 	searchView,
 	useShowHome,
 } from "components/AppContext"
 import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
-import { CSSProperties, useRef } from "react"
+import { type CSSProperties, memo, useRef } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import PlaylistView from "./Playlist"
@@ -23,50 +20,116 @@ import LogoutIcon from "icons/logout.svg"
 import DashboardIcon from "icons/dashboard.svg"
 import QueueMusicIcon from "icons/queue_music.svg"
 import Upload from "./Upload"
+import { useQueryClient } from "@tanstack/react-query"
+
+type Panel = ReturnType<typeof panelStack.useValue>[number]
+
+const BASE_HEADER_Z = 10
+
+const PANEL_COMPONENTS = {
+	artist: ArtistView,
+	album: AlbumView,
+	playlist: PlaylistView,
+} as const
+
+const SinglePane = memo(function BasePane({
+	panel,
+	index,
+}: {
+	panel: Panel
+	index: number
+}) {
+	const ref = useRef<HTMLDivElement>(null)
+	const queryClient = useQueryClient()
+	const state = useDisplayAndShow(panel.value.open, ref, (open) => {
+		// if force open, close above
+		// if open, force close below
+		// if close, remove self from stack
+		// if force close, do nothing
+		if (open === "force-open") {
+			panelStack.setState(prev => {
+				const before = prev.slice(0, index + 1)
+				const after = prev.slice(index + 1)
+				const next: Panel[] = [...before, ...after.map(({type, key, value}) => ({
+					type,
+					key,
+					value: {
+						...value,
+						open: "close",
+					}
+				} as Panel))]
+				return next
+			}, queryClient)
+			return
+		}
+		if (open === "open") {
+			panelStack.setState(prev => {
+				const before = prev.slice(0, index)
+				const after = prev.slice(index)
+				const next: Panel[] = [...before.map(({type, key, value}) => ({
+					type,
+					key,
+					value: {
+						...value,
+						open: "force-close",
+					}
+				} as Panel)), ...after]
+				return next
+			}, queryClient)
+			if (searchView.getValue(queryClient).open === "open") {
+				searchView.setState(prev => ({...prev, open: "close"}), queryClient)
+			}
+			return
+		}
+		if (open === "close") {
+			panelStack.setState(prev => {
+				const before = prev.slice(0, index)
+				const after = prev.slice(index + 1)
+				const next: Panel[] = [...before, ...after]
+				return next
+			}, queryClient)
+			return
+		}
+		if (open === "force-close") {
+			return
+		}
+	})
+
+	if (!state.display) return null
+
+	const Component = PANEL_COMPONENTS[panel.type]
+	return (
+		<Component
+			ref={ref}
+			{...panel.value}
+			open={state.show}
+			z={index + BASE_HEADER_Z}
+		/>
+	)
+})
+
+function PanelStack({stack}: {stack: Panel[]}) {
+	return (
+		<>
+			{stack.map((panel, i) => (
+				<SinglePane key={panel.key} panel={panel} index={i} />
+			))}
+		</>
+	)
+}
 
 export default function Header() {
 	const stack = panelStack.useValue()
-	const searchZ = stack.indexOf("search")
-	const artistZ = stack.indexOf("artist")
-	const albumZ = stack.indexOf("album")
-	const playlistZ = stack.indexOf("playlist")
+	const editZ = stack.length
 	
 	const [search, setSearch] = searchView.useState()
-	const [artist, setArtist] = artistView.useState()
-	const [album, setAlbum] = albumView.useState()
-	const [playlist, setPlaylist] = playlistView.useState()
-	const edit = editOverlay.useValue()
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
-	const searchState = useDisplayAndShow(search.open, searchToggle, () => {
-		setArtist(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
-	})
+	const searchState = useDisplayAndShow(search.open, searchToggle)
 
-	const artistToggle = useRef<HTMLDivElement>(null)
-	const artistState = useDisplayAndShow(artist.open, artistToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
-	})
-
-	const albumToggle = useRef<HTMLDivElement>(null)
-	const albumState = useDisplayAndShow(album.open, albumToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setArtist(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
-	})
-
-	const playlistToggle = useRef<HTMLDivElement>(null)
-	const playlistState = useDisplayAndShow(playlist.open, playlistToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setArtist(prev => ({...prev, open: false}))
-	})
-
+	const edit = editOverlay.useValue()
 	const editToggle = useRef<HTMLDivElement>(null)
-	const editState = useDisplayAndShow(Boolean(edit.selection.length), editToggle)
+	const editState = useDisplayAndShow(Boolean(edit.selection.length) ? "open" : "close", editToggle)
 
 	// prefetch select queries
 	trpc.track.searchable.useQuery()
@@ -102,13 +165,13 @@ export default function Header() {
 					ref={searchToggle}
 					className={styles.toggle}
 					data-open={searchState.show}
-					style={{"--z": searchZ + 10} as CSSProperties}
+					style={{"--z": BASE_HEADER_Z - 1} as CSSProperties}
 					onClick={() => {
 						navigator.vibrate(1)
-						if (search.open) {
+						if (search.open === "open") {
 							showHome()
 						} else {
-							setSearch(prev => ({...prev, open: true}))
+							setSearch(prev => ({...prev, open: "open"}))
 						}
 					}}
 				>
@@ -117,37 +180,14 @@ export default function Header() {
 			</div>
 			{searchState.display && (
 				<Search
-					z={searchZ + 10}
+					z={BASE_HEADER_Z - 1}
 					open={searchState.show}
 				/>
 			)}
-			{artistState.display && (
-				<ArtistView
-					z={artistZ + 10}
-					open={artistState.show}
-					id={artist.id}
-					ref={artistToggle}
-				/>
-			)}
-			{albumState.display && (
-				<AlbumView
-					z={albumZ + 10}
-					open={albumState.show}
-					id={album.id}
-					ref={albumToggle}
-				/>
-			)}
-			{playlistState.display && (
-				<PlaylistView
-					z={playlistZ + 10}
-					open={playlistState.show}
-					id={playlist.id}
-					ref={playlistToggle}
-				/>
-			)}
+			<PanelStack stack={stack} />
 			{editState.display && (
 				<EditOverlay
-					z={Math.max(searchZ, artistZ, albumZ) + 20}
+					z={editZ + BASE_HEADER_Z}
 					open={editState.show}
 					ref={editToggle}
 				/>

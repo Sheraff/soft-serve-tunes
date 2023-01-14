@@ -1,5 +1,5 @@
 import { type ForwardedRef, forwardRef, useDeferredValue, startTransition } from "react"
-import { playlistView, useShowHome } from "components/AppContext"
+import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import { trpc } from "utils/trpc"
@@ -13,14 +13,22 @@ export default forwardRef(function PlaylistView({
 	open,
 	id,
 	z,
+	rect,
+	name,
 }: {
 	open: boolean
 	id: string
 	z: number
+	rect?: {
+		top: number,
+		left?: number,
+		width?: number,
+		height?: number,
+		src?: string,
+	}
+	name?: string
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const playlist = playlistView.useValue()
-
-	const enabled = Boolean(id && playlist.open)
+	const enabled = Boolean(id && open)
 	const {data} = trpc.playlist.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
@@ -48,7 +56,7 @@ export default forwardRef(function PlaylistView({
 
 	const reorderPlaylist = useReorderPlaylist()
 	const tracks = useDeferredValue(data?.tracks)
-	const name = data?.name ?? playlist.name
+	const _name = data?.name ?? name
 	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const showHome = useShowHome()
 	return (
@@ -56,11 +64,11 @@ export default forwardRef(function PlaylistView({
 			ref={ref}
 			open={open}
 			z={z}
-			view={playlist}
+			rect={rect}
 			coverPalette={current?.cover?.palette}
 			coverElement={coverElement}
 			infos={infos}
-			title={name}
+			title={_name}
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
 		>
@@ -72,8 +80,8 @@ export default forwardRef(function PlaylistView({
 						reorderPlaylist(oldIndex, newIndex, id)
 					}}
 					onClick={(trackId) => {
-						if (name && tracks) startTransition(() => {
-							setPlaylist(name, id, tracks, trackId)
+						if (_name && tracks) startTransition(() => {
+							setPlaylist(_name, id, tracks, trackId)
 							showHome("home")
 						})
 					}}

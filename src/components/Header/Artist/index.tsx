@@ -1,7 +1,6 @@
 import { type ForwardedRef, forwardRef, useDeferredValue, useMemo } from "react"
 import pluralize from "utils/pluralize"
 import AlbumList from "components/AlbumList"
-import { artistView } from "components/AppContext"
 import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
@@ -14,14 +13,22 @@ export default forwardRef(function ArtistView({
 	open,
 	id,
 	z,
+	rect,
+	name,
 }: {
 	open: boolean
 	id: string
 	z: number
+	rect?: {
+		top: number,
+		left?: number,
+		width?: number,
+		height?: number,
+		src?: string,
+	}
+	name?: string
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const artist = artistView.useValue()
-
-	const enabled = Boolean(id && artist.open)
+	const enabled = Boolean(id && open)
 	const {data, isLoading} = trpc.artist.get.useQuery({id}, {
 		enabled,
 		keepPreviousData: true,
@@ -41,7 +48,7 @@ export default forwardRef(function ArtistView({
 	const makePlaylist = useMakePlaylist()
 	const onClickPlay = () => {
 		const playlistName = !data
-			? "New Playlist"
+			? (name ?? "New Playlist")
 			: data.name
 		makePlaylist({type: "artist", id}, playlistName)
 	}
@@ -77,12 +84,12 @@ export default forwardRef(function ArtistView({
 			ref={ref}
 			open={open}
 			z={z}
-			view={artist}
+			rect={rect}
 			description={data?.audiodb?.strBiographyEN}
 			coverId={data?.cover?.id}
 			coverPalette={data?.cover?.palette}
 			infos={infos}
-			title={data?.name}
+			title={data?.name ?? name}
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
 		>

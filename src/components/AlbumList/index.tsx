@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef, useDeferredValue } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
-import { albumView } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import CheckIcon from "icons/done.svg"
 import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
@@ -84,10 +84,9 @@ function AlbumItem({
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
 				startTransition(() => {
-					albumView.setState({
+					openPanel("album", {
 						id: album.id,
 						name: data?.name || album.name,
-						open: true,
 						rect: {top, left, width, src}
 					}, queryClient)
 				})

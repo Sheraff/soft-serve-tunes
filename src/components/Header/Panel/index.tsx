@@ -11,7 +11,7 @@ import SectionTitle from "atoms/SectionTitle"
 export default forwardRef(function PanelView({
 	open: _open,
 	z,
-	view,
+	rect,
 	description,
 	coverId,
 	coverPalette,
@@ -24,15 +24,12 @@ export default forwardRef(function PanelView({
 }: {
 	open: boolean
 	z: number
-	view: {
-		open: boolean
-		rect?: {
-			top: number,
-			left?: number,
-			width?: number,
-			height?: number,
-			src?: string,
-		}
+	rect?: {
+		top: number,
+		left?: number,
+		width?: number,
+		height?: number,
+		src?: string,
 	}
 	description?: string | null
 	coverId?: string
@@ -73,15 +70,15 @@ export default forwardRef(function PanelView({
 	// synchronously compute initial position if an `artist.rect` emitter has been set
 	const initialPositionRef = useRef<CSSProperties | null>(null)
 	const initialImageSrc = useRef<string | null>(null)
-	if (open && !initialPositionRef.current && view.rect) {
+	if (open && !initialPositionRef.current && rect) {
 		initialPositionRef.current = {
-			"--top": `${view.rect.top}px`,
-			"--left": `${view.rect.left ?? 0}px`,
-			"--scale": `${(view.rect.width ?? innerWidth) / innerWidth}`,
-			...(view.rect.height ? {"--clipY": `${view.rect.height}px`} : {}),
+			"--top": `${rect.top}px`,
+			"--left": `${rect.left ?? 0}px`,
+			"--scale": `${(rect.width ?? innerWidth) / innerWidth}`,
+			...(rect.height ? {"--clipY": `${rect.height}px`} : {}),
 			"--end": `${Math.hypot(innerWidth, innerHeight)}px`,
 		} as CSSProperties
-		initialImageSrc.current = view.rect.src || null
+		initialImageSrc.current = rect.src || null
 	}
 
 	return (
@@ -97,7 +94,7 @@ export default forwardRef(function PanelView({
 				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
-			{palette && view.open && (
+			{palette && _open && (
 				<Head>
 					<meta name="theme-color" content={palette["--palette-bg-main"]} />
 				</Head>

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptionFromPlaylistCredits"
-import { artistView } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import { Fragment, useMemo } from "react"
 
 export default function usePlaylistDescription({
@@ -27,10 +27,9 @@ export default function usePlaylistDescription({
 						type="button"
 						onClick={() => {
 							navigator.vibrate(1)
-							artistView.setState({
+							openPanel("artist", {
 								id: artistData[i]!.id,
 								name: artistData[i]!.name,
-								open: true,
 							}, queryClient)
 						}}
 					>

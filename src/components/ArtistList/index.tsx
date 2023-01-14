@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useState } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
-import { artistView } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import CheckIcon from "icons/done.svg"
 import { useQueryClient } from "@tanstack/react-query"
@@ -68,10 +68,9 @@ function ArtistItem({
 				const element = event.currentTarget
 				const {top, left, width} = element.getBoundingClientRect()
 				startTransition(() => {
-					artistView.setState({
+					openPanel("artist", {
 						id: artist.id,
 						name: data?.name || artist.name,
-						open: true,
 						rect: {top, left, width, src}
 					}, queryClient)
 				})
