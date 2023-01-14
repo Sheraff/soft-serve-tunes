@@ -50,8 +50,9 @@ const SinglePane = memo(function BasePane({
 			panelStack.setState(prev => {
 				const before = prev.slice(0, index + 1)
 				const after = prev.slice(index + 1)
-				const next: Panel[] = [...before, ...after.map(({type, value}) => ({
+				const next: Panel[] = [...before, ...after.map(({type, key, value}) => ({
 					type,
+					key,
 					value: {
 						...value,
 						open: "close",
@@ -65,13 +66,14 @@ const SinglePane = memo(function BasePane({
 			panelStack.setState(prev => {
 				const before = prev.slice(0, index)
 				const after = prev.slice(index)
-				const next: Panel[] = [...before, ...after.map(({type, value}) => ({
+				const next: Panel[] = [...before.map(({type, key, value}) => ({
 					type,
+					key,
 					value: {
 						...value,
 						open: "force-close",
 					}
-				} as Panel))]
+				} as Panel)), ...after]
 				return next
 			}, queryClient)
 			if (searchView.getValue(queryClient).open === "open") {
@@ -110,7 +112,7 @@ function PanelStack({stack}: {stack: Panel[]}) {
 	return (
 		<>
 			{stack.map((panel, i) => (
-				<SinglePane key={i} panel={panel} index={i} />
+				<SinglePane key={panel.key} panel={panel} index={i} />
 			))}
 		</>
 	)
@@ -119,8 +121,6 @@ function PanelStack({stack}: {stack: Panel[]}) {
 export default function Header() {
 	const stack = panelStack.useValue()
 	const editZ = stack.length
-
-	console.log("render header", stack)
 	
 	const [search, setSearch] = searchView.useState()
 
@@ -168,7 +168,7 @@ export default function Header() {
 					style={{"--z": BASE_HEADER_Z - 1} as CSSProperties}
 					onClick={() => {
 						navigator.vibrate(1)
-						if (search.open) {
+						if (search.open === "open") {
 							showHome()
 						} else {
 							setSearch(prev => ({...prev, open: "open"}))

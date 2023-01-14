@@ -10,31 +10,35 @@ export default function useDisplayAndShow(
 
 	const [display, setDisplay] = useState(open === "force-open" || open === "open")
 	const [show, setShow] = useState(open === "force-open")
-	const initial = useRef(true)
 
 	// toggle
 	useEffect(() => {
-		if (initial.current) {
-			return
-		}
 		startTransition(() => {
 			if (open === "force-open") {
-				setDisplay(true)
-				setShow(true)
+				if (!display || !show) {
+					setDisplay(true)
+					setShow(true)
+				}
 			} else if (open === "force-close") {
-				setShow(false)
-				setDisplay(false)
-			} else if (open) {
-				setDisplay(true)
+				if (display || show) {
+					setShow(false)
+					setDisplay(false)
+				}
+			} else if (open === "open") {
+				if (!display) {
+					setDisplay(true)
+				}
 			} else {
-				setShow(false)
+				if (show) {
+					setShow(false)
+				}
 			}
 		})
 	}, [open])
 
 	// show after display=true
 	useEffect(() => {
-		if (initial.current || !display || show) {
+		if (!display || show) {
 			return
 		}
 		let rafId = requestAnimationFrame(() => {
@@ -49,7 +53,7 @@ export default function useDisplayAndShow(
 
 	// display after show=false
 	useEffect(() => {
-		if (initial.current || show || !ref.current) {
+		if (show || !ref.current) {
 			return
 		}
 		if (open === "force-close" || !display) {
@@ -75,7 +79,7 @@ export default function useDisplayAndShow(
 	
 	// handle `done` after show=true
 	useEffect(() => {
-		if (initial.current || !show || !ref.current || !internalOnDone.current) {
+		if (!show || !ref.current || !internalOnDone.current) {
 			return
 		}
 		if (open === "force-open") {
@@ -97,10 +101,6 @@ export default function useDisplayAndShow(
 			controller.abort()
 		}
 	}, [show, ref, onDone])
-
-	useEffect(() => {
-		initial.current = false
-	}, [])
 
 	return { display, show }
 }

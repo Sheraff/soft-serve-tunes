@@ -4,47 +4,49 @@ import { editOverlay, editOverlaySetter } from "./editOverlay"
 import globalState from "./globalState"
 
 type ArtistPanel = {
-	type: "artist",
+	type: "artist"
+	key: string
 	value: {
-		id: string,
-		name?: string,
-		open: "open" | "close" | "force-open" | "force-close",
+		id: string
+		name?: string
+		open: "open" | "close" | "force-open" | "force-close"
 		rect?: {
-			top: number,
-			left: number,
-			width: number,
-			src?: string,
+			top: number
+			left: number
+			width: number
+			src?: string
 		}
 	}
 }
 type AlbumPanel = {
-	type: "album",
+	type: "album"
+	key: string
 	value: {
-		id: string,
-		name?: string,
-		open: "open" | "close" | "force-open" | "force-close",
+		id: string
+		name?: string
+		open: "open" | "close" | "force-open" | "force-close"
 		rect?: {
-			top: number,
-			left: number,
-			width: number,
-			src?: string,
+			top: number
+			left: number
+			width: number
+			src?: string
 		}
 	}
 }
 type PlaylistPanel = {
-	type: "playlist",
+	type: "playlist"
+	key: string
 	value: {
-		id: string,
-		name?: string,
-		open: "open" | "close" | "force-open" | "force-close",
+		id: string
+		name?: string
+		open: "open" | "close" | "force-open" | "force-close"
 		rect?: {
-			top: number,
-			height: number,
-			src?: string,
+			top: number
+			height: number
+			src?: string
 		}
 	}
 }
-
 
 type Panel =
 	| ArtistPanel
@@ -60,16 +62,22 @@ export const panelStack = globalState<Panel[]>(
 )
 
 export function openPanel<P extends Panel>(type: P["type"], value: Omit<P["value"], "open">, queryClient: QueryClient) {
-	panelStack.setState(prev => [
-		...prev,
-		{
-			type,
-			value: {
-				...value,
-				open: "open",
-			}
-		} as Panel
-	], queryClient)
+	panelStack.setState(prev => {
+		// const clean = prev.filter(({value: {id}}) => id !== value.id)
+		const clean = prev.filter((panel) => panel.type !== type)
+		const keyPrefix = clean.length > 0 ? clean.at(-1)!.key : "root"
+		return [
+			...clean,
+			{
+				type,
+				key: `${keyPrefix}-${value.id}`,
+				value: {
+					...value,
+					open: "open",
+				}
+			} as Panel
+		]
+	}, queryClient)
 }
 
 type SearchView = {
@@ -113,9 +121,10 @@ export function useShowHome() {
 		const stack = panelStack.getValue(queryClient)
 		if (stack.length === 0) return
 
-		const {type, value} = stack.at(-1)!
+		const {type, key, value} = stack.at(-1)!
 		panelStack.setState([{
 			type,
+			key,
 			value: {
 				...value,
 				open: "close",
@@ -126,14 +135,6 @@ export function useShowHome() {
 
 export function AppState() {
 	const queryClient = useQueryClient()
-
-	// useEffect(() => {
-	// 	const interval = setInterval(() => {
-	// 		const stack = panelStack.getValue(queryClient)
-	// 		console.log("stack", stack)
-	// 	}, 200)
-	// 	return () => clearInterval(interval)
-	// }, [queryClient])
 
 	useEffect(() => {
 		const controller = new AbortController()
@@ -151,15 +152,36 @@ export function AppState() {
 			}
 
 			const stack = panelStack.getValue(queryClient)
-			if (stack.length > 0) {
-				const {type, value} = stack.at(-1)!
-				panelStack.setState([{
+			if (stack.length > 1) {
+				// at least 2 in stack, force-open the penultimate, it will auto-trigger the closing of the last
+				const rest = stack.slice(0, -2)
+				const close = stack.at(-1)!
+				const {type, key, value} = stack.at(-2)!
+				const next = {
 					type,
+					key,
+					value: {
+						...value,
+						rect: undefined,
+						open: "force-open",
+					}
+				} as Panel
+				panelStack.setState([...rest, next, close], queryClient)
+				return
+			}
+			if (stack.length > 0) {
+				// only 1 in stack, close it
+				const rest = stack.slice(0, -1)
+				const {type, key, value} = stack.at(-1)!
+				const close = {
+					type,
+					key,
 					value: {
 						...value,
 						open: "close",
 					}
-				} as Panel], queryClient)
+				} as Panel
+				panelStack.setState([...rest, close], queryClient)
 				return
 			}
 
