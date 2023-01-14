@@ -30,6 +30,7 @@ export default function Header() {
 	const artistZ = stack.indexOf("artist")
 	const albumZ = stack.indexOf("album")
 	const playlistZ = stack.indexOf("playlist")
+	const maxZ = Math.max(searchZ, artistZ, albumZ, playlistZ)
 	
 	const [search, setSearch] = searchView.useState()
 	const [artist, setArtist] = artistView.useState()
@@ -39,30 +40,30 @@ export default function Header() {
 
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle, () => {
-		setArtist(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
+		if (artist.open) setArtist(prev => ({...prev, open: false}))
+		if (album.open) setAlbum(prev => ({...prev, open: false}))
+		if (playlist.open) setPlaylist(prev => ({...prev, open: false}))
 	})
 
 	const artistToggle = useRef<HTMLDivElement>(null)
 	const artistState = useDisplayAndShow(artist.open, artistToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
+		if (search.open) setSearch(prev => ({...prev, open: false}))
+		if (album.open) setAlbum(prev => ({...prev, open: false}))
+		if (playlist.open) setPlaylist(prev => ({...prev, open: false}))
 	})
 
 	const albumToggle = useRef<HTMLDivElement>(null)
 	const albumState = useDisplayAndShow(album.open, albumToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setArtist(prev => ({...prev, open: false}))
-		setPlaylist(prev => ({...prev, open: false}))
+		if (search.open) setSearch(prev => ({...prev, open: false}))
+		if (artist.open) setArtist(prev => ({...prev, open: false}))
+		if (playlist.open) setPlaylist(prev => ({...prev, open: false}))
 	})
 
 	const playlistToggle = useRef<HTMLDivElement>(null)
 	const playlistState = useDisplayAndShow(playlist.open, playlistToggle, () => {
-		setSearch(prev => ({...prev, open: false}))
-		setAlbum(prev => ({...prev, open: false}))
-		setArtist(prev => ({...prev, open: false}))
+		if (search.open) setSearch(prev => ({...prev, open: false}))
+		if (album.open) setAlbum(prev => ({...prev, open: false}))
+		if (artist.open) setArtist(prev => ({...prev, open: false}))
 	})
 
 	const editToggle = useRef<HTMLDivElement>(null)
@@ -123,7 +124,7 @@ export default function Header() {
 			)}
 			{artistState.display && (
 				<ArtistView
-					z={artistZ + 10}
+					z={artistZ === -1 ? maxZ + 11 : artistZ + 10}
 					open={artistState.show}
 					id={artist.id}
 					ref={artistToggle}
@@ -131,7 +132,7 @@ export default function Header() {
 			)}
 			{albumState.display && (
 				<AlbumView
-					z={albumZ + 10}
+					z={albumZ === -1 ? maxZ + 11 : albumZ + 10}
 					open={albumState.show}
 					id={album.id}
 					ref={albumToggle}
@@ -139,7 +140,7 @@ export default function Header() {
 			)}
 			{playlistState.display && (
 				<PlaylistView
-					z={playlistZ + 10}
+					z={playlistZ === -1 ? maxZ + 11 : playlistZ + 10}
 					open={playlistState.show}
 					id={playlist.id}
 					ref={playlistToggle}
@@ -147,7 +148,7 @@ export default function Header() {
 			)}
 			{editState.display && (
 				<EditOverlay
-					z={Math.max(searchZ, artistZ, albumZ) + 20}
+					z={maxZ + 20}
 					open={editState.show}
 					ref={editToggle}
 				/>

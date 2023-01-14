@@ -1,12 +1,15 @@
 import { type RefObject, startTransition, useEffect, useRef, useState } from "react"
 
 export default function useDisplayAndShow(
-	open: boolean,
+	open: "open" | "close" | "force-open" | "force-close",
 	ref: RefObject<HTMLElement>,
-	onDone?: () => void
+	onDone?: (open: "open" | "close" | "force-open" | "force-close") => void
 ) {
-	const [display, setDisplay] = useState(open)
-	const [show, setShow] = useState(open)
+	const internalOnDone = useRef(onDone)
+	internalOnDone.current = onDone
+
+	const [display, setDisplay] = useState(open === "force-open" || open === "open")
+	const [show, setShow] = useState(open === "force-open")
 	const initial = useRef(true)
 
 	// toggle
@@ -15,7 +18,13 @@ export default function useDisplayAndShow(
 			return
 		}
 		startTransition(() => {
-			if (open) {
+			if (open === "force-open") {
+				setDisplay(true)
+				setShow(true)
+			} else if (open === "force-close") {
+				setShow(false)
+				setDisplay(false)
+			} else if (open) {
 				setDisplay(true)
 			} else {
 				setShow(false)
@@ -25,7 +34,7 @@ export default function useDisplayAndShow(
 
 	// show after display=true
 	useEffect(() => {
-		if (initial.current || !display) {
+		if (initial.current || !display || show) {
 			return
 		}
 		let rafId = requestAnimationFrame(() => {
@@ -43,11 +52,16 @@ export default function useDisplayAndShow(
 		if (initial.current || show || !ref.current) {
 			return
 		}
+		if (open === "force-close" || !display) {
+			internalOnDone.current?.("force-close")
+			return
+		}
 		const controller = new AbortController()
 		const afterTransition = () => {
 			if (ref.current) {
 				startTransition(() => {
 					setDisplay(false)
+					internalOnDone.current?.("close")
 				})
 			}
 			controller.abort()
@@ -61,14 +75,18 @@ export default function useDisplayAndShow(
 	
 	// handle `done` after show=true
 	useEffect(() => {
-		if (initial.current || !show || !ref.current || !onDone) {
+		if (initial.current || !show || !ref.current || !internalOnDone.current) {
+			return
+		}
+		if (open === "force-open") {
+			internalOnDone.current?.("force-open")
 			return
 		}
 		const controller = new AbortController()
 		const afterTransition = () => {
 			if (ref.current) {
 				startTransition(() => {
-					onDone()
+					internalOnDone.current?.("open")
 				})
 			}
 			controller.abort()
