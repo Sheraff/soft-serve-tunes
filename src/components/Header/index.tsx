@@ -35,9 +35,11 @@ const PANEL_COMPONENTS = {
 const SinglePane = memo(function BasePane({
 	panel,
 	index,
+	isTop,
 }: {
 	panel: Panel
 	index: number
+	isTop: boolean
 }) {
 	const ref = useRef<HTMLDivElement>(null)
 	const queryClient = useQueryClient()
@@ -102,6 +104,7 @@ const SinglePane = memo(function BasePane({
 		<Component
 			ref={ref}
 			{...panel.value}
+			isTop={isTop}
 			open={state.show}
 			z={index + BASE_HEADER_Z}
 		/>
@@ -112,7 +115,12 @@ function PanelStack({stack}: {stack: Panel[]}) {
 	return (
 		<>
 			{stack.map((panel, i) => (
-				<SinglePane key={panel.key} panel={panel} index={i} />
+				<SinglePane
+					key={panel.key}
+					panel={panel}
+					index={i}
+					isTop={i === stack.length - 1}
+				/>
 			))}
 		</>
 	)

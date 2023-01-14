@@ -20,7 +20,8 @@ export default forwardRef(function PanelView({
 	title,
 	onClickPlay,
 	children,
-	animationName
+	animationName,
+	isTop,
 }: {
 	open: boolean
 	z: number
@@ -40,6 +41,7 @@ export default forwardRef(function PanelView({
 	onClickPlay: () => void
 	children: ReactNode
 	animationName: string
+	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
 
@@ -94,7 +96,7 @@ export default forwardRef(function PanelView({
 				...(initialPositionRef.current || {}),
 			} as CSSProperties}
 		>
-			{palette && _open && (
+			{palette && isTop && (
 				<Head>
 					<meta name="theme-color" content={palette["--palette-bg-main"]} />
 				</Head>
