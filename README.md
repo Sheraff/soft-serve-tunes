@@ -9,6 +9,16 @@ https://user-images.githubusercontent.com/1325721/212537689-021062ec-f67c-4b37-8
 
 ------
 
+## Commands
+
+| command         | description                                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run db`    | runs necessary prisma scripts after a change in schema                                                                                                                                            |
+| `npm run spawn` | starts a process in `pm2` after a build (if a process already exists, you should `pm2 delete soft-serve-tunes` before)                                                                            |
+| `npm run wake`  | server cold start is quite long (because we're verifying all files in case anything changed while the server was off) ; this command starts the cold-start process without having to open the app |
+
+------
+
 ## TODO
 - [ ] `linkAlbum` in `createTrack` fails a lot and slowly
   <details>
