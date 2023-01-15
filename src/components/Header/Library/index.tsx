@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, type CSSProperties, useRef, useEffect, useState, useImperativeHandle, useCallback, memo } from "react"
+import { type ForwardedRef, forwardRef, type CSSProperties, useRef, useEffect, useState, useImperativeHandle, useCallback, memo, useMemo } from "react"
 import styles from "./index.module.css"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { trpc } from "utils/trpc"
@@ -6,6 +6,14 @@ import { PastSearchGenre } from "components/Header/Search/PastSearch/PastSearchG
 import { PastSearchAlbum } from "components/Header/Search/PastSearch/PastSearchAlbum"
 import { PastSearchArtist } from "components/Header/Search/PastSearch/PastSearchArtist"
 import { PastSearchPlaylist } from "components/Header/Search/PastSearch/PastSearchPlaylist"
+import { PastSearchTrack } from "../Search/PastSearch/PastSearchTrack"
+
+function indexableString(str: string) {
+	return str
+		.toUpperCase()
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+}
 
 const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 	data,
@@ -22,7 +30,8 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 		letter: string
 		count: number
 	}[]>((acc, {name}) => {
-		const letter = name[0]!.toUpperCase()
+		const _letter = indexableString(name[0]!)
+		const letter = _letter >= "A" && _letter <= "Z" ? _letter : "#"
 		if (letter === acc.at(-1)?.letter) {
 			acc.at(-1)!.count++
 		} else {
@@ -73,7 +82,10 @@ function BaseList({
 	}[]
 	component: (props: {id: string, showType: false}) => JSX.Element
 }) {
-	const data = [..._data].sort((a, b) => a.name < b.name ? -1 : 1)
+	const data = useMemo(
+		() => [..._data].sort((a, b) => indexableString(a.name) < indexableString(b.name) ? -1 : 1),
+		[_data]
+	)
 	const scrollable = useRef<HTMLDivElement>(null)
 	const count = data.length
 
@@ -185,11 +197,22 @@ function PlaylistList() {
 	)
 }
 
+function TrackList() {
+	const {data = []} = trpc.track.searchable.useQuery()
+	return (
+		<BaseList
+			data={data}
+			component={PastSearchTrack}
+		/>
+	)
+}
+
 const LIST_COMPONENTS = {
 	Artists: memo(ArtistList),
 	Albums: memo(AlbumList),
 	Playlists: memo(PlaylistList),
 	Genres: memo(GenreList),
+	Tracks: memo(TrackList),
 } as const
 
 export default forwardRef(function Library({
