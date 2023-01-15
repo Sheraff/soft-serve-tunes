@@ -8,6 +8,7 @@ import { PastSearchArtist } from "components/Header/Search/PastSearch/PastSearch
 import { PastSearchPlaylist } from "components/Header/Search/PastSearch/PastSearchPlaylist"
 import { PastSearchTrack } from "components/Header/Search/PastSearch/PastSearchTrack"
 import suspensePersistedState from "client/db/suspensePersistedState"
+import getTouchFromId from "utils/getTouchFromId"
 
 function indexableString(str: string) {
 	if (!str) return ""
@@ -47,15 +48,26 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 		if (!el) return
 		const controller = new AbortController()
 
-		const onTouch = (e: TouchEvent) => {
-			const {clientY} = e.touches[0]!
+		let touch: Touch | null = null
+		el.addEventListener("touchstart", (e: TouchEvent) => {
+			touch = e.touches[0]!
+		}, {passive: true, signal: controller.signal})
+
+		el.addEventListener("touchmove", (e: TouchEvent) => {
+			if (!touch) return
+			const current = getTouchFromId(e.touches, touch.identifier)
+			if (!current) return
+
+			const deltaX = current.clientX - touch.clientX
+			const deltaY = current.clientY - touch.clientY
+			if (Math.abs(deltaX) > Math.abs(deltaY)) return
+
+			const {clientY} = current
 			const {top, height} = el.getBoundingClientRect()
 			const ratio = (clientY - top) / height * total
 			scrollTo(ratio)
-		}
-
-		el.addEventListener("touchstart", onTouch, {passive: true, signal: controller.signal})
-		el.addEventListener("touchmove", onTouch, {passive: true, signal: controller.signal})
+			touch = current
+		}, {passive: true, signal: controller.signal})
 
 		return () => controller.abort()
 	}, [total, scrollTo])

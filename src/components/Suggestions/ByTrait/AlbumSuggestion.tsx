@@ -6,7 +6,7 @@ import { useMemo, useState } from "react"
 import { trpc } from "utils/trpc"
 import styles from "../index.module.css"
 import PillChoice from "../PillChoice"
-import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSelectedOptions, Trait } from "./utils"
+import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSelectedOptions, type Trait } from "./utils"
 import AlbumList from "components/AlbumList"
 
 const preferredAlbumList = suspensePersistedState<Trait[]>("preferredAlbumList", [{
