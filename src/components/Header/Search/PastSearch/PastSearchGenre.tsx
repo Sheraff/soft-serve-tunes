@@ -33,6 +33,8 @@ export function PastSearchGenre({
 			className={styles.list}
 			onClick={onClick}
 			name={entity?.name}
+			id={id}
+			type="genre"
 		>
 			<p className={styles.info}>
 				{info.join(" · ")}

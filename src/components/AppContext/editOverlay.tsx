@@ -1,10 +1,10 @@
 import globalState from "./globalState"
 
 type EditOverlay = {
-	type: "artist" | "album" | "track" | "playlist" | null
+	type: "artist" | "album" | "track" | "playlist" | "genre" | null
 	selection: {
 		id: string
-		type: "artist" | "album" | "track" | "playlist"
+		type: "artist" | "album" | "track" | "playlist" | "genre"
 	}[]
 }
 

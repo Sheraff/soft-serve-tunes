@@ -43,6 +43,8 @@
 	display: grid;
 	grid-template-columns: 100%;
 	gap: 4px;
+	touch-action: pan-x pan-y;
+	user-select: none;
 }
 
 .check {

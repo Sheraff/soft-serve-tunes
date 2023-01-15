@@ -35,6 +35,8 @@ export function PastSearchArtist({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			id={id}
+			type="artist"
 		>
 			<p className={styles.info}>
 				{info.join(" · ")}

@@ -18,6 +18,8 @@
 	padding-left: 6px;
 	background-color: var(--palette-primary);
 	color: var(--palette-bg-main);
+	touch-action: pan-x pan-y;
+	user-select: none;
 }
 .icon {
 	font-size: 16px;

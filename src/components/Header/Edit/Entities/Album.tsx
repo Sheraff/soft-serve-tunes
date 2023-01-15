@@ -226,6 +226,7 @@ export default function EditAlbum({
 							lines={1}
 							artists={artists.slice(0, 10)}
 							selected={exactArtist ? artists[0]!.id : undefined}
+							selectable={false}
 							onClick={(artist) => {
 								navigator.vibrate(1)
 								if (artist.name === artistState) {

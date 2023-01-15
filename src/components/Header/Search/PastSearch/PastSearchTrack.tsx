@@ -37,6 +37,8 @@ export function PastSearchTrack({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			id={id}
+			type="track"
 		>
 			<p className={styles.info}>
 				{info.join(" · ")}

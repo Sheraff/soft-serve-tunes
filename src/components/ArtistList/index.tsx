@@ -1,10 +1,12 @@
 import classNames from "classnames"
-import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useState } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useState, useDeferredValue } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import CheckIcon from "icons/done.svg"
 import { useQueryClient } from "@tanstack/react-query"
+import useLongPress from "components/AlbumList/useLongPress"
+import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 
 type ArtistListItem = {
 	id: string
@@ -18,6 +20,7 @@ function ArtistItem({
 	onClick,
 	index,
 	selected,
+	selectable,
 }: {
 	artist: ArtistListItem
 	enableSiblings?: () => void
@@ -25,6 +28,7 @@ function ArtistItem({
 	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	index: number
 	selected: boolean
+	selectable?: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const {data} = trpc.artist.miniature.useQuery({id: artist.id})
@@ -53,12 +57,25 @@ function ArtistItem({
 
 	const queryClient = useQueryClient()
 
+	const onLong = selectable ? () => {
+		navigator.vibrate(1)
+		editOverlay.setState(
+			editOverlaySetter({type: "artist", id: artist.id}),
+			queryClient
+		)
+	} : undefined
+	useLongPress({onLong, item})
+
 	return (
 		<button
-			ref={enableSiblings ? item : undefined}
+			ref={item}
 			className={classNames(styles.button, {[styles.selected]: selected})}
 			type="button"
 			onClick={(event) => {
+				if (onLong && editOverlay.getValue(queryClient).type === "artist") {
+					onLong()
+					return
+				}
 				navigator.vibrate(1)
 				if (onClick) {
 					data && onClick(data)
@@ -109,6 +126,7 @@ export default forwardRef(function ArtistList({
 	lines = 3,
 	loading = false,
 	selected,
+	selectable = true,
 }: {
 	artists: ArtistListItem[]
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
@@ -116,8 +134,13 @@ export default forwardRef(function ArtistList({
 	lines?: 1 | 3
 	loading?: boolean
 	selected?: string
+	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [enableUpTo, setEnableUpTo] = useState(12)
+
+	const _editViewState = editOverlay.useValue()
+	const editViewState = useDeferredValue(_editViewState)
+	const isSelection = selectable && editViewState.type === "artist"
 
 	return (
 		<div
@@ -134,7 +157,8 @@ export default forwardRef(function ArtistList({
 								onSelect={onSelect}
 								onClick={onClick}
 								index={i}
-								selected={selected === artist.id}
+								selected={selected === artist.id || (isSelection && editViewState.selection.some(({id}) => id === artist.id))}
+								selectable={selectable}
 							/>
 						)}
 					</li>

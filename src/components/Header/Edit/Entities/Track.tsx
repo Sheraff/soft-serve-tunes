@@ -379,6 +379,7 @@ export default function EditTrack({
 								}
 							}}
 							loading
+							selectable={false}
 						/>
 					</div>
 					

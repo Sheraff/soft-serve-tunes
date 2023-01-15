@@ -1,6 +1,6 @@
 import { type editOverlay } from "components/AppContext/editOverlay"
 import DeleteIcon from "icons/delete.svg"
-import { useCallback, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import getTouchFromId from "utils/getTouchFromId"
 import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
@@ -18,14 +18,23 @@ export default function Delete({
 }) {
 	const button = useRef<HTMLButtonElement>(null)
 
-	const {mutateAsync: deleteTrack} = trpc.edit.track.delete.useMutation({retry: 0})
-	const {mutateAsync: deleteAlbum} = trpc.edit.album.delete.useMutation({retry: 0})
-	const deleteOther = useCallback(() => console.warn(`No delete mutation for type ${type}`), [type])
+	const deleteTrack = trpc.edit.track.delete.useMutation({retry: 0})
+	const deleteAlbum = trpc.edit.album.delete.useMutation({retry: 0})
+	const deleteArtist = trpc.edit.artist.delete.useMutation({retry: 0})
+	const deleteGenre = trpc.edit.genre.delete.useMutation({retry: 0})
+	const deletePlaylist = trpc.playlist.delete.useMutation({retry: 0})
+
 	const mutate = type === "track"
-		? deleteTrack
+		? deleteTrack.mutateAsync
 		: type === "album"
-		? deleteAlbum
-		: deleteOther
+		? deleteAlbum.mutateAsync
+		: type === "playlist"
+		? deletePlaylist.mutateAsync
+		: type === "artist"
+		? deleteArtist.mutateAsync
+		: type === "genre"
+		? deleteGenre.mutateAsync
+		: (() => {throw new Error(`No delete mutation for type ${type}`)})()
 
 	useEffect(() => {
 		const element = button.current

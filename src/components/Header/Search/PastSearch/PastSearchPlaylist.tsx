@@ -32,6 +32,8 @@ export function PastSearchPlaylist({
 			coverId={entity?.albums?.find(a => a.coverId)?.coverId}
 			onClick={onClick}
 			name={entity?.name}
+			id={id}
+			type="playlist"
 		>
 			<p className={styles.info}>
 				{info.join(" · ")}

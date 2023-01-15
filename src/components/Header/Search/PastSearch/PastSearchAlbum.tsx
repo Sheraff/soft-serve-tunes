@@ -34,6 +34,8 @@ export function PastSearchAlbum({
 			coverId={entity?.cover?.id}
 			onClick={onClick}
 			name={entity?.name}
+			id={id}
+			type="album"
 		>
 			<p className={styles.info}>
 				{info.join(" · ")}
