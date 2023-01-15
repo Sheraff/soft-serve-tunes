@@ -60,9 +60,9 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 
 	return (
 		<div className={styles.alphabet} ref={main}>
-			{list.map(({letter, count}) => (
+			{list.map(({letter, count}, i) => (
 				<div
-					key={letter}
+					key={i}
 					style={{"--letter-ratio": `${count / total}`} as CSSProperties}
 				>
 					{letter}
