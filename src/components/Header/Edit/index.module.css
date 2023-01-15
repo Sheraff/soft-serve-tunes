@@ -62,6 +62,7 @@
 	align-items: center;
 
 	overflow-y: hidden;
+	margin-top: -1px; /* avoid sub-pixel gap between header and body */
 }
 .body[data-open="true"] {
 	clip-path: inset(0 0 0 0);
