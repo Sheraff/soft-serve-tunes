@@ -19,18 +19,22 @@ export default function SignIn({
 	return (
 		<div className={styles.main}>
 			{Object.values(providers).map((provider) => {
-				const Icon = Icons[provider.id as keyof typeof Icons]
+				const id = provider.id as keyof typeof Icons
+				const Icon = Icons[id]
 				return (
 				<button
 					type="button"
 					key={provider.name}
-					className={classNames(styles.item, styles[provider.id])}
+					className={classNames(styles.item, styles[id])}
 					onClick={() => signIn(provider.id)}
 				>
 					<Icon />
 					Sign in with {provider.name}
 				</button>
 			)})}
+			<div className={styles.credits}>
+				<a href="https://github.com/Sheraff/soft-serve-tunes"><GithubIcon />source</a>
+			</div>
 		</div>
 	)
 }

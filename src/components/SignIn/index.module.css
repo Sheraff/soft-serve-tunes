@@ -7,6 +7,21 @@
 	padding: 20px;
 }
 
+.credits {
+	margin-top: 16px;
+	font-size: 12px;
+}
+.credits > * {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.credits svg {
+	font-size: 16px;
+	margin-right: 4px;
+	vertical-align: text-bottom;
+}
+
 .item {
 	font-size: 12px;
 	border-radius: 4px;
