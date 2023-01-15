@@ -9,6 +9,7 @@ import { PastSearchPlaylist } from "components/Header/Search/PastSearch/PastSear
 import { PastSearchTrack } from "../Search/PastSearch/PastSearchTrack"
 
 function indexableString(str: string) {
+	if (!str) return ""
 	return str
 		.toUpperCase()
 		.normalize("NFD")
