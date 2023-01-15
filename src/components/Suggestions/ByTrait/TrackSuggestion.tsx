@@ -23,7 +23,9 @@ export default function TracksByTraitSuggestion() {
 	const onSelect = addNewTraitByOption(setPreferredTracks)
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
-	const {data: tracks = []} = trpc.track.byMultiTraits.useQuery({traits: preferredOptions})
+	const {data: tracks = []} = trpc.track.byMultiTraits.useQuery({traits: preferredOptions}, {
+		keepPreviousData: true,
+	})
 	const title = useMemo(() => titleFromSelectedOptions(preferredOptions, "tracks"), [preferredOptions])
 	const currentOptions = selectionFromSelectedOptions(preferredOptions)
 	return (
