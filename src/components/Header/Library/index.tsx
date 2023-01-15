@@ -141,7 +141,7 @@ function BaseList({
 			if (rafId) return
 			rafId = requestAnimationFrame(() => {
 				rafId = null
-				const scrollRatio = element.scrollTop / (element.scrollHeight - element.clientHeight)
+				const scrollRatio = element.scrollTop / element.scrollHeight
 				alphabet.current!.style.setProperty("--scroll-offset", `${scrollRatio * alphabet.current!.offsetHeight}px`)
 			})
 		}, {passive: true, signal: controller.signal})
@@ -154,8 +154,16 @@ function BaseList({
 
 	const scrollTo = useCallback((index: number) => {
 		scrollable.current!.scrollTo({
-			top: index / count * (scrollable.current!.scrollHeight - scrollable.current!.clientHeight),
+			top: index / count * scrollable.current!.scrollHeight,
 		})
+	}, [count])
+
+	useEffect(() => {
+		const el = scrollable.current
+		const al = alphabet.current
+		if (!el || !al) return
+		const ratio = el.clientHeight / el.scrollHeight
+		al.style.setProperty("--scroll-window", `${ratio * 100}%`)
 	}, [count])
 
 	return (

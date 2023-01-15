@@ -81,11 +81,11 @@
 	content: "";
 	position: absolute;
 	z-index: -1;
-	top: -8px;
+	top: -4px;
 	left: calc(50% - 4px);
+	height: max(24px, calc(var(--scroll-window, 8px) + 8px));
 	width: 16px;
-	height: 16px;
-	border-radius: 50%;
+	border-radius: 8px;
 	border: 1px solid var(--palette-secondary);
 	transform: translateY(var(--scroll-offset, 0));
 }
