@@ -101,21 +101,26 @@ export default forwardRef(function PanelView({
 					<meta name="theme-color" content={palette["--palette-bg-main"]} />
 				</Head>
 			)}
-			<img
-				className={classNames(styles.img, styles.preview)}
-				src={initialImageSrc.current || ""}
-				alt=""
-			/>
-			{!coverElement && (
+			{initialImageSrc.current && (
+				<img
+					className={classNames(styles.img, styles.preview)}
+					src={initialImageSrc.current}
+					alt=""
+				/>
+			)}
+			{!coverElement && coverId && (
 				<img
 					className={styles.img}
-					src={coverId ? `/api/cover/${coverId}` : ""}
+					src={`/api/cover/${coverId}`}
 					alt=""
-					decoding="async"
+					decoding={initialImageSrc.current ? "async" : undefined}
 				/>
 			)}
 			{coverElement && (
 					cloneElement(coverElement, {className: styles.img})
+			)}
+			{!initialImageSrc.current && !coverId && !coverElement && (
+				<div className={styles.img} />
 			)}
 			<div className={styles.head}>
 				<SectionTitle className={styles.sectionTitle}>{title}</SectionTitle>
