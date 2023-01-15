@@ -4,21 +4,24 @@ import {
 	mainView,
 	panelStack,
 	searchView,
+	libraryView,
 	useShowHome,
 } from "components/AppContext"
 import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
-import { type CSSProperties, memo, useRef } from "react"
+import { type CSSProperties, memo, useRef, useEffect } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import PlaylistView from "./Playlist"
 import EditOverlay from "./Edit"
+import Library from "./Library"
 import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
 import LogoutIcon from "icons/logout.svg"
 import DashboardIcon from "icons/dashboard.svg"
 import QueueMusicIcon from "icons/queue_music.svg"
+import LibraryIcon from "icons/library_music.svg"
 import Upload from "./Upload"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -78,8 +81,8 @@ const SinglePane = memo(function BasePane({
 				} as Panel)), ...after]
 				return next
 			}, queryClient)
-			if (searchView.getValue(queryClient).open === "open") {
-				searchView.setState(prev => ({...prev, open: "close"}), queryClient)
+			if (searchView.getValue(queryClient).open) {
+				searchView.setState(prev => ({...prev, open: false}), queryClient)
 			}
 			return
 		}
@@ -128,20 +131,23 @@ function PanelStack({stack}: {stack: Panel[]}) {
 
 export default function Header() {
 	const stack = panelStack.useValue()
-	const editZ = stack.length
 	
+	// search
 	const [search, setSearch] = searchView.useState()
-
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle)
+	const trpcClient = trpc.useContext()
+	useEffect(() => {
+		trpcClient.track.searchable.prefetch()
+	}, [trpcClient])
 
+	// edit
 	const edit = editOverlay.useValue()
 	const editToggle = useRef<HTMLDivElement>(null)
-	const editState = useDisplayAndShow(Boolean(edit.selection.length) ? "open" : "close", editToggle)
+	const editState = useDisplayAndShow(Boolean(edit.selection.length), editToggle)
+	const editZ = stack.length
 
-	// prefetch select queries
-	trpc.track.searchable.useQuery()
-
+	// dashboard
 	const showHome = useShowHome()
 	const main = mainView.useValue()
 	const showDashboardIcon = main === "home"
@@ -154,6 +160,11 @@ export default function Header() {
 		}
 	}
 
+	// library
+	const [library, setLibrary] = libraryView.useState()
+	const libraryToggle = useRef<HTMLDivElement>(null)
+	const libraryState = useDisplayAndShow(library.open, libraryToggle)
+
 	return (
 		<>
 			<div className={styles.head}>
@@ -165,6 +176,12 @@ export default function Header() {
 					<LogoutIcon />
 				</button>
 				<Upload className={styles.button} />
+				<button onClick={() => {
+					navigator.vibrate(1)
+					setLibrary({open: !library.open})
+				}} className={styles.button}>
+					<LibraryIcon />
+				</button>
 				<button onClick={onClickMainIcon} className={styles.button}>
 					{showDashboardIcon && <DashboardIcon />}
 					{!showDashboardIcon && <QueueMusicIcon />}
@@ -176,10 +193,10 @@ export default function Header() {
 					style={{"--z": BASE_HEADER_Z - 1} as CSSProperties}
 					onClick={() => {
 						navigator.vibrate(1)
-						if (search.open === "open") {
+						if (search.open) {
 							showHome()
 						} else {
-							setSearch(prev => ({...prev, open: "open"}))
+							setSearch(prev => ({...prev, open: true}))
 						}
 					}}
 				>
@@ -190,6 +207,13 @@ export default function Header() {
 				<Search
 					z={BASE_HEADER_Z - 1}
 					open={searchState.show}
+				/>
+			)}
+			{libraryState.display && (
+				<Library
+					z={BASE_HEADER_Z}
+					open={libraryState.show}
+					ref={libraryToggle}
 				/>
 			)}
 			<PanelStack stack={stack} />
