@@ -57,6 +57,9 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 			const mimetype = response.headers.get("content-type") ?? "image/*"
 			step = 2
 			const buffer = await response.arrayBuffer()
+			if (buffer.byteLength === 0) {
+				throw new Error(`Empty buffer response from ${url} with mimetype ${mimetype}`)
+			}
 			step = 3
 			const extension = extname(url) || undefined
 			step = 4

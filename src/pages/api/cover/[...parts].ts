@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
-import { access, stat } from "node:fs/promises"
+import { access, stat, unlink } from "node:fs/promises"
 import log from "utils/logger"
 import Queue from "utils/Queue"
 import {
@@ -19,6 +19,8 @@ const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
 const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
 // @ts-expect-error -- see above
 globalThis.sharpQueue = queue
+
+const runningTransforms = new Set<string>()
 
 export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   const {parts} = req.query
@@ -49,6 +51,15 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
       return res.status(304).end()
     }
 
+    if (stats.size === 0) {
+      if (runningTransforms.has(exactFilePath)) {
+        log("warn", "weird", "sharp", `${width}x${width} cover #${id} is 0 bytes but is being generated (${exactFilePath})`)
+      } else {
+        log("error", "500", "sharp", `${width}x${width} cover #${id} is 0 bytes and is not being generated (${exactFilePath})`)
+      }
+      throw new Error(`Transformed file is 0 bytes, switch to streaming transform (${exactFilePath})`)
+    }
+
     returnStream = createReadStream(exactFilePath)
   } catch {
     const cover = await prisma.image.findUnique({
@@ -62,7 +73,12 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     try {
       await queue.next()
-      await access(originalFilePath, constants.R_OK)
+      const stats = await stat(originalFilePath)
+      
+      if (stats.size === 0) {
+        throw new Error(`Original file is 0 bytes (${originalFilePath})`)
+      }
+
       log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
       const transformStream = sharp(originalFilePath)
         .resize(width, width, {
@@ -71,15 +87,30 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
           fastShrinkOnLoad: false,
         })
         .toFormat("avif")
+
       // store
-      transformStream
-        .clone()
-        .toFile(exactFilePath)
-        .then(() => log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`))
+      if (!runningTransforms.has(exactFilePath)) {
+        runningTransforms.add(exactFilePath)
+        transformStream
+          .clone()
+          .toFile(exactFilePath)
+          .then(() => {
+            log("ready", "200", "sharp", `${width}x${width} cover ${cover.path}`)
+          })
+          .catch((error) => {
+            log("error", "500", "sharp", `Failed during transform ${width}x${width} cover ${cover.path}`)
+            console.error(error)
+          })
+          .finally(() => {
+            runningTransforms.delete(exactFilePath)
+          })
+      }
+
       // respond
       returnStream = transformStream
-    } catch {
+    } catch (e) {
       log("error", "500", "sharp", `no such file: cover #${id} @ ${cover.path}`)
+      console.error(e)
       removeImageEntry(id)
       return res.status(404).json({ error: "Cover not found" })
     }
@@ -121,18 +152,22 @@ async function removeImageEntry(id: string) {
   const artists = await prisma.artist.findMany({
     where: { coverId: id },
   })
-  await prisma.image.delete({
+  const cover = await prisma.image.delete({
     where: { id },
+    select: { path: true },
   })
   for (const track of tracks) {
     await computeTrackCover(track.id, {album: false, artist: false})
   }
   for (const album of albums) {
-    await computeAlbumCover(album.id, {artist: false, tracks: false})
+    await computeAlbumCover(album.id, {artist: false, tracks: true})
   }
   for (const artist of artists) {
     await computeArtistCover(artist.id, {album: false, tracks: false})
   }
-
-  log("warn", "500", "sharp", `deleted entry for file: cover #${id}`)
+  try {
+    const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
+    await unlink(originalFilePath)
+  } catch {}
+  log("warn", "500", "sharp", `deleted entry for file: cover #${id} (${cover.path})`)
 }

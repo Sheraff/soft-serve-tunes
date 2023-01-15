@@ -137,7 +137,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const position = fingerprinted?.no ?? metadata.common.track.no ?? undefined
 
 		const selectedCover = selectCover(metadata.common.picture)
-		const { hash, path: imagePath, palette } = selectedCover
+		const { hash, path: imagePath, palette } = selectedCover && selectedCover.data.byteLength
 			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split("/")[1], `from createTrack ${name}`)
 			: { hash: "", path: "", palette: undefined }
 
