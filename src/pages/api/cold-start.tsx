@@ -5,6 +5,10 @@ import createTrack from "server/db/createTrack"
 import listFilesFromDir from "server/db/listFilesFromDir"
 import log from "utils/logger"
 import { socketServer } from "utils/typedWs/server"
+import { stat, unlink } from "fs/promises"
+import { removeImageEntry } from "pages/api/cover/[...parts]"
+import { join, relative } from "path"
+import { env } from "env/server.mjs"
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type because it must be imported
 export const loadingStatus = (globalThis.loadingStatus || {
@@ -29,16 +33,49 @@ function act() {
 			: 0
 		socketServer.emit("loading", progress)
 	}, 500)
-	loadingStatus.promise = listFilesFromDir()
-		.then(async (list) => {
-			total = list.length
-			for (const file of list) {
+	loadingStatus.promise = Promise.all([
+		listFilesFromDir(),
+		listFilesFromDir(".meta")
+	])
+		.then(async ([trackFiles, imageFiles]) => {
+			total = trackFiles.length + imageFiles.length
+			for (const file of trackFiles) {
 				await createTrack(file)
 				done++
 			}
-			return new Set(list)
+			for (const file of imageFiles) {
+				let img: { id: string } | null = null
+				const path = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file)
+				try {
+					const match = path.match(/\/([a-z0-9]*)_[0-9]{1,4}x[0-9]{1,4}\./)
+					if (!match) {
+						img = await prisma.image.findUnique({
+							where: { path },
+							select: { id: true }
+						})
+						if (!img) throw new Error("unused")
+					} else {
+						const id = match[1]
+						img = await prisma.image.findUnique({
+							where: { id },
+							select: { id: true }
+						})
+						if (!img) throw new Error("derived image without parent")
+					}
+					const stats = await stat(file)
+					if (stats.size === 0) throw new Error("empty file")
+				} catch (e) {
+					if (img) {
+						await removeImageEntry(img.id)
+					} else {
+						await unlink(file)
+					}
+				}
+				done++
+			}
+			return [new Set(trackFiles), new Set(imageFiles)] as const
 		})
-		.then(async (list) => {
+		.then(async ([trackPaths, imagePaths]) => {
 			try {
 				// remove tracks without files
 				const orphanTracks = await prisma.track.findMany({
@@ -54,25 +91,49 @@ function act() {
 					}
 				}
 
-				// remove database records of files that have no filesystem file
-				const chunkSize = 300
-				let cursor = 0
-				let dbFiles
-				do {
-					dbFiles = await prisma.file.findMany({
-						take: chunkSize,
-						skip: cursor,
-						select: { path: true },
-					})
-					cursor += chunkSize
-					for (const dbFile of dbFiles) {
-						if (!list.has(dbFile.path)) {
-							await fileWatcher.removeFileFromDb(dbFile.path)
+				let removed = false
+				// since we already listed all files in the library (`listFilesFromDir`),
+				// we can use that to remove files from the db that are no longer in the library
+				tracks: {
+					const chunkSize = 300
+					let cursor = 0
+					let dbFiles
+					do {
+						dbFiles = await prisma.file.findMany({
+							take: chunkSize,
+							skip: cursor,
+							select: { path: true },
+						})
+						cursor += chunkSize
+						for (const dbFile of dbFiles) {
+							if (!trackPaths.has(dbFile.path)) {
+								removed = true
+								await fileWatcher.removeFileFromDb(dbFile.path)
+							}
 						}
-					}
-				} while (dbFiles.length === chunkSize)
+					} while (dbFiles.length === chunkSize)
+				}
+				imgs: {
+					const chunkSize = 300
+					let cursor = 0
+					let dbImages
+					do {
+						dbImages = await prisma.image.findMany({
+							take: chunkSize,
+							skip: cursor,
+							select: { path: true, id: true },
+						})
+						cursor += chunkSize
+						for (const dbImage of dbImages) {
+							if (!imagePaths.has(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dbImage.path))) {
+								removed = true
+								await removeImageEntry(dbImage.id)
+							}
+						}
+					} while (dbImages.length === chunkSize)
+				}
 
-				if (dbFiles.length || orphanTracks.length) {
+				if (removed || orphanTracks.length) {
 					fileWatcher.scheduleCleanup()
 				}
 			} catch (e) {

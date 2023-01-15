@@ -142,7 +142,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     })
 }
 
-async function removeImageEntry(id: string) {
+export async function removeImageEntry(id: string) {
   const tracks = await prisma.track.findMany({
     where: { coverId: id },
   })
