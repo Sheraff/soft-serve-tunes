@@ -6,7 +6,8 @@ import { PastSearchGenre } from "components/Header/Search/PastSearch/PastSearchG
 import { PastSearchAlbum } from "components/Header/Search/PastSearch/PastSearchAlbum"
 import { PastSearchArtist } from "components/Header/Search/PastSearch/PastSearchArtist"
 import { PastSearchPlaylist } from "components/Header/Search/PastSearch/PastSearchPlaylist"
-import { PastSearchTrack } from "../Search/PastSearch/PastSearchTrack"
+import { PastSearchTrack } from "components/Header/Search/PastSearch/PastSearchTrack"
+import suspensePersistedState from "client/db/suspensePersistedState"
 
 function indexableString(str: string) {
 	if (!str) return ""
@@ -216,6 +217,8 @@ const LIST_COMPONENTS = {
 	Tracks: memo(TrackList),
 } as const
 
+export const libraryTab = suspensePersistedState<keyof typeof LIST_COMPONENTS>("libraryTab", "Artists")
+
 export default forwardRef(function Library({
 	z,
 	open,
@@ -223,7 +226,7 @@ export default forwardRef(function Library({
 	z: number
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [tab, setTab] = useState<keyof typeof LIST_COMPONENTS>("Artists")
+	const [tab, setTab] = libraryTab.useState()
 	const List = LIST_COMPONENTS[tab]
 	return (
 		<div

@@ -10,7 +10,7 @@ import {
 import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
-import { type CSSProperties, memo, useRef, useEffect } from "react"
+import { type CSSProperties, memo, useRef, useEffect, Suspense } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import PlaylistView from "./Playlist"
@@ -210,11 +210,13 @@ export default function Header() {
 				/>
 			)}
 			{libraryState.display && (
-				<Library
-					z={BASE_HEADER_Z}
-					open={libraryState.show}
-					ref={libraryToggle}
-				/>
+				<Suspense>
+					<Library
+						z={BASE_HEADER_Z}
+						open={libraryState.show}
+						ref={libraryToggle}
+					/>
+				</Suspense>
 			)}
 			<PanelStack stack={stack} />
 			{editState.display && (
