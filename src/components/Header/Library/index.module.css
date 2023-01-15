@@ -1,0 +1,112 @@
+.main {
+	grid-area: 1 / 1 / 4 / 2;
+	z-index: var(--z, 2);
+	transition: transform 350ms;
+	transform: translateY(-100vh);
+	pointer-events: none;
+	color: var(--palette-primary);
+	background: var(--palette-bg-main);
+
+	width: 100vw;
+	height: 100vh;
+	font-size: 10px;
+
+	display: grid;
+	grid-template-rows: auto 1fr;
+	grid-template-columns: 1fr auto;
+	grid-template-areas:
+		"tabs tabs"
+		"scrollable alphabet";
+
+	will-change: transform;
+}
+.main[data-open="true"] {
+	transform: translateX(0);
+	pointer-events: auto;
+}
+
+.tabs {
+	grid-area: tabs;
+	display: flex;
+	justify-content: space-evenly;
+	border-bottom: 1px solid var(--palette-primary);
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.tabs > button {
+	padding: 16px;
+	position: relative;
+}
+
+.tabs > [data-active="true"]::after {
+	content: "";
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 2px;
+	background: var(--palette-primary);
+}
+
+.alphabet {
+	grid-area: alphabet;
+	position: relative;
+	z-index: 0;
+	display: flex;
+	flex-direction: column;
+	margin: 16px 0;
+	text-align: center;
+	touch-action: none;
+	user-select: none;
+}
+.alphabet > * {
+	flex: var(--letter-ratio, 1);
+	padding: 2px 8px 2px 16px;
+	position: relative;
+}
+
+.alphabet > *::before {
+	content: "";
+	position: absolute;
+	top: 16px;
+	left: calc(50% + 4px);
+	width: 1px;
+	height: calc(100% - 32px);
+	background: var(--palette-secondary);
+	transform: translateX(-50%) scaleX(0.5);
+}
+
+.alphabet::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	top: -8px;
+	left: calc(50% - 4px);
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	border: 1px solid var(--palette-secondary);
+	transform: translateY(var(--scroll-offset, 0));
+}
+
+.scrollable {
+	grid-area: scrollable;
+	height: 100%;
+	overflow-y: auto;
+}
+
+.overflow {
+	min-height: 100%;
+	position: relative;
+	height: var(--virtual-height, 100%);
+}
+
+.row {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: var(--virtual-item-height, 100%);
+	transform: translateY(var(--virtual-item-start, 0));
+}

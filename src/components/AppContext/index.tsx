@@ -81,10 +81,19 @@ export function openPanel<P extends Panel>(type: P["type"], value: Omit<P["value
 }
 
 type SearchView = {
-	open: "open" | "close",
+	open: boolean,
 }
 export const searchView = globalState<SearchView>("searchView", {
-	open: "close",
+	open: false,
+}, () => {
+	history.pushState({}, "just-allow-back-button")
+})
+
+type LibraryView = {
+	open: boolean,
+}
+export const libraryView = globalState<LibraryView>("libraryView", {
+	open: false,
 }, () => {
 	history.pushState({}, "just-allow-back-button")
 })
@@ -113,23 +122,28 @@ export function useShowHome() {
 		}
 
 		const search = searchView.getValue(queryClient)
-		if (search.open === "open") {
-			searchView.setState({open: "close"}, queryClient)
-			return
+		if (search.open) {
+			searchView.setState({open: false}, queryClient)
 		}
 
 		const stack = panelStack.getValue(queryClient)
-		if (stack.length === 0) return
+		if (stack.length > 0) {
+			const {type, key, value} = stack.at(-1)!
+			panelStack.setState([{
+				type,
+				key,
+				value: {
+					...value,
+					open: "close",
+				}
+			} as Panel], queryClient)
+		}
 
-		const {type, key, value} = stack.at(-1)!
-		panelStack.setState([{
-			type,
-			key,
-			value: {
-				...value,
-				open: "close",
-			}
-		} as Panel], queryClient)
+		const library = libraryView.getValue(queryClient)
+		if (library.open) {
+			libraryView.setState({open: false}, queryClient)
+		}
+
 	}, [queryClient])
 }
 
@@ -146,8 +160,8 @@ export function AppState() {
 				return
 			}
 
-			if (searchView.getValue(queryClient).open === "open") {
-				searchView.setState({open: "close"}, queryClient)
+			if (searchView.getValue(queryClient).open) {
+				searchView.setState({open: false}, queryClient)
 				return
 			}
 
@@ -182,6 +196,12 @@ export function AppState() {
 					}
 				} as Panel
 				panelStack.setState([...rest, close], queryClient)
+				return
+			}
+
+			const library = libraryView.getValue(queryClient)
+			if (library.open) {
+				libraryView.setState({open: false}, queryClient)
 				return
 			}
 

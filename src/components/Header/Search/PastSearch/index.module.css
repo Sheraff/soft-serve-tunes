@@ -22,8 +22,14 @@
 	object-fit: cover;
 }
 
+.content {
+	overflow: hidden;
+}
 .name {
 	font-size: 14px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 .info {
 	margin-top: 4px;

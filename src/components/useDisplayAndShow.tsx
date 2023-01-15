@@ -1,30 +1,31 @@
 import { type RefObject, startTransition, useEffect, useRef, useState } from "react"
 
 export default function useDisplayAndShow(
-	open: "open" | "close" | "force-open" | "force-close",
+	open: "open" | "close" | "force-open" | "force-close" | boolean,
 	ref: RefObject<HTMLElement>,
 	onDone?: (open: "open" | "close" | "force-open" | "force-close") => void
 ) {
+	const _open = open === true ? "open" : open === false ? "close" : open
 	const internalOnDone = useRef(onDone)
 	internalOnDone.current = onDone
 
-	const [display, setDisplay] = useState(open === "force-open" || open === "open")
-	const [show, setShow] = useState(open === "force-open")
+	const [display, setDisplay] = useState(_open === "force-open" || _open === "open")
+	const [show, setShow] = useState(_open === "force-open")
 
 	// toggle
 	useEffect(() => {
 		startTransition(() => {
-			if (open === "force-open") {
+			if (_open === "force-open") {
 				if (!display || !show) {
 					setDisplay(true)
 					setShow(true)
 				}
-			} else if (open === "force-close") {
+			} else if (_open === "force-close") {
 				if (display || show) {
 					setShow(false)
 					setDisplay(false)
 				}
-			} else if (open === "open") {
+			} else if (_open === "open") {
 				if (!display) {
 					setDisplay(true)
 				}
@@ -34,7 +35,7 @@ export default function useDisplayAndShow(
 				}
 			}
 		})
-	}, [open])
+	}, [_open])
 
 	// show after display=true
 	useEffect(() => {
@@ -56,7 +57,7 @@ export default function useDisplayAndShow(
 		if (show || !ref.current) {
 			return
 		}
-		if (open === "force-close" || !display) {
+		if (_open === "force-close" || !display) {
 			internalOnDone.current?.("force-close")
 			return
 		}
@@ -82,7 +83,7 @@ export default function useDisplayAndShow(
 		if (!show || !ref.current || !internalOnDone.current) {
 			return
 		}
-		if (open === "force-open") {
+		if (_open === "force-open") {
 			internalOnDone.current?.("force-open")
 			return
 		}
