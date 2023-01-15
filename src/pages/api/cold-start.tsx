@@ -69,6 +69,7 @@ function act() {
 						await removeImageEntry(img.id)
 					} else {
 						await unlink(file)
+						log("event", "event", "fswatcher", `removed image ${file} because it was empty or unused`)
 					}
 				}
 				done++
