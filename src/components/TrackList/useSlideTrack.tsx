@@ -29,6 +29,8 @@ export default function useSlideTrack(
 		let switchController: AbortController | null = null
 		let delayedSwitchTimeoutId: ReturnType<typeof setTimeout> | null = null
 		let triggerSecondaryAction = false
+		let longPressTimeoutId: ReturnType<typeof setTimeout> | null = null
+		let touchRafId: number | null = null
 
 		let isDragging = false
 
@@ -147,7 +149,6 @@ export default function useSlideTrack(
 			uxController = controller
 			isDragging = true
 			let capture = false
-			let longPressTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 			const end = () => {
 				if (delayedSwitchTimeoutId) {
@@ -157,6 +158,10 @@ export default function useSlideTrack(
 				if (longPressTimeoutId) {
 					clearTimeout(longPressTimeoutId)
 					longPressTimeoutId = null
+				}
+				if (touchRafId) {
+					cancelAnimationFrame(touchRafId)
+					touchRafId = null
 				}
 				controller.abort()
 				uxController = null
@@ -178,35 +183,39 @@ export default function useSlideTrack(
 			}
 
 			window.addEventListener("touchmove", (event) => {
-				if (longPressTimeoutId) {
-					clearTimeout(longPressTimeoutId)
-					longPressTimeoutId = null
-				}
-				const match = getTouchFromId(event.changedTouches, touch.identifier)
-				if (!match) return
-				const dx = match.clientX - touch.clientX
-				if (!capture) {
-					const dy = match.clientY - touch.clientY
-					if (dx === dy && dx === 0) {
-						return
+				if (touchRafId) cancelAnimationFrame(touchRafId)
+				touchRafId = requestAnimationFrame(() => {
+					touchRafId = null
+					if (longPressTimeoutId) {
+						clearTimeout(longPressTimeoutId)
+						longPressTimeoutId = null
 					}
-					if (Math.abs(dx) > Math.abs(dy)) {
-						capture = true
-					} else {
-						return end()
+					const match = getTouchFromId(event.changedTouches, touch.identifier)
+					if (!match) return
+					const dx = match.clientX - touch.clientX
+					if (!capture) {
+						const dy = match.clientY - touch.clientY
+						if (dx === dy && dx === 0) {
+							return
+						}
+						if (Math.abs(dx) > Math.abs(dy)) {
+							capture = true
+						} else {
+							return end()
+						}
+						element.classList.add(styles.will as string)
 					}
-					element.classList.add(styles.will as string)
-				}
-				const valid = dx > 48 || dx < -48
-				if (valid && !delayedSwitchTimeoutId) {
-					delayedSwitch(dx > 48 ? "left" : "right", end)
-				}
-				if (!valid && delayedSwitchTimeoutId) {
-					cancelDelayedSwitch(dx <= 48 ? "left" : "right")
-				}
-				const r = Math.abs(dx) / 48
-				const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
-				element.style.setProperty("--x", `${total}px`)
+					const valid = dx > 48 || dx < -48
+					if (valid && !delayedSwitchTimeoutId) {
+						delayedSwitch(dx > 48 ? "left" : "right", end)
+					}
+					if (!valid && delayedSwitchTimeoutId) {
+						cancelDelayedSwitch(dx <= 48 ? "left" : "right")
+					}
+					const r = Math.abs(dx) / 48
+					const total = Math.sign(dx) * (Math.atan(r - 0.25) + 0.25 + r * 0.07) * 48
+					element.style.setProperty("--x", `${total}px`)
+				})
 			}, {signal})
 
 			window.addEventListener("touchend", (event) => {
@@ -244,6 +253,8 @@ export default function useSlideTrack(
 			if (animController) animController.abort()
 			if (switchController) switchController.abort()
 			if (delayedSwitchTimeoutId) clearTimeout(delayedSwitchTimeoutId)
+			if (longPressTimeoutId) clearTimeout(longPressTimeoutId)
+			if (touchRafId) cancelAnimationFrame(touchRafId)
 		}
 	}, [ref, callbacks, opts.quickSwipeDeleteAnim])
 

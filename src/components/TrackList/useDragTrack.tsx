@@ -50,7 +50,8 @@ export default function useDragTrack<T extends boolean>(
 
 		let isDragging = false
 		let uxController: AbortController | null = null
-		let rafId: number | null = null
+		let scrollRafId: number | null = null
+		let touchRafId: number | null = null
 
 		function start(touch: Touch | null, item: HTMLElement | null) {
 			if (!touch || !item) return
@@ -75,7 +76,7 @@ export default function useDragTrack<T extends boolean>(
 			}, {signal})
 
 			function scrollFrame(lastTime?: number) {
-				rafId = requestAnimationFrame((time) => {
+				scrollRafId = requestAnimationFrame((time) => {
 					scrollFrame(time)
 
 					// scroll parent
@@ -105,18 +106,22 @@ export default function useDragTrack<T extends boolean>(
 			scrollFrame()
 
 			window.addEventListener("touchmove", (event) => {
-				const match = getTouchFromId(event.changedTouches, touch.identifier)
-				if (!match) return
+				if (touchRafId) cancelAnimationFrame(touchRafId)
+				touchRafId = requestAnimationFrame(() => {
+					touchRafId = null
+					const match = getTouchFromId(event.changedTouches, touch.identifier)
+					if (!match) return
 
-				// move item
-				dy = match.clientY - touch.clientY
+					// move item
+					dy = match.clientY - touch.clientY
 
-				// scroll parent
-				scrollSpeed = match.clientY < innerHeight / 3
-					? (match.clientY - innerHeight / 3) / (innerHeight / 3)
-					: match.clientY > innerHeight * 3 / 4
-						? (match.clientY - innerHeight * 3 / 4) / (innerHeight / 4)
-						: 0
+					// scroll parent
+					scrollSpeed = match.clientY < innerHeight / 3
+						? (match.clientY - innerHeight / 3) / (innerHeight / 3)
+						: match.clientY > innerHeight * 3 / 4
+							? (match.clientY - innerHeight * 3 / 4) / (innerHeight / 4)
+							: 0
+				})
 			}, {signal, passive: true})
 
 			window.addEventListener("touchend", (event) => {
@@ -128,7 +133,14 @@ export default function useDragTrack<T extends boolean>(
 				controller.abort()
 				uxController = null
 				isDragging = false
-				if (rafId) cancelAnimationFrame(rafId)
+				if (scrollRafId) {
+					cancelAnimationFrame(scrollRafId)
+					scrollRafId = null
+				}
+				if (touchRafId) {
+					cancelAnimationFrame(touchRafId)
+					touchRafId = null
+				}
 				Array.from(item.parentElement!.children).forEach((node) => node.classList.remove(styles.slide as string))
 				callbacks.current!.onDrop!(itemIndex, itemIndex + itemsOffset)
 			}, {signal, passive: false})
@@ -151,7 +163,8 @@ export default function useDragTrack<T extends boolean>(
 		return () => {
 			controller.abort()
 			if (uxController) uxController.abort()
-			if(rafId) cancelAnimationFrame(rafId)
+			if(scrollRafId) cancelAnimationFrame(scrollRafId)
+			if(touchRafId) cancelAnimationFrame(touchRafId)
 		}
 	}, [ref, enabled, callbacks])
 

@@ -49,27 +49,45 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 		const controller = new AbortController()
 
 		let touch: Touch | null = null
-		el.addEventListener("touchstart", (e: TouchEvent) => {
+		el.addEventListener("touchstart", (e) => {
 			touch = e.touches[0]!
 		}, {passive: true, signal: controller.signal})
 
-		el.addEventListener("touchmove", (e: TouchEvent) => {
-			if (!touch) return
-			const current = getTouchFromId(e.touches, touch.identifier)
-			if (!current) return
+		
+		const scrollToY = (y: number) => {
+				const {top, height} = el.getBoundingClientRect()
+				const ratio = (y - top) / height * total
+				scrollTo(ratio)
+		}
 
-			const deltaX = current.clientX - touch.clientX
-			const deltaY = current.clientY - touch.clientY
-			if (Math.abs(deltaX) > Math.abs(deltaY)) return
+		let rafId: number | null = null
+		el.addEventListener("touchmove", (e) => {
+			if (rafId) cancelAnimationFrame(rafId)
+			rafId = requestAnimationFrame(() => {
+				rafId = null
+				if (!touch) return
+				const current = getTouchFromId(e.touches, touch.identifier)
+				if (!current) return
 
-			const {clientY} = current
-			const {top, height} = el.getBoundingClientRect()
-			const ratio = (clientY - top) / height * total
-			scrollTo(ratio)
-			touch = current
+				const deltaX = current.clientX - touch.clientX
+				const deltaY = current.clientY - touch.clientY
+				if (Math.abs(deltaX) > Math.abs(deltaY)) return
+
+				const {clientY} = current
+				scrollToY(clientY)
+				touch = current
+			})
 		}, {passive: true, signal: controller.signal})
 
-		return () => controller.abort()
+		el.addEventListener("click", (e) => {
+			const {clientY} = e
+			scrollToY(clientY)
+		}, {passive: true, signal: controller.signal})
+
+		return () => {
+			controller.abort()
+			if (rafId) cancelAnimationFrame(rafId)
+		}
 	}, [total, scrollTo])
 
 	return (
