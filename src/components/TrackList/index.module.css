@@ -371,7 +371,8 @@
 	display: block;
 }
 .explicit {
-	margin: 0 -0.1em;
+	margin: 0.05em -0.1em 0;
+	font-size: 0.91em;
 }
 .offline {
 	font-size: 18px;

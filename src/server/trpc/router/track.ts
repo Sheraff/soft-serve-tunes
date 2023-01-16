@@ -53,6 +53,7 @@ const miniature = publicProcedure.input(z.object({
       artist: { select: { id: true, name: true }},
       cover: { select: { id: true, palette: true }},
       spotify: { select: { explicit: true }},
+      file: { select: { container: true }},
     }
   })
   if (!track) {

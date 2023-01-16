@@ -13,6 +13,7 @@ import DragIcon from "icons/drag_indicator.svg"
 import ExplicitIcon from "icons/explicit.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import NewIcon from "icons/fiber_new.svg"
+import HighIcon from "icons/high_quality.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
@@ -124,6 +125,7 @@ function TrackItem({
 	const online = useIsOnline()
 	const {data: cached} = useCachedTrack({id: track.id, enabled: !online})
 	const offline = !online && cached
+	const high = data?.file?.container.toUpperCase() === "FLAC"
 
 	return (
 		<div ref={item} className={classNames(styles.wrapper, {
@@ -190,12 +192,13 @@ function TrackItem({
 					</span>
 					{data?.album?.name && <span className={styles.credits}>{data?.album.name}</span>}
 					{data?.artist?.name && <span className={styles.credits}>{data?.artist.name}</span>}
-					{(explicit || offline || recent) && (
+					{(explicit || offline || recent || high) && (
 						<span className={styles.icons}>
 							<>
 								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
 								{offline && <OfflineIcon key="offline" className={styles.offline} />}
 								{recent && <NewIcon key="recent" />}
+								{high && <HighIcon key="high" />}
 							</>
 						</span>
 					)}
