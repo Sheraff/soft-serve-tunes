@@ -47,26 +47,10 @@ const SinglePane = memo(function BasePane({
 	const ref = useRef<HTMLDivElement>(null)
 	const queryClient = useQueryClient()
 	const state = useDisplayAndShow(panel.value.open, ref, (open) => {
-		// if force open, close above
-		// if open, force close below
+		// if force-open, close above (should be done where force-open is set)
+		// if open, force-close below
 		// if close, remove self from stack
-		// if force close, do nothing
-		if (open === "force-open") {
-			panelStack.setState(prev => {
-				const before = prev.slice(0, index + 1)
-				const after = prev.slice(index + 1)
-				const next: Panel[] = [...before, ...after.map(({type, key, value}) => ({
-					type,
-					key,
-					value: {
-						...value,
-						open: "close",
-					}
-				} as Panel))]
-				return next
-			}, queryClient)
-			return
-		}
+		// if force-close, do nothing
 		if (open === "open") {
 			panelStack.setState(prev => {
 				const before = prev.slice(0, index)
@@ -93,9 +77,6 @@ const SinglePane = memo(function BasePane({
 				const next: Panel[] = [...before, ...after]
 				return next
 			}, queryClient)
-			return
-		}
-		if (open === "force-close") {
 			return
 		}
 	})

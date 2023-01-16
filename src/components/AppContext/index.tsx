@@ -170,13 +170,22 @@ export function AppState() {
 			if (stack.length > 1) {
 				// at least 2 in stack, force-open the penultimate, it will auto-trigger the closing of the last
 				const rest = stack.slice(0, -2)
-				const close = stack.at(-1)!
-				const {type, key, value} = stack.at(-2)!
-				const next = {
-					type,
-					key,
+				const closeBase = stack.at(-1)!
+				const close = {
+					type: closeBase.type,
+					key: closeBase.key,
 					value: {
-						...value,
+						...closeBase.value,
+						rect: undefined,
+						open: "close",
+					}
+				} as Panel
+				const nextBase = stack.at(-2)!
+				const next = {
+					type: nextBase.type,
+					key: nextBase.key,
+					value: {
+						...nextBase.value,
 						rect: undefined,
 						open: "force-open",
 					}
