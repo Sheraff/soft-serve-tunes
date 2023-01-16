@@ -29,9 +29,6 @@ https://user-images.githubusercontent.com/1325721/212537689-021062ec-f67c-4b37-8
     </pre>
   </details>
 
-- [ ] Track no. gets messed up if its info doesn't come from the
-  same source as the album info
-
 
 ## RESOURCES
 - favicon: https://realfavicongenerator.net/

@@ -162,7 +162,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				loadingTimeoutId = setTimeout(() => {
 					loadingTimeoutId = null
 					_setLoading(true)
-				}, 1000) // TODO: why wait 1s? I don't remember why I wrote this
+				}, 1000) // TODO: why wait 1s? I don't remember why I wrote this (I think it was to avoid flickering a "wait" state every time there is a mini loading interruption)
 			}
 		}
 
