@@ -294,6 +294,8 @@ export default function EditTrack({
 		onDone()
 	}
 
+	const placeholderPosition = tracks[0]?.position ?? null
+
 	return (
 		<form onSubmit={onSubmit} className={styles.form}>
 			{isLoaded(tracks, isLoading) && (
@@ -319,7 +321,7 @@ export default function EditTrack({
 								className={styles.input}
 								value={positionState ?? ""}
 								onChange={(e) => setPositionState(e.target.value !== "" ? Number(e.target.value) : null)}
-								placeholder={String(tracks[0]?.position ?? tracks[0]?.spotify?.trackNumber ?? tracks[0]?.audiodb?.intTrackNumber) || undefined}
+								placeholder={placeholderPosition !== null ? String(placeholderPosition) : undefined}
 							/>
 						</>
 					)}

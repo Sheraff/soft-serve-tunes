@@ -24,22 +24,23 @@ model File {
 }
 
 model Track {
-  id          String   @id @default(cuid())
-  name        String
-  simplified  String
-  mbid        String?
-  artistId    String?
-  artist      Artist?  @relation(fields: [artistId], references: [id])
-  feats       Artist[] @relation("Featuring")
-  albumId     String?
-  album       Album?   @relation(fields: [albumId], references: [id])
-  position    Int?
-  createdAt   DateTime @default(now())
-  file        File?    @relation
-  year        Int?
-  genres      Genre[]  @relation
-  metaImageId String?
-  metaImage   Image?   @relation(name: "metaImage", fields: [metaImageId], references: [id])
+  id           String   @id @default(cuid())
+  name         String
+  simplified   String
+  mbid         String?
+  artistId     String?
+  artist       Artist?  @relation(fields: [artistId], references: [id])
+  feats        Artist[] @relation("Featuring")
+  albumId      String?
+  album        Album?   @relation(fields: [albumId], references: [id])
+  position     Int?
+  metaPosition Int?
+  createdAt    DateTime @default(now())
+  file         File?    @relation
+  year         Int?
+  genres       Genre[]  @relation
+  metaImageId  String?
+  metaImage    Image?   @relation(name: "metaImage", fields: [metaImageId], references: [id])
 
   spotify     SpotifyTrack? @relation
   lastfm      LastFmTrack?  @relation

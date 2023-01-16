@@ -319,6 +319,9 @@ class AudioDb {
 				audiodb: { select: { idTrack: true }},
 				artist: { select: { name: true }},
 				album: { select: { name: true }},
+				position: true,
+				metaPosition: true,
+				spotify: { select: { trackNumber: true }},
 			}
 		}))
 
@@ -401,12 +404,10 @@ class AudioDb {
 		}
 		if (existingConnection) {
 			try {
-				await retryable(() => prisma.audioDbTrack.update({
+				await prisma.audioDbTrack.update({
 					where: {idTrack: data.idTrack},
-					data: {
-						entityId: id
-					}
-				}))
+					data: { entityId: id }
+				})
 			} catch (e) {
 				console.error(new Error(
 					`audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
@@ -414,11 +415,18 @@ class AudioDb {
 					{cause: e}
 				))
 			}
+			const newPosition = track.metaPosition ?? track.spotify?.trackNumber ?? data.intTrackNumber ?? null
+			if (newPosition !== null && newPosition !== track.position) {
+				prisma.track.update({
+					where: { id },
+					data: { position: newPosition }
+				})
+			}
 			return
 		}
 		const genres = cleanGenreList(strGenre ? [strGenre] : [])
 		const imageIds = await keysAndInputToImageIds(data, ["strTrackThumb"])
-		await retryable(async () => prisma.audioDbTrack.create({
+		await prisma.audioDbTrack.create({
 			data: {
 				entityId: id,
 				...data,
@@ -430,7 +438,14 @@ class AudioDb {
 				},
 				thumbId: imageIds.strTrackThumb,
 			},
-		}))
+		})
+		const newPosition = track.metaPosition ?? track.spotify?.trackNumber ?? data.intTrackNumber ?? null
+		if (newPosition !== null && newPosition !== track.position) {
+			prisma.track.update({
+				where: { id },
+				data: { position: newPosition }
+			})
+		}
 		socketServer.emit("invalidate", {type: "track", id})
 		log("ready", "200", "audiodb", `fetched track ${data.strTrack}`)
 	}

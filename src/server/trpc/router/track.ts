@@ -52,19 +52,17 @@ const miniature = publicProcedure.input(z.object({
       album: { select: { id: true, name: true }},
       artist: { select: { id: true, name: true }},
       cover: { select: { id: true, palette: true }},
-      audiodb: { select: { intTrackNumber: true }},
-      spotify: { select: { trackNumber: true, explicit: true }},
+      spotify: { select: { explicit: true }},
     }
   })
-  if (!track) return null
-
-  if (track) {
-    lastFm.findTrack(input.id)
-    spotify.findTrack(input.id)
-    audioDb.fetchTrack(input.id)
-  } else {
+  if (!track) {
     log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
+    return null
   }
+
+  lastFm.findTrack(input.id)
+  spotify.findTrack(input.id)
+  audioDb.fetchTrack(input.id)
 
   return track
 })

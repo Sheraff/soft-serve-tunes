@@ -115,7 +115,7 @@ function TrackItem({
 
 	const NextIcon = quickSwipeIcon || PlaylistNextIcon
 
-	const position = data?.position ?? data?.spotify?.trackNumber ?? data?.audiodb?.intTrackNumber ?? false
+	const position = data?.position ?? null
 	const explicit = Boolean(data?.spotify?.explicit)
 	const recent = useMemo(
 		() => data?.createdAt && Date.now() - 3 * 24 * 60 * 60 * 1000 < data.createdAt.getTime(),
@@ -183,8 +183,7 @@ function TrackItem({
 				)}
 				<p className={styles.span}>
 					<span className={styles.name}>
-						{/* TODO: not always show `position`, only if relevant (in album view, or in playlist of album) */}
-						{position !== false && (
+						{position !== null && (
 							`${position.toString().padStart(2, "0")} · `
 						)}
 						{data?.name}

@@ -317,6 +317,7 @@ class Spotify {
 					id: true,
 					name: true,
 					position: true,
+					metaPosition: true,
 					artist: {
 						select: {
 							id: true,
@@ -334,6 +335,11 @@ class Spotify {
 					file: {
 						select: {
 							path: true,
+						}
+					},
+					audiodb: {
+						select: {
+							intTrackNumber: true,
 						}
 					},
 					spotify: {
@@ -442,6 +448,7 @@ class Spotify {
 					select: {
 						id: true,
 						trackId: true,
+						trackNumber: true,
 						artist: {
 							select: {
 								id: true,
@@ -484,6 +491,7 @@ class Spotify {
 					return await prisma.spotifyTrack.create({
 						select: {
 							id: true,
+							trackNumber: true,
 							artist: {
 								select: {
 									id: true,
@@ -585,6 +593,13 @@ class Spotify {
 						}
 					})
 				})
+				const newPosition = track.metaPosition ?? newTrack.trackNumber ?? track.audiodb?.intTrackNumber ?? null
+				if (newPosition !== null && newPosition !== track.position) {
+					await prisma.track.update({
+						where: { id: track.id },
+						data: { position: newPosition }
+					})
+				}
 				if (!existing) {
 					log("ready", "200", "spotify", `fetched track ${candidate_name}`)
 				}

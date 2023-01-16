@@ -250,6 +250,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	}
 	if (input.position !== undefined) {
 		data.position = input.position
+		data.metaPosition = input.position
 	}
 	if (fingerprinted?.id) {
 		data.mbid = fingerprinted.id

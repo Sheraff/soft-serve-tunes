@@ -133,12 +133,13 @@ const get = publicProcedure.input(z.object({
     }
   })
 
-  if (album) {
-    lastFm.findAlbum(input.id)
-    audioDb.fetchAlbum(input.id)
-  } else {
+  if (!album) {
     log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
+    return album
   }
+
+  lastFm.findAlbum(input.id)
+  audioDb.fetchAlbum(input.id)
 
   return album
 })

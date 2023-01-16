@@ -208,6 +208,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				name: correctedTrack,
 				simplified: simplifiedName(correctedTrack),
 				position,
+				metaPosition: position,
 				year: metadata.common.year,
 				mbid: fingerprinted?.id,
 				file: {
