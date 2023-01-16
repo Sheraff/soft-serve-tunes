@@ -397,6 +397,13 @@ model FileToCreate {
   count Int    @default(0)
 }
 
+model AcoustidStorage {
+  id        String   @id @default(cuid())
+  updatedAt DateTime @default(now())
+  search    String   @db.Text
+  result    String   @db.Text
+}
+
 // Necessary for Next auth
 model Account {
   id                       String  @id @default(cuid())

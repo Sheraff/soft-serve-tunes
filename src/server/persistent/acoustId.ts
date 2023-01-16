@@ -10,6 +10,7 @@ import { notArtistName } from "server/db/createTrack"
 import MusicBrainz from "server/persistent/musicBrainz"
 import { simplifiedName } from "utils/sanitizeString"
 import { socketServer } from "utils/typedWs/server"
+import { prisma } from "server/db/client"
 
 /*
  * VOCABULARY:
@@ -166,6 +167,17 @@ class AcoustId {
 	}
 
 	async #fetch(body: `?${string}`) {
+		const stored = await prisma.acoustidStorage.findFirst({where: {search: body}})
+		if (stored) {
+			try {
+				const data = JSON.parse(stored.result) as z.infer<typeof acoustiIdLookupSchema>
+				log("info", "skip", "acoustid", `using cached result (id: ${stored.id})`)
+				return data
+			} catch (e) {
+				log("error", "error", "acoustid", `error parsing existing result (id: ${stored.id})`)
+				console.error(e)
+			}
+		}
 		const data = await this.#queue.push(() => fetch(`https://api.acoustid.org/v2/lookup${body}`))
 		if (data.status !== 200) {
 			if (data.status === 429) {
@@ -183,6 +195,23 @@ class AcoustId {
 			log("error", "error", "acoustid", parsed.error.message)
 			throw new Error(parsed.error.message)
 		}
+
+		if (stored) {
+			prisma.acoustidStorage.update({
+				where: { id: stored.id },
+				data: {
+					result: JSON.stringify(json),
+				},
+			})
+		} else {
+			prisma.acoustidStorage.create({
+				data: {
+					search: body,
+					result: JSON.stringify(json),
+				}
+			})
+		}
+		
 		return parsed
 	}
 

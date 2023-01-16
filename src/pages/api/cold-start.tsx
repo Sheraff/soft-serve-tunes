@@ -134,6 +134,15 @@ function act() {
 					} while (dbImages.length === chunkSize)
 				}
 
+				// remove old acoustidStorage lookups
+				await prisma.acoustidStorage.deleteMany({
+					where: {
+						updatedAt: {
+							lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // older than a week
+						}
+					}
+				})
+
 				if (removed || orphanTracks.length) {
 					fileWatcher.scheduleCleanup()
 				}
