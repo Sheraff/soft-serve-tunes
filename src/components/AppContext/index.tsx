@@ -58,6 +58,7 @@ export const panelStack = globalState<Panel[]>(
 	[],
 	(_, queryClient) => {
 		editOverlay.setState(editOverlaySetter(null), queryClient)
+		history.pushState({}, "just-allow-back-button")
 	}
 )
 
@@ -78,7 +79,6 @@ export function openPanel<P extends Panel>(type: P["type"], value: Omit<P["value
 			} as Panel
 		]
 	}, queryClient)
-	history.pushState({}, "just-allow-back-button")
 }
 
 type SearchView = {
