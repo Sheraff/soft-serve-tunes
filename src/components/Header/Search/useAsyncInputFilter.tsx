@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, type RefObject, useMemo, startTransition } from "react"
 
-type MinimumWorkerDataObject = {name: string, id: string}
+type MinimumWorkerDataObject = {name: string}
 
 type Obj = {
 	[key: string]: Obj | string | Obj[] | string[];
@@ -49,7 +49,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		if (!inputMemo) return
 
 		const workerMemo = new Worker(
-			new URL("./worker/asyncInput.worker", import.meta.url),
+			new URL("./worker/asyncInput.worker.ts", import.meta.url),
 			{ type: "module" }
 		)
 		worker.current = workerMemo
