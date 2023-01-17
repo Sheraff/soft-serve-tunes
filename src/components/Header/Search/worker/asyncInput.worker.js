@@ -1,3 +1,5 @@
+// @ts-check
+
 import longestCommonSubstring from "./lcs.js"
 import damLev from "./damLev.js"
 
@@ -10,7 +12,10 @@ import damLev from "./damLev.js"
  */
 
 /**
- * @typedef {{name: string}} NamedInterface
+ * @typedef {{
+ *  name: string
+ *  id: number
+ * }} NamedInterface
  */
 
 /** @type {Map<string, Map<string, DistanceObject>>} */
@@ -46,13 +51,16 @@ function setMemoized(input, candidate, object) {
   inputDistances.set(candidate, object)
 }
 
+/**
+ * @param {string} str 
+ */
 function cleanupString(str) {
   return str.normalize("NFD").replace(/\p{Diacritic}/gu, "")
 }
 
 /**
- * @param {string} input
- * @param {string} candidate
+ * @param {string} _input
+ * @param {string} _candidate
  * @returns {DistanceObject}
  */
 function classify(_input, _candidate) {
@@ -116,7 +124,9 @@ function handleInput({ input }) {
     }
     return a.levenshtein - b.levenshtein
   })
-  postMessage({ input, list: list.slice(0, 50) })
+
+  const res = new Uint16Array(list.slice(0, 50).map(({id}) => id))
+  postMessage({ input, list: res }, {transfer: [res.buffer]})
 }
 
 onmessage = function ({ data }) {

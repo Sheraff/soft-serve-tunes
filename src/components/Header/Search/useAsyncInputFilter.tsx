@@ -27,18 +27,17 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 	const worker = useRef<Worker | null>(null)
 	const [list, setList] = useState<T[]>([])
 
-	// use namedObjects to pass less data to/from worker, use mapList to map back to original data
-	const [mapList, namedObjects] = useMemo(() => {
-		const map = new Map<string, T>()
-		const namedObjects = [] as Pick<T, keyof MinimumWorkerDataObject>[]
-		for (const item of dataList) {
-			map.set(item.id, item)
+	// use namedObjects to pass less data to/from worker, use `namedObjects.id`to map back to `dataList` index
+	const namedObjects = useMemo(() => {
+		const namedObjects = [] as {name: string, id: number}[]
+		for (let i = 0; i < dataList.length; i++) {
+			const item = dataList[i]!
 			namedObjects.push({
 				name: keys.map(key => getIn(item, key.split("."))).join(" "),
-				id: item.id,
+				id: i,
 			})
 		}
-		return [map, namedObjects]
+		return namedObjects
 	}, [dataList, ...keys])
 
 	// use these 2 refs to avoid making calls to worker for an input value that isn't current
@@ -58,7 +57,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 			data
 		}: {
 			data: {
-				list: MinimumWorkerDataObject[]
+				list: Uint16Array
 				input: string
 			}
 		}) => {
@@ -70,7 +69,11 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 			}
 			if (inputMemo.value === data.input) {
 				startTransition(() => {
-					setList(data.list.map(({id}) => mapList.get(id) as T)) // might not actually be `T` if list has changed since then
+					const newList = [] as T[] // might not actually be `T` if dataList has changed since then
+					for (let i = 0; i < data.list.length; i++) {
+						newList.push(dataList[data.list[i]!]!)
+					}
+					setList(newList)
 				})
 			}
 		}
@@ -80,7 +83,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 			workerMemo.removeEventListener("message", onMessage)
 			workerMemo.terminate()
 		}
-	}, [inputRef, mapList])
+	}, [inputRef, dataList])
 
 	useEffect(() => {
 		const { current: inputMemo } = inputRef

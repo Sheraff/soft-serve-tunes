@@ -2,8 +2,11 @@
 // https://github.com/microsoft/damlev#readme
 // Cache the codes and score arrays to significantly speed up damlev calls:
 // there's no need to re-allocate them.
+/** @type number[] */
 let sourceCodes
+/** @type number[] */
 let targetCodes
+/** @type number[] */
 let score
 
 /**
@@ -56,6 +59,7 @@ export default function damLev(source, target) {
 
   const sourceLength = source.length
   const targetLength = target.length
+  /** @type {number} */
   let i
 
   // Initialize a char code cache array
@@ -86,10 +90,15 @@ export default function damLev(source, target) {
 
   // Run the damlev algorithm
   const chars = {}
+  /** @type {number} */
   let j
+  /** @type {number} */
   let DB
+  /** @type {number} */
   let i1
+  /** @type {number} */
   let j1
+  /** @type {number} */
   let newScore
   for (i = 1; i <= sourceLength; i += 1) {
     DB = 0

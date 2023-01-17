@@ -13,6 +13,7 @@
 	const s2 = [...string2.toLowerCase()]
   
 	// Init the matrix of all substring lengths to use Dynamic Programming approach.
+	/** @type {(number | null)[][]} */
 	const substringMatrix = Array(s2.length + 1)
 	  .fill(null)
 	  .map(() => Array(s1.length + 1).fill(null))
