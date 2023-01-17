@@ -27,6 +27,7 @@ function useAtomAppValue<T extends Serializable>(key: string, initial: T) {
 		suspense: true,
 		cacheTime: Infinity,
 		staleTime: Infinity,
+		networkMode: "offlineFirst",
 	})
 	return data!
 }

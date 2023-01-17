@@ -45,7 +45,7 @@ export default forwardRef(function PlaylistView({
 	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
 		if (data) startTransition(() => {
-			setPlaylist(data.name, id, data.tracks)
+			setPlaylist(data.name, data.tracks, id)
 		})
 	}
 

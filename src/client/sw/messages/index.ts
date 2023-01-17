@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { retryPostOnOnline } from "../fetch/trpcPost"
+import { messageCheckAlbumCache, messageCheckArtistCache } from "./cachedArtistAlbum"
 import { messageCheckTrackCache, messageCheckFirstCachedTrack } from "./cachedTrack"
 import trpcRevalidation from "./trpcRevalidation"
 
@@ -9,6 +10,10 @@ export default function onMessage(event: ExtendableMessageEvent) {
 			return messageCheckTrackCache(event.data.payload, event)
 		case "sw-first-cached-track":
 			return messageCheckFirstCachedTrack(event.data.payload, event)
+		case "sw-cached-album":
+			return messageCheckAlbumCache(event.data.payload, event)
+		case "sw-cached-artist":
+			return messageCheckArtistCache(event.data.payload, event)
 		case "sw-trpc-revalidate":
 			return trpcRevalidation(event.data.payload)
 		case "sw-trpc-offline-post":

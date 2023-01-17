@@ -20,7 +20,7 @@ import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
-import { useCachedTrack } from "client/sw/useCachedTrack"
+import { useCachedTrack } from "client/sw/useSWCached"
 import { useQueryClient } from "@tanstack/react-query"
 
 const emptyFunction = () => {}
@@ -195,10 +195,10 @@ function TrackItem({
 					{(explicit || offline || recent || high) && (
 						<span className={styles.icons}>
 							<>
-								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
 								{offline && <OfflineIcon key="offline" className={styles.offline} />}
-								{recent && <NewIcon key="recent" />}
 								{high && <HighIcon key="high" />}
+								{recent && <NewIcon key="recent" />}
+								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
 							</>
 						</span>
 					)}

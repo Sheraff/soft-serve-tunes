@@ -1,11 +1,22 @@
 import { useQuery } from "@tanstack/react-query"
 
-export function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) {
-	const query = useQuery({
+type SWQueryEvent =
+	| "sw-cached-track"
+	| "sw-cached-album"
+	| "sw-cached-artist"
+
+type SWQueryPayload = {
+	id?: string,
+	enabled?: boolean,
+}
+
+function useSWQuery(type: SWQueryEvent, {id, enabled}: SWQueryPayload) {
+	return useQuery({
 		enabled: Boolean(id) && enabled !== false,
-		queryKey: ["sw-cached-track", id],
+		queryKey: [type, id],
 		queryFn({ signal }) {
 			if (!("serviceWorker" in navigator)) return false
+			if (!id) return false
 			const controller = new AbortController()
 			// signal will always be defined on browsers that support it, and I only care about modern browsers
 			signal!.onabort = () => controller.abort()
@@ -17,17 +28,31 @@ export function useCachedTrack({id, enabled}: {id?: string, enabled?: boolean}) 
 				}
 				navigator.serviceWorker.addEventListener("message", (event) => {
 					const message = event.data
-					if (message.type === "sw-cached-track" && message.payload.id === id) {
+					if (message.type === type && message.payload.id === id) {
 						resolve(message.payload.cached)
 						controller.abort()
 					}
 				}, {signal: controller.signal})
-				target.postMessage({type: "sw-cached-track", payload: {id}})
+				target.postMessage({type, payload: {id}})
 				controller.signal.onabort = () => reject(new Error("stale SW query"))
 			})
 		},
+		staleTime: 60_000,
+		cacheTime: Infinity,
+		networkMode: "offlineFirst",
 	})
-	return query
+}
+
+export function useCachedTrack(params: SWQueryPayload) {
+	return useSWQuery("sw-cached-track", params)
+}
+
+export function useCachedAlbum(params: SWQueryPayload) {
+	return useSWQuery("sw-cached-album", params)
+}
+
+export function useCachedArtist(params: SWQueryPayload) {
+	return useSWQuery("sw-cached-artist", params)
 }
 
 export async function findFirstCachedTrack(
@@ -77,6 +102,7 @@ export function useNextCachedTrack(params: {
 		queryFn({ signal }) {
 			return findFirstCachedTrack(params, signal)
 		},
+		networkMode: "offlineFirst",
 	})
 	return query
 }

@@ -5,7 +5,7 @@ import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import SectionTitle from "atoms/SectionTitle"
 import { trpc } from "utils/trpc"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { useSetPlaylist } from "client/db/useMakePlaylist"
 import { useQueryClient } from "@tanstack/react-query"
 import Panel from "../Panel"
 
@@ -62,14 +62,22 @@ export default forwardRef(function AlbumView({
 		infos.push(`${data?._count.tracks} track${pluralize(data?._count.tracks)}`)
 	}
 
-	const makePlaylist = useMakePlaylist()
+	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
-		const playlistName = !data
-			? (name ?? "New Playlist")
-			: !data.artist
+		if (!data) return
+		const playlistName = !data.artist
 			? data.name
 			: `${data.name} by ${data.artist.name}`
-		makePlaylist({type: "album", id}, playlistName)
+		const tracks = data.tracks.map(track => ({
+			id: track.id,
+			name: track.name,
+			artist: track.artist,
+			album: {
+				id: data.id,
+				name: data.name,
+			},
+		}))
+		setPlaylist(playlistName, tracks)
 	}
 
 	const tracks = useDeferredValue(data?.tracks)

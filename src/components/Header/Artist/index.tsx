@@ -5,7 +5,7 @@ import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
 import { trpc } from "utils/trpc"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { useSetPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
 
@@ -47,12 +47,23 @@ export default forwardRef(function ArtistView({
 		infos.push(`${data._count.tracks} track${pluralize(data._count.tracks)}`)
 	}
 
-	const makePlaylist = useMakePlaylist()
+	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
-		const playlistName = !data
-			? (name ?? "New Playlist")
-			: data.name
-		makePlaylist({type: "artist", id}, playlistName)
+		if (!data) return
+
+		const tracks = data.albums.flatMap(album => album.tracks.map(track => ({
+			id: track.id,
+			name: track.name,
+			artist: {
+				id,
+				name: data.name,
+			},
+			album: {
+				id: album.id,
+				name: album.name,
+			},
+		})))
+		setPlaylist(data.name, tracks)
 	}
 
 	const albums = useDeferredValue(data?.albums)

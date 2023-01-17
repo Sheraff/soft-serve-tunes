@@ -2,7 +2,7 @@ import { type useQueryClient } from "@tanstack/react-query"
 import { type PlaylistDBEntry, type Playlist, PlaylistMeta } from "./types"
 import { repeat, shuffle } from "components/Player"
 import shuffleArray from "utils/shuffleArray"
-import { findFirstCachedTrack } from "client/sw/useCachedTrack"
+import { findFirstCachedTrack } from "client/sw/useSWCached"
 import { deleteAllFromIndexedDB, storeInIndexedDB, storeListInIndexedDB } from "client/db/utils"
 
 /**

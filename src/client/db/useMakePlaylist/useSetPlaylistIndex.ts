@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { findFirstCachedTrack } from "client/sw/useCachedTrack"
+import { findFirstCachedTrack } from "client/sw/useSWCached"
 import { repeat, shuffle } from "components/Player"
 import { RefObject, useMemo } from "react"
 import shuffleArray from "utils/shuffleArray"

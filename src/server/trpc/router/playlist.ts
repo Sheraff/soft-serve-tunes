@@ -27,7 +27,7 @@ const trackSelect = {
       name: true,
     },
   }
-} satisfies Prisma.TrackFindManyArgs["select"]
+} satisfies Prisma.TrackSelect
 
 async function getResolve(id: string) {
   const result = await prisma.playlist.findUnique({
@@ -71,7 +71,7 @@ async function getResolve(id: string) {
 
 const generate = publicProcedure.input(z.union([
   z.object({
-    type: z.enum(["track", "artist", "album", "genre"]),
+    type: z.enum(["genre"]),
     id: z.string(),
   }),
   z.object({
@@ -82,29 +82,6 @@ const generate = publicProcedure.input(z.union([
     })),
   }),
 ])).query(async ({ input, ctx }) => {
-  if (input.type === "track") {
-    return ctx.prisma.track.findMany({
-      where: { id: input.id },
-      select: trackSelect,
-    })
-  }
-  if (input.type === "artist") {
-    return ctx.prisma.track.findMany({
-      where: { artistId: input.id },
-      orderBy: [
-        { albumId: "asc" },
-        { position: "asc" },
-      ],
-      select: trackSelect,
-    })
-  }
-  if (input.type === "album") {
-    return ctx.prisma.track.findMany({
-      where: { albumId: input.id },
-      orderBy: { position: "asc" },
-      select: trackSelect,
-    })
-  }
   if (input.type === "genre") {
     const data = await recursiveSubGenres(input.id, {select: trackSelect})
     return data.tracks

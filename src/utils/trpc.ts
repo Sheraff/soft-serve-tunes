@@ -65,6 +65,8 @@ type C = {
   [K in RouteKey]: readonly [K, Exclude<keyof AppRouter["_def"]["procedures"][K] & string, "_def" | "createCaller" | "getErrorShape">]
 }
 
+export type SecondRouteKey<S extends RouteKey> = C[S][1]
+
 export type AllRoutes = C[RouteKey]
 
 type E = {

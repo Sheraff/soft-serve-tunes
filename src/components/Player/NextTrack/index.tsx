@@ -2,7 +2,7 @@ import { useNextTrack, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import Head from "next/head"
 import { memo, useEffect, type RefObject } from "react"
-import { useCachedTrack } from "client/sw/useCachedTrack"
+import { useCachedTrack } from "client/sw/useSWCached"
 import { trpc } from "utils/trpc"
 
 export default memo(function NextTrack({

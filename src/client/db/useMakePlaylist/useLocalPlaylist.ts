@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
-import { useNextCachedTrack } from "client/sw/useCachedTrack"
+import { useNextCachedTrack } from "client/sw/useSWCached"
 import { repeat } from "components/Player"
 import { useCallback, useEffect } from "react"
 import { trpc } from "utils/trpc"

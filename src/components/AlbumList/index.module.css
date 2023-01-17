@@ -129,14 +129,14 @@
 .empty::before {
 	content: none;
 }
-.selected .span {
+.withIcon .span {
 	grid-template-columns: 1fr auto 1fr;
 	grid-template-rows: repeat(3, auto);
 }
-.selected .span.two {
+.withIcon .span.two {
 	grid-template-rows: repeat(2, auto);
 }
-.selected .span > :not(.icon) {
+.withIcon .span > :not(.icon) {
 	grid-column: 2 / 3;
 }
 .icon {

@@ -3,10 +3,13 @@ import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwar
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import CheckIcon from "icons/done.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import useLongPress from "./useLongPress"
+import { useCachedAlbum } from "client/sw/useSWCached"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 type AlbumListItem = {
 	id: string
@@ -65,10 +68,17 @@ function AlbumItem({
 	} : undefined
 	useLongPress({onLong, item})
 
+	const online = useIsOnline()
+	const {data: cached} = useCachedAlbum({id: album.id, enabled: !online})
+	const offline = !online && cached
+
 	return (
 		<button
 			ref={item}
-			className={classNames(styles.button, {[styles.selected]: selected})}
+			className={classNames(styles.button, {
+				[styles.selected]: selected,
+				[styles.withIcon]: selected || offline
+			})}
 			type="button"
 			onClick={(event) => {
 				if (onLong && editOverlay.getValue(queryClient).type === "album") {
@@ -108,6 +118,7 @@ function AlbumItem({
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
 				<span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>
 				{selected && <CheckIcon className={styles.icon} />}
+				{!selected && offline && <OfflineIcon className={styles.icon} />}
 			</p>
 		</button>
 	)

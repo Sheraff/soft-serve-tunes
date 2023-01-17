@@ -3,6 +3,7 @@ import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
+import { Prisma } from "@prisma/client"
 
 const searchable = publicProcedure.query(async ({ctx}) => {
   const raw = await ctx.prisma.artist.findMany({
@@ -82,6 +83,19 @@ const miniature = publicProcedure.input(z.object({
 const get = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
+  const albumSelect = {
+    id: true,
+    name: true,
+    tracks: {
+      orderBy: {
+        position: "asc"
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    }
+  } satisfies Prisma.AlbumSelect
   const artist = await ctx.prisma.artist.findUnique({
     where: { id: input.id },
     select: {
@@ -93,10 +107,7 @@ const get = publicProcedure.input(z.object({
         },
       },
       albums: {
-        select: {
-          id: true,
-          name: true,
-        },
+        select: albumSelect,
       },
       cover: {
         select: {
@@ -119,13 +130,13 @@ const get = publicProcedure.input(z.object({
     }
   })
 
-  if (artist) {
-    lastFm.findArtist(input.id)
-    audioDb.fetchArtist(input.id)
-  } else {
+  if (!artist) {
     log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
-    return null
+    return artist
   }
+
+  lastFm.findArtist(input.id)
+  audioDb.fetchArtist(input.id)
 
   // extra albums not directly by this artist
   const albums = await ctx.prisma.album.findMany({
@@ -139,7 +150,7 @@ const get = publicProcedure.input(z.object({
       id: {notIn: artist.albums.map(({id}) => id)},
       tracks: {some: {artistId: input.id}},
     },
-    select: {id: true, name: true}
+    select: albumSelect
   })
 
   // extra tracks, not in albums

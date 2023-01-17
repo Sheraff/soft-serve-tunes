@@ -1,6 +1,5 @@
-export const VERSION = 1
 export const CACHES = {
-	next: `Next.js - v${VERSION}`,
-	trpc: `tRPC - v${VERSION}`,
-	media: `Media - v${VERSION}`,
+	next: "Next.js - v1",
+	trpc: "tRPC - v2",
+	media: "Media - v1",
 }

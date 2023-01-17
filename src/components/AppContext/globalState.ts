@@ -10,6 +10,7 @@ function useAtomValue<T>(key: string, initial: T) {
 		keepPreviousData: true,
 		cacheTime: Infinity,
 		staleTime: Infinity,
+		networkMode: "offlineFirst",
 	})
 	return data
 }

@@ -126,11 +126,9 @@ workerSocketClient.add.subscribe({
 		if (type === "artist") {
 			trpcRevalidation({key: ["artist", "miniature"], params: {id}})
 			trpcRevalidation({key: ["artist", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "artist", id }})
 		} else if (type === "album") {
 			trpcRevalidation({key: ["album", "miniature"], params: {id}})
 			trpcRevalidation({key: ["album", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "album", id }})
 			trpcRevalidation({key: ["album", "mostRecentAdd"]})
 		}
 	}
@@ -146,17 +144,14 @@ workerSocketClient.remove.subscribe({
 		} else if (type === "track") {
 			trpcRevalidation({key: ["track", "searchable"]})
 			trpcRevalidation({key: ["track", "miniature"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "track", id }})
 		} else if (type === "artist") {
 			trpcRevalidation({key: ["artist", "searchable"]})
 			trpcRevalidation({key: ["artist", "miniature"], params: {id}})
 			trpcRevalidation({key: ["artist", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "artist", id }})
 		} else if (type === "album") {
 			trpcRevalidation({key: ["album", "searchable"]})
 			trpcRevalidation({key: ["album", "miniature"], params: {id}})
 			trpcRevalidation({key: ["album", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "album", id }})
 		} else if (type === "genre") {
 			trpcRevalidation({key: ["genre", "list"]})
 			trpcRevalidation({key: ["genre", "miniature"], params: {id}})

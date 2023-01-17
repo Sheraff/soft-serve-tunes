@@ -4,9 +4,12 @@ import { trpc, type RouterOutputs } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import CheckIcon from "icons/done.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 import { useQueryClient } from "@tanstack/react-query"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
+import { useCachedArtist } from "client/sw/useSWCached"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 type ArtistListItem = {
 	id: string
@@ -66,10 +69,16 @@ function ArtistItem({
 	} : undefined
 	useLongPress({onLong, item})
 
+	const online = useIsOnline()
+	const {data: cached} = useCachedArtist({id: artist.id, enabled: !online})
+	const offline = !online && cached
+
 	return (
 		<button
 			ref={item}
-			className={classNames(styles.button, {[styles.selected]: selected})}
+			className={classNames(styles.button, {
+				[styles.selected]: selected
+			})}
 			type="button"
 			onClick={(event) => {
 				if (onLong && editOverlay.getValue(queryClient).type === "artist") {
@@ -111,10 +120,8 @@ function ArtistItem({
 				{albumCount > 1 && <span>{albumCount} albums</span>}
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>}
 			</p>
-
-			{selected && (
-				<CheckIcon className={styles.check} />
-			)}
+			{selected && <CheckIcon className={styles.check} />}
+			{!selected && offline && <OfflineIcon className={styles.check} />}
 		</button>
 	)
 }

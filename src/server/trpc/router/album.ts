@@ -102,7 +102,13 @@ const get = publicProcedure.input(z.object({
           id: true,
           name: true,
           position: true,
-        }
+          artist: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
+        },
       },
       cover: {
         select: {
