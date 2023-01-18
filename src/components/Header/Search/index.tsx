@@ -173,7 +173,7 @@ export default function Search({
 					<div>
 						<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 						<TrackList
-							tracks={tracks.slice(0, 50)}
+							tracks={tracks.slice(0, 25)}
 							onSelect={({id}) => onSelect({type: "track", id})}
 						/>
 					</div>
