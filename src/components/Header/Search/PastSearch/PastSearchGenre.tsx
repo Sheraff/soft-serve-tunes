@@ -36,9 +36,7 @@ export function PastSearchGenre({
 			id={id}
 			type="genre"
 		>
-			<p className={styles.info}>
-				{info.join(" · ")}
-			</p>
+			{info.join(" · ")}
 		</BasePastSearchItem>
 	)
 }

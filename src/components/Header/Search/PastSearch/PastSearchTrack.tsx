@@ -1,8 +1,9 @@
 import { trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
-import styles from "./index.module.css"
 import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
+import { useCachedTrack } from "client/sw/useSWCached"
+import useIsOnline from "utils/typedWs/useIsOnline"
 
 export function PastSearchTrack({
 	id,
@@ -32,6 +33,10 @@ export function PastSearchTrack({
 		info.push(`from ${entity.album.name}`)
 	}
 
+	const online = useIsOnline()
+	const {data: cached} = useCachedTrack({id, enabled: !online})
+	const offline = !online && cached
+
 	return (
 		<BasePastSearchItem
 			coverId={entity?.cover?.id}
@@ -39,10 +44,9 @@ export function PastSearchTrack({
 			name={entity?.name}
 			id={id}
 			type="track"
+			offline={offline}
 		>
-			<p className={styles.info}>
-				{info.join(" · ")}
-			</p>
+			{info.join(" · ")}
 		</BasePastSearchItem>
 	)
 }

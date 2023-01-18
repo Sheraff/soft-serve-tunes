@@ -4,6 +4,8 @@ import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import pluralize from "utils/pluralize"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedArtist } from "client/sw/useSWCached"
 
 export function PastSearchArtist({
 	id,
@@ -29,6 +31,10 @@ export function PastSearchArtist({
 		info.push(`${entity._count.tracks} track${pluralize(entity._count.tracks)}`)
 	}
 
+	const online = useIsOnline()
+	const {data: cached} = useCachedArtist({id, enabled: !online})
+	const offline = !online && cached
+
 	return (
 		<BasePastSearchItem
 			className={styles.artist}
@@ -37,10 +43,9 @@ export function PastSearchArtist({
 			name={entity?.name}
 			id={id}
 			type="artist"
+			offline={offline}
 		>
-			<p className={styles.info}>
-				{info.join(" · ")}
-			</p>
+			{info.join(" · ")}
 		</BasePastSearchItem>
 	)
 }

@@ -1,9 +1,10 @@
 import { trpc } from "utils/trpc"
 import { openPanel } from "components/AppContext"
-import styles from "./index.module.css"
 import { useQueryClient } from "@tanstack/react-query"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import pluralize from "utils/pluralize"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedAlbum } from "client/sw/useSWCached"
 
 export function PastSearchAlbum({
 	id,
@@ -29,6 +30,10 @@ export function PastSearchAlbum({
 		info.push(`${entity._count.tracks} track${pluralize(entity._count.tracks)}`)
 	}
 
+	const online = useIsOnline()
+	const {data: cached} = useCachedAlbum({id, enabled: !online})
+	const offline = !online && cached
+
 	return (
 		<BasePastSearchItem
 			coverId={entity?.cover?.id}
@@ -36,10 +41,9 @@ export function PastSearchAlbum({
 			name={entity?.name}
 			id={id}
 			type="album"
+			offline={offline}
 		>
-			<p className={styles.info}>
-				{info.join(" · ")}
-			</p>
+			{info.join(" · ")}
 		</BasePastSearchItem>
 	)
 }

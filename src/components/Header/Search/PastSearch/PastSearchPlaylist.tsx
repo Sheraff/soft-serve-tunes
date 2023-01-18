@@ -35,9 +35,7 @@ export function PastSearchPlaylist({
 			id={id}
 			type="playlist"
 		>
-			<p className={styles.info}>
-				{info.join(" · ")}
-			</p>
+			{info.join(" · ")}
 		</BasePastSearchItem>
 	)
 }

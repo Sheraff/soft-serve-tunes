@@ -5,6 +5,7 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import useLongPress from "components/AlbumList/useLongPress"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 
 export function BasePastSearchItem({
 	className,
@@ -14,6 +15,7 @@ export function BasePastSearchItem({
 	name,
 	type,
 	id,
+	offline,
 }: {
 	className?: string
 	coverId?: string | null
@@ -22,6 +24,7 @@ export function BasePastSearchItem({
 	name?: string
 	type: "album" | "artist" | "playlist" | "track" | "genre"
 	id: string
+	offline?: boolean
 }) {
 	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
 
@@ -77,7 +80,10 @@ export function BasePastSearchItem({
 				{name && (
 					<>
 						<p className={styles.name}>{name}</p>
-						{children}
+						<p className={styles.info}>
+							{children}
+						</p>
+						{offline && <OfflineIcon className={styles.icon} />}
 					</>
 				)}
 			</div>

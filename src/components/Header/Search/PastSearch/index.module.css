@@ -32,16 +32,32 @@
 
 .content {
 	overflow: hidden;
+	display: grid;
+	gap: 4px;
+	grid-template-areas:
+		"name name"
+		"icon info";
+	grid-template-columns: auto 1fr;
+	align-items: center;
 }
 .name {
+	grid-area: name;
 	font-size: 14px;
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	overflow: hidden;
 }
+.icon {
+	grid-area: icon;
+	font-size: 14px;
+	margin-top: -2px;
+}
 .info {
-	margin-top: 4px;
+	grid-area: info;
 	font-size: 10px;
+}
+.info:last-child {
+	grid-column: 1 / 3;
 }
 
 .artist .img,
