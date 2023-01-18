@@ -471,7 +471,7 @@ class LastFM {
 		const lastfm = await this.fetch(url, lastFmTrackSearch)
 		const albumsFound = lastfm.results?.trackmatches?.track || []
 		const matchByName = albumsFound.filter(({name, artist}) => {
-			const similarTrackName = similarStrings(name, trackName)
+			const similarTrackName = similarStrings(name, trackName) // TODO: can we do better than just a string similarity check?
 			if (!similarTrackName) return false
 			return similarStrings(artist, artistName)
 		})
