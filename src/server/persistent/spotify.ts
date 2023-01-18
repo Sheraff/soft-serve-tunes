@@ -404,7 +404,7 @@ class Spotify {
 				log("info", "fetch", "spotify", `${fuzzySearch ? "fuzzy " : ""}search: ${search}`)
 				const trackData = await this.fetch(`search?type=track&q=${search}`)
 				let candidate = ("tracks" in trackData)
-					? trackData.tracks.items[0]
+					? trackData.tracks.items[0] // TODO: use string distance
 					: undefined
 				if (!candidate) {
 					if (artistName && albumName && typeof track.position === "number") {
@@ -415,7 +415,7 @@ class Spotify {
 							log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
 							break trackCreate
 						}
-						candidate = albumData.tracks.items.find(item => item.track_number === track.position)
+						candidate = albumData.tracks.items.find(item => item.track_number === track.position) // TODO: use string distance (and avoid basing choice on position)
 						if (!candidate) {
 							log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
 							break trackCreate
