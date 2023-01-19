@@ -1,7 +1,7 @@
 import { Playlist } from "./types"
 
 
-export default function isLocalFromPlaylistAndId(playlist: Playlist | undefined, id: string | null): playlist is Playlist {
+export default function isLocalFromPlaylistAndId(playlist: Playlist | undefined, id: Playlist["id"]): playlist is Playlist {
 	const isLocal = Boolean(playlist?.id === id)
 
 	if (!isLocal && !id) {

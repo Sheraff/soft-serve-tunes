@@ -35,7 +35,7 @@ export default function Cover() {
 	onTitleEdit.current = (newName) => {
 		navigator.vibrate(1)
 		setEditing(false)
-		renamePlaylist(newName.trim())
+		renamePlaylist(newName.trim(), id)
 	}
 	const onTitleEditStart = useRef<() => void>(() => {})
 	onTitleEditStart.current = () => {

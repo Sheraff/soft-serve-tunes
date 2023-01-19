@@ -32,7 +32,9 @@ function AddMoreButton({
 		if (data && data.length > 0) {
 			await addTrackToPlaylist(id, data)
 		}
-		setLoading(false)
+		startTransition(() => {
+			setLoading(false)
+		})
 	}
 
 	return (
@@ -65,8 +67,8 @@ export default memo(function NowPlaying() {
 					setPlaylistIndex(tracks.findIndex((item) => item.id === id))
 				})}
 				orderable
-				onReorder={reorderPlaylist}
-				quickSwipeAction={({id}) => deleteFromPlaylist(id)}
+				onReorder={(from, to) => reorderPlaylist(from, to, id)}
+				quickSwipeAction={(track) => deleteFromPlaylist(track.id, id)}
 				quickSwipeIcon={DeleteIcon}
 				quickSwipeDeleteAnim
 			/>
