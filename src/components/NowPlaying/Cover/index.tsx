@@ -6,7 +6,6 @@ import { trpc } from "utils/trpc"
 import styles from "./index.module.css"
 import SaveButton from "./SaveButton"
 import EditableTitle from "atoms/SectionTitle/EditableTitle"
-import SectionTitle from "atoms/SectionTitle"
 import Images from "./Images"
 import usePlaylistDescription from "./usePlaylistDescription"
 
@@ -48,12 +47,7 @@ export default function Cover() {
 			<Images albums={albums} />
 			<div className={classNames(styles.panel, {[styles.editing]: editing})}>
 				<div className={styles.details}>
-					{id && (
-						<EditableTitle name={name} onEditEnd={onTitleEdit} onEditStart={onTitleEditStart} />
-					)}
-					{!id && (
-						<SectionTitle>{name}</SectionTitle>
-					)}
+					<EditableTitle name={name} onEditEnd={onTitleEdit} onEditStart={onTitleEditStart} />
 					<p>{description}</p>
 				</div>
 				<SaveButton id={id ?? null} className={styles.action} />

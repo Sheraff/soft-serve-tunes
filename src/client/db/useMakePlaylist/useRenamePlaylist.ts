@@ -21,11 +21,9 @@ export function useRenamePlaylist() {
 		async (name: string, id: Playlist["id"] = null) => {
 		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 
-		const isLocal = isLocalFromPlaylistAndId(playlist, id)
-
 		const uniqueName = await uniqueNameFromName(trpcClient, name, id)
 		
-		// either both are undefined, or they match. Either way we rename the local playlist
+		const isLocal = isLocalFromPlaylistAndId(playlist, id)
 		if (isLocal) {
 			queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
 		}
