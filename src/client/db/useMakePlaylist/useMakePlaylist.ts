@@ -27,9 +27,9 @@ export function useMakePlaylist() {
 export function useCreatePlaylist() {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
-	return useCallback(async (ids: string[]) => {
+	return useCallback(async (ids: string[], name = "New Playlist") => {
 		const tracks = await tracksDataFromTrackIds(ids, trpcClient)
-		await makePlaylist(trpcClient, queryClient, tracks, "New Playlist")
+		await makePlaylist(trpcClient, queryClient, tracks, name)
 	}, [trpcClient, queryClient])
 }
 

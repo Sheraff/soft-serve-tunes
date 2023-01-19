@@ -8,6 +8,14 @@ import extractPlaylistCredits from "./extractPlaylistCredits"
 import { type Playlist, type PlaylistDBEntry, type PlaylistMeta } from "./types"
 import { listAllFromIndexedDB, retrieveFromIndexedDB } from "client/db/utils"
 
+const defaultPlaylist: Playlist = {
+	id: null,
+	current: undefined,
+	name: "New Playlist",
+	tracks: [],
+	order: [],
+}
+
 async function playlistQueryFn(queryClient: QueryClient): Promise<Playlist> {
 	const cache = queryClient.getQueryData<Playlist>(["playlist"])
 	if (cache) return cache
@@ -18,12 +26,19 @@ async function playlistQueryFn(queryClient: QueryClient): Promise<Playlist> {
 	const tracks = results
 		.sort((a, b) => a.index - b.index)
 		.map((item) => item.track)
+
+	if (meta) {
+		return {
+			...meta,
+			tracks,
+		}
+	}
+
 	return {
-		id: meta?.id || null,
-		current: meta?.current || tracks[0]?.id,
-		name: meta?.name || "New Playlist",
+		...defaultPlaylist,
 		tracks,
-		order: meta?.order || tracks.map(({id}) => id),
+		current: tracks[0]?.id,
+		order: tracks.map(({id}) => id),
 	}
 }
 

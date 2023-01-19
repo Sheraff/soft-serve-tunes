@@ -16,6 +16,45 @@ export default function AddToPlaylist({
 	const addToPlaylist = useAddToPlaylist()
 	const createPlaylist = useCreatePlaylist()
 	const {mutateAsync: getMore} = trpc.playlist.more.useMutation()
+	const trpcClient = trpc.useContext()
+
+	const onClickNew = () => {
+		navigator.vibrate(1)
+		if (!items.length) return
+		onSelect()
+		startTransition(() => {
+			createPlaylist(items.map((item) => item.id))
+		})
+	}
+
+	const onClickSmart = async () => {
+		navigator.vibrate(1)
+		if (!items.length) return
+		onSelect()
+
+		const trackIds = items.map((item) => item.id)
+		const data = (await getMore({
+			type: "by-similar-tracks",
+			trackIds,
+		})) || []
+
+		let name: string
+		naming: if (trackIds.length === 1) {
+			const id = trackIds[0]!
+			const local = trpcClient.track.miniature.getData({id})?.name
+			if (local) {
+				name = `Similar to ${local}`
+				break naming
+			}
+			const remote = await trpcClient.track.miniature.fetch({id})
+			if (remote) {
+				name = `Similar to ${remote.name}`
+			}
+		}
+		startTransition(() => {
+			createPlaylist([...trackIds, ...data.map((item) => item.id)], name)
+		})
+	}
 
 	return (
 		<ul>
@@ -41,14 +80,7 @@ export default function AddToPlaylist({
 				<button
 					className={styles.button}
 					type="button"
-					onClick={() => {
-						navigator.vibrate(1)
-						if (!items.length) return
-						onSelect()
-						startTransition(() => {
-							createPlaylist(items.map((item) => item.id))
-						})
-					}}
+					onClick={onClickNew}
 				>
 					<NewIcon className={styles.icon}/>
 					Create new playlist
@@ -58,20 +90,7 @@ export default function AddToPlaylist({
 				<button
 					className={styles.button}
 					type="button"
-					onClick={() => {
-						navigator.vibrate(1)
-						if (!items.length) return
-						onSelect()
-						const trackIds = items.map((item) => item.id)
-						getMore({
-							type: "by-similar-tracks",
-							trackIds,
-						}).then((data = []) => {
-							startTransition(() => {
-								createPlaylist([...trackIds, ...data.map((item) => item.id)])
-							})
-						})
-					}}
+					onClick={onClickSmart}
 				>
 					<SmartIcon className={styles.icon}/>
 					Create smart playlist
