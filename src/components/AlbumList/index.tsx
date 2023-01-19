@@ -143,7 +143,7 @@ export default forwardRef(function AlbumList({
 	selected?: string
 	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [enableUpTo, setEnableUpTo] = useState(lines === 1 ? 3 : 6)
+	const [enableUpTo, setEnableUpTo] = useState((scrollable && lines === 1) ? 3 : 6)
 
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)

@@ -234,7 +234,7 @@ export default function TrackList({
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 }) {
-	const [enableUpTo, setEnableUpTo] = useState(6)
+	const [enableUpTo, setEnableUpTo] = useState(9)
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
 		onDrop: emptyFunction

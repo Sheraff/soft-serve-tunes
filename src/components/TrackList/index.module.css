@@ -4,7 +4,7 @@
 .item {
 	width: 100%;
 	height: calc(48px + 2 * 8px + 1px);
-	contain: strict;
+	contain: size layout style;
 }
 
 .wrapper {
@@ -34,7 +34,6 @@
 	position: relative;
 	--y: 0px;
 	--bg-y: 0;
-	contain: size layout style;
 }
 .drag::before {
 	content: '';
