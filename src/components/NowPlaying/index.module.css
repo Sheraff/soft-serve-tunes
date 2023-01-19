@@ -13,12 +13,25 @@
 
 .more {
 	margin: auto;
+	font-size: 12px;
+	perspective: 100px;
+}
+
+.more span {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	font-size: 12px;
 }
 
 .more svg {
 	font-size: 16px;
+}
+
+.rotate {
+	animation: rotate-anim 1000ms linear infinite;
+}
+
+@keyframes rotate-anim {
+	from { transform: rotateX(0deg); }
+	to { transform: rotateX(720deg); }
 }
