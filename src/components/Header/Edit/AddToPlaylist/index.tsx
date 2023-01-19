@@ -4,6 +4,7 @@ import { trpc } from "utils/trpc"
 import NewIcon from "icons/library_add.svg"
 import SmartIcon from "icons/auto_mode.svg"
 import styles from "./index.module.css"
+import { useShowHome } from "components/AppContext"
 
 export default function AddToPlaylist({
 	items,
@@ -17,6 +18,7 @@ export default function AddToPlaylist({
 	const createPlaylist = useCreatePlaylist()
 	const {mutateAsync: getMore} = trpc.playlist.more.useMutation()
 	const trpcClient = trpc.useContext()
+	const showHome = useShowHome()
 
 	const onClickNew = () => {
 		navigator.vibrate(1)
@@ -24,6 +26,7 @@ export default function AddToPlaylist({
 		onSelect()
 		startTransition(() => {
 			createPlaylist(items.map((item) => item.id))
+			showHome("home")
 		})
 	}
 
@@ -53,6 +56,7 @@ export default function AddToPlaylist({
 		}
 		startTransition(() => {
 			createPlaylist([...trackIds, ...data.map((item) => item.id)], name)
+			showHome("home")
 		})
 	}
 
