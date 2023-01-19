@@ -6,6 +6,7 @@ import { trpc } from "utils/trpc"
 import { modifyInIndexedDB, storeInIndexedDB } from "client/db/utils"
 import { type Playlist, type PlaylistDBEntry, type PlaylistMeta } from "./types"
 import isLocalFromPlaylistAndId from "./isLocalFromPlaylistAndId"
+import tracksDataFromTrackIds from "./tracksDataFromTrackIds"
 
 /**
  * @description add a track to a playlist, remote and/or local
@@ -34,14 +35,7 @@ export function useAddToPlaylist() {
 			// playlist already contains track
 			return
 		}
-		const _fullTracks = (await Promise.all(tracks.map((track) => {
-			const existing = trpcClient.track.miniature.getData({id: track.id})
-			if (existing) {
-				return existing
-			}
-			return trpcClient.track.miniature.fetch({id: track.id})
-		}))).filter(Boolean) // filter in case some `id`s returned a null track from the .fetch call
-		const fullTracks = _fullTracks as Exclude<typeof _fullTracks[number], undefined | null>[]
+		const fullTracks = await tracksDataFromTrackIds(tracks.map(({id}) => id), trpcClient)
 		const newTracks = [...cache.tracks, ...fullTracks]
 		const newOrder = !shuffle.getValue(queryClient)
 			? [...cache.order, ...fullTracks.map(({id}) => id)]

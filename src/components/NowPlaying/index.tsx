@@ -23,6 +23,7 @@ function AddMoreButton({
 	if (!online) return null
 
 	const onClick = async () => {
+		navigator.vibrate(1)
 		// TODO: add JS animation for loading
 		setLoading(true)
 		const data = await getMore({

@@ -2,6 +2,7 @@ import { useCallback } from "react"
 import { trpc, type RouterInputs } from "utils/trpc"
 import { useQueryClient } from "@tanstack/react-query"
 import makePlaylist from "./makePlaylist"
+import tracksDataFromTrackIds from "./tracksDataFromTrackIds"
 
 /**
  * @description generates *local* playlist from `trpcClient.playlist.generate` and sets it in react-query cache and indexedDB (wrapper around `setPlaylist`)
@@ -27,16 +28,7 @@ export function useCreatePlaylist() {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
 	return useCallback(async (ids: string[]) => {
-		const tracks = ids.map(id => {
-			const track = trpcClient.track.miniature.getData({id})
-			if (!track) throw new Error("Track not found")
-			return {
-				id,
-				name: track.name,
-				artist: track.artist,
-				album: track.album,
-			}
-		})
+		const tracks = await tracksDataFromTrackIds(ids, trpcClient)
 		await makePlaylist(trpcClient, queryClient, tracks, "New Playlist")
 	}, [trpcClient, queryClient])
 }
