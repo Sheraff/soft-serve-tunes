@@ -3,6 +3,7 @@
 	grid-row: 2 / 3;
 	overflow: hidden scroll;
 	padding: 1em 0;
+	contain: strict;
 }
 
 .main {

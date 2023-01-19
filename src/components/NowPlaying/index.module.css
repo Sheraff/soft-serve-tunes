@@ -9,6 +9,7 @@
 	z-index: 0;
 	perspective: 1px;
 	transform-style: preserve-3d;
+	contain: strict;
 }
 
 .more {

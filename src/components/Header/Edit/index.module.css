@@ -4,6 +4,7 @@
 	pointer-events: none;
 	display: flex;
 	flex-direction: column;
+	contain: strict;
 }
 .main > * {
 	background-color: var(--palette-bg-main);
@@ -63,6 +64,7 @@
 
 	overflow-y: hidden;
 	margin-top: -1px; /* avoid sub-pixel gap between header and body */
+	contain: strict;
 }
 .body[data-open="true"] {
 	clip-path: inset(0 0 0 0);

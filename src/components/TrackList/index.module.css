@@ -3,9 +3,8 @@
 }
 .item {
 	width: 100%;
-}
-.unloaded {
 	height: calc(48px + 2 * 8px + 1px);
+	contain: strict;
 }
 
 .wrapper {
@@ -35,6 +34,7 @@
 	position: relative;
 	--y: 0px;
 	--bg-y: 0;
+	contain: size layout style;
 }
 .drag::before {
 	content: '';

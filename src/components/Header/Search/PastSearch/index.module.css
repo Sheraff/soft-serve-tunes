@@ -2,9 +2,10 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 0 8px;
-	margin-bottom: 8px;
+	padding: 0 8px 8px;
 	width: 100%;
+	height: calc(56px + 8px);
+	contain: strict;
 }
 .empty::before {
 	content: '';

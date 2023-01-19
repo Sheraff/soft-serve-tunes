@@ -59,6 +59,7 @@
 	border-radius: 4px;
 	touch-action: pan-x pan-y;
 	user-select: none;
+	contain: strict;
 }
 .selected {
 	border: 1px solid var(--palette-secondary);

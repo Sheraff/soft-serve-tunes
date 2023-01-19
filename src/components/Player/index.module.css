@@ -20,6 +20,7 @@
 		"ui   ui    ui";
 	grid-template-columns: auto 1fr auto;
 	color: var(--palette-primary);
+	contain: paint style layout inline-size;
 }
 
 .progress {

@@ -19,6 +19,7 @@
 	transform-style: preserve-3d;
 
 	will-change: transform, clip-path;
+	contain: strict;
 }
 .main[data-open="true"]:not([data-bubble="true"]) {
 	transform: translateX(0);
@@ -68,6 +69,7 @@
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);
 	grid-area: 1 / 1 / 2 / 2;
+	contain: strict;
 }
 .preview {
 	z-index: 1;
