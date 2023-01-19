@@ -143,7 +143,7 @@ export default forwardRef(function ArtistList({
 	selected?: string
 	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [enableUpTo, setEnableUpTo] = useState(12)
+	const [enableUpTo, setEnableUpTo] = useState(lines === 1 ? 4 : 12)
 
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
@@ -160,7 +160,7 @@ export default forwardRef(function ArtistList({
 						{i <= enableUpTo && (
 							<ArtistItem
 								artist={artist}
-								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								enableSiblings={i === enableUpTo && i !== artists.length - 1 ? () => setEnableUpTo(enableUpTo + 4) : undefined}
 								onSelect={onSelect}
 								onClick={onClick}
 								index={i}

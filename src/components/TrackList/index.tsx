@@ -234,7 +234,7 @@ export default function TrackList({
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
 }) {
-	const [enableUpTo, setEnableUpTo] = useState(12)
+	const [enableUpTo, setEnableUpTo] = useState(6)
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
 		onDrop: emptyFunction
@@ -271,7 +271,7 @@ export default function TrackList({
 						{i <= enableUpTo && (
 							<TrackItem
 								track={track}
-								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								enableSiblings={i === enableUpTo && i !== deferredTracks.length - 1 ? () => setEnableUpTo(enableUpTo + 20) : undefined}
 								current={current === track.id}
 								onClick={onClick}
 								onSelect={onSelect}

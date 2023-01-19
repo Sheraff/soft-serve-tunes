@@ -143,7 +143,7 @@ export default forwardRef(function AlbumList({
 	selected?: string
 	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [enableUpTo, setEnableUpTo] = useState(12)
+	const [enableUpTo, setEnableUpTo] = useState(lines === 1 ? 3 : 6)
 
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
@@ -162,7 +162,7 @@ export default forwardRef(function AlbumList({
 						{i <= enableUpTo && (
 							<AlbumItem
 								album={album}
-								enableSiblings={i === enableUpTo ? () => setEnableUpTo(enableUpTo + 12) : undefined}
+								enableSiblings={i === enableUpTo && i !== albums.length - 1 ? () => setEnableUpTo(enableUpTo + 6) : undefined}
 								onSelect={onSelect}
 								onClick={onClick}
 								index={i}
