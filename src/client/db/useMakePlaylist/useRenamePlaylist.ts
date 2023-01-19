@@ -23,7 +23,7 @@ export function useRenamePlaylist() {
 
 		const isLocal = isLocalFromPlaylistAndId(playlist, id)
 
-		const uniqueName = await uniqueNameFromName(trpcClient, name)
+		const uniqueName = await uniqueNameFromName(trpcClient, name, id)
 		
 		// either both are undefined, or they match. Either way we rename the local playlist
 		if (isLocal) {
