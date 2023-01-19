@@ -1,11 +1,12 @@
 import { type QueryClient } from "@tanstack/react-query"
 import { type trpc } from "utils/trpc"
-import { Playlist } from "./types"
+import isLocalFromPlaylistAndId from "./isLocalFromPlaylistAndId"
+import { type Playlist } from "./types"
 
 /**
  * @description fetches a playlist and formats the output in the shape of a local playlist
  */
-async function getRemotePlaylistAsLocal(id: string, trpcClient: ReturnType<typeof trpc.useContext>) {
+async function getRemotePlaylistAsLocal(id: string, trpcClient: ReturnType<typeof trpc.useContext>): Promise<Playlist> {
 	const result = await trpcClient.playlist.get.fetch({id})
 	if (!result) throw new Error(`no playlist found with id ${id}`)
 	const order = result.tracks.map(({id}) => id)
@@ -25,7 +26,7 @@ async function getRemotePlaylistAsLocal(id: string, trpcClient: ReturnType<typeo
  * - If `id` is *provided* and it matches the local playlist in cache, it will return the local playlist in cache.
  */
 export async function getPlaylistByIdRemoteOrLocal(
-	id: string | undefined,
+	id: Playlist["id"],
 	trpcClient: ReturnType<typeof trpc.useContext>,
 	queryClient: QueryClient,
 ) {
@@ -34,11 +35,7 @@ export async function getPlaylistByIdRemoteOrLocal(
 		throw new Error("no playlist id provided, and no local playlist in cache")
 	}
 
-	const isLocal = _playlist && (!id || _playlist.id === id)
-
-	if (!isLocal && !id) {
-		throw new Error("this shouldn't be possible")
-	}
+	const isLocal = isLocalFromPlaylistAndId(_playlist, id)
 
 	const playlist = isLocal
 		? _playlist

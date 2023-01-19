@@ -21,6 +21,9 @@ export async function recursiveSubGenres<
 ) {
   genreSet.add(id)
   const tracksArg = args || {select: {id: true}}
+  // TODO: we might want to also select album>tracks in addition to tracks,
+  // musicbrainz reports having a lot of genre connections on albums (49% of albums have at least 1 genre),
+  // but don't report anything on tracks
   const data = await prisma.genre.findUnique({
     where: { id },
     select: {

@@ -10,3 +10,15 @@
 	perspective: 1px;
 	transform-style: preserve-3d;
 }
+
+.more {
+	margin: auto;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+}
+
+.more svg {
+	font-size: 16px;
+}

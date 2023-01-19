@@ -14,7 +14,7 @@ export function useRemoveFromPlaylist() {
 	const trpcClient = trpc.useContext()
 	const {mutateAsync} = trpc.playlist.modify.useMutation()
 
-	return useCallback(async (trackId: string, playlistId?: string) => {
+	return useCallback(async (trackId: string, playlistId: Playlist["id"] = null) => {
 		const {playlist, isLocal} = await getPlaylistByIdRemoteOrLocal(playlistId, trpcClient, queryClient)
 
 		if (playlist.id) {

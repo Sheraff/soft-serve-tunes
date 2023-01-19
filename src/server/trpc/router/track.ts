@@ -185,7 +185,8 @@ export function getSpotifyTracksByMultiTraitsWithTarget(
     trait: z.infer<typeof zTrackTraits>,
     value: number | string
   }[],
-  count: number
+  count: number,
+  offset = 0,
 ) {
   return prisma.$queryRawUnsafe(`
     SELECT
@@ -198,7 +199,7 @@ export function getSpotifyTracksByMultiTraitsWithTarget(
       AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
       AND ${traits.map((t) => `ABS(${t.value}-${t.trait}) < 0.5`).join(" AND ")}
     )
-    ORDER BY score DESC LIMIT ${count} OFFSET 0
+    ORDER BY score DESC LIMIT ${count} OFFSET ${offset}
   `) as unknown as {trackId: string}[]
 }
 

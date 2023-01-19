@@ -84,7 +84,7 @@ export default forwardRef(function PlaylistView({
 					}}
 					onClick={(trackId) => {
 						if (_name && tracks) startTransition(() => {
-							setPlaylist(_name, id, tracks, trackId)
+							setPlaylist(_name, tracks, id, trackId)
 							showHome("home")
 						})
 					}}

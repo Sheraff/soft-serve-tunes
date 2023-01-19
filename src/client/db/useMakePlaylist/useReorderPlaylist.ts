@@ -15,7 +15,7 @@ export function useReorderPlaylist() {
 	const trpcClient = trpc.useContext()
 	const {mutateAsync} = trpc.playlist.modify.useMutation()
 
-	return useCallback(async (oldIndex: number, newIndex: number, id?: string) => {
+	return useCallback(async (oldIndex: number, newIndex: number, id: Playlist["id"] = null) => {
 		const {playlist, isLocal} = await getPlaylistByIdRemoteOrLocal(id, trpcClient, queryClient)
 
 		const newItems = [...playlist.tracks]

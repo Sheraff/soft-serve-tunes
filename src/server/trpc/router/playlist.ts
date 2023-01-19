@@ -87,10 +87,61 @@ const generate = publicProcedure.input(z.union([
     return data.tracks
   }
   if (input.type === "by-multi-traits") {
-    const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 30)
+    const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
     const ids = spotifyTracks.map((t) => t.trackId)
     const tracks = await ctx.prisma.track.findMany({
       where: {id: { in: ids }},
+      select: trackSelect,
+    })
+    tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+    return tracks
+  }
+})
+
+const more = publicProcedure.input(
+  z.object({
+    type: z.literal("by-similar-tracks"),
+    trackIds: z.array(z.string()),
+  })
+).mutation(async ({ input, ctx }) => {
+  if (input.type === "by-similar-tracks") {
+    const features = await ctx.prisma.spotifyTrack.aggregate({
+      where: {trackId: { in: input.trackIds }},
+      _avg: {
+        danceability: true,
+        energy: true,
+        valence: true,
+        acousticness: true,
+        instrumentalness: true,
+        liveness: true,
+        speechiness: true,
+      },
+    })
+    const entries = Object.entries(features._avg) as [keyof typeof features["_avg"], number | null][]
+    const traits = entries.reduce<
+      Parameters<typeof getSpotifyTracksByMultiTraitsWithTarget>[0]
+    >((traits, [trait, value]) => {
+      if (value !== null) {
+        traits.push({ trait, value })
+      }
+      return traits
+    }, [])
+    const ids: string[] = []
+    const count = 15
+    let offset = 0
+    do {
+      const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(traits, count, offset)
+      if (spotifyTracks.length === 0) {
+        break
+      }
+      offset += spotifyTracks.length
+      const newIds = spotifyTracks
+        .map((t) => t.trackId)
+        .filter((id) => !ids.includes(id) && !input.trackIds.includes(id))
+      ids.push(...newIds)
+    } while (ids.length < count)
+    const tracks = await ctx.prisma.track.findMany({
+      where: {id: { in: ids.slice(0, count) }},
       select: trackSelect,
     })
     tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
@@ -438,6 +489,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
 
 export const playlistRouter = router({
   generate,
+  more,
   list,
   get,
   searchable,

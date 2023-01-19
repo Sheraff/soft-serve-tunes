@@ -8,7 +8,7 @@ import extractPlaylistCredits from "./extractPlaylistCredits"
 import { type Playlist, type PlaylistDBEntry, type PlaylistMeta } from "./types"
 import { listAllFromIndexedDB, retrieveFromIndexedDB } from "client/db/utils"
 
-async function playlistQueryFn(queryClient: QueryClient) {
+async function playlistQueryFn(queryClient: QueryClient): Promise<Playlist> {
 	const cache = queryClient.getQueryData<Playlist>(["playlist"])
 	if (cache) return cache
 	const [results, meta] = await Promise.all([
