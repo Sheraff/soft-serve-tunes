@@ -126,6 +126,10 @@ const more = publicProcedure.input(
       }
       return traits
     }, [])
+    if (traits.length === 0) {
+      log("error", "empty", "trpc", "No traits found")
+      return []
+    }
     const ids: string[] = []
     const count = 15
     let offset = 0
