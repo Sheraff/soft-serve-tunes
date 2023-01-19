@@ -50,7 +50,7 @@ export default function Cover() {
 					<EditableTitle name={name} onEditEnd={onTitleEdit} onEditStart={onTitleEditStart} />
 					<p>{description}</p>
 				</div>
-				<SaveButton id={id ?? null} className={styles.action} />
+				<SaveButton id={id} className={styles.action} />
 			</div>
 		</>
 	)

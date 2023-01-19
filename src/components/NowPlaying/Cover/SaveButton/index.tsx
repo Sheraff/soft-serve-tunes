@@ -7,8 +7,11 @@ import SaveIcon from "icons/library_add.svg"
 import SavedIcon from "icons/collections_bookmark.svg"
 import { useQueryClient } from "@tanstack/react-query"
 
-function SaveButton({id, className}: {
-	id: string | null
+function SaveButton({
+	id = null,
+	className
+}: {
+	id?: Playlist["id"],
 	className?: string
 }) {
 	const button = useRef<HTMLButtonElement>(null)
