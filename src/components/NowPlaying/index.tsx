@@ -30,10 +30,12 @@ export default memo(function NowPlaying() {
 				quickSwipeIcon={DeleteIcon}
 				quickSwipeDeleteAnim
 			/>
-			<AddMoreButton
-				id={id}
-				tracks={tracks}
-			/>
+			{tracks.length < 100 && (
+				<AddMoreButton
+					id={id}
+					tracks={tracks}
+				/>
+			)}
 		</div>
 	)
 })
