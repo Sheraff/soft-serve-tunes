@@ -20,6 +20,8 @@ export const authOptions: NextAuthOptions = {
 				log("error", "401", `Unauthorized sign-in attempt @ ${account?.provider} - ${user.email}`)
 				console.log(account)
 				console.log(user)
+			} else {
+				log("info", "200", `Authorized sign-in attempt @ ${account?.provider} - ${user.email}`)
 			}
 			return allowed
 		},
