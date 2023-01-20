@@ -54,6 +54,7 @@ export default function Palette({
 			<style key="palette-values">
 				{"body {\n"}
 				{palette.map((value, i) => `${keys[i]}: ${hslToCss(value)};`).join("\n")}
+				{"transition: --palette-bg-main 600ms linear, --palette-primary 600ms linear;\n"}
 				{"}\n"}
 			</style>
 			<meta name="theme-color" content={hslToCss(palette[0])} />
