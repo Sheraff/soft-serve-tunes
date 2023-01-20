@@ -3,7 +3,6 @@
 }
 .item {
 	width: 100%;
-	contain: layout style paint inline-size;
 }
 
 .wrapper {
@@ -11,6 +10,7 @@
 	z-index: 0;
 	border-top: 1px solid var(--palette-bg-gradient);
 	--x: 0px;
+	contain: layout style paint inline-size;
 }
 .wrapper::before,
 .wrapper::after {
@@ -33,7 +33,6 @@
 	position: relative;
 	--y: 0px;
 	--bg-y: 0;
-	contain: layout style inline-size;
 }
 .drag::before {
 	content: '';
@@ -47,6 +46,7 @@
 	background-color: var(--palette-bg-main);
 	z-index: 1;
 	box-shadow: 0 0 6px var(--palette-secondary);
+	contain: layout style inline-size;
 }
 .slide {
 	transform: translateY(100%);
