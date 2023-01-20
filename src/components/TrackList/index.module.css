@@ -33,6 +33,7 @@
 	position: relative;
 	--y: 0px;
 	--bg-y: 0;
+	contain: layout style inline-size;
 }
 .drag::before {
 	content: '';
