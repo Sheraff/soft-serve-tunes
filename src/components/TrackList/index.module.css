@@ -3,8 +3,7 @@
 }
 .item {
 	width: 100%;
-	height: calc(48px + 2 * 8px + 1px);
-	contain: size layout style;
+	contain: layout style paint inline-size;
 }
 
 .wrapper {
@@ -270,6 +269,8 @@
 	user-select: none;
 	color: var(--palette-primary);
 	touch-action: pan-x pan-y;
+	contain: size;
+	height: calc(48px + 2 * 8px);
 }
 .draggable .button,
 .selection .button {
