@@ -28,7 +28,7 @@ export default function CoverImages({
 				<img
 					key={album.id}
 					className={styles.img}
-					src={`/api/cover/${album.cover!.id}`}
+					src={albumData.length > 4 ? `/api/cover/${album.cover!.id}/${Math.round(174.5 * 2)}` : `/api/cover/${album.cover!.id}`}
 					alt=""
 				/>
 			))}
