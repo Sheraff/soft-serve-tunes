@@ -75,25 +75,27 @@ export function usePlaylist<T = Playlist>({
 	})
 }
 
+
+function selectDetails({tracks, name, id}: Playlist) {
+	if (!tracks || !tracks.length) return {}
+
+	const credits = extractPlaylistCredits(tracks)
+
+	return {
+		id,
+		name,
+		length: tracks.length,
+		albums: credits.albums.slice(0, 6),
+		artists: credits.artists.slice(0, 6),
+		moreAlbums: credits.albums.length > 6,
+		moreArtists: credits.artists.length > 6,
+	}
+}
 /**
  * @description `usePlaylist` wrapper that uses `extractPlaylistCredits` in the select function
  */
 export function usePlaylistExtractedDetails() {
-	const {data} = usePlaylist(({select: ({tracks, name, id}) => {
-		if (!tracks || !tracks.length) return {}
-
-		const credits = extractPlaylistCredits(tracks)
-
-		return {
-			id,
-			name,
-			length: tracks.length,
-			albums: credits.albums.slice(0, 6),
-			artists: credits.artists.slice(0, 6),
-			moreAlbums: credits.albums.length > 6,
-			moreArtists: credits.artists.length > 6,
-		}
-	}}))
+	const {data} = usePlaylist({select: selectDetails})
 	return data || {}
 }
 
