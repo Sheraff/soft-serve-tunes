@@ -28,17 +28,13 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 	const [list, setList] = useState<T[]>([])
 
 	// use namedObjects to pass less data to/from worker, use `namedObjects.id`to map back to `dataList` index
-	const namedObjects = useMemo(() => {
-		const namedObjects = [] as {name: string, id: number}[]
-		for (let i = 0; i < dataList.length; i++) {
-			const item = dataList[i]!
-			namedObjects.push({
-				name: keys.map(key => getIn(item, key.split("."))).join(" "),
-				id: i,
-			})
-		}
-		return namedObjects
-	}, [dataList, ...keys])
+	const namedObjects = useMemo(() =>
+		dataList.map((item, id) => ({
+			name: keys.map(key => getIn(item, key.split("."))).join(" "),
+			id,
+		})),
+		[dataList, ...keys]
+	)
 
 	// use these 2 refs to avoid making calls to worker for an input value that isn't current
 	const isWorking = useRef(false)
