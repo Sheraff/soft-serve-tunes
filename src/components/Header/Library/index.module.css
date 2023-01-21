@@ -38,7 +38,10 @@
 	padding: 16px;
 	position: relative;
 }
-
+.tabs > [data-active="true"] {
+	padding-top: 0;
+	padding-bottom: 0;
+}
 .tabs > [data-active="true"]::after {
 	content: "";
 	position: absolute;
@@ -47,6 +50,13 @@
 	width: 100%;
 	height: 2px;
 	background: var(--palette-primary);
+}
+.count {
+	display: block;
+	text-align: center;
+	font-size: 8px;
+	font-weight: 400;
+	margin-top: 2px;
 }
 
 .alphabet {

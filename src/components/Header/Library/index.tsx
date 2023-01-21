@@ -197,63 +197,33 @@ function BaseList({
 	)
 }
 
-function GenreList() {
-	const {data = []} = trpc.genre.list.useQuery()
-	return (
-		<BaseList
-			data={data}
-			component={PastSearchGenre}
-		/>
-	)
-}
-
-function AlbumList() {
-	const {data = []} = trpc.album.searchable.useQuery()
-	return (
-		<BaseList
-			data={data}
-			component={PastSearchAlbum}
-		/>
-	)
-}
-
-function ArtistList() {
-	const {data = []} = trpc.artist.searchable.useQuery()
-	return (
-		<BaseList
-			data={data}
-			component={PastSearchArtist}
-		/>
-	)
-}
-
-function PlaylistList() {
-	const {data = []} = trpc.playlist.searchable.useQuery()
-	return (
-		<BaseList
-			data={data}
-			component={PastSearchPlaylist}
-		/>
-	)
-}
-
-function TrackList() {
-	const {data = []} = trpc.track.searchable.useQuery()
-	return (
-		<BaseList
-			data={data}
-			component={PastSearchTrack}
-		/>
-	)
-}
-
 const LIST_COMPONENTS = {
-	Artists: memo(ArtistList),
-	Albums: memo(AlbumList),
-	Playlists: memo(PlaylistList),
-	Genres: memo(GenreList),
-	Tracks: memo(TrackList),
-} as const
+	Artists: {
+		name: "Artists",
+		component: PastSearchArtist,
+		useQuery: () => trpc.artist.searchable.useQuery(),
+	},
+	Albums: {
+		name: "Albums",
+		component: PastSearchAlbum,
+		useQuery: () => trpc.album.searchable.useQuery(),
+	},
+	Playlists: {
+		name: "Playlists",
+		component: PastSearchPlaylist,
+		useQuery: () => trpc.playlist.searchable.useQuery(),
+	},
+	Genres: {
+		name: "Genres",
+		component: PastSearchGenre,
+		useQuery: () => trpc.genre.list.useQuery(),
+	},
+	Tracks: {
+		name: "Tracks",
+		component: PastSearchTrack,
+		useQuery: () => trpc.track.searchable.useQuery(),
+	},
+}
 
 export const libraryTab = suspensePersistedState<keyof typeof LIST_COMPONENTS>("libraryTab", "Artists")
 
@@ -265,7 +235,8 @@ export default forwardRef(function Library({
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [tab, setTab] = libraryTab.useState()
-	const List = LIST_COMPONENTS[tab]
+	const {component, useQuery} = LIST_COMPONENTS[tab]
+	const {data = []} = useQuery()
 	return (
 		<div
 			className={styles.main}
@@ -276,17 +247,25 @@ export default forwardRef(function Library({
 			} as CSSProperties}
 		>
 			<div className={styles.tabs}>
-				{Object.keys(LIST_COMPONENTS).map((key) => (
+				{Object.entries(LIST_COMPONENTS).map(([key, {name}]) => (
 					<button
 						key={key}
 						data-active={key === tab}
 						onClick={() => setTab(key as keyof typeof LIST_COMPONENTS)}
 					>
-						{key}
+						{name}
+						{key === tab && (
+							<span className={styles.count}>
+								({data.length})
+							</span>
+						)}
 					</button>
 				))}
 			</div>
-			<List />
+			<BaseList
+				data={data}
+				component={component}
+			/>
 		</div>
 	)
 })
