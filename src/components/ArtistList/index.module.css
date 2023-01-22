@@ -46,7 +46,7 @@
 	gap: 4px;
 	touch-action: pan-x pan-y;
 	user-select: none;
-	contain: layout paint style;
+	contain: layout style;
 }
 
 .check {
