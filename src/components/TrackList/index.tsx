@@ -264,7 +264,9 @@ export default function TrackList({
 			<ul className={styles.main} ref={orderable ? ref : undefined}>
 				{deferredTracks.map((track, i) => (
 					<li
-						className={styles.item}
+						className={classNames(styles.item, {
+							[styles.placeholder]: i > enableUpTo,
+						})}
 						key={track.id}
 						data-index={i}
 					>
