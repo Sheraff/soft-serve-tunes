@@ -36,11 +36,9 @@
 		],
 		"typescript.tsdk": "node_modules/typescript/lib",
 		"typescript.enablePromptUseWorkspaceTsdk": true,
-		"editor.indentSize": "tabSize",
-		"editor.tabSize": 3,
 		"editor.codeActionsOnSave": {
-			"source.fixAll.eslint": true
+			"source.fixAll.eslint": true,
 		},
-		"template-string-converter.convertOutermostQuotes": true
+		"template-string-converter.convertOutermostQuotes": true,
 	},
 }
