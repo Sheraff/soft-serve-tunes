@@ -6,8 +6,8 @@ import { getServerAuthSession } from "../common/get-server-auth-session"
 import { prisma } from "../db/client"
 
 type CreateContextOptions = {
-  session: Session | null;
-};
+  session: Session | null
+}
 
 /** Use this helper for:
  * - testing, so we dont have to mock Next.js' req/res
@@ -28,7 +28,7 @@ export const createContextInner = async (opts: CreateContextOptions) => {
 export const createContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts
 
-  // Get the session from the server using the unstable_getServerSession wrapper function
+  // Get the session from the server using the getServerSession wrapper function
   const session = await getServerAuthSession({ req, res })
 
   return await createContextInner({
@@ -36,4 +36,4 @@ export const createContext = async (opts: CreateNextContextOptions) => {
   })
 }
 
-export type Context = inferAsyncReturnType<typeof createContext>;
+export type Context = inferAsyncReturnType<typeof createContext>

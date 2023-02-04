@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import Head from "next/head"
 import { getProviders } from "next-auth/react"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
-import { unstable_getServerSession as getServerSession } from "next-auth"
+import { getServerSession } from "next-auth"
 import { Suspense, useState } from "react"
 import { ProgressBarSingleton, useProgressBar } from "components/ProgressBar"
 import { socketClient } from "utils/typedWs/react-client"
@@ -14,32 +14,32 @@ import dynamic from "next/dynamic"
 const AuthCore = dynamic(() => import("components/Client"), { ssr: false })
 
 
-const Home: NextPage<{
-	providers: Awaited<ReturnType<typeof getProviders>>
-	ssrLoggedIn: boolean
-	shouldAwaitServer: boolean
-}> = ({
+export default function Home ({
 	providers,
 	ssrLoggedIn,
 	shouldAwaitServer,
-}) => {
+}: {
+	providers: Awaited<ReturnType<typeof getProviders>>
+	ssrLoggedIn: boolean
+	shouldAwaitServer: boolean
+}) {
 	const setProgress = useProgressBar()
 	const [ready, setReady] = useState(!shouldAwaitServer)
 
-	const {data: coldStartLoading} = useQuery(["cold-start"], {
-		queryFn: () => fetch("/api/cold-start", {headers: {Cache: "no-store"}})
+	const { data: coldStartLoading } = useQuery(["cold-start"], {
+		queryFn: () => fetch("/api/cold-start", { headers: { Cache: "no-store" } })
 			.then((res) => res.json())
 			.then((json) => !json.done)
 			.catch(() => false),
 	})
 	socketClient.loading.useSubscription({
-		onData(progress) {
+		onData (progress) {
 			setProgress(progress)
 			if (progress === 1) {
 				setReady(true)
 			}
 		},
-		onError(error) {
+		onError (error) {
 			console.error(error)
 			setProgress(1)
 			setReady(true)
@@ -68,7 +68,7 @@ const Home: NextPage<{
 	)
 }
 
-export async function getServerSideProps({
+export async function getServerSideProps ({
 	req,
 	res,
 }: {
@@ -86,5 +86,3 @@ export async function getServerSideProps({
 		},
 	}
 }
-
-export default Home

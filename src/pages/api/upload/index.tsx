@@ -1,6 +1,6 @@
 import { IAudioMetadata, parseFile } from "music-metadata"
 import type { NextApiRequest, NextApiResponse } from "next"
-import { unstable_getServerSession as getServerSession } from "next-auth"
+import { getServerSession } from "next-auth"
 import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import formidable, { Fields, Files } from "formidable"
 import { mkdir, rename, stat, unlink } from "node:fs/promises"
@@ -16,7 +16,7 @@ import { prisma } from "server/db/client"
 import { acoustId } from "server/persistent/acoustId"
 import { socketServer } from "utils/typedWs/server"
 
-export default async function upload(req: NextApiRequest, res: NextApiResponse) {
+export default async function upload (req: NextApiRequest, res: NextApiResponse) {
 	const session = await getServerSession(req, res, nextAuthOptions)
 	if (!session) {
 		return res.status(401).json({ error: "authentication required" })
@@ -122,8 +122,8 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 					track: {
 						select: {
 							name: true,
-							album: { select: {name: true}},
-							artist: { select: {name: true}},
+							album: { select: { name: true } },
+							artist: { select: { name: true } },
 						}
 					}
 				}
@@ -161,20 +161,20 @@ export const config = {
 	}
 }
 
-async function moveTempFile(origin: string, destination: string) {
+async function moveTempFile (origin: string, destination: string) {
 	try {
 		await stat(destination)
 		log("warn", "retry", "fswatcher", `"${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, destination)}" already exists`)
 		return false
-	} catch {}
-	await mkdir(dirname(destination), {recursive: true})
+	} catch { }
+	await mkdir(dirname(destination), { recursive: true })
 	await rename(origin, destination)
 	log("ready", "201", "fswatcher", `uploaded to "${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, destination)}"`)
 	fileWatcher.onAdd(destination)
 	return true
 }
 
-function directoryFromMetadata(metadata: IAudioMetadata) {
+function directoryFromMetadata (metadata: IAudioMetadata) {
 	const { artist, album, albumartist } = metadata.common
 	if (album && albumartist) {
 		const isMultiArtistAlbum = isVariousArtists(albumartist)
@@ -190,19 +190,19 @@ function directoryFromMetadata(metadata: IAudioMetadata) {
 	}
 }
 
-function directoryFromOriginal(original: string) {
+function directoryFromOriginal (original: string) {
 	return dirname(original)
 }
 
-function directoryFromRandom() {
+function directoryFromRandom () {
 	const stablePrefix = Number([...Math.round(Date.now() / 10_000).toString()].reverse().join("")).toString(36)
 	const variableSuffix = Math.round(Math.random() * 36_000_000).toString(36)
-	const string = `${stablePrefix}${variableSuffix}` as (string & {0: string, 1: string, 2: string})
+	const string = `${stablePrefix}${variableSuffix}` as (string & { 0: string, 1: string, 2: string })
 	return join("__soft-served", string[0], string[1], string[2], string)
 }
 
-function getFileName(metadata: IAudioMetadata, original: string) {
-	const { title, track: {no} } = metadata.common
+function getFileName (metadata: IAudioMetadata, original: string) {
+	const { title, track: { no } } = metadata.common
 	if (title && typeof no === "number") {
 		const sanitizedTitle = sanitize(title)
 		const numberString = String(no).padStart(2, "0")
@@ -215,7 +215,7 @@ function getFileName(metadata: IAudioMetadata, original: string) {
 	return basename(original)
 }
 
-function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
+function dumbExtensionGuessing (metadata: IAudioMetadata, original: string) {
 	const { codec, container } = metadata.format
 	switch (true) {
 		case codec?.includes("MPEG-4"):
@@ -236,7 +236,7 @@ function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 	return withoutDot
 }
 
-function getProgress(i: number, indexes: number[], of: number[]) {
+function getProgress (i: number, indexes: number[], of: number[]) {
 	const start = indexes[i] ?? 0
 	const total = of[i] || 1
 	return start / total
