@@ -10,7 +10,7 @@ import { PastSearchTrack } from "components/Header/Search/PastSearch/PastSearchT
 import suspensePersistedState from "client/db/suspensePersistedState"
 import getTouchFromId from "utils/getTouchFromId"
 
-function indexableString(str: string) {
+function indexableString (str: string) {
 	if (!str) return ""
 	return str
 		.toUpperCase()
@@ -18,11 +18,11 @@ function indexableString(str: string) {
 		.replace(/[\u0300-\u036f]/g, "")
 }
 
-const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
+const AlphabetScrollWithRef = forwardRef(function AlphabetScroll ({
 	data,
 	scrollTo,
 }: {
-	data: {name: string}[]
+	data: { name: string }[]
 	scrollTo: (index: number) => void
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const main = useRef<HTMLDivElement>(null)
@@ -32,7 +32,7 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 	const list = data.reduce<{
 		letter: string
 		count: number
-	}[]>((acc, {name}) => {
+	}[]>((acc, { name }) => {
 		const _letter = indexableString(name[0]!)
 		const letter = _letter >= "A" && _letter <= "Z" ? _letter : "#"
 		if (letter === acc.at(-1)?.letter) {
@@ -51,13 +51,13 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 		let touch: Touch | null = null
 		el.addEventListener("touchstart", (e) => {
 			touch = e.touches[0]!
-		}, {passive: true, signal: controller.signal})
+		}, { passive: true, signal: controller.signal })
 
-		
+
 		const scrollToY = (y: number) => {
-				const {top, height} = el.getBoundingClientRect()
-				const ratio = (y - top) / height * total
-				scrollTo(ratio)
+			const { top, height } = el.getBoundingClientRect()
+			const ratio = (y - top) / height * total
+			scrollTo(ratio)
 		}
 
 		let rafId: number | null = null
@@ -73,16 +73,16 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 				const deltaY = current.clientY - touch.clientY
 				if (Math.abs(deltaX) > Math.abs(deltaY)) return
 
-				const {clientY} = current
+				const { clientY } = current
 				scrollToY(clientY)
 				touch = current
 			})
-		}, {passive: true, signal: controller.signal})
+		}, { passive: true, signal: controller.signal })
 
 		el.addEventListener("click", (e) => {
-			const {clientY} = e
+			const { clientY } = e
 			scrollToY(clientY)
-		}, {passive: true, signal: controller.signal})
+		}, { passive: true, signal: controller.signal })
 
 		return () => {
 			controller.abort()
@@ -92,10 +92,10 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 
 	return (
 		<div className={styles.alphabet} ref={main}>
-			{list.map(({letter, count}, i) => (
+			{list.map(({ letter, count }, i) => (
 				<div
 					key={i}
-					style={{"--letter-ratio": `${count / total}`} as CSSProperties}
+					style={{ "--letter-ratio": `${count / total}` } as CSSProperties}
 				>
 					{letter}
 				</div>
@@ -104,7 +104,7 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll({
 	)
 })
 
-function BaseList({
+function BaseList ({
 	data: _data,
 	component: Component,
 }: {
@@ -112,7 +112,7 @@ function BaseList({
 		id: string
 		name: string
 	}[]
-	component: (props: {id: string, showType: false}) => JSX.Element
+	component: (props: { id: string, showType: false }) => JSX.Element
 }) {
 	const data = useMemo(
 		() => [..._data].sort((a, b) => indexableString(a.name) < indexableString(b.name) ? -1 : 1),
@@ -144,7 +144,7 @@ function BaseList({
 				const scrollRatio = element.scrollTop / element.scrollHeight
 				alphabet.current!.style.setProperty("--scroll-offset", `${scrollRatio * alphabet.current!.offsetHeight}px`)
 			})
-		}, {passive: true, signal: controller.signal})
+		}, { passive: true, signal: controller.signal })
 
 		return () => {
 			controller.abort()
@@ -171,7 +171,7 @@ function BaseList({
 			<div className={styles.scrollable} ref={scrollable}>
 				<div
 					className={styles.overflow}
-					style={{"--virtual-height": `${rowVirtualizer.getTotalSize()}px`} as CSSProperties}
+					style={{ "--virtual-height": `${rowVirtualizer.getTotalSize()}px` } as CSSProperties}
 				>
 					{rowVirtualizer.getVirtualItems().map((virtualItem) => (
 						<div
@@ -227,7 +227,7 @@ const LIST_COMPONENTS = {
 
 export const libraryTab = suspensePersistedState<keyof typeof LIST_COMPONENTS>("libraryTab", "Artists")
 
-export default forwardRef(function Library({
+export default forwardRef(function Library ({
 	z,
 	open,
 }: {
@@ -235,8 +235,8 @@ export default forwardRef(function Library({
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [tab, setTab] = libraryTab.useState()
-	const {component, useQuery} = LIST_COMPONENTS[tab]
-	const {data = []} = useQuery()
+	const { component, useQuery } = LIST_COMPONENTS[tab]
+	const { data = [] } = useQuery()
 	return (
 		<div
 			className={styles.main}
@@ -247,7 +247,7 @@ export default forwardRef(function Library({
 			} as CSSProperties}
 		>
 			<div className={styles.tabs}>
-				{Object.entries(LIST_COMPONENTS).map(([key, {name}]) => (
+				{Object.entries(LIST_COMPONENTS).map(([key, { name }]) => (
 					<button
 						key={key}
 						data-active={key === tab}
@@ -263,6 +263,7 @@ export default forwardRef(function Library({
 				))}
 			</div>
 			<BaseList
+				key={tab}
 				data={data}
 				component={component}
 			/>
