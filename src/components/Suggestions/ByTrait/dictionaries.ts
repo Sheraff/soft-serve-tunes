@@ -78,7 +78,7 @@ export const FEATURES = {
 			listOrder: 4,
 		},
 	},
-}
+} as const
 
 export const COMBINED_FEATURES = [
 	{
