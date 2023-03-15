@@ -90,6 +90,7 @@
 .alphabet::before {
 	content: "";
 	position: absolute;
+	display: var(--scroll-display, block);
 	z-index: -1;
 	top: -4px;
 	left: calc(50% - 4px);

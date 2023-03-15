@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, type CSSProperties, useRef, useEffect, useState, useImperativeHandle, useCallback, memo, useMemo } from "react"
+import { type ForwardedRef, forwardRef, type CSSProperties, useRef, useEffect, useImperativeHandle, useCallback, useMemo } from "react"
 import styles from "./index.module.css"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { trpc } from "utils/trpc"
@@ -163,7 +163,12 @@ function BaseList ({
 		const al = alphabet.current
 		if (!el || !al) return
 		const ratio = el.clientHeight / el.scrollHeight
-		al.style.setProperty("--scroll-window", `${ratio * 100}%`)
+		if (ratio < 0.2) {
+			al.style.removeProperty("--scroll-display")
+			al.style.setProperty("--scroll-window", `${ratio * 100}%`)
+		} else {
+			al.style.setProperty("--scroll-display", "none")
+		}
 	}, [count])
 
 	return (
