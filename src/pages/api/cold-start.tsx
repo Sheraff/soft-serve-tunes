@@ -168,5 +168,5 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 		return res.status(200).json({ done: true })
 	}
 	act()
-	return res.status(200).json({ done: false })
+	return res.status(202).json({ done: false })
 }
