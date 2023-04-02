@@ -1,60 +1,36 @@
 import SectionTitle from "atoms/SectionTitle"
-import revalidateSwCache from "client/sw/revalidateSwCache"
 import AlbumList from "components/AlbumList"
 import { useIsHome } from "components/AppContext"
 import ArtistList from "components/ArtistList"
 import GenreList from "components/GenreList"
 import PlaylistList from "components/PlaylistList"
-import { memo, Suspense, useEffect } from "react"
+import { memo, Suspense } from "react"
 import { trpc } from "utils/trpc"
 import AlbumsByTraitSuggestion from "./ByTrait/AlbumSuggestion"
 import TracksByTraitSuggestion from "./ByTrait/TrackSuggestion"
 import styles from "./index.module.css"
 
-let updateSuggestionTimeoutId: ReturnType<typeof setTimeout> | null = null
-const UpdateSuggestions = () => {
-	useEffect(() => {
-		if (updateSuggestionTimeoutId) {
-			clearTimeout(updateSuggestionTimeoutId)
-		}
-		return () => {
-			updateSuggestionTimeoutId = setTimeout(() => {
-				updateSuggestionTimeoutId = null
-				revalidateSwCache(["artist", "mostFav"])
-				revalidateSwCache(["artist", "mostRecentListen"])
-				revalidateSwCache(["artist", "leastRecentListen"])
-				revalidateSwCache(["album", "mostFav"])
-				revalidateSwCache(["album", "mostRecentListen"])
-				revalidateSwCache(["album", "mostRecentAdd"])
-				revalidateSwCache(["genre", "mostFav"])
-			}, 20_000)
-		}
-	}, [])
-	return null
-}
-
-export default memo(function Suggestions() {
+export default memo(function Suggestions () {
 
 	const enabled = useIsHome()
 
-	const {data: artistFavs = [], isLoading: artistFavsLoading} = trpc.artist.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: artistRecent = [], isLoading: artistRecentLoading} = trpc.artist.mostRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: artistLongTime = [], isLoading: artistLongTimeLoading} = trpc.artist.leastRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: albumFavs = [], isLoading: albumFavsLoading} = trpc.album.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: albumRecent = [], isLoading: albumRecentLoading} = trpc.album.mostRecentListen.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: albumNewest = [], isLoading: albumNewestLoading} = trpc.album.mostRecentAdd.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: genreFavs = []} = trpc.genre.mostFav.useQuery(undefined, {enabled, keepPreviousData: true})
-	const {data: playlists = []} = trpc.playlist.list.useQuery(undefined, {
+	const { data: artistFavs = [], isLoading: artistFavsLoading } = trpc.artist.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: artistRecent = [], isLoading: artistRecentLoading } = trpc.artist.mostRecentListen.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: artistLongTime = [], isLoading: artistLongTimeLoading } = trpc.artist.leastRecentListen.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: albumFavs = [], isLoading: albumFavsLoading } = trpc.album.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: albumRecent = [], isLoading: albumRecentLoading } = trpc.album.mostRecentListen.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: albumNewest = [], isLoading: albumNewestLoading } = trpc.album.mostRecentAdd.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: genreFavs = [] } = trpc.genre.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: playlists = [] } = trpc.playlist.list.useQuery(undefined, {
 		enabled,
 		keepPreviousData: true,
-		select(playlists) {
+		select (playlists) {
 			return playlists.slice(0, 4)
 		}
 	})
 
 	return (
 		<div className={styles.scrollable}>
-			<UpdateSuggestions />
 			<div className={styles.main}>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened artists</SectionTitle>
@@ -76,7 +52,7 @@ export default memo(function Suggestions() {
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened albums</SectionTitle>
-					<AlbumList albums={albumRecent} lines={1} scrollable loading={albumRecentLoading}/>
+					<AlbumList albums={albumRecent} lines={1} scrollable loading={albumRecentLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite artists</SectionTitle>
@@ -85,7 +61,7 @@ export default memo(function Suggestions() {
 				{playlists.length > 0 && (
 					<div className={styles.section}>
 						<SectionTitle>Recent playlists</SectionTitle>
-						<PlaylistList playlists={playlists}/>
+						<PlaylistList playlists={playlists} />
 					</div>
 				)}
 				<div className={styles.section}>
@@ -95,7 +71,7 @@ export default memo(function Suggestions() {
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite albums</SectionTitle>
-					<AlbumList albums={albumFavs} lines={1} scrollable loading={albumFavsLoading}/>
+					<AlbumList albums={albumFavs} lines={1} scrollable loading={albumFavsLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Artists not played in a while</SectionTitle>
@@ -103,7 +79,7 @@ export default memo(function Suggestions() {
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Newest albums</SectionTitle>
-					<AlbumList albums={albumNewest} lines={1} scrollable loading={albumNewestLoading}/>
+					<AlbumList albums={albumNewest} lines={1} scrollable loading={albumNewestLoading} />
 				</div>
 			</div>
 		</div>

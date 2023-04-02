@@ -3,29 +3,29 @@ import { AllRoutesString, keyStringToArray } from "utils/trpc"
 import trpcRevalidation from "../messages/trpcRevalidation"
 import { CACHES } from "../utils/constants"
 
-function trpcUrlToCacheKeys(url: URL) {
-	const [,,,parts] = url.pathname.split("/")
+function trpcUrlToCacheKeys (url: URL) {
+	const [, , , parts] = url.pathname.split("/")
 	if (!parts) {
-		throw new Error (`function called on the wrong url, no trpc endpoints found @${url}`)
+		throw new Error(`function called on the wrong url, no trpc endpoints found @${url}`)
 	}
 	const endpoints = parts.split(",") as AllRoutesString[]
 	const inputString = url.searchParams.get("input")
 	const input = inputString
-		? JSON.parse(inputString) as {[key: number]: {json: any}}
+		? JSON.parse(inputString) as { [key: number]: { json: any } }
 		: {}
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)
 		if (input[i]) altUrl.searchParams.set("input", JSON.stringify(input[i]))
 		return altUrl
 	})
-	return {keys, endpoints, input}
+	return { keys, endpoints, input }
 }
 
 type TextResponseLike = {
-	text(): string
+	text (): string
 }
 
-async function formatBatchResponses(
+async function formatBatchResponses (
 	matches: Array<Promise<Response | undefined> | Response | undefined | TextResponseLike>,
 	endpoints: string[]
 ): Promise<Response> {
@@ -57,9 +57,9 @@ async function formatBatchResponses(
 	})
 }
 
-async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = false): Promise<Response> {
+async function trpcUrlToCacheValues (request: Request, url: URL, allowNetwork = false): Promise<Response> {
 	const cache = await caches.open(CACHES.trpc)
-	const {keys, endpoints, input} = trpcUrlToCacheKeys(url)
+	const { keys, endpoints, input } = trpcUrlToCacheKeys(url)
 	if (!allowNetwork) {
 		const matches = keys.map(key => cache.match(key))
 		return formatBatchResponses(matches, endpoints)
@@ -77,7 +77,7 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		const fetchInput = fetchIndices.reduce((object, i, j) => {
 			object[j] = input[i]!
 			return object
-		}, {} as {[key: number]: {json: any}})
+		}, {} as { [key: number]: { json: any } })
 		const fetchUrl = new URL(`/api/trpc/${fetchEndpoints}`, self.location.origin)
 		fetchUrl.searchParams.set("batch", "1")
 		fetchUrl.searchParams.set("input", JSON.stringify(fetchInput))
@@ -85,7 +85,7 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 		if (fetchResponse.status === 200 || fetchResponse.status === 207) {
 			handleTrpcFetchResponse(fetchResponse.clone(), fetchUrl)
 			const fetchData = await fetchResponse.json()
-			fetchIndices.forEach((i, j) => cacheResponses[i] = {text: () => JSON.stringify(fetchData[j])})
+			fetchIndices.forEach((i, j) => cacheResponses[i] = { text: () => JSON.stringify(fetchData[j]) })
 		} else if (fetchResponse.status > 200 && fetchResponse.status < 300) {
 			console.warn("SW: unexpected 2xx response status", fetchResponse)
 		}
@@ -102,10 +102,10 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 					input: {},
 				} as {
 					endpoints: typeof endpoints,
-					input: {[key: number]: {json: any}}
+					input: { [key: number]: { json: any } }
 				})
 				rest.endpoints.forEach((endpoint, i) => {
-					trpcRevalidation({key: keyStringToArray(endpoint), params: rest.input[i]!.json}, false)
+					trpcRevalidation({ key: keyStringToArray(endpoint), params: rest.input[i]!.json }, false)
 				})
 			})
 		}
@@ -116,43 +116,58 @@ async function trpcUrlToCacheValues(request: Request, url: URL, allowNetwork = f
 	return formatBatchResponses(cacheResponses, endpoints)
 }
 
-export function handleTrpcFetchResponse(response: Response, url: URL) {
+
+function logTrpcError (error: {
+	message: string,
+	code: number,
+	data: {
+		code: string,
+		httpStatus: number,
+		stack: string,
+		path: string,
+	}
+}) {
+	console.error(`${error.data.code} ${error.data.httpStatus} @ ${error.data.path} ${error.code}\n${error.data.stack}`)
+}
+
+export function handleTrpcFetchResponse (response: Response, url: URL) {
 	return caches.open(CACHES.trpc).then(async (cache) => {
-		const {keys} = trpcUrlToCacheKeys(url)
+		const { keys } = trpcUrlToCacheKeys(url)
 		const data = await response.json()
 		const headers = new Headers()
 		const contentType = response.headers.get("Content-Type")
 		if (contentType) headers.set("Content-Type", contentType)
 		const date = response.headers.get("Date")
 		if (date) headers.set("Date", date)
-		return Promise.all(keys.map((key, i) => {
+		await Promise.all(keys.map((key, i) => {
 			if ("result" in data[i]) {
 				return cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
 			} else if ("error" in data[i]) {
-				console.error(new Error(data[i].error.json.message))
+				try { logTrpcError(data[i].error.json) } catch { }
 			} else {
 				console.error("SW: unknown trpc response format", data[i])
 			}
 		}))
+		return data
 	})
 }
 
-function fetchFromServer(request: Request, url: URL) {
+function fetchFromServer (request: Request, url: URL) {
 	return fetch(request)
-	.then(response => {
-		if (response.status === 200 || response.status === 207) {
-			const cacheResponse = response.clone()
-			handleTrpcFetchResponse(cacheResponse, url)
-		} else if (response.status > 200 && response.status < 300) {
-			console.warn("SW: unexpected 2xx response status", response)
-		}
-		return response
-	})
+		.then(response => {
+			if (response.status === 200 || response.status === 207) {
+				const cacheResponse = response.clone()
+				handleTrpcFetchResponse(cacheResponse, url)
+			} else if (response.status > 200 && response.status < 300) {
+				console.warn("SW: unexpected 2xx response status", response)
+			}
+			return response
+		})
 }
 
-export default function trpcFetch(event: FetchEvent, request: Request, url: URL) {
+export default function trpcFetch (event: FetchEvent, request: Request, url: URL) {
 	event.respondWith(
 		trpcUrlToCacheValues(request, url, true)
-		.catch(() => fetchFromServer(request, url))
+			.catch(() => fetchFromServer(request, url))
 	)
 }

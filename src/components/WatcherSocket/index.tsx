@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { socketClient } from "utils/typedWs/react-client"
 import { env } from "env/client.mjs"
 
-export default function WatcherSocket() {
+export default function WatcherSocket () {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
 
@@ -25,7 +25,7 @@ export default function WatcherSocket() {
 
 	if (env.NEXT_PUBLIC_ENV === "development") {
 		socketClient.console.useSubscription({
-			onData({type, message}) {
+			onData ({ type, message }) {
 				console[type](message)
 			}
 		})
@@ -49,11 +49,15 @@ export default function WatcherSocket() {
 					const queryKey = message.payload.key
 					const queryParams = {
 						type: "query",
-						...(message.payload.params ? {input: message.payload.params} : {}),
+						...(message.payload.params ? { input: message.payload.params } : {}),
 					}
-					queryClient.invalidateQueries([queryKey, queryParams])
+					if (message.data) {
+						queryClient.setQueryData([queryKey, queryParams], message.data)
+					} else {
+						queryClient.invalidateQueries([queryKey, queryParams])
+					}
 				}
-			}, {signal: controller.signal})
+			}, { signal: controller.signal })
 		})
 		return () => {
 			controller.abort()
@@ -68,7 +72,7 @@ export default function WatcherSocket() {
 			if (!target) {
 				return
 			}
-			target.postMessage({type: "sw-trpc-offline-post"})
+			target.postMessage({ type: "sw-trpc-offline-post" })
 		}
 		addEventListener("online", onOnline)
 		return () => {

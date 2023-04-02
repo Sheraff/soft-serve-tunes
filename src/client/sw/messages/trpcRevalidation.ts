@@ -2,6 +2,7 @@
 import { type AllRoutes, type AllInputs, type RouterInputs, keyArrayToString } from "utils/trpc"
 import { workerSocketClient } from "utils/typedWs/vanilla-client"
 import { handleTrpcFetchResponse } from "../fetch/trpc"
+import { deserialize } from "superjson"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
 const batch: {
@@ -18,7 +19,7 @@ const batch: {
 	timeoutId: null,
 }
 
-function processBatch() {
+function processBatch () {
 	const items = batch.items
 	batch.timeoutId = null
 	batch.items = []
@@ -29,13 +30,13 @@ function processBatch() {
 		later.forEach(item => addItemToBatch(item))
 	}
 
-	const {endpoints, input} = items.reduce((params, item, i) => {
+	const { endpoints, input } = items.reduce((params, item, i) => {
 		params.endpoints.push(keyArrayToString(item.payload.key))
 		params.input[i] = item.payload.params
-			? {json: item.payload.params}
-			: {json:null, meta:{values:["undefined"]}}
+			? { json: item.payload.params }
+			: { json: null, meta: { values: ["undefined"] } }
 		return params
-	}, {endpoints: [], input: {}} as {endpoints: ReturnType<typeof keyArrayToString>[], input: Record<number, unknown>})
+	}, { endpoints: [], input: {} } as { endpoints: ReturnType<typeof keyArrayToString>[], input: Record<number, unknown> })
 
 	const url = new URL(`/api/trpc/${endpoints.join(",")}`, self.location.origin)
 	url.searchParams.set("batch", "1")
@@ -43,12 +44,15 @@ function processBatch() {
 
 	fetch(url).then(async response => {
 		if (response.status === 200 || response.status === 207) {
-			await handleTrpcFetchResponse(response, url)
+			const data = await handleTrpcFetchResponse(response, url)
 			const clients = await self.clients.matchAll()
 			clients.forEach(client => {
-				items.forEach(({invalidate, payload}) => {
-					if (invalidate) {
-						client.postMessage({type: "sw-trpc-invalidation", payload})
+				items.forEach(({ invalidate, payload }, i) => {
+					if (data[i].result?.data) {
+						const item_data = deserialize(data[i].result.data)
+						client.postMessage({ type: "sw-trpc-invalidation", payload, data: item_data })
+					} else if (invalidate) {
+						client.postMessage({ type: "sw-trpc-invalidation", payload })
 					}
 				})
 			})
@@ -56,7 +60,7 @@ function processBatch() {
 			console.warn("SW: failed trpc revalidation", response.status, response.statusText, url)
 		}
 	}).catch((e) => {
-		console.warn(new Error(`SW: caught fetch during processBatch ${url}`, {cause: e}))
+		console.warn(new Error(`SW: caught fetch during processBatch ${url}`, { cause: e }))
 		items.forEach(item => addItemToBatch(item))
 	})
 }
@@ -64,9 +68,9 @@ function processBatch() {
 function isEquivalentItem<
 	ARouteKey extends AllRoutes,
 	BRouteKey extends AllRoutes,
->(
-	a: {key: ARouteKey, params?: RouterInputs[ARouteKey[0]][ARouteKey[1]]},
-	b: {key: BRouteKey, params?: RouterInputs[BRouteKey[0]][BRouteKey[1]]}
+> (
+	a: { key: ARouteKey, params?: RouterInputs[ARouteKey[0]][ARouteKey[1]] },
+	b: { key: BRouteKey, params?: RouterInputs[BRouteKey[0]][BRouteKey[1]] }
 ) {
 	if (a.key[0] !== b.key[0]) return false
 	if (a.key[1] !== b.key[1]) return false
@@ -84,9 +88,9 @@ function isEquivalentItem<
 
 function addItemToBatch<
 	TRouteKey extends AllRoutes
->(
+> (
 	item: {
-		payload: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]}
+		payload: { key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]] }
 		invalidate: boolean,
 	},
 ) {
@@ -100,11 +104,11 @@ function addItemToBatch<
 
 export default function trpcRevalidation<
 	TRouteKey extends AllRoutes
->(
-	payload: {key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]]},
+> (
+	payload: { key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]] },
 	invalidate = true,
 ) {
-	addItemToBatch({payload, invalidate})
+	addItemToBatch({ payload, invalidate })
 	if (batch.timeoutId) {
 		clearTimeout(batch.timeoutId)
 	}
@@ -112,85 +116,85 @@ export default function trpcRevalidation<
 }
 
 workerSocketClient.add.subscribe({
-	onData({type, id}) {
+	onData ({ type, id }) {
 		console.log(`added ${type} ${id}`)
 		if (type === "playlist") {
-			trpcRevalidation({key: ["playlist", "list"]})
-			trpcRevalidation({key: ["playlist", "searchable"]})
+			trpcRevalidation({ key: ["playlist", "list"] })
+			trpcRevalidation({ key: ["playlist", "searchable"] })
 			return
 		}
-		trpcRevalidation({key: ["track", "searchable"]})
-		trpcRevalidation({key: ["artist", "searchable"]})
-		trpcRevalidation({key: ["album", "searchable"]})
-		trpcRevalidation({key: ["genre", "list"]})
+		trpcRevalidation({ key: ["track", "searchable"] })
+		trpcRevalidation({ key: ["artist", "searchable"] })
+		trpcRevalidation({ key: ["album", "searchable"] })
+		trpcRevalidation({ key: ["genre", "list"] })
 		if (type === "artist") {
-			trpcRevalidation({key: ["artist", "miniature"], params: {id}})
-			trpcRevalidation({key: ["artist", "get"], params: {id}})
+			trpcRevalidation({ key: ["artist", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["artist", "get"], params: { id } })
 		} else if (type === "album") {
-			trpcRevalidation({key: ["album", "miniature"], params: {id}})
-			trpcRevalidation({key: ["album", "get"], params: {id}})
-			trpcRevalidation({key: ["album", "mostRecentAdd"]})
+			trpcRevalidation({ key: ["album", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["album", "get"], params: { id } })
+			trpcRevalidation({ key: ["album", "mostRecentAdd"] })
 		}
 	}
 })
 
 workerSocketClient.remove.subscribe({
-	onData({type, id}) {
+	onData ({ type, id }) {
 		console.log(`removed ${type} ${id}`)
 		if (type === "playlist") {
-			trpcRevalidation({key: ["playlist", "list"]})
-			trpcRevalidation({key: ["playlist", "searchable"]})
-			trpcRevalidation({key: ["playlist", "get"], params: { id }})
+			trpcRevalidation({ key: ["playlist", "list"] })
+			trpcRevalidation({ key: ["playlist", "searchable"] })
+			trpcRevalidation({ key: ["playlist", "get"], params: { id } })
 		} else if (type === "track") {
-			trpcRevalidation({key: ["track", "searchable"]})
-			trpcRevalidation({key: ["track", "miniature"], params: {id}})
+			trpcRevalidation({ key: ["track", "searchable"] })
+			trpcRevalidation({ key: ["track", "miniature"], params: { id } })
 		} else if (type === "artist") {
-			trpcRevalidation({key: ["artist", "searchable"]})
-			trpcRevalidation({key: ["artist", "miniature"], params: {id}})
-			trpcRevalidation({key: ["artist", "get"], params: {id}})
+			trpcRevalidation({ key: ["artist", "searchable"] })
+			trpcRevalidation({ key: ["artist", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["artist", "get"], params: { id } })
 		} else if (type === "album") {
-			trpcRevalidation({key: ["album", "searchable"]})
-			trpcRevalidation({key: ["album", "miniature"], params: {id}})
-			trpcRevalidation({key: ["album", "get"], params: {id}})
+			trpcRevalidation({ key: ["album", "searchable"] })
+			trpcRevalidation({ key: ["album", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["album", "get"], params: { id } })
 		} else if (type === "genre") {
-			trpcRevalidation({key: ["genre", "list"]})
-			trpcRevalidation({key: ["genre", "miniature"], params: {id}})
-			trpcRevalidation({key: ["genre", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "generate"], params: { type: "genre", id }})
+			trpcRevalidation({ key: ["genre", "list"] })
+			trpcRevalidation({ key: ["genre", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["genre", "get"], params: { id } })
+			trpcRevalidation({ key: ["playlist", "generate"], params: { type: "genre", id } })
 		}
 	}
 })
 
 workerSocketClient.invalidate.subscribe({
-	onData({type, id}) {
+	onData ({ type, id }) {
 		console.log(`invalidated ${type} ${id}`)
 		if (type === "track") {
-			trpcRevalidation({key: ["track", "miniature"], params: {id}})
+			trpcRevalidation({ key: ["track", "miniature"], params: { id } })
 		} else if (type === "album") {
-			trpcRevalidation({key: ["album", "miniature"], params: {id}})
-			trpcRevalidation({key: ["album", "get"], params: {id}})
+			trpcRevalidation({ key: ["album", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["album", "get"], params: { id } })
 		} else if (type === "artist") {
-			trpcRevalidation({key: ["artist", "miniature"], params: {id}})
-			trpcRevalidation({key: ["artist", "get"], params: {id}})
+			trpcRevalidation({ key: ["artist", "miniature"], params: { id } })
+			trpcRevalidation({ key: ["artist", "get"], params: { id } })
 		} else if (type === "playlist") {
-			trpcRevalidation({key: ["playlist", "get"], params: {id}})
-			trpcRevalidation({key: ["playlist", "list"]})
-			trpcRevalidation({key: ["playlist", "searchable"]})
+			trpcRevalidation({ key: ["playlist", "get"], params: { id } })
+			trpcRevalidation({ key: ["playlist", "list"] })
+			trpcRevalidation({ key: ["playlist", "searchable"] })
 		}
 	}
 })
 
 workerSocketClient.metrics.subscribe({
-	onData({type}) {
+	onData ({ type }) {
 		console.log(`metrics ${type}`)
 		if (type === "listen-count") {
-			trpcRevalidation({key: ["artist", "mostRecentListen"]})
-			trpcRevalidation({key: ["artist", "leastRecentListen"]})
-			trpcRevalidation({key: ["album", "mostRecentListen"]})
+			trpcRevalidation({ key: ["artist", "mostRecentListen"] })
+			trpcRevalidation({ key: ["artist", "leastRecentListen"] })
+			trpcRevalidation({ key: ["album", "mostRecentListen"] })
 		} else if (type === "likes") {
-			trpcRevalidation({key: ["artist", "mostFav"]})
-			trpcRevalidation({key: ["album", "mostFav"]})
-			trpcRevalidation({key: ["genre", "mostFav"]})
+			trpcRevalidation({ key: ["artist", "mostFav"] })
+			trpcRevalidation({ key: ["album", "mostFav"] })
+			trpcRevalidation({ key: ["genre", "mostFav"] })
 		}
 	}
 })
