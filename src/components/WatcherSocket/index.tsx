@@ -52,10 +52,13 @@ export default function WatcherSocket () {
 						...(message.payload.params ? { input: message.payload.params } : {}),
 					}
 					if (message.data) {
-						queryClient.setQueryData([queryKey, queryParams], message.data)
-					} else {
-						queryClient.invalidateQueries([queryKey, queryParams])
+						const state = queryClient.getQueryState([queryKey, queryParams])
+						if (state) {
+							queryClient.setQueryData([queryKey, queryParams], message.data)
+							return
+						}
 					}
+					queryClient.invalidateQueries([queryKey, queryParams])
 				}
 			}, { signal: controller.signal })
 		})
