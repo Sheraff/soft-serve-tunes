@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import { trpc } from "utils/trpc"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQueryClient, hashQueryKey } from "@tanstack/react-query"
 import { socketClient } from "utils/typedWs/react-client"
 import { env } from "env/client.mjs"
 
@@ -34,6 +34,7 @@ export default function WatcherSocket () {
 	useEffect(() => {
 		if (!("serviceWorker" in navigator)) return
 		const controller = new AbortController()
+		const unsubscribeSet = new Set<() => void>()
 		navigator.serviceWorker.ready.then((registration) => {
 			const target = registration.active
 			if (!target) {
@@ -52,17 +53,35 @@ export default function WatcherSocket () {
 						...(message.payload.params ? { input: message.payload.params } : {}),
 					}
 					if (message.data) {
-						const state = queryClient.getQueryState([queryKey, queryParams])
-						if (state) {
+						if (queryClient.getQueryState([queryKey, queryParams], { type: "inactive" })) {
 							queryClient.setQueryData([queryKey, queryParams], message.data)
-							return
+						} else if (queryClient.getQueryState([queryKey, queryParams], { type: "active" })) {
+							const cache = queryClient.getQueryCache()
+							const hash = hashQueryKey([queryKey, queryParams])
+							const unsubscribe = cache.subscribe((event) => {
+								if (event.type === "observerRemoved") {
+									if (hashQueryKey(event.query.queryKey) === hash && !event.query.isActive()) {
+										unsubscribe()
+										unsubscribeSet.delete(unsubscribe)
+										queryClient.setQueryData([queryKey, queryParams], message.data)
+									}
+								} else if (event.type === "updated") {
+									if (hashQueryKey(event.query.queryKey) === hash) {
+										unsubscribe()
+										unsubscribeSet.delete(unsubscribe)
+									}
+								}
+							})
+							unsubscribeSet.add(unsubscribe)
 						}
+					} else {
+						queryClient.invalidateQueries([queryKey, queryParams])
 					}
-					queryClient.invalidateQueries([queryKey, queryParams])
 				}
 			}, { signal: controller.signal })
 		})
 		return () => {
+			unsubscribeSet.forEach((unsubscribe) => unsubscribe())
 			controller.abort()
 		}
 	}, [trpcClient, queryClient])
