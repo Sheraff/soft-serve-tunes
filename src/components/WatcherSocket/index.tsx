@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import revalidateSwCache from "client/sw/revalidateSwCache"
 import { trpc } from "utils/trpc"
-import { useQueryClient, hashQueryKey } from "@tanstack/react-query"
+import { useQueryClient, hashQueryKey, focusManager } from "@tanstack/react-query"
 import { socketClient } from "utils/typedWs/react-client"
 import { env } from "env/client.mjs"
 
@@ -53,7 +53,7 @@ export default function WatcherSocket () {
 						...(message.payload.params ? { input: message.payload.params } : {}),
 					}
 					if (message.data) {
-						if (queryClient.getQueryState([queryKey, queryParams], { type: "inactive" })) {
+						if (!focusManager.isFocused() || queryClient.getQueryState([queryKey, queryParams], { type: "inactive" })) {
 							queryClient.setQueryData([queryKey, queryParams], message.data)
 						} else if (queryClient.getQueryState([queryKey, queryParams], { type: "active" })) {
 							const cache = queryClient.getQueryCache()
