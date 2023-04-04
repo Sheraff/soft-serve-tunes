@@ -1,14 +1,13 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, useState, useRef, useEffect, type ReactNode, useImperativeHandle, CSSProperties, startTransition, Children, Fragment, cloneElement, ReactElement } from "react"
-import { useShowHome } from "components/AppContext"
-import PlayIcon from "icons/play_arrow.svg"
+import { type ForwardedRef, forwardRef, useDeferredValue, useState, useRef, useEffect, type ReactNode, useImperativeHandle, type CSSProperties, Children, Fragment, cloneElement, type ReactElement } from "react"
 import { type Prisma } from "@prisma/client"
 import { paletteToCSSProperties } from "components/Palette"
 import Head from "next/head"
 import classNames from "classnames"
 import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
+import PlayButton from "./PlayButton"
 
-export default forwardRef(function PanelView({
+export default forwardRef(function PanelView ({
 	open: _open,
 	z,
 	rect,
@@ -45,8 +44,6 @@ export default forwardRef(function PanelView({
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
 
-	const showHome = useShowHome()
-
 	const [seeBio, setSeeBio] = useState<boolean | null>(false) // null means "no need for toggle, small enough"
 	const bio = useRef<HTMLDivElement>(null)
 	useEffect(() => {
@@ -77,7 +74,7 @@ export default forwardRef(function PanelView({
 			"--top": `${rect.top}px`,
 			"--left": `${rect.left ?? 0}px`,
 			"--scale": `${(rect.width ?? innerWidth) / innerWidth}`,
-			...(rect.height ? {"--clipY": `${rect.height}px`} : {}),
+			...(rect.height ? { "--clipY": `${rect.height}px` } : {}),
 			"--end": `${Math.hypot(innerWidth, innerHeight)}px`,
 		} as CSSProperties
 		initialImageSrc.current = rect.src || null
@@ -117,7 +114,7 @@ export default forwardRef(function PanelView({
 				/>
 			)}
 			{coverElement && (
-					cloneElement(coverElement, {className: styles.img})
+				cloneElement(coverElement, { className: styles.img })
 			)}
 			{!initialImageSrc.current && !coverId && !coverElement && (
 				<div className={styles.img} />
@@ -134,7 +131,7 @@ export default forwardRef(function PanelView({
 				</p>
 				{description && (
 					<div
-						className={classNames(styles.bio, {[styles.seeBio]: seeBio !== false})}
+						className={classNames(styles.bio, { [styles.seeBio]: seeBio !== false })}
 						onClick={seeBio !== null ? () => {
 							navigator.vibrate(1)
 							setSeeBio(!seeBio)
@@ -155,19 +152,10 @@ export default forwardRef(function PanelView({
 						)}
 					</div>
 				)}
-				<button
+				<PlayButton
+					onClick={onClickPlay}
 					className={styles.play}
-					type="button"
-					onClick={() => {
-						navigator.vibrate(1)
-						startTransition(() => {
-							onClickPlay()
-							showHome("home")
-						})
-					}}
-				>
-					<PlayIcon />
-				</button>
+				/>
 			</div>
 			{Children.map(children, child => (
 				<div className={styles.section}>
