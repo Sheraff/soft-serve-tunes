@@ -3,18 +3,20 @@ import { useEffect, useState, useRef, useCallback, RefObject, CSSProperties } fr
 import Loading from "./loading.svg"
 import styles from "./index.module.css"
 
-export default function ProgressInput({
+export default function ProgressInput ({
 	className,
 	audio,
 	progress: parentProgress = 0,
 	canSetTime = false,
 	loading = false,
+	small = false,
 }: {
 	className?: string
 	audio: RefObject<HTMLAudioElement>
 	progress?: number // [0 - 100] progress of <audio>
 	canSetTime?: boolean // sometimes <audio> cannot be given a currentTime
 	loading: boolean
+	small?: boolean
 }) {
 	const parentProgressRef = useRef(parentProgress)
 	useEffect(() => {
@@ -24,7 +26,7 @@ export default function ProgressInput({
 	const input = useRef<HTMLInputElement>(null) // <input type=range> control of progress
 	const [bindInputToPlayer, setBindInputToPlayer] = useState(true) // whether <input> updates based on <audio> or user input
 	const [progress, setProgress] = useState(0)
-	const paramsToAllowParentProgressAfterUserInput = useRef<{src: string, min: number | null, max: number | null} | null>(null)
+	const paramsToAllowParentProgressAfterUserInput = useRef<{ src: string, min: number | null, max: number | null } | null>(null)
 
 	const setProgressLogic = useCallback((value: number) => {
 		if (!audio.current) return
@@ -39,7 +41,7 @@ export default function ProgressInput({
 			return
 		}
 
-		const {min, max, src} = paramsToAllowParentProgressAfterUserInput.current
+		const { min, max, src } = paramsToAllowParentProgressAfterUserInput.current
 
 		if (audio.current.src !== src) { // source has changed
 			allowProgress()
@@ -125,12 +127,12 @@ export default function ProgressInput({
 		}
 
 		const controller = new AbortController()
-		inputElement.addEventListener("input", onInput, {signal: controller.signal})
-		inputElement.addEventListener("pointerdown", onInputStart, {signal: controller.signal})
-		inputElement.addEventListener("pointercancel", onInputEnd, {signal: controller.signal})
-		inputElement.addEventListener("pointerleave", onInputEnd, {signal: controller.signal})
-		inputElement.addEventListener("pointerout", onInputEnd, {signal: controller.signal})
-		document.addEventListener("pointerup", onInputEnd, {signal: controller.signal})
+		inputElement.addEventListener("input", onInput, { signal: controller.signal })
+		inputElement.addEventListener("pointerdown", onInputStart, { signal: controller.signal })
+		inputElement.addEventListener("pointercancel", onInputEnd, { signal: controller.signal })
+		inputElement.addEventListener("pointerleave", onInputEnd, { signal: controller.signal })
+		inputElement.addEventListener("pointerout", onInputEnd, { signal: controller.signal })
+		document.addEventListener("pointerup", onInputEnd, { signal: controller.signal })
 		return () => {
 			controller.abort()
 			if (timeoutId) {
@@ -145,8 +147,9 @@ export default function ProgressInput({
 				[styles.user]: !bindInputToPlayer,
 				[styles.disabled]: !canSetTime,
 				[styles.loading]: loading,
+				[styles.small]: small,
 			})}
-			style={{"--progress": progress} as CSSProperties}
+			style={{ "--progress": progress } as CSSProperties}
 		>
 			<input
 				ref={input}

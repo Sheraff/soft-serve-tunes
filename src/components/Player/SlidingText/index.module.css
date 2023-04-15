@@ -31,3 +31,7 @@
 	0%   { transform: translateX(-20px); }
 	100% { transform: translateX(calc(-50% - 20px)); }
 }
+
+.primary {
+	view-transition-name: player-sliding-primary;
+}

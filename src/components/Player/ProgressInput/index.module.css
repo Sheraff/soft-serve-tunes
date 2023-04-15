@@ -6,6 +6,23 @@
 	
 	--thumb-size: 14px;
 	--track-height: 7px;
+
+	view-transition-name: player-progress;
+}
+
+.small {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	transform: translateY(calc(-50% + var(--track-height) / 2));
+}
+
+.small .thumb {
+	--thumb-size: var(--track-height);
+}
+.small .thumb::before {
+	transform: translate(-50%, -50%) scale(0) !important;
 }
 
 .main input {
@@ -30,6 +47,11 @@
 	left: 0;
 	overflow: hidden;
 	border-radius: calc(var(--track-height) / 2);
+	view-transition-name: player-progress-progress;
+}
+
+.small .progress {
+	border-radius: 0;
 }
 
 .progress::before,
@@ -63,6 +85,7 @@
 	pointer-events: none;
 	transform: translateY(-50%);
 	transition: opacity 300ms, transform 300ms;
+	view-transition-name: player-progress-thumb;
 }
 .thumb::before,
 .thumb::after {
@@ -85,6 +108,7 @@
 	height: var(--thumb-size);
 	width: var(--thumb-size);
 	transition: opacity 300ms, transform 150ms;
+	view-transition-name: player-progress-thumb-spot;
 }
 
 .loading .thumb::before {

@@ -1,4 +1,5 @@
 .main {
+	position: relative;
 	font-size: 12px;
 	grid-area: foot;
 	z-index: 1;
@@ -21,9 +22,15 @@
 	grid-template-columns: auto 1fr auto;
 	color: var(--palette-primary);
 	contain: paint style layout inline-size;
+	view-transition-name: player-main;
 }
 
-.progress {
+.small {
+	height: calc(48px + 2 * 8px);
+	border-top: none;
+}
+
+.main:not(.small) .progress {
 	grid-area: track;
 }
 
