@@ -1,4 +1,4 @@
-import { memo, startTransition, Suspense, useCallback, useEffect, useRef } from "react"
+import { memo, startTransition, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import Audio from "./Audio"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
@@ -19,6 +19,7 @@ import ShuffleIcon from "icons/shuffle.svg"
 import RepeatIcon from "icons/repeat.svg"
 import RepeatOneIcon from "icons/repeat_one.svg"
 import NextTrack from "./NextTrack"
+import classNames from "classnames"
 
 export const playerDisplayRemaining = suspensePersistedState<boolean>("playerDisplayRemaining", false)
 export const shuffle = suspensePersistedState<boolean>("shuffle", false)
@@ -30,7 +31,7 @@ export const shuffle = suspensePersistedState<boolean>("shuffle", false)
  */
 export const repeat = suspensePersistedState<0 | 1 | 2>("repeat", 0)
 
-function RightTimeSlot({
+function RightTimeSlot ({
 	displayRemainingTime,
 	displayTotalTime,
 }: {
@@ -55,7 +56,7 @@ function RightTimeSlot({
 	)
 }
 
-function ShuffleButton() {
+function ShuffleButton () {
 	const isShuffle = shuffle.useValue()
 
 	const _shufflePlaylist = useShufflePlaylist()
@@ -74,7 +75,7 @@ function ShuffleButton() {
 	)
 }
 
-function RepeatButton() {
+function RepeatButton () {
 	const [repeatType, setRepeatType] = repeat.useState()
 
 	const cycleRepeatTypes = useCallback(() => {
@@ -83,7 +84,7 @@ function RepeatButton() {
 			setRepeatType((repeatType = 0) => (repeatType + 1) % 3 as 0 | 1 | 2)
 		})
 	}, [setRepeatType])
-	
+
 	return (
 		<button
 			className={repeatType ? styles.enabled : undefined}
@@ -94,11 +95,27 @@ function RepeatButton() {
 	)
 }
 
-export default memo(function Player() {
+function useViewTransition () {
+	const renderPromise = useRef<(() => void) | null>(null)
+	useEffect(() => {
+		if (renderPromise.current) renderPromise.current()
+		renderPromise.current = null
+	})
+	return useCallback((callback: () => void) => {
+		document.startViewTransition(async () => {
+			await callback()
+			await new Promise<void>((r) => {
+				renderPromise.current = r
+			})
+		})
+	}, [])
+}
+
+export default memo(function Player () {
 	const audio = useRef<HTMLAudioElement>(null)
-	const {data: playlist} = usePlaylist()
+	const { data: playlist } = usePlaylist()
 	const item = useCurrentTrack()
-	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
+	const { nextPlaylistIndex, prevPlaylistIndex } = useSetPlaylistIndex()
 
 	const playPrev = useCallback(
 		async () => {
@@ -156,23 +173,33 @@ export default memo(function Player() {
 				event.stopPropagation()
 				togglePlay()
 			}
-		}, {capture: true, passive: false, signal: controller.signal})
+		}, { capture: true, passive: false, signal: controller.signal })
 		return () => controller.abort()
 	}, [togglePlay])
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id: item?.id})
+	const { data: cached } = useCachedTrack({ id: item?.id })
 
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
+	const [small, setSmall] = useState(false)
+	const viewTransition = useViewTransition()
+	useEffect(() => {
+		const id = setInterval(() => {
+			viewTransition(() => setSmall((small) => !small))
+		}, 3_000)
+		return () => clearInterval(id)
+	}, [])
+
 	return (
-		<div className={styles.main}>
+		<div className={classNames(styles.main, { [styles.small]: small })}>
 			<ProgressInput
 				className={styles.progress}
 				audio={audio}
 				progress={progress}
 				canSetTime={Boolean(item && totalSeconds && !loading)}
 				loading={playing && (loading || (!online && !cached))}
+				small={small}
 			/>
 			<div className={styles.time}>{displayCurrentTime}</div>
 			<Suspense fallback={<div className={styles.duration}>{displayTotalTime}</div>}>
@@ -189,7 +216,7 @@ export default memo(function Player() {
 				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
 					{(online || cached) && (
-						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
 					)}
 					{(!online && !cached) && (
 						<OfflineIcon />
@@ -200,11 +227,11 @@ export default memo(function Player() {
 					<RepeatButton />
 				</Suspense>
 			</div>
-			<Audio ref={audio}/>
+			<Audio ref={audio} />
 			<GlobalPalette />
 			<Notification audio={audio} />
 			<Suspense>
-				<NextTrack audio={audio} id={item?.id}/>
+				<NextTrack audio={audio} id={item?.id} />
 			</Suspense>
 		</div>
 	)

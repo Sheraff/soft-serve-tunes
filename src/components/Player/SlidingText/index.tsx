@@ -6,7 +6,7 @@ import styles from "./index.module.css"
 import { useGetCurrentIndex } from "client/db/useMakePlaylist"
 import { useQueryClient } from "@tanstack/react-query"
 
-export default memo(function SlidingText({
+export default memo(function SlidingText ({
 	item,
 	className,
 }: {
@@ -110,9 +110,9 @@ export default memo(function SlidingText({
 	)
 
 	return (
-		<div className={classNames(styles.main, className, {[styles.sliding as string]: separator})}>
+		<div className={classNames(styles.main, className, { [styles.sliding as string]: separator })}>
 			<div className={styles.wrapper}>
-				<div className={styles.span} ref={span} key="base">
+				<div className={classNames(styles.span, styles.primary)} ref={span} key="base">
 					{content}
 				</div>
 				{separator && (
