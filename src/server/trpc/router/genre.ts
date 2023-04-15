@@ -187,7 +187,7 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
   })
   const list = await Promise.all(seed.map(async (genre) => {
     let genreFavScore = 0
-    await recursiveSubGenres(
+    const data = await recursiveSubGenres(
       genre.id,
       {
         where: { userData: { favorite: true } },
@@ -200,7 +200,7 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
     return {
       id: genre.id,
       name: genre.name,
-      score: genreFavScore,
+      score: genreFavScore / (data.genreSet.size ** 2),
     }
   }))
   const mostLiked = list
