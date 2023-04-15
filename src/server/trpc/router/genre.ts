@@ -187,8 +187,12 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
     })
     return extendFromRecursive(genre, data, false)
   }))
+  const valueMap = new Map<string, number>(list.map(({id, _count}) => ([
+    id,
+    _count.tracks / (_count.from ** 2 + 1) // using **2 here so that "the more the count comes from subgenres, the less it is worth"
+  ])))
   const mostLiked = list
-    .sort((a, b) => (b._count.tracks / (b._count.from + 1)) - (a._count.tracks / (a._count.from + 1)))
+    .sort((a, b) => valueMap.get(b.id)! - valueMap.get(a.id)!)
     .slice(0, 10)
     .map(({id, name}) => ({id, name}))
   return mostLiked
