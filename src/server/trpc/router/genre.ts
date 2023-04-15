@@ -5,14 +5,14 @@ import { type Prisma } from "@prisma/client"
 
 const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs["where"], undefined> = {
   OR: [
-    {tracks: {some: {}}},
-    {subgenres: {some: {}}}
+    { tracks: { some: {} } },
+    { subgenres: { some: {} } }
   ]
 }
 
 export async function recursiveSubGenres<
-  TrackArgs extends Prisma.TrackFindManyArgs & {select: {id: true}}
->(
+  TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } }
+> (
   id: string,
   args?: TrackArgs,
   tracks: Prisma.TrackGetPayload<TrackArgs>[] = [],
@@ -20,7 +20,7 @@ export async function recursiveSubGenres<
   trackSet: Set<string> = new Set()
 ) {
   genreSet.add(id)
-  const tracksArg = args || {select: {id: true}}
+  const tracksArg = args || { select: { id: true } }
   // TODO: we might want to also select album>tracks in addition to tracks,
   // musicbrainz reports having a lot of genre connections on albums (49% of albums have at least 1 genre),
   // but don't report anything on tracks
@@ -29,21 +29,21 @@ export async function recursiveSubGenres<
     select: {
       tracks: tracksArg,
       audiodbTracks: {
-        ...("where" in tracksArg ? {where: {entity: tracksArg.where}} : {}),
+        ...("where" in tracksArg ? { where: { entity: tracksArg.where } } : {}),
         select: { entity: { select: tracksArg.select } }
       },
       subgenres: {
-        select: {id: true},
+        select: { id: true },
         where: nonEmptyGenreWhere,
       },
     }
   }) as null | {
     tracks: Prisma.TrackGetPayload<TrackArgs>[]
-    audiodbTracks: {entity: Prisma.TrackGetPayload<TrackArgs> | null}[]
-    subgenres: {id: string}[]
+    audiodbTracks: { entity: Prisma.TrackGetPayload<TrackArgs> | null }[]
+    subgenres: { id: string }[]
   } // TS needs a little help here since it kept crashing or thinking `data` was Genre or even any.
-  if (!data) return {tracks, genreSet}
-  const audiodbTracks = data.audiodbTracks.reduce<Prisma.TrackGetPayload<TrackArgs>[]>((array, {entity}) => {
+  if (!data) return { tracks, genreSet }
+  const audiodbTracks = data.audiodbTracks.reduce<Prisma.TrackGetPayload<TrackArgs>[]>((array, { entity }) => {
     if (entity) array.push(entity)
     return array
   }, [])
@@ -59,18 +59,18 @@ export async function recursiveSubGenres<
       await recursiveSubGenres(genre.id, args, tracks, genreSet, trackSet)
     }
   }
-  return {tracks, genreSet}
+  return { tracks, genreSet }
 }
 
 function extendFromRecursive<
   Meta extends Record<string, any>,
   Keep extends boolean
->(
+> (
   meta: Meta,
   data: Awaited<ReturnType<typeof recursiveSubGenres>>,
   keepTracks: Keep
 ): Meta & {
-  _count: {tracks: number, from: number}
+  _count: { tracks: number, from: number }
   tracks: Keep extends true ? Awaited<ReturnType<typeof recursiveSubGenres>>["tracks"] : never
 } {
   if (keepTracks) {
@@ -93,14 +93,14 @@ function extendFromRecursive<
   }
 }
 
-async function recursiveNonEmpty(id: string, genreSet: Set<string> = new Set()) {
+async function recursiveNonEmpty (id: string, genreSet: Set<string> = new Set()) {
   genreSet.add(id)
   const data = await prisma.genre.findUnique({
     where: { id },
     select: {
-      tracks: {take: 1},
+      tracks: { take: 1 },
       subgenres: {
-        select: {id: true},
+        select: { id: true },
         where: nonEmptyGenreWhere,
       },
     }
@@ -118,8 +118,8 @@ const miniature = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
   const meta = await ctx.prisma.genre.findUnique({
-    where: {id: input.id},
-    select: {name: true, id: true}
+    where: { id: input.id },
+    select: { name: true, id: true }
   })
   if (!meta) return meta
   const data = await recursiveSubGenres(input.id)
@@ -130,17 +130,17 @@ const get = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
   const meta = await ctx.prisma.genre.findUnique({
-    where: {id: input.id},
+    where: { id: input.id },
     select: {
       id: true,
       name: true,
       subgenres: {
         where: nonEmptyGenreWhere,
-        select: {id: true, name: true},
+        select: { id: true, name: true },
       },
       supgenres: {
         where: nonEmptyGenreWhere,
-        select: {id: true, name: true},
+        select: { id: true, name: true },
       },
     },
   })
@@ -182,19 +182,19 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
   })
   const list = await Promise.all(seed.map(async (genre) => {
     const data = await recursiveSubGenres(genre.id, {
-      where: {userData: {favorite: true}},
-      select: {id: true},
+      where: { userData: { favorite: true } },
+      select: { id: true },
     })
     return extendFromRecursive(genre, data, false)
   }))
-  const valueMap = new Map<string, number>(list.map(({id, _count}) => ([
+  const valueMap = new Map<string, number>(list.map(({ id, _count }) => ([
     id,
-    _count.tracks / (_count.from ** 2 + 1) // using **2 here so that "the more the count comes from subgenres, the less it is worth"
+    _count.tracks / (_count.from ** 3 + 1) // using ** 3 here so that "the more the count comes from subgenres, the less it is worth"
   ])))
   const mostLiked = list
     .sort((a, b) => valueMap.get(b.id)! - valueMap.get(a.id)!)
     .slice(0, 10)
-    .map(({id, name}) => ({id, name}))
+    .map(({ id, name }) => ({ id, name }))
   return mostLiked
 })
 
