@@ -11,13 +11,15 @@ const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs["where"], undefined> 
 }
 
 export async function recursiveSubGenres<
-  TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } }
+  TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } },
 > (
   id: string,
   args?: TrackArgs,
+  callback?: (track: Prisma.TrackGetPayload<TrackArgs>, depth: number) => void,
   tracks: Prisma.TrackGetPayload<TrackArgs>[] = [],
   genreSet: Set<string> = new Set(),
-  trackSet: Set<string> = new Set()
+  trackSet: Set<string> = new Set(),
+  depth = 0
 ) {
   genreSet.add(id)
   const tracksArg = args || { select: { id: true } }
@@ -52,11 +54,14 @@ export async function recursiveSubGenres<
     if (!trackSet.has(track.id)) {
       tracks.push(track)
       trackSet.add(track.id)
+      if (callback) {
+        callback(track, depth)
+      }
     }
   })
   for (const genre of data.subgenres) {
     if (!genreSet.has(genre.id)) {
-      await recursiveSubGenres(genre.id, args, tracks, genreSet, trackSet)
+      await recursiveSubGenres(genre.id, args, callback, tracks, genreSet, trackSet, depth + 1)
     }
   }
   return { tracks, genreSet }
@@ -181,18 +186,25 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
     select: { name: true, id: true }
   })
   const list = await Promise.all(seed.map(async (genre) => {
-    const data = await recursiveSubGenres(genre.id, {
-      where: { userData: { favorite: true } },
-      select: { id: true },
-    })
-    return extendFromRecursive(genre, data, false)
+    let genreFavScore = 0
+    await recursiveSubGenres(
+      genre.id,
+      {
+        where: { userData: { favorite: true } },
+        select: { id: true },
+      },
+      (_, depth) => {
+        genreFavScore += 1 / (depth ** 2 + 1)
+      }
+    )
+    return {
+      id: genre.id,
+      name: genre.name,
+      score: genreFavScore,
+    }
   }))
-  const valueMap = new Map<string, number>(list.map(({ id, _count }) => ([
-    id,
-    _count.tracks / (_count.from ** 3 + 1) // using ** 3 here so that "the more the count comes from subgenres, the less it is worth"
-  ])))
   const mostLiked = list
-    .sort((a, b) => valueMap.get(b.id)! - valueMap.get(a.id)!)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 10)
     .map(({ id, name }) => ({ id, name }))
   return mostLiked
