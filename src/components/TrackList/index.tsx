@@ -206,11 +206,16 @@ const TrackItem = memo(function _TrackItem ({
 	)
 })
 
-export function useVirtualTracks<T extends { id: string }[]> ({ virtual, parent, orderable, tracks }: {
+export function useVirtualTracks<T extends { id: string }[]> ({
+	virtual,
+	parent,
+	orderable,
+	tracks,
+}: {
 	virtual?: boolean
 	parent: RefObject<HTMLElement>
 	orderable?: boolean
-	tracks: T
+	tracks: T,
 }) {
 	const staticOrderable = useRef(orderable)
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
