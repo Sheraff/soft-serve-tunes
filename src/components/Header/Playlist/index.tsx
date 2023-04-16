@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, useRef } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, useRef, useCallback } from "react"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
@@ -71,6 +71,25 @@ export default forwardRef(function PlaylistView ({
 		virtual: true,
 	})
 
+	const { tracks } = trackListProps
+
+	const onReorder = useCallback((from: number, to: number) =>
+		reorderPlaylist(from, to, id),
+		[id, reorderPlaylist]
+	)
+
+	const onQuickSwipe = useCallback((track: { id: string }) =>
+		deleteFromPlaylist(track.id, id),
+		[id, deleteFromPlaylist]
+	)
+
+	const onClick = useCallback((trackId: string) => {
+		if (_name && tracks) startTransition(() => {
+			setPlaylist(_name, tracks, id, trackId)
+			showHome("home")
+		})
+	}, [_name, id, setPlaylist, showHome, tracks])
+
 	return (
 		<Panel
 			ref={parent}
@@ -87,18 +106,9 @@ export default forwardRef(function PlaylistView ({
 		>
 			<TrackList
 				{...trackListProps}
-				onReorder={(oldIndex, newIndex) => {
-					reorderPlaylist(oldIndex, newIndex, id)
-				}}
-				onClick={(trackId) => {
-					if (_name && trackListProps.tracks) startTransition(() => {
-						setPlaylist(_name, trackListProps.tracks, id, trackId)
-						showHome("home")
-					})
-				}}
-				quickSwipeAction={(track) => {
-					deleteFromPlaylist(track.id, id)
-				}}
+				onReorder={onReorder}
+				onClick={onClick}
+				quickSwipeAction={onQuickSwipe}
 				quickSwipeIcon={DeleteIcon}
 				quickSwipeDeleteAnim
 			/>

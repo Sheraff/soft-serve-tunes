@@ -10,6 +10,7 @@ import {
 	type CSSProperties,
 	type MutableRefObject,
 	memo,
+	useEffect,
 } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
@@ -211,11 +212,13 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	parent,
 	orderable,
 	tracks,
+	exposeScrollFn,
 }: {
 	virtual?: boolean
 	parent: RefObject<HTMLElement>
 	orderable?: boolean
-	tracks: T,
+	tracks: T
+	exposeScrollFn?: boolean
 }) {
 	const staticOrderable = useRef(orderable)
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
@@ -243,6 +246,23 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 			return Array.from(Array(length), (_, i) => min + i)
 		}
 	})
+
+	if (exposeScrollFn) {
+		// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `exposeScrollFn` doesn't change once a component is mounted
+		useEffect(() => {
+			// @ts-expect-error -- this is a hack to expose the scroll function
+			window._scrollNowPlayingToIndex = (index: number) => {
+				parent.current?.scrollTo({
+					top: index * 65,
+					behavior: "smooth",
+				})
+			}
+			return () => {
+				// @ts-expect-error -- this is a hack to expose the scroll function
+				window._scrollNowPlayingToIndex = undefined
+			}
+		}, [parent])
+	}
 
 	return {
 		virtualizer: rowVirtualizer
