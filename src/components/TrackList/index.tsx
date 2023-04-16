@@ -1,5 +1,16 @@
 import classNames from "classnames"
-import { type ElementType, startTransition, useDeferredValue, useEffect, useRef, useState, useMemo } from "react"
+import {
+	type ElementType,
+	startTransition,
+	useDeferredValue,
+	useRef,
+	useState,
+	useMemo,
+	type RefObject,
+	type CSSProperties,
+	type MutableRefObject,
+	memo,
+} from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
@@ -22,17 +33,17 @@ import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { useQueryClient } from "@tanstack/react-query"
+import { type VirtualItem, useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual"
 
-const emptyFunction = () => {}
+const emptyFunction = () => { }
 
 type TrackListItem = {
 	id: string
 	name: string
 }
 
-function TrackItem({
+const TrackItem = memo(function _TrackItem ({
 	track,
-	enableSiblings,
 	current,
 	onClick,
 	onSelect,
@@ -46,9 +57,8 @@ function TrackItem({
 	selected,
 }: {
 	track: TrackListItem
-	enableSiblings?: () => void
 	current?: boolean
-	onClick?: (id:string, name:string) => void
+	onClick?: (id: string, name: string) => void
 	onSelect?: (track: Exclude<RouterOutputs["track"]["miniature"], null>) => void
 	draggable?: boolean
 	onAdd?: (track: TrackListItem) => void
@@ -60,31 +70,14 @@ function TrackItem({
 	selected: boolean
 }) {
 	const item = useRef<HTMLDivElement>(null)
-	const {data} = trpc.track.miniature.useQuery({id: track.id})
+	const { data } = trpc.track.miniature.useQuery({ id: track.id })
 
 	const addNextToPlaylist = useAddNextToPlaylist()
 	const showHome = useShowHome()
-	
-	useEffect(() => {
-		if (!enableSiblings || !item.current) return
-
-		const observer = new IntersectionObserver(([entry]) => {
-			if (entry?.isIntersecting) {
-				startTransition(() => {
-					enableSiblings()
-				})
-			}
-		}, {
-			rootMargin: "0px 100px 0px 0px",
-		})
-		observer.observe(item.current)
-
-		return () => observer.disconnect()
-	}, [enableSiblings])
 
 	const isEmpty = !data?.cover
 
-	const {mutate: likeMutation} = trpc.track.like.useMutation()
+	const { mutate: likeMutation } = trpc.track.like.useMutation()
 	const callbacks = useRef<SlideCallbacks>({
 		onLike: emptyFunction,
 		onAdd: emptyFunction,
@@ -108,11 +101,11 @@ function TrackItem({
 	callbacks.current.onLong = () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({type: "track", id: track.id}),
+			editOverlaySetter({ type: "track", id: track.id }),
 			queryClient
 		)
 	}
-	useSlideTrack(item, callbacks, {quickSwipeDeleteAnim})
+	useSlideTrack(item, callbacks, { quickSwipeDeleteAnim })
 
 	const NextIcon = quickSwipeIcon || PlaylistNextIcon
 
@@ -123,7 +116,7 @@ function TrackItem({
 		[data?.createdAt]
 	)
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id: track.id, enabled: !online})
+	const { data: cached } = useCachedTrack({ id: track.id, enabled: !online })
 	const offline = !online && cached
 	const high = data?.file?.container.toUpperCase() === "FLAC"
 
@@ -160,7 +153,7 @@ function TrackItem({
 				}}
 			>
 				{!selection && draggable && (
-					<DragIcon className={styles.handle} data-handle/>
+					<DragIcon className={styles.handle} data-handle />
 				)}
 				{selection && !selected && (
 					<CheckboxOffIcon className={styles.selected} />
@@ -211,9 +204,52 @@ function TrackItem({
 			</div>
 		</div>
 	)
+})
+
+export function useVirtualTracks<T extends { id: string }[]> ({ virtual, parent, orderable, tracks }: {
+	virtual?: boolean
+	parent: RefObject<HTMLElement>
+	orderable?: boolean
+	tracks: T
+}) {
+	const staticOrderable = useRef(orderable)
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
+	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
+
+	const forceInsertVirtualDragItem = useRef<number | null>(null)
+
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `virtual` doesn't change once a component is mounted
+	const rowVirtualizer = virtual && useVirtualizer({
+		count: tracks.length,
+		getScrollElement: () => parent?.current,
+		estimateSize: () => 65, // calc(48px + 2 * 8px + 1px)
+		getItemKey: (index) => tracks[index]!.id,
+		overscan: 10,
+		rangeExtractor: (range) => {
+			const extra = forceInsertVirtualDragItem.current
+			if (extra !== null && range.startIndex > extra) {
+				range.startIndex = extra
+			} else if (extra !== null && range.endIndex < extra) {
+				range.endIndex = extra
+			}
+			return defaultRangeExtractor(range)
+		}
+	})
+
+	return {
+		virtualizer: rowVirtualizer
+			? (callback: (item: VirtualItem) => JSX.Element) => rowVirtualizer.getVirtualItems().map(callback)
+			: undefined,
+		getParentHeight: rowVirtualizer
+			? rowVirtualizer.getTotalSize
+			: undefined,
+		tracks: deferredTracks,
+		orderable,
+		forceInsertVirtualDragItem,
+	}
 }
 
-export default function TrackList({
+export default function TrackList ({
 	tracks,
 	current,
 	onClick,
@@ -223,6 +259,9 @@ export default function TrackList({
 	quickSwipeAction,
 	quickSwipeIcon,
 	quickSwipeDeleteAnim,
+	virtualizer,
+	getParentHeight,
+	forceInsertVirtualDragItem,
 }: {
 	tracks: TrackListItem[]
 	current?: string
@@ -233,8 +272,10 @@ export default function TrackList({
 	quickSwipeAction?: (track: Exclude<RouterOutputs["track"]["miniature"], null>) => void
 	quickSwipeIcon?: ElementType
 	quickSwipeDeleteAnim?: boolean
+	virtualizer?: (callback: (item: VirtualItem) => JSX.Element) => JSX.Element[]
+	getParentHeight?: () => number
+	forceInsertVirtualDragItem?: MutableRefObject<number | null>
 }) {
-	const [enableUpTo, setEnableUpTo] = useState(9)
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
 		onDrop: emptyFunction
@@ -245,12 +286,8 @@ export default function TrackList({
 			onReorder(from, to)
 		}
 	}
-	useDragTrack(ref, !!orderable, callbacks)
+	useDragTrack(ref, !!orderable, callbacks, tracks.length, forceInsertVirtualDragItem)
 	const addNextToPlaylist = useAddNextToPlaylist()
-
-	const staticOrderable = useRef(orderable)
-	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
-	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
 
 	const [itemToAdd, setItemToAdd] = useState<TrackListItem | null>(null)
 
@@ -261,32 +298,61 @@ export default function TrackList({
 	return (
 		<>
 			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
-			<ul className={styles.main} ref={orderable ? ref : undefined}>
-				{deferredTracks.map((track, i) => (
+			<ul
+				className={styles.main} ref={orderable ? ref : undefined}
+				style={getParentHeight && {
+					minHeight: `${getParentHeight()}px`,
+				}}
+			>
+				{virtualizer && virtualizer((virtualItem) => (
 					<li
-						className={classNames(styles.item, {
-							[styles.placeholder]: i > enableUpTo,
-						})}
+						className={styles.item}
+						key={virtualItem.key}
+						data-index={virtualItem.index}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							"--virtual-y": `${virtualItem.start}px`,
+						} as CSSProperties}
+					>
+						<TrackItem
+							track={tracks[virtualItem.index]!}
+							current={current === tracks[virtualItem.index]!.id}
+							onClick={onClick}
+							onSelect={onSelect}
+							draggable={orderable}
+							onAdd={setItemToAdd}
+							onNext={quickSwipeAction || addNextToPlaylist}
+							quickSwipeIcon={quickSwipeIcon}
+							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
+							index={virtualItem.index}
+							selection={isSelection}
+							selected={isSelection && editViewState.selection.some(({ id }) => id === tracks[virtualItem.index]!.id)}
+						/>
+					</li>
+				))}
+				{!virtualizer && tracks.map((track, i) => (
+					<li
+						className={styles.item}
 						key={track.id}
 						data-index={i}
 					>
-						{i <= enableUpTo && (
-							<TrackItem
-								track={track}
-								enableSiblings={i === enableUpTo && i !== deferredTracks.length - 1 ? () => setEnableUpTo(enableUpTo + 20) : undefined}
-								current={current === track.id}
-								onClick={onClick}
-								onSelect={onSelect}
-								draggable={orderable}
-								onAdd={setItemToAdd}
-								onNext={quickSwipeAction || addNextToPlaylist}
-								quickSwipeIcon={quickSwipeIcon}
-								quickSwipeDeleteAnim={quickSwipeDeleteAnim}
-								index={i}
-								selection={isSelection}
-								selected={isSelection && editViewState.selection.some(({id}) => id === track.id)}
-							/>
-						)}
+						<TrackItem
+							track={track}
+							current={current === track.id}
+							onClick={onClick}
+							onSelect={onSelect}
+							draggable={orderable}
+							onAdd={setItemToAdd}
+							onNext={quickSwipeAction || addNextToPlaylist}
+							quickSwipeIcon={quickSwipeIcon}
+							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
+							index={i}
+							selection={isSelection}
+							selected={isSelection && editViewState.selection.some(({ id }) => id === track.id)}
+						/>
 					</li>
 				))}
 			</ul>

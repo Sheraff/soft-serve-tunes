@@ -1,11 +1,12 @@
 .main {
-
+	width: 100%;
+	position: relative;
 }
 .item {
 	width: 100%;
-}
-.placeholder {
-	height: calc(48px + 2 * 8px + 1px);
+	--virtual-y: 0px;
+	transform: translateY(var(--virtual-y));
+	z-index: 0;
 }
 
 .wrapper {
@@ -34,6 +35,7 @@
 
 .drag {
 	position: relative;
+	z-index: 1;
 	--y: 0px;
 	--bg-y: 0;
 }
@@ -52,10 +54,10 @@
 	contain: layout style inline-size;
 }
 .slide {
-	transform: translateY(100%);
+	transform: translateY(calc(var(--virtual-y) + 100%));
 }
 .drag ~ .slide {
-	transform: translateY(-100%);
+	transform: translateY(calc(var(--virtual-y) + -100%));
 }
 
 .fav {
