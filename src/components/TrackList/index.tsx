@@ -222,22 +222,25 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
 
 	const forceInsertVirtualDragItem = useRef<number | null>(null)
-
+	const forwardOverScan = 2
+	const backwardOverScan = 10
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `virtual` doesn't change once a component is mounted
 	const rowVirtualizer = virtual && useVirtualizer({
 		count: tracks.length,
 		getScrollElement: () => parent?.current,
 		estimateSize: () => 65, // calc(48px + 2 * 8px + 1px)
 		getItemKey: (index) => tracks[index]!.id,
-		overscan: 10,
 		rangeExtractor: (range) => {
 			const extra = forceInsertVirtualDragItem.current
-			if (extra !== null && range.startIndex > extra) {
-				range.startIndex = extra
-			} else if (extra !== null && range.endIndex < extra) {
-				range.endIndex = extra
+			if (extra !== null && range.startIndex - backwardOverScan > extra) {
+				range.startIndex = extra + backwardOverScan
+			} else if (extra !== null && range.endIndex + forwardOverScan < extra) {
+				range.endIndex = extra - forwardOverScan
 			}
-			return defaultRangeExtractor(range)
+			const max = Math.min(range.endIndex + forwardOverScan, range.count)
+			const min = Math.max(range.startIndex - backwardOverScan, 0)
+			const length = max - min
+			return Array.from(Array(length), (_, i) => min + i)
 		}
 	})
 
