@@ -1,12 +1,8 @@
 .main {
-	width: 100%;
-	position: relative;
+
 }
 .item {
 	width: 100%;
-	--virtual-y: 0px;
-	transform: translateY(var(--virtual-y));
-	z-index: 0;
 }
 
 .wrapper {
@@ -54,10 +50,10 @@
 	contain: layout style inline-size;
 }
 .slide {
-	transform: translateY(calc(var(--virtual-y) + 100%));
+	transform: translateY(100%);
 }
 .drag ~ .slide {
-	transform: translateY(calc(var(--virtual-y) + -100%));
+	transform: translateY(-100%);
 }
 
 .fav {

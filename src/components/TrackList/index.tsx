@@ -7,7 +7,6 @@ import {
 	useState,
 	useMemo,
 	type RefObject,
-	type CSSProperties,
 	type MutableRefObject,
 	memo,
 	useEffect,
@@ -34,7 +33,7 @@ import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { useQueryClient } from "@tanstack/react-query"
-import { type VirtualItem, useVirtualizer, defaultRangeExtractor } from "@tanstack/react-virtual"
+import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual"
 
 const emptyFunction = () => { }
 
@@ -225,8 +224,9 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
 
 	const forceInsertVirtualDragItem = useRef<number | null>(null)
-	const forwardOverScan = 2
-	const backwardOverScan = 10
+	const forwardOverScan = 1 //2 // numbers to use without innerWidth offsets
+	const backwardOverScan = 1 //10 // numbers to use without innerWidth offsets
+	const weirdAdjust = virtual ? window.innerWidth : 0
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `virtual` doesn't change once a component is mounted
 	const rowVirtualizer = virtual && useVirtualizer({
 		count: tracks.length,
@@ -237,14 +237,16 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 			const extra = forceInsertVirtualDragItem.current
 			if (extra !== null && range.startIndex - backwardOverScan > extra) {
 				range.startIndex = extra + backwardOverScan
-			} else if (extra !== null && range.endIndex + forwardOverScan < extra) {
-				range.endIndex = extra - forwardOverScan
+			} else if (extra !== null && range.endIndex + forwardOverScan <= extra) {
+				range.endIndex = extra - forwardOverScan + 1
 			}
 			const max = Math.min(range.endIndex + forwardOverScan, range.count)
 			const min = Math.max(range.startIndex - backwardOverScan, 0)
 			const length = max - min
 			return Array.from(Array(length), (_, i) => min + i)
-		}
+		},
+		paddingStart: weirdAdjust,
+		paddingEnd: -weirdAdjust,
 	})
 
 	if (exposeScrollFn) {
@@ -263,10 +265,11 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 			}
 		}, [parent])
 	}
-
+	const items = rowVirtualizer ? rowVirtualizer.getVirtualItems() : undefined
 	return {
-		virtualizer: rowVirtualizer
-			? (callback: (item: VirtualItem) => JSX.Element) => rowVirtualizer.getVirtualItems().map(callback)
+		virtualTop: items ? (items[0]?.start ?? 0) - weirdAdjust : 0,
+		virtualizer: items
+			? (callback: (item: VirtualItem) => JSX.Element) => items.map(callback)
 			: undefined,
 		getParentHeight: rowVirtualizer
 			? rowVirtualizer.getTotalSize
@@ -290,6 +293,7 @@ export default function TrackList ({
 	virtualizer,
 	getParentHeight,
 	forceInsertVirtualDragItem,
+	virtualTop,
 }: {
 	tracks: TrackListItem[]
 	current?: string
@@ -303,6 +307,7 @@ export default function TrackList ({
 	virtualizer?: (callback: (item: VirtualItem) => JSX.Element) => JSX.Element[]
 	getParentHeight?: () => number
 	forceInsertVirtualDragItem?: MutableRefObject<number | null>
+	virtualTop?: number
 }) {
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
@@ -332,18 +337,14 @@ export default function TrackList ({
 					minHeight: `${getParentHeight()}px`,
 				}}
 			>
+				{virtualizer && (
+					<div style={{ height: `${virtualTop}px` }} />
+				)}
 				{virtualizer && virtualizer((virtualItem) => (
 					<li
 						className={styles.item}
 						key={virtualItem.key}
 						data-index={virtualItem.index}
-						style={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							width: "100%",
-							"--virtual-y": `${virtualItem.start}px`,
-						} as CSSProperties}
 					>
 						<TrackItem
 							track={tracks[virtualItem.index]!}

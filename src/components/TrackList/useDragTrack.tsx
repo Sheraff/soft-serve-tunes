@@ -126,9 +126,7 @@ export default function useDragTrack<T extends boolean> (
 				})
 			}, { signal, passive: true })
 
-			window.addEventListener("touchend", (event) => {
-				const match = getTouchFromId(event.changedTouches, touch.identifier)
-				if (!match) return
+			const onEnd = () => {
 				item.classList.remove(styles.drag)
 				item.style.removeProperty("--y")
 				item.style.removeProperty("--bg-y")
@@ -151,7 +149,19 @@ export default function useDragTrack<T extends boolean> (
 					const sibling = siblings.item(i) as HTMLElement
 					sibling.classList.remove(styles.slide)
 				}
+			}
+
+			window.addEventListener("touchend", (event) => {
+				const match = getTouchFromId(event.changedTouches, touch.identifier)
+				if (!match) return
+				onEnd()
 				callbacks.current!.onDrop!(itemIndex, itemIndex + itemsOffset)
+			}, { signal, passive: false })
+
+			window.addEventListener("touchcancel", (event) => {
+				const match = getTouchFromId(event.changedTouches, touch.identifier)
+				if (!match) return
+				onEnd()
 			}, { signal, passive: false })
 		}
 
