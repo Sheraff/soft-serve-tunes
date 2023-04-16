@@ -1,4 +1,4 @@
-import { type Playlist, usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { memo, startTransition, useRef } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
@@ -6,19 +6,23 @@ import Cover from "./Cover"
 import styles from "./index.module.css"
 import AddMoreButton from "./AddMoreButton"
 
-function NowPlayingLoaded ({ data }: { data: Playlist }) {
+export default memo(function NowPlaying () {
+	const { data } = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
 	const { setPlaylistIndex } = useSetPlaylistIndex()
 	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const parent = useRef<HTMLDivElement>(null)
-	const { tracks, current, id } = data
 
 	const trackListProps = useVirtualTracks({
-		tracks,
+		tracks: data?.tracks ?? [],
 		parent,
 		orderable: true,
 		virtual: true,
 	})
+
+	if (!data) return null
+	const { current, id } = data
+	const { tracks } = trackListProps
 
 	return (
 		<div className={styles.main} ref={parent}>
@@ -34,7 +38,7 @@ function NowPlayingLoaded ({ data }: { data: Playlist }) {
 				quickSwipeDeleteAnim
 				{...trackListProps}
 			/>
-			{data.tracks.length < 100 && (
+			{tracks.length < 100 && (
 				<AddMoreButton
 					id={id}
 					tracks={tracks}
@@ -42,10 +46,4 @@ function NowPlayingLoaded ({ data }: { data: Playlist }) {
 			)}
 		</div>
 	)
-}
-
-export default memo(function NowPlaying () {
-	const { data } = usePlaylist()
-	if (!data) return null
-	return <NowPlayingLoaded data={data} />
 })

@@ -2,26 +2,23 @@ import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, us
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
-import { type RouterOutputs, trpc } from "utils/trpc"
+import { trpc } from "utils/trpc"
 import { useCurrentTrackDetails, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
 import CoverImages from "components/NowPlaying/Cover/Images"
 import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 import DeleteIcon from "icons/playlist_remove.svg"
 
-function LoadedPlaylistView ({
-	_ref,
+export default forwardRef(function PlaylistView ({
+	open,
 	id,
-	data,
 	z,
 	rect,
 	name,
 	isTop,
-	open
 }: {
-	_ref: ForwardedRef<HTMLDivElement>
+	open: boolean
 	id: string
-	data: Exclude<RouterOutputs["playlist"]["get"], null>
 	z: number
 	rect?: {
 		top: number
@@ -32,8 +29,13 @@ function LoadedPlaylistView ({
 	}
 	name?: string
 	isTop: boolean
-	open: boolean
-}) {
+}, ref: ForwardedRef<HTMLDivElement>) {
+	const enabled = Boolean(id && open)
+	const { data } = trpc.playlist.get.useQuery({ id }, {
+		enabled,
+		keepPreviousData: true,
+	})
+
 	const description = usePlaylistDescription({
 		artistData: data?.artists ?? [],
 		length: data?.tracks?.length,
@@ -60,9 +62,10 @@ function LoadedPlaylistView ({
 	const showHome = useShowHome()
 
 	const parent = useRef<HTMLDivElement>(null)
-	useImperativeHandle(_ref, () => parent.current as HTMLDivElement)
+	useImperativeHandle(ref, () => parent.current as HTMLDivElement)
+
 	const trackListProps = useVirtualTracks({
-		tracks: data.tracks,
+		tracks: data?.tracks ?? [],
 		parent,
 		orderable: true,
 		virtual: true,
@@ -101,43 +104,4 @@ function LoadedPlaylistView ({
 			/>
 		</Panel>
 	)
-}
-
-export default forwardRef(function PlaylistView ({
-	open,
-	id,
-	z,
-	rect,
-	name,
-	isTop,
-}: {
-	open: boolean
-	id: string
-	z: number
-	rect?: {
-		top: number
-		left?: number
-		width?: number
-		height?: number
-		src?: string
-	}
-	name?: string
-	isTop: boolean
-}, ref: ForwardedRef<HTMLDivElement>) {
-	const enabled = Boolean(id && open)
-	const { data } = trpc.playlist.get.useQuery({ id }, {
-		enabled,
-		keepPreviousData: true,
-	})
-	if (!data) return null
-	return <LoadedPlaylistView
-		_ref={ref}
-		id={id}
-		data={data}
-		z={z}
-		rect={rect}
-		name={name}
-		isTop={isTop}
-		open={open}
-	/>
 })
