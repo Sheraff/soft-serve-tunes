@@ -21,14 +21,12 @@ function ArtistItem ({
 	artist,
 	onSelect,
 	onClick,
-	index,
 	selected,
 	selectable,
 }: {
 	artist: ArtistListItem
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
-	index: number
 	selected: boolean
 	selectable?: boolean
 }) {
@@ -90,8 +88,6 @@ function ArtistItem ({
 						<img
 							src={src}
 							alt=""
-							loading={index > 2 ? "lazy" : undefined}
-							decoding={index > 2 ? "async" : undefined}
 						/>
 					)}
 				</div>
@@ -162,7 +158,6 @@ export default forwardRef(function ArtistList ({
 								artist={artists[item.index]!}
 								onSelect={onSelect}
 								onClick={onClick}
-								index={item.index}
 								selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
 								selectable={selectable}
 							/>

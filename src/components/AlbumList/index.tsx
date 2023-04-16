@@ -21,14 +21,12 @@ function AlbumItem ({
 	album,
 	onSelect,
 	onClick,
-	index,
 	selected,
 	selectable,
 }: {
 	album: AlbumListItem
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
-	index: number
 	selected: boolean
 	selectable: boolean
 }) {
@@ -88,8 +86,6 @@ function AlbumItem ({
 				<img
 					src={src}
 					alt=""
-					loading={index > 1 ? "lazy" : undefined}
-					decoding={index > 1 ? "async" : undefined}
 				/>
 			)}
 			<p className={classNames(styles.span, {
@@ -164,7 +160,6 @@ export default forwardRef(function AlbumList ({
 									album={albums[item.index]!}
 									onSelect={onSelect}
 									onClick={onClick}
-									index={item.index}
 									selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
 									selectable={selectable}
 								/>
@@ -186,7 +181,6 @@ export default forwardRef(function AlbumList ({
 								album={album}
 								onSelect={onSelect}
 								onClick={onClick}
-								index={i}
 								selected={selected === album.id || (isSelection && editViewState.selection.some(({ id }) => id === album.id))}
 								selectable={selectable}
 							/>

@@ -29,44 +29,44 @@ import getIn, { type DeepExcludeNull, type DeepKeyof, type GetFieldType } from "
 
 type TrackMiniature = RouterOutputs["track"]["miniature"]
 
-function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>>(tracks: (TrackMiniature | null | undefined)[], key: K): {readonly value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, readonly unique: boolean} {
+function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>> (tracks: (TrackMiniature | null | undefined)[], key: K): { readonly value: GetFieldType<DeepExcludeNull<TrackMiniature>, K> | undefined, readonly unique: boolean } {
 	const [first, ...rest] = (tracks.filter(Boolean) as Exclude<TrackMiniature, null>[])
-	if (!first) return {value: undefined, unique: true}
+	if (!first) return { value: undefined, unique: true }
 	const value = getIn(first, key)
 	for (const track of rest) {
 		const trackValue = getIn(track, key)
-		if (trackValue !== value) return {value: undefined, unique: false}
+		if (trackValue !== value) return { value: undefined, unique: false }
 	}
-	return {value, unique: true}
+	return { value, unique: true }
 }
 
 const defaultArray = [] as never[]
-const defaultAggregate = {value: undefined, unique: undefined} as const
+const defaultAggregate = { value: undefined, unique: undefined } as const
 
-export default function EditTrack({
+export default function EditTrack ({
 	ids,
 	onDone,
 }: {
 	ids: string[]
 	onDone: () => void
 }) {
-	const {tracks, isLoading} = trpc
-		.useQueries((t) => ids.map((id) => t.track.miniature({id})))
+	const { tracks, isLoading } = trpc
+		.useQueries((t) => ids.map((id) => t.track.miniature({ id })))
 		.reduce<{
 			tracks: (TrackMiniature | undefined)[],
 			isLoading: boolean
-		}>((acc, {data, isLoading}) => {
+		}>((acc, { data, isLoading }) => {
 			acc.tracks.push(data)
 			acc.isLoading = acc.isLoading || isLoading
 			return acc
-		}, {tracks: [], isLoading: false})
+		}, { tracks: [], isLoading: false })
 
 	const htmlId = useId()
 
 	const [nameState, setNameState] = useState<null | string>(tracks[0]?.name ?? null)
-	useEffect(() => {setNameState(tracks[0]?.name ?? null)}, [tracks[0]?.name])
+	useEffect(() => { setNameState(tracks[0]?.name ?? null) }, [tracks[0]?.name])
 	const [positionState, setPositionState] = useState<null | number>(tracks[0]?.position ?? null)
-	useEffect(() => {setPositionState(tracks[0]?.position ?? null)}, [tracks[0]?.position])
+	useEffect(() => { setPositionState(tracks[0]?.position ?? null) }, [tracks[0]?.position])
 
 	const albumAggregate = isLoading ? defaultAggregate : aggregateTracks(tracks, ["album", "name"])
 	const [albumState, setAlbumState] = useState(albumAggregate.value)
@@ -80,8 +80,8 @@ export default function EditTrack({
 	const [coverState, setCoverState] = useState(coverAggregate.value)
 
 	const artistInput = useRef<HTMLInputElement>(null)
-	const {data: artistsRaw} = trpc.artist.searchable.useQuery()
-	const _artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
+	const { data: artistsRaw } = trpc.artist.searchable.useQuery()
+	const _artists = useAsyncInputStringDistance(artistInput, 10, artistsRaw || defaultArray)
 	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
@@ -89,7 +89,7 @@ export default function EditTrack({
 		artistInput.current!.dispatchEvent(new Event("input"))
 		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [])
-	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
+	useEffect(() => { setArtistInputName(artistAggregate.value) }, [setArtistInputName, artistAggregate.value])
 	artists.sort((a, b) => {
 		if (!albumSimplified && !artistSimplified) return 0
 		const aName = simplifiedName(a.name) === artistSimplified
@@ -121,23 +121,23 @@ export default function EditTrack({
 	const exactArtist = Boolean(artistSimplified && artists[0] && artistSimplified === simplifiedName(artists[0].name))
 
 	const albumInput = useRef<HTMLInputElement>(null)
-	const {data: albumsRaw} = trpc.album.searchable.useQuery()
+	const { data: albumsRaw } = trpc.album.searchable.useQuery()
 	const fakeAlbumInput = useRef<HTMLInputElement>({} as HTMLInputElement)
 	useEffect(() => {
 		const input = albumInput.current!
 		fakeAlbumInput.current = {
-			get value() {
+			get value () {
 				return `${input.value} ${artistInput.current!.value}`
 			},
-			get addEventListener() {
+			get addEventListener () {
 				return input.addEventListener.bind(input)
 			},
-			get removeEventListener() {
+			get removeEventListener () {
 				return input.removeEventListener.bind(input)
 			},
 		} as HTMLInputElement
 	}, [])
-	const __albums = useAsyncInputStringDistance(fakeAlbumInput, albumsRaw || defaultArray, ["name", "artists"])
+	const __albums = useAsyncInputStringDistance(fakeAlbumInput, 10, albumsRaw || defaultArray, ["name", "artists"])
 	const _albums = __albums.length === 0 ? albumsRaw || defaultArray : __albums
 	const albums = useDeferredValue(_albums)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
@@ -146,7 +146,7 @@ export default function EditTrack({
 		if (typeof artistName === "string") setArtistInputName(artistName)
 		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [setArtistInputName])
-	useEffect(() => {setAlbumInputName(albumAggregate.value)}, [setAlbumInputName, albumAggregate.value])
+	useEffect(() => { setAlbumInputName(albumAggregate.value) }, [setAlbumInputName, albumAggregate.value])
 	albums.sort((a, b) => {
 		// if an album has exact title and artist, put it first. If an album has exact title, put it second
 		if (!albumSimplified && !artistSimplified) return 0
@@ -184,7 +184,7 @@ export default function EditTrack({
 		coverInput.current!.value = id ?? ""
 		coverInput.current!.dispatchEvent(new Event("input"))
 	}, [])
-	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
+	useEffect(() => { setCoverInputId(coverAggregate.value) }, [setCoverInputId, coverAggregate.value])
 
 	const isAlbumModified = Boolean(albumSimplified && (!albumAggregate.value || albumSimplified !== simplifiedName(albumAggregate.value)))
 	const isArtistModified = Boolean(artistSimplified && (!artistAggregate.value || artistSimplified !== simplifiedName(artistAggregate.value)))
@@ -193,8 +193,8 @@ export default function EditTrack({
 	const isNameModified = isSingleTrack && Boolean(nameState && (!tracks[0]?.name || simplifiedName(nameState) !== simplifiedName(tracks[0].name)))
 	const isPositionModified = isSingleTrack && Boolean(positionState !== null && positionState !== tracks[0]?.position)
 
-	const {mutateAsync: updateTrack} = trpc.edit.track.modify.useMutation()
-	const {mutateAsync: validateTrack} = trpc.edit.track.validate.useMutation({retry: 0})
+	const { mutateAsync: updateTrack } = trpc.edit.track.modify.useMutation()
+	const { mutateAsync: validateTrack } = trpc.edit.track.validate.useMutation({ retry: 0 })
 	const [submitProgress, setSubmitProgress] = useState<number | null>(null)
 	const [errors, setErrors] = useState<string[]>([])
 	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -261,11 +261,11 @@ export default function EditTrack({
 					id: track!.id,
 					...editData
 				})
-				// @ts-expect-error -- this is fine
-				.finally((any) => {
-					increment()
-					return any
-				})
+					// @ts-expect-error -- this is fine
+					.finally((any) => {
+						increment()
+						return any
+					})
 			)
 		)
 		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter["edit"]["track"]["validate"]>[]>((acc, res) => {
@@ -384,7 +384,7 @@ export default function EditTrack({
 							selectable={false}
 						/>
 					</div>
-					
+
 					{/* Cover */}
 					<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
 					<input
@@ -412,17 +412,17 @@ export default function EditTrack({
 							}}
 						/>
 					</div>
-					
+
 					<div className={classNames(styles.full, styles.summary)}>
 						{isNameModified && (
 							<p>
-								<ModifIcon className={styles.icon}/>
+								<ModifIcon className={styles.icon} />
 								{`Rename track to "${nameState}"`}
 							</p>
 						)}
 						{isPositionModified && (
 							<p>
-								<ModifIcon className={styles.icon}/>
+								<ModifIcon className={styles.icon} />
 								{`Set track position to #${String(positionState).padStart(2, "0")}`}
 							</p>
 						)}
@@ -430,13 +430,13 @@ export default function EditTrack({
 							<p>
 								{exactAlbum && (
 									<>
-										<AssignIcon className={styles.icon}/>
+										<AssignIcon className={styles.icon} />
 										{`Add ${tracks.length} track${pluralize(tracks.length)} to "${albumState}" album`}
 									</>
 								)}
 								{!exactAlbum && (
 									<>
-										<CreateIcon className={styles.icon}/>
+										<CreateIcon className={styles.icon} />
 										{`Create new album "${albumState}" with ${tracks.length} track${pluralize(tracks.length)}`}
 									</>
 								)}
@@ -446,13 +446,13 @@ export default function EditTrack({
 							<p>
 								{exactArtist && (
 									<>
-										<AssignIcon className={styles.icon}/>
+										<AssignIcon className={styles.icon} />
 										{`Assign artist "${artistState}" to ${tracks.length} track${pluralize(tracks.length)}`}
 									</>
 								)}
 								{!exactArtist && (
 									<>
-										<CreateIcon className={styles.icon}/>
+										<CreateIcon className={styles.icon} />
 										{`Create new artist "${artistState}" with ${tracks.length} track${pluralize(tracks.length)}`}
 									</>
 								)}
@@ -460,13 +460,13 @@ export default function EditTrack({
 						)}
 						{isCoverModified && (
 							<p>
-								<ModifIcon className={styles.icon}/>
+								<ModifIcon className={styles.icon} />
 								{`Force selected cover on ${tracks.length} track${pluralize(tracks.length)}`}
 							</p>
 						)}
 						{errors.length > 0 && errors.map((error, index) => (
 							<p key={index} className={styles.error}>
-								<ErrorIcon className={styles.icon}/>
+								<ErrorIcon className={styles.icon} />
 								{error}
 							</p>
 						))}
@@ -476,7 +476,7 @@ export default function EditTrack({
 						<SaveIcon className={styles.icon} />
 						Save
 						{submitProgress !== null && (
-							<div className={styles.progress} style={{"--progress": submitProgress} as CSSProperties}>
+							<div className={styles.progress} style={{ "--progress": submitProgress } as CSSProperties}>
 								<SaveIcon className={styles.icon} />
 								Save
 							</div>

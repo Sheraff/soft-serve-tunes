@@ -5,12 +5,16 @@ import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 import { Prisma } from "@prisma/client"
 
-const searchable = publicProcedure.query(async ({ctx}) => {
+const LISTS_SIZE = 30
+
+const searchable = publicProcedure.query(async ({ ctx }) => {
   const raw = await ctx.prisma.artist.findMany({
-    where: { OR: [
-      { tracks: {some: {}} },
-      { albums: {some: {}} },
-    ]},
+    where: {
+      OR: [
+        { tracks: { some: {} } },
+        { albums: { some: {} } },
+      ]
+    },
     select: {
       id: true,
       name: true,
@@ -32,9 +36,9 @@ const searchable = publicProcedure.query(async ({ctx}) => {
       }
     }
   })
-  return raw.map(({id, name, albums, tracks}) => {
-    tracks.forEach(({album}) => {
-      if (album && !albums.some(({id}) => id === album.id)) {
+  return raw.map(({ id, name, albums, tracks }) => {
+    tracks.forEach(({ album }) => {
+      if (album && !albums.some(({ id }) => id === album.id)) {
         albums.push(album)
       }
     })
@@ -143,12 +147,12 @@ const get = publicProcedure.input(z.object({
     where: {
       AND: {
         OR: [
-          {artistId: null},
-          {artistId: {not: input.id}},
+          { artistId: null },
+          { artistId: { not: input.id } },
         ]
       },
-      id: {notIn: artist.albums.map(({id}) => id)},
-      tracks: {some: {artistId: input.id}},
+      id: { notIn: artist.albums.map(({ id }) => id) },
+      tracks: { some: { artistId: input.id } },
     },
     select: albumSelect
   })
@@ -159,15 +163,15 @@ const get = publicProcedure.input(z.object({
       artistId: input.id,
       albumId: null,
     },
-    select: {id: true, name: true}
+    select: { id: true, name: true }
   })
 
   // playlists featuring this artist
   const playlists = await ctx.prisma.playlist.findMany({
     where: {
-      tracks: {some: {track: {artistId: input.id}}}
+      tracks: { some: { track: { artistId: input.id } } }
     },
-    select: {id: true, name: true}
+    select: { id: true, name: true }
   })
 
   return {
@@ -182,33 +186,39 @@ const mostFav = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
     where: { userData: { favorite: { gt: 0 } } },
     orderBy: { userData: { favorite: "desc" } },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
 })
 
 const leastRecentListen = publicProcedure.query(async ({ ctx }) => {
   const neverListened = await ctx.prisma.artist.findMany({
-    where: { AND: [
-      { OR: [
-        { userData: {lastListen: null} },
-        { userData: {is: null} },
-      ]},
-      { OR: [
-        { tracks: {some: {}} },
-        { albums: {some: {}} },
-      ]}
-    ]},
-    take: 20,
+    where: {
+      AND: [
+        {
+          OR: [
+            { userData: { lastListen: null } },
+            { userData: { is: null } },
+          ]
+        },
+        {
+          OR: [
+            { tracks: { some: {} } },
+            { albums: { some: {} } },
+          ]
+        }
+      ]
+    },
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
-  if (neverListened.length === 20) {
+  if (neverListened.length === LISTS_SIZE) {
     return neverListened
   }
   const oldestListened = await ctx.prisma.artist.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "asc" } },
-    take: 20 - neverListened.length,
+    take: LISTS_SIZE - neverListened.length,
     select: { id: true, name: true },
   })
   return neverListened.concat(oldestListened)
@@ -218,19 +228,21 @@ const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
 })
 
 const mostRecentAdd = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
-    where: { OR: [
-      { tracks: {some: {}} },
-      { albums: {some: {}} },
-    ]},
+    where: {
+      OR: [
+        { tracks: { some: {} } },
+        { albums: { some: {} } },
+      ]
+    },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
 })
