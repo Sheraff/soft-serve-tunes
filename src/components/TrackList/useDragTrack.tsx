@@ -21,13 +21,12 @@ function iterateSiblings (
 	const firstIndex = Math.min(referenceIndex, extremumIndex)
 	const lastIndex = Math.max(referenceIndex, extremumIndex)
 	let sibling: HTMLElement | null = node.parentElement!.firstElementChild as HTMLElement
-	let index = Number(sibling.dataset.index)
 	do {
 		if (sibling !== node) {
+			const index = Number(sibling.dataset.index)
 			const isInRange = index >= firstIndex && index <= lastIndex
 			callback(sibling, isInRange)
 		}
-		index++
 	} while ((sibling = sibling.nextElementSibling as HTMLElement | null))
 }
 
@@ -72,7 +71,7 @@ export default function useDragTrack<T extends boolean> (
 				forceInsertVirtualDragItem.current = itemIndex
 			}
 
-			item.classList.add(styles.drag as string)
+			item.classList.add(styles.drag)
 
 			window.addEventListener("contextmenu", (event) => {
 				event.preventDefault()
@@ -99,9 +98,9 @@ export default function useDragTrack<T extends boolean> (
 					if (itemsOffset !== clampedItemsOffset) {
 						navigator.vibrate(1)
 						itemsOffset = clampedItemsOffset
-						iterateSiblings(item!, itemsOffset, (sibling, inRange) => {
-							sibling.classList.toggle(styles.slide as string, inRange)
-						})
+						iterateSiblings(item!, itemsOffset, (sibling, inRange) => (
+							sibling.classList.toggle(styles.slide, inRange)
+						))
 						item!.style.setProperty("--bg-y", `${itemsOffset}`)
 					}
 				})
@@ -130,7 +129,7 @@ export default function useDragTrack<T extends boolean> (
 			window.addEventListener("touchend", (event) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
 				if (!match) return
-				item.classList.remove(styles.drag as string)
+				item.classList.remove(styles.drag)
 				item.style.removeProperty("--y")
 				item.style.removeProperty("--bg-y")
 				controller.abort()
@@ -147,7 +146,11 @@ export default function useDragTrack<T extends boolean> (
 					cancelAnimationFrame(touchRafId)
 					touchRafId = null
 				}
-				Array.from(item.parentElement!.children).forEach((node) => node.classList.remove(styles.slide as string))
+				const siblings = item.parentElement!.children
+				for (let i = 0; i < siblings.length; i++) {
+					const sibling = siblings.item(i) as HTMLElement
+					sibling.classList.remove(styles.slide)
+				}
 				callbacks.current!.onDrop!(itemIndex, itemIndex + itemsOffset)
 			}, { signal, passive: false })
 		}
