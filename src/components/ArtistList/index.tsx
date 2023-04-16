@@ -10,7 +10,7 @@ import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { useCachedArtist } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 
 type ArtistListItem = {
 	id: string
@@ -129,11 +129,17 @@ export default forwardRef(function ArtistList ({
 	const virtualized = useVirtualizer({
 		count: artists.length,
 		horizontal: true,
-		overscan: lines === 1 ? 0 : 3,
+		overscan: 0,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 3 && index % 3 !== 0) return 0
 			return (window.innerWidth - 4 * 8) / 3 + 8
+		},
+		rangeExtractor: (range) => {
+			if (lines === 1) return defaultRangeExtractor(range)
+			range.startIndex = Math.floor(range.startIndex / 3) * 3 - 3
+			range.endIndex = Math.ceil(range.endIndex / 3) * 3 + 2
+			return defaultRangeExtractor(range)
 		},
 		getItemKey: (index) => artists[index]!.id,
 	})

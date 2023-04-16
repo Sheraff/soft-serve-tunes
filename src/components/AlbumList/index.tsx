@@ -10,7 +10,7 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import useLongPress from "./useLongPress"
 import { useCachedAlbum } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 
 type AlbumListItem = {
 	id: string
@@ -130,11 +130,17 @@ export default forwardRef(function AlbumList ({
 	const virtualized = scrollable && useVirtualizer({
 		count: albums.length,
 		horizontal: true,
-		overscan: lines === 1 ? 0 : 2,
+		overscan: 0,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 2 && index % 2 !== 0) return 0
 			return (window.innerWidth - 3 * 8) / 2 - 10 + 8
+		},
+		rangeExtractor: (range) => {
+			if (lines === 1) return defaultRangeExtractor(range)
+			range.startIndex = Math.floor(range.startIndex / 2) * 2
+			range.endIndex = Math.ceil(range.endIndex / 2) * 2 + 1
+			return defaultRangeExtractor(range)
 		},
 		getItemKey: (index) => albums[index]!.id,
 	})
