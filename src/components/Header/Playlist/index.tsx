@@ -2,7 +2,7 @@ import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, us
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
-import { RouterOutputs, trpc } from "utils/trpc"
+import { type RouterOutputs, trpc } from "utils/trpc"
 import { useCurrentTrackDetails, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
 import CoverImages from "components/NowPlaying/Cover/Images"
