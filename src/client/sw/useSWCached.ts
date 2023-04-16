@@ -10,11 +10,11 @@ type SWQueryPayload = {
 	enabled?: boolean,
 }
 
-function useSWQuery(type: SWQueryEvent, {id, enabled}: SWQueryPayload) {
+function useSWQuery (type: SWQueryEvent, { id, enabled }: SWQueryPayload) {
 	return useQuery({
 		enabled: Boolean(id) && enabled !== false,
 		queryKey: [type, id],
-		queryFn({ signal }) {
+		queryFn ({ signal }) {
 			if (!("serviceWorker" in navigator)) return false
 			if (!id) return false
 			const controller = new AbortController()
@@ -32,8 +32,8 @@ function useSWQuery(type: SWQueryEvent, {id, enabled}: SWQueryPayload) {
 						resolve(message.payload.cached)
 						controller.abort()
 					}
-				}, {signal: controller.signal})
-				target.postMessage({type, payload: {id}})
+				}, { signal: controller.signal })
+				target.postMessage({ type, payload: { id } })
 				controller.signal.onabort = () => reject(new Error("stale SW query"))
 			})
 		},
@@ -43,19 +43,19 @@ function useSWQuery(type: SWQueryEvent, {id, enabled}: SWQueryPayload) {
 	})
 }
 
-export function useCachedTrack(params: SWQueryPayload) {
+export function useCachedTrack (params: SWQueryPayload) {
 	return useSWQuery("sw-cached-track", params)
 }
 
-export function useCachedAlbum(params: SWQueryPayload) {
+export function useCachedAlbum (params: SWQueryPayload) {
 	return useSWQuery("sw-cached-album", params)
 }
 
-export function useCachedArtist(params: SWQueryPayload) {
+export function useCachedArtist (params: SWQueryPayload) {
 	return useSWQuery("sw-cached-artist", params)
 }
 
-export async function findFirstCachedTrack(
+export async function findFirstCachedTrack (
 	params: {
 		from: number,
 		loop: boolean,
@@ -82,14 +82,17 @@ export async function findFirstCachedTrack(
 				resolve(message.payload.next as string | null)
 				controller.abort()
 			}
-		} , {signal: controller.signal})
-		target.postMessage({type: "sw-first-cached-track", payload: {params, id}})
+		}, { signal: controller.signal })
+		target.postMessage({ type: "sw-first-cached-track", payload: { params, id } })
 		controller.signal.onabort = () => reject(new Error("stale SW query"))
 	})
 	return found
 }
 
-export function useNextCachedTrack(params: {
+export function useNextCachedTrack ({
+	enabled,
+	...params
+}: {
 	tracks: string[],
 	enabled?: boolean,
 	from: number,
@@ -97,9 +100,9 @@ export function useNextCachedTrack(params: {
 	direction?: 1 | -1,
 }) {
 	const query = useQuery({
-		enabled: params.tracks.length > 0 && params.enabled !== false,
+		enabled: params.tracks.length > 0 && enabled !== false,
 		queryKey: ["sw-first-cached-track", params],
-		queryFn({ signal }) {
+		queryFn ({ signal }) {
 			return findFirstCachedTrack(params, signal)
 		},
 		networkMode: "offlineFirst",

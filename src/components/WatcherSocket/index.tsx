@@ -58,20 +58,27 @@ export default function WatcherSocket () {
 						} else if (queryClient.getQueryState([queryKey, queryParams], { type: "active" })) {
 							const cache = queryClient.getQueryCache()
 							const hash = hashQueryKey([queryKey, queryParams])
-							const unsubscribe = cache.subscribe((event) => {
-								if (event.type === "observerRemoved") {
+							const cacheUnsubscribe = cache.subscribe((event) => {
+								if (event.type === "observerRemoved" || event.type === "observerAdded") {
 									if (hashQueryKey(event.query.queryKey) === hash && !event.query.isActive()) {
 										unsubscribe()
-										unsubscribeSet.delete(unsubscribe)
 										queryClient.setQueryData([queryKey, queryParams], message.data)
 									}
-								} else if (event.type === "updated") {
+								} else if (event.type === "updated" || event.type === "removed") {
 									if (hashQueryKey(event.query.queryKey) === hash) {
 										unsubscribe()
-										unsubscribeSet.delete(unsubscribe)
 									}
 								}
 							})
+							const focusUnsubscribe = focusManager.subscribe(() => {
+								unsubscribe()
+								queryClient.setQueryData([queryKey, queryParams], message.data)
+							})
+							const unsubscribe = () => {
+								cacheUnsubscribe()
+								focusUnsubscribe()
+								unsubscribeSet.delete(unsubscribe)
+							}
 							unsubscribeSet.add(unsubscribe)
 						}
 					} else {
