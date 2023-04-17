@@ -332,7 +332,8 @@ export default function TrackList ({
 		<>
 			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
 			<ul
-				className={styles.main} ref={orderable ? ref : undefined}
+				ref={orderable ? ref : undefined}
+				className={classNames(styles.main, { [styles.virtualized]: Boolean(virtualizer) })}
 				style={getParentHeight && {
 					minHeight: `${getParentHeight()}px`,
 				}}

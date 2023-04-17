@@ -1,6 +1,10 @@
 .main {
 
 }
+.virtualized {
+	background-image: linear-gradient(180deg, var(--palette-bg-gradient) 0px 1px, transparent 1px 65px);
+	background-size: 100% 65px;
+}
 .item {
 	width: 100%;
 }
