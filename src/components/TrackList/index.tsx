@@ -338,30 +338,31 @@ export default function TrackList ({
 				}}
 			>
 				{virtualizer && (
-					<div style={{ height: `${virtualTop}px` }} />
+					<div style={{ transform: `translateY(${virtualTop}px)` }} >
+						{virtualizer((virtualItem) => (
+							<li
+								className={styles.item}
+								key={virtualItem.key}
+								data-index={virtualItem.index}
+							>
+								<TrackItem
+									track={tracks[virtualItem.index]!}
+									current={current === tracks[virtualItem.index]!.id}
+									onClick={onClick}
+									onSelect={onSelect}
+									draggable={orderable}
+									onAdd={setItemToAdd}
+									onNext={quickSwipeAction || addNextToPlaylist}
+									quickSwipeIcon={quickSwipeIcon}
+									quickSwipeDeleteAnim={quickSwipeDeleteAnim}
+									index={virtualItem.index}
+									selection={isSelection}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === tracks[virtualItem.index]!.id)}
+								/>
+							</li>
+						))}
+					</div>
 				)}
-				{virtualizer && virtualizer((virtualItem) => (
-					<li
-						className={styles.item}
-						key={virtualItem.key}
-						data-index={virtualItem.index}
-					>
-						<TrackItem
-							track={tracks[virtualItem.index]!}
-							current={current === tracks[virtualItem.index]!.id}
-							onClick={onClick}
-							onSelect={onSelect}
-							draggable={orderable}
-							onAdd={setItemToAdd}
-							onNext={quickSwipeAction || addNextToPlaylist}
-							quickSwipeIcon={quickSwipeIcon}
-							quickSwipeDeleteAnim={quickSwipeDeleteAnim}
-							index={virtualItem.index}
-							selection={isSelection}
-							selected={isSelection && editViewState.selection.some(({ id }) => id === tracks[virtualItem.index]!.id)}
-						/>
-					</li>
-				))}
 				{!virtualizer && tracks.map((track, i) => (
 					<li
 						className={styles.item}
