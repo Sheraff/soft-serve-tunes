@@ -185,7 +185,10 @@ const get = publicProcedure.input(z.object({
 const mostFav = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.artist.findMany({
     where: { userData: { favorite: { gt: 0 } } },
-    orderBy: { userData: { favorite: "desc" } },
+    orderBy: [
+      { userData: { favorite: "desc" } },
+      { userData: { playcount: "desc" } },
+    ],
     take: LISTS_SIZE,
     select: { id: true, name: true },
   })
