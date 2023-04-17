@@ -333,7 +333,7 @@ export default function TrackList ({
 			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
 			<ul
 				ref={orderable ? ref : undefined}
-				className={classNames(styles.main, { [styles.virtualized]: Boolean(virtualizer) })}
+				className={styles.main}
 				style={getParentHeight && {
 					minHeight: `${getParentHeight()}px`,
 				}}
@@ -345,6 +345,7 @@ export default function TrackList ({
 								className={styles.item}
 								key={virtualItem.key}
 								data-index={virtualItem.index}
+								style={{ height: `${virtualItem.size}px` }}
 							>
 								<TrackItem
 									track={tracks[virtualItem.index]!}
