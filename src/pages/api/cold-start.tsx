@@ -21,7 +21,7 @@ export const loadingStatus = (globalThis.loadingStatus || {
 // @ts-expect-error -- see above
 globalThis.loadingStatus = loadingStatus
 
-function act() {
+function act () {
 	if (loadingStatus.promise) {
 		return
 	}
@@ -163,10 +163,10 @@ function act() {
 		})
 }
 
-export default async function cover(req: NextApiRequest, res: NextApiResponse) {
+export default async function cover (req: NextApiRequest, res: NextApiResponse) {
 	if (loadingStatus.populated) {
-		return res.status(200).json({ done: true })
+		return res.status(204).end()
 	}
 	act()
-	return res.status(202).json({ done: false })
+	return res.status(202).end()
 }
