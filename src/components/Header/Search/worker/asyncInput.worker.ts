@@ -14,7 +14,7 @@ type NamedInterface = {
 
 const memoizedInputDistances = new Map<string, Map<string, DistanceObject>>()
 
-function getMemoized(input: string, candidate: string): DistanceObject | null {
+function getMemoized (input: string, candidate: string): DistanceObject | null {
 	const inputDistances = memoizedInputDistances.get(input)
 	if (inputDistances) {
 		const candidateDistances = inputDistances.get(candidate)
@@ -25,7 +25,7 @@ function getMemoized(input: string, candidate: string): DistanceObject | null {
 	return null
 }
 
-function setMemoized(input: string, candidate: string, object: DistanceObject) {
+function setMemoized (input: string, candidate: string, object: DistanceObject) {
 	let inputDistances = memoizedInputDistances.get(input)
 	if (!inputDistances) {
 		inputDistances = new Map()
@@ -34,11 +34,11 @@ function setMemoized(input: string, candidate: string, object: DistanceObject) {
 	inputDistances.set(candidate, object)
 }
 
-function cleanupString(str: string) {
+function cleanupString (str: string) {
 	return str.normalize("NFD").replace(/\p{Diacritic}/gu, "")
 }
 
-function classify(_input: string, _candidate: string): DistanceObject {
+function classify (_input: string, _candidate: string): DistanceObject {
 	const input = cleanupString(_input)
 	const candidate = cleanupString(_candidate)
 	const { length: inputMax } = input
@@ -54,7 +54,7 @@ function classify(_input: string, _candidate: string): DistanceObject {
 	}
 }
 
-function getDistances(input: string, candidate: string): DistanceObject {
+function getDistances (input: string, candidate: string): DistanceObject {
 	const memoized = getMemoized(input, candidate)
 	if (memoized) {
 		return memoized
@@ -65,12 +65,14 @@ function getDistances(input: string, candidate: string): DistanceObject {
 }
 
 let dataList: NamedInterface[] = []
+let requestedSize = 50
 
-function handleList({ list }: { list: NamedInterface[] }) {
+function handleList ({ list, size }: { list: NamedInterface[], size: number }) {
 	dataList = list
+	requestedSize = size
 }
 
-function handleInput({ input }: { input: string }) {
+function handleInput ({ input }: { input: string }) {
 	const list = dataList.sort((aItem, bItem) => {
 		const aName = aItem.name
 		const bName = bItem.name
@@ -85,15 +87,15 @@ function handleInput({ input }: { input: string }) {
 		return a.levenshtein - b.levenshtein
 	})
 
-	const res = new Uint16Array(list.slice(0, 50).map(({ id }) => id))
+	const res = new Uint16Array(list.slice(0, requestedSize).map(({ id }) => id))
 	postMessage({ input, list: res }, { transfer: [res.buffer] })
 }
 
 onmessage = function ({ data }: {
 	data:
-	| { type: "list"; list: NamedInterface[] }
+	| { type: "list"; list: NamedInterface[]; size: number }
 	| { type: "input"; input: string }
-	| { type: "never"; }
+	| { type: "never" }
 }) {
 	switch (data.type) {
 		case "list":

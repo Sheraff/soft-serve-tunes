@@ -13,7 +13,7 @@ import PlaylistList from "components/PlaylistList"
 
 const defaultArray = [] as never[]
 
-export default function Search({
+export default function Search ({
 	open,
 	z,
 }: {
@@ -28,17 +28,17 @@ export default function Search({
 	const albumList = useRef<HTMLDivElement>(null)
 	const [enabled, setEnabled] = useState(false)
 
-	const {data: tracksRaw} = trpc.track.searchable.useQuery(undefined, {enabled})
-	const {data: albumsRaw} = trpc.album.searchable.useQuery(undefined, {enabled})
-	const {data: artistsRaw} = trpc.artist.searchable.useQuery(undefined, {enabled})
-	const {data: genresRaw} = trpc.genre.list.useQuery(undefined, {enabled})
-	const {data: playlistsRaw} = trpc.playlist.searchable.useQuery(undefined, {enabled})
+	const { data: tracksRaw } = trpc.track.searchable.useQuery(undefined, { enabled })
+	const { data: albumsRaw } = trpc.album.searchable.useQuery(undefined, { enabled })
+	const { data: artistsRaw } = trpc.artist.searchable.useQuery(undefined, { enabled })
+	const { data: genresRaw } = trpc.genre.list.useQuery(undefined, { enabled })
+	const { data: playlistsRaw } = trpc.playlist.searchable.useQuery(undefined, { enabled })
 
-	const tracks = useAsyncInputStringDistance(input, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
-	const albums = useAsyncInputStringDistance(input, albumsRaw || defaultArray, ["name", "artists"])
-	const artists = useAsyncInputStringDistance(input, artistsRaw || defaultArray)
-	const genres = useAsyncInputStringDistance(input, genresRaw || defaultArray)
-	const playlists = useAsyncInputStringDistance(input, playlistsRaw || defaultArray, ["name", "artists"])
+	const tracks = useAsyncInputStringDistance(input, 25, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
+	const albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
+	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
+	const genres = useAsyncInputStringDistance(input, 21, genresRaw || defaultArray)
+	const playlists = useAsyncInputStringDistance(input, 6, playlistsRaw || defaultArray, ["name", "artists"])
 
 	const [showPast, setShowPast] = useState(true)
 
@@ -59,13 +59,13 @@ export default function Search({
 			if (input.current) {
 				input.current.focus()
 			}
-		}, {once: true, signal: controller.signal})
+		}, { once: true, signal: controller.signal })
 		head.current.addEventListener("submit", (e) => {
 			e.preventDefault()
 			if (input.current) {
 				input.current.blur()
 			}
-		}, {signal: controller.signal})
+		}, { signal: controller.signal })
 		input.current.addEventListener("focus", () => {
 			results.current?.scroll({
 				top: 0,
@@ -79,7 +79,7 @@ export default function Search({
 				left: 0,
 				behavior: "smooth"
 			})
-		}, {signal: controller.signal, passive: true})
+		}, { signal: controller.signal, passive: true })
 		let lastScroll = 0
 		results.current.addEventListener("scroll", () => {
 			const scroll = results.current?.scrollTop || 0
@@ -87,12 +87,12 @@ export default function Search({
 				input.current?.blur()
 			}
 			lastScroll = scroll
-		}, {signal: controller.signal, passive: true})
+		}, { signal: controller.signal, passive: true })
 		return () => controller.abort()
 	}, [showPast, open])
 
-	const {data: latestSearches = []} = usePastSearchesQuery()
-	const {mutate: onSelect} = usePastSearchesMutation()
+	const { data: latestSearches = [] } = usePastSearchesQuery()
+	const { mutate: onSelect } = usePastSearchesMutation()
 
 	const id = useId()
 	return (
@@ -102,12 +102,12 @@ export default function Search({
 				className={styles.head}
 				data-open={open}
 				id={id}
-				style={{"--z": z} as CSSProperties}
+				style={{ "--z": z } as CSSProperties}
 			>
 				<input
 					ref={input}
 					type="text"
-					onFocus={!enabled ? (() => {setEnabled(true)}) : undefined}
+					onFocus={!enabled ? (() => { setEnabled(true) }) : undefined}
 					onChange={() => input.current?.value ? setShowPast(false) : setShowPast(true)}
 					defaultValue=""
 					inputMode="search"
@@ -118,7 +118,7 @@ export default function Search({
 				className={styles.results}
 				data-open={open}
 				htmlFor={id}
-				style={{"--z": z} as CSSProperties}
+				style={{ "--z": z } as CSSProperties}
 			>
 				{showPast && latestSearches.length > 0 && (
 					<div>
@@ -133,8 +133,8 @@ export default function Search({
 						<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
 						<ArtistList
 							ref={artistList}
-							artists={artists.slice(0, 21)}
-							onSelect={({id}) => onSelect({type: "artist", id})}
+							artists={artists}
+							onSelect={({ id }) => onSelect({ type: "artist", id })}
 							loading={!artists.length}
 						/>
 					</div>
@@ -145,8 +145,8 @@ export default function Search({
 						<AlbumList
 							ref={albumList}
 							scrollable
-							albums={albums.slice(0, 28)}
-							onSelect={({id}) => onSelect({type: "album", id})}
+							albums={albums}
+							onSelect={({ id }) => onSelect({ type: "album", id })}
 							loading={!albums.length}
 						/>
 					</div>
@@ -155,8 +155,8 @@ export default function Search({
 					<div>
 						<SectionTitle className={styles.sectionTitle}>Genres</SectionTitle>
 						<GenreList
-							genres={genres.slice(0, 21)}
-							onSelect={({id}) => onSelect({type: "genre", id})}
+							genres={genres}
+							onSelect={({ id }) => onSelect({ type: "genre", id })}
 						/>
 					</div>
 				)}
@@ -164,8 +164,8 @@ export default function Search({
 					<div>
 						<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
 						<PlaylistList
-							playlists={playlists.slice(0, 6)}
-							onSelect={({id}) => onSelect({type: "playlist", id})}
+							playlists={playlists}
+							onSelect={({ id }) => onSelect({ type: "playlist", id })}
 						/>
 					</div>
 				)}
@@ -173,8 +173,8 @@ export default function Search({
 					<div>
 						<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 						<TrackList
-							tracks={tracks.slice(0, 25)}
-							onSelect={({id}) => onSelect({type: "track", id})}
+							tracks={tracks}
+							onSelect={({ id }) => onSelect({ type: "track", id })}
 						/>
 					</div>
 				)}

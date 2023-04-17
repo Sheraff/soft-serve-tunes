@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect, type RefObject, useMemo, startTransition } from "react"
 
-type MinimumWorkerDataObject = {name: string}
+type MinimumWorkerDataObject = { name: string }
 
 type Obj = {
-	[key: string]: Obj | string | Obj[] | string[];
+	[key: string]: Obj | string | Obj[] | string[]
 }
 
-function getIn(obj: Obj | string, [key, ...path]: string[]): string {
+function getIn (obj: Obj | string, [key, ...path]: string[]): string {
 	if (typeof obj === "string")
 		return obj
 	if (!key)
@@ -19,8 +19,9 @@ function getIn(obj: Obj | string, [key, ...path]: string[]): string {
 	return getIn(next, path)
 }
 
-export default function useAsyncInputStringDistance<T extends MinimumWorkerDataObject>(
+export default function useAsyncInputStringDistance<T extends MinimumWorkerDataObject> (
 	inputRef: RefObject<HTMLInputElement>,
+	size: number,
 	dataList: T[],
 	keys: string[] = ["name"],
 ): T[] {
@@ -41,7 +42,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 	const nextValue = useRef<string | null>(null)
 
 	useEffect(() => {
-		const {current: inputMemo} = inputRef
+		const { current: inputMemo } = inputRef
 		if (!inputMemo) return
 
 		const workerMemo = new Worker(
@@ -85,7 +86,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		const { current: inputMemo } = inputRef
 		if (!worker.current || !inputMemo) return
 
-		worker.current.postMessage({ type: "list", list: namedObjects })
+		worker.current.postMessage({ type: "list", list: namedObjects, size })
 		let lastInputValue: string
 		const onInput = () => {
 			if (worker.current && inputMemo.value) {
@@ -109,7 +110,7 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		return () => {
 			inputMemo.removeEventListener("input", onInput)
 		}
-	}, [namedObjects, inputRef])
+	}, [namedObjects, size, inputRef])
 
 	return list
 }

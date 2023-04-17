@@ -18,42 +18,42 @@ import styles from "./index.module.css"
 
 type AlbumMiniature = RouterOutputs["album"]["miniature"]
 
-function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<AlbumMiniature>>>(tracks: (AlbumMiniature | null | undefined)[], key: K): {readonly value: GetFieldType<DeepExcludeNull<AlbumMiniature>, K> | undefined, readonly unique: boolean} {
+function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<AlbumMiniature>>> (tracks: (AlbumMiniature | null | undefined)[], key: K): { readonly value: GetFieldType<DeepExcludeNull<AlbumMiniature>, K> | undefined, readonly unique: boolean } {
 	const [first, ...rest] = (tracks.filter(Boolean) as Exclude<AlbumMiniature, null>[])
-	if (!first) return {value: undefined, unique: true}
+	if (!first) return { value: undefined, unique: true }
 	const value = getIn(first, key)
 	for (const track of rest) {
 		const trackValue = getIn(track, key)
-		if (trackValue !== value) return {value: undefined, unique: false}
+		if (trackValue !== value) return { value: undefined, unique: false }
 	}
-	return {value, unique: true}
+	return { value, unique: true }
 }
 
 const defaultArray = [] as never[]
-const defaultAggregate = {value: undefined, unique: undefined} as const
+const defaultAggregate = { value: undefined, unique: undefined } as const
 
-export default function EditAlbum({
+export default function EditAlbum ({
 	ids,
 	onDone,
 }: {
 	ids: string[]
 	onDone: () => void
 }) {
-	const {albums, isLoading} = trpc
-		.useQueries((t) => ids.map((id) => t.album.miniature({id})))
+	const { albums, isLoading } = trpc
+		.useQueries((t) => ids.map((id) => t.album.miniature({ id })))
 		.reduce<{
 			albums: (AlbumMiniature | undefined)[],
 			isLoading: boolean
-		}>((acc, {data, isLoading}) => {
+		}>((acc, { data, isLoading }) => {
 			acc.albums.push(data)
 			acc.isLoading = acc.isLoading || isLoading
 			return acc
-		}, {albums: [], isLoading: false})
+		}, { albums: [], isLoading: false })
 
 	const htmlId = useId()
 
 	const [nameState, setNameState] = useState<null | string>(albums[0]?.name ?? null)
-	useEffect(() => {setNameState(albums[0]?.name ?? null)}, [albums[0]?.name])
+	useEffect(() => { setNameState(albums[0]?.name ?? null) }, [albums[0]?.name])
 
 	const artistAggregate = isLoading ? defaultAggregate : aggregateTracks(albums, ["artist", "name"])
 	const [artistState, setArtistState] = useState(artistAggregate.value)
@@ -63,15 +63,15 @@ export default function EditAlbum({
 	const [coverState, setCoverState] = useState(coverAggregate.value)
 
 	const artistInput = useRef<HTMLInputElement>(null)
-	const {data: artistsRaw} = trpc.artist.searchable.useQuery()
-	const _artists = useAsyncInputStringDistance(artistInput, artistsRaw || defaultArray)
+	const { data: artistsRaw } = trpc.artist.searchable.useQuery()
+	const _artists = useAsyncInputStringDistance(artistInput, 10, artistsRaw || defaultArray)
 	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
 		artistInput.current!.value = name ?? ""
 		artistInput.current!.dispatchEvent(new Event("input"))
 	}, [])
-	useEffect(() => {setArtistInputName(artistAggregate.value)}, [setArtistInputName, artistAggregate.value])
+	useEffect(() => { setArtistInputName(artistAggregate.value) }, [setArtistInputName, artistAggregate.value])
 	artists.sort((a, b) => {
 		if (!artistSimplified) return 0
 		const aName = simplifiedName(a.name) === artistSimplified
@@ -99,15 +99,15 @@ export default function EditAlbum({
 		coverInput.current!.value = id ?? ""
 		coverInput.current!.dispatchEvent(new Event("input"))
 	}, [])
-	useEffect(() => {setCoverInputId(coverAggregate.value)}, [setCoverInputId, coverAggregate.value])
+	useEffect(() => { setCoverInputId(coverAggregate.value) }, [setCoverInputId, coverAggregate.value])
 
 	const isArtistModified = Boolean(artistSimplified && (!artistAggregate.value || artistSimplified !== simplifiedName(artistAggregate.value)))
 	const isCoverModified = Boolean(coverState && coverState !== coverAggregate.value)
 	const isSingleAlbum = albums.length === 1
 	const isNameModified = isSingleAlbum && Boolean(nameState && (!albums[0]?.name || simplifiedName(nameState) !== simplifiedName(albums[0].name)))
 
-	const {mutateAsync: updateAlbum} = trpc.edit.album.modify.useMutation()
-	const {mutateAsync: validateAlbum} = trpc.edit.album.validate.useMutation({retry: 0})
+	const { mutateAsync: updateAlbum } = trpc.edit.album.modify.useMutation()
+	const { mutateAsync: validateAlbum } = trpc.edit.album.validate.useMutation({ retry: 0 })
 	const [submitProgress, setSubmitProgress] = useState<number | null>(null)
 	const [errors, setErrors] = useState<string[]>([])
 	const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -157,11 +157,11 @@ export default function EditAlbum({
 					id: album!.id,
 					...editData
 				})
-				// @ts-expect-error -- this is fine
-				.finally((any) => {
-					increment()
-					return any
-				})
+					// @ts-expect-error -- this is fine
+					.finally((any) => {
+						increment()
+						return any
+					})
 			)
 		)
 		const rejections = allValidResponse.reduce<TRPCClientError<AppRouter["edit"]["track"]["validate"]>[]>((acc, res) => {
@@ -238,7 +238,7 @@ export default function EditAlbum({
 							loading
 						/>
 					</div>
-					
+
 					{/* Cover */}
 					<label htmlFor={`cover${htmlId}`} className={styles.label}>Cover</label>
 					<input
@@ -265,11 +265,11 @@ export default function EditAlbum({
 							}}
 						/>
 					</div>
-					
+
 					<div className={classNames(styles.full, styles.summary)}>
 						{isNameModified && (
 							<p>
-								<ModifIcon className={styles.icon}/>
+								<ModifIcon className={styles.icon} />
 								{`Rename album to "${nameState}"`}
 							</p>
 						)}
@@ -277,13 +277,13 @@ export default function EditAlbum({
 							<p>
 								{exactArtist && (
 									<>
-										<AssignIcon className={styles.icon}/>
+										<AssignIcon className={styles.icon} />
 										{`Assign artist "${artistState}" to ${albums.length} album${pluralize(albums.length)} (will not change tracks artist)`}
 									</>
 								)}
 								{!exactArtist && (
 									<>
-										<CreateIcon className={styles.icon}/>
+										<CreateIcon className={styles.icon} />
 										{`Create new artist "${artistState}" with ${albums.length} album${pluralize(albums.length)} (will not change tracks artist)`}
 									</>
 								)}
@@ -291,13 +291,13 @@ export default function EditAlbum({
 						)}
 						{isCoverModified && (
 							<p>
-								<ModifIcon className={styles.icon}/>
+								<ModifIcon className={styles.icon} />
 								{`Force selected cover on ${albums.length} album${pluralize(albums.length)}`}
 							</p>
 						)}
 						{errors.length > 0 && errors.map((error, index) => (
 							<p key={index} className={styles.error}>
-								<ErrorIcon className={styles.icon}/>
+								<ErrorIcon className={styles.icon} />
 								{error}
 							</p>
 						))}
@@ -307,7 +307,7 @@ export default function EditAlbum({
 						<SaveIcon className={styles.icon} />
 						Save
 						{submitProgress !== null && (
-							<div className={styles.progress} style={{"--progress": submitProgress} as CSSProperties}>
+							<div className={styles.progress} style={{ "--progress": submitProgress } as CSSProperties}>
 								<SaveIcon className={styles.icon} />
 								Save
 							</div>

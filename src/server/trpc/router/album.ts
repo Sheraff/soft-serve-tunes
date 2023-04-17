@@ -6,6 +6,8 @@ import log from "utils/logger"
 import { zTrackTraits } from "./track"
 import { prisma } from "server/db/client"
 
+const LISTS_SIZE = 30
+
 const searchable = publicProcedure.query(async ({ ctx }) => {
   const data = await ctx.prisma.album.findMany({
     where: {
@@ -154,7 +156,7 @@ const mostFav = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.album.findMany({
     where: { userData: { favorite: { gt: 0 } } },
     orderBy: { userData: { favorite: "desc" } },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
 })
@@ -163,33 +165,35 @@ const mostRecentListen = publicProcedure.query(({ ctx }) => {
   return ctx.prisma.album.findMany({
     where: { userData: { lastListen: { not: null } } },
     orderBy: { userData: { lastListen: "desc" } },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
 })
 
 const mostRecentAdd = publicProcedure.query(async ({ ctx }) => {
   const recent = await ctx.prisma.album.findMany({
-    where: {OR: [
-      { userData: null },
-      { userData: {playcount: {equals: 0} } },
-    ]},
+    where: {
+      OR: [
+        { userData: null },
+        { userData: { playcount: { equals: 0 } } },
+      ]
+    },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: LISTS_SIZE,
     select: { id: true, name: true },
   })
-  if (recent.length < 20) {
+  if (recent.length < LISTS_SIZE) {
     recent.concat(await ctx.prisma.album.findMany({
-      where: { userData: {playcount: {gt: 0} } },
+      where: { userData: { playcount: { gt: 0 } } },
       orderBy: { createdAt: "desc" },
-      take: 20 - recent.length,
+      take: LISTS_SIZE - recent.length,
       select: { id: true, name: true },
     }))
   }
   return recent
 })
 
-function getAlbumsBySpotifyTracksByMultiTraitsWithTarget(
+function getAlbumsBySpotifyTracksByMultiTraitsWithTarget (
   traits: {
     trait: z.infer<typeof zTrackTraits>,
     value: number | string
@@ -209,7 +213,7 @@ function getAlbumsBySpotifyTracksByMultiTraitsWithTarget(
       (NOT "public"."SpotifyTrack"."albumId" IS NULL)
     )
     ORDER BY score DESC OFFSET 0
-  `) as unknown as {albumId: string, score: number | null}[]
+  `) as unknown as { albumId: string, score: number | null }[]
 }
 
 const byMultiTraits = publicProcedure.input(z.object({
@@ -220,17 +224,17 @@ const byMultiTraits = publicProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const spotifyAlbums = await getAlbumsBySpotifyTracksByMultiTraitsWithTarget(input.traits)
   const ids = spotifyAlbums
-    .filter(({score}) => score)
+    .filter(({ score }) => score)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 20)
+    .slice(0, LISTS_SIZE)
     .map(a => a.albumId)
 
   const albums = await ctx.prisma.album.findMany({
-    where: {spotify: {id: { in: ids }}},
+    where: { spotify: { id: { in: ids } } },
     select: { id: true, name: true, spotify: { select: { id: true } } },
   })
   albums.sort((a, b) => ids.indexOf(a.spotify!.id) - ids.indexOf(b.spotify!.id))
-  return albums.map((a) => ({id: a.id, name: a.name}))
+  return albums.map((a) => ({ id: a.id, name: a.name }))
 })
 
 

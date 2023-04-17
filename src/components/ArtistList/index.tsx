@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { type ForwardedRef, forwardRef, startTransition, useEffect, useRef, useState, useDeferredValue } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useRef, useDeferredValue, useImperativeHandle } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
@@ -10,67 +10,47 @@ import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { useCachedArtist } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 
 type ArtistListItem = {
 	id: string
 	name: string
 }
 
-function ArtistItem({
+function ArtistItem ({
 	artist,
-	enableSiblings,
 	onSelect,
 	onClick,
-	index,
 	selected,
 	selectable,
 }: {
 	artist: ArtistListItem
-	enableSiblings?: () => void
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
-	index: number
 	selected: boolean
 	selectable?: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = trpc.artist.miniature.useQuery({id: artist.id})
-	
-	useEffect(() => {
-		if (!enableSiblings || !item.current) return
-
-		const observer = new IntersectionObserver(([entry]) => {
-			if (entry?.isIntersecting) {
-				startTransition(() => {
-					enableSiblings()
-				})
-			}
-		}, {
-			rootMargin: "0px 100px 0px 0px",
-		})
-		observer.observe(item.current)
-
-		return () => observer.disconnect()
-	}, [enableSiblings])
+	const { data } = trpc.artist.miniature.useQuery({ id: artist.id })
 
 	const isEmpty = data && !data.cover
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = data?._count?.tracks ?? 0
-	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393-4*8)/3 * 2)}` : undefined
+	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393 - 4 * 8) / 3 * 2)}` : undefined
 
 	const queryClient = useQueryClient()
 
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({type: "artist", id: artist.id}),
+			editOverlaySetter({ type: "artist", id: artist.id }),
 			queryClient
 		)
 	} : undefined
-	useLongPress({onLong, item})
+	useLongPress({ onLong, item })
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedArtist({id: artist.id, enabled: !online})
+	const { data: cached } = useCachedArtist({ id: artist.id, enabled: !online })
 	const offline = !online && cached
 
 	return (
@@ -92,12 +72,12 @@ function ArtistItem({
 				}
 				data && onSelect?.(data)
 				const element = event.currentTarget
-				const {top, left, width} = element.getBoundingClientRect()
+				const { top, left, width } = element.getBoundingClientRect()
 				startTransition(() => {
 					openPanel("artist", {
 						id: artist.id,
 						name: data?.name || artist.name,
-						rect: {top, left, width, src}
+						rect: { top, left, width, src }
 					}, queryClient)
 				})
 			}}
@@ -108,13 +88,11 @@ function ArtistItem({
 						<img
 							src={src}
 							alt=""
-							loading={index > 2 ? "lazy" : undefined}
-							decoding={index > 2 ? "async" : undefined}
 						/>
 					)}
 				</div>
 			)}
-			<p className={classNames(styles.span, {[styles.empty]: isEmpty})}>
+			<p className={classNames(styles.span, { [styles.empty]: isEmpty })}>
 				<span className={styles.name}>{artist.name}</span>
 				{!data && <span>&nbsp;</span>}
 				{albumCount > 1 && <span>{albumCount} albums</span>}
@@ -126,7 +104,7 @@ function ArtistItem({
 	)
 }
 
-export default forwardRef(function ArtistList({
+export default forwardRef(function ArtistList ({
 	artists,
 	onSelect,
 	onClick,
@@ -143,34 +121,56 @@ export default forwardRef(function ArtistList({
 	selected?: string
 	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [enableUpTo, setEnableUpTo] = useState(lines === 1 ? 4 : 12)
-
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = selectable && editViewState.type === "artist"
 
+	const main = useRef<HTMLDivElement>(null)
+	const virtualized = useVirtualizer({
+		count: artists.length,
+		horizontal: true,
+		overscan: 0,
+		getScrollElement: () => main.current,
+		estimateSize: (index) => {
+			if (lines === 3 && index % 3 !== 0) return 0
+			return (window.innerWidth - 4 * 8) / 3 + 8
+		},
+		rangeExtractor: (range) => {
+			if (lines === 1) return defaultRangeExtractor(range)
+			range.startIndex = Math.floor(range.startIndex / 3) * 3 - 3
+			range.endIndex = Math.ceil(range.endIndex / 3) * 3 + 2
+			return defaultRangeExtractor(range)
+		},
+		getItemKey: (index) => artists[index]!.id,
+	})
+
+	useImperativeHandle(ref, () => main.current!)
+
+	const items = virtualized.getVirtualItems()
+
 	return (
 		<div
 			className={styles.wrapper}
-			ref={ref}
+			ref={main}
 		>
-			<ul className={classNames(styles.main, styles[`lines-${lines}`], {[styles.loading]: loading})}>
-				{artists.map((artist, i) => (
-					<li className={styles.item} key={artist.id}>
-						{i <= enableUpTo && (
+			<div style={{ minWidth: virtualized.getTotalSize() }}>
+				<ul
+					className={classNames(styles.main, styles[`lines-${lines}`], { [styles.loading]: loading })}
+					style={{ transform: `translateX(${items[0]?.start}px)` }}
+				>
+					{items.map((item) => (
+						<li className={styles.item} key={item.key} data-index={item.index}>
 							<ArtistItem
-								artist={artist}
-								enableSiblings={i === enableUpTo && i !== artists.length - 1 ? () => setEnableUpTo(enableUpTo + 4) : undefined}
+								artist={artists[item.index]!}
 								onSelect={onSelect}
 								onClick={onClick}
-								index={i}
-								selected={selected === artist.id || (isSelection && editViewState.selection.some(({id}) => id === artist.id))}
+								selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
 								selectable={selectable}
 							/>
-						)}
-					</li>
-				))}
-			</ul>
+						</li>
+					))}
+				</ul>
+			</div>
 		</div>
 	)
 })

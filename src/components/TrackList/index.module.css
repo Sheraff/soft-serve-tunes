@@ -4,9 +4,6 @@
 .item {
 	width: 100%;
 }
-.placeholder {
-	height: calc(48px + 2 * 8px + 1px);
-}
 
 .wrapper {
 	position: relative;
@@ -34,6 +31,7 @@
 
 .drag {
 	position: relative;
+	z-index: 1;
 	--y: 0px;
 	--bg-y: 0;
 }

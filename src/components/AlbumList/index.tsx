@@ -1,5 +1,5 @@
 import classNames from "classnames"
-import { type ForwardedRef, startTransition, useEffect, useRef, useState, forwardRef, useDeferredValue } from "react"
+import { type ForwardedRef, startTransition, useRef, forwardRef, useDeferredValue, useImperativeHandle } from "react"
 import { trpc, type RouterOutputs } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import CheckIcon from "icons/done.svg"
@@ -10,48 +10,28 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import useLongPress from "./useLongPress"
 import { useCachedAlbum } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 
 type AlbumListItem = {
 	id: string
 	name?: string
 }
 
-function AlbumItem({
+function AlbumItem ({
 	album,
-	enableSiblings,
 	onSelect,
 	onClick,
-	index,
 	selected,
 	selectable,
 }: {
 	album: AlbumListItem
-	enableSiblings?: () => void
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
-	index: number
 	selected: boolean
 	selectable: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
-	const {data} = trpc.album.miniature.useQuery({id: album.id})
-	
-	useEffect(() => {
-		if (!enableSiblings || !item.current) return
-
-		const observer = new IntersectionObserver(([entry]) => {
-			if (entry?.isIntersecting) {
-				startTransition(() => {
-					enableSiblings()
-				})
-			}
-		}, {
-			rootMargin: "0px 100px 0px 0px",
-		})
-		observer.observe(item.current)
-
-		return () => observer.disconnect()
-	}, [enableSiblings])
+	const { data } = trpc.album.miniature.useQuery({ id: album.id })
 
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
@@ -62,14 +42,14 @@ function AlbumItem({
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({type: "album", id: album.id}),
+			editOverlaySetter({ type: "album", id: album.id }),
 			queryClient
 		)
 	} : undefined
-	useLongPress({onLong, item})
+	useLongPress({ onLong, item })
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedAlbum({id: album.id, enabled: !online})
+	const { data: cached } = useCachedAlbum({ id: album.id, enabled: !online })
 	const offline = !online && cached
 
 	return (
@@ -92,12 +72,12 @@ function AlbumItem({
 				}
 				data && onSelect?.(data)
 				const element = event.currentTarget
-				const {top, left, width} = element.getBoundingClientRect()
+				const { top, left, width } = element.getBoundingClientRect()
 				startTransition(() => {
 					openPanel("album", {
 						id: album.id,
 						name: data?.name || album.name,
-						rect: {top, left, width, src}
+						rect: { top, left, width, src }
 					}, queryClient)
 				})
 			}}
@@ -106,8 +86,6 @@ function AlbumItem({
 				<img
 					src={src}
 					alt=""
-					loading={index > 1 ? "lazy" : undefined}
-					decoding={index > 1 ? "async" : undefined}
 				/>
 			)}
 			<p className={classNames(styles.span, {
@@ -124,7 +102,7 @@ function AlbumItem({
 	)
 }
 
-export default forwardRef(function AlbumList({
+export default forwardRef(function AlbumList ({
 	albums,
 	onSelect,
 	onClick,
@@ -143,36 +121,79 @@ export default forwardRef(function AlbumList({
 	selected?: string
 	selectable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [enableUpTo, setEnableUpTo] = useState((scrollable && lines === 1) ? 3 : 6)
-
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = selectable && editViewState.type === "album"
 
+	const main = useRef<HTMLDivElement>(null)
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- `scrollable` never changes once the component is mounted
+	const virtualized = scrollable && useVirtualizer({
+		count: albums.length,
+		horizontal: true,
+		overscan: 0,
+		getScrollElement: () => main.current,
+		estimateSize: (index) => {
+			if (lines === 2 && index % 2 !== 0) return 0
+			return (window.innerWidth - 3 * 8) / 2 - 10 + 8
+		},
+		rangeExtractor: (range) => {
+			if (lines === 1) return defaultRangeExtractor(range)
+			range.startIndex = Math.floor(range.startIndex / 2) * 2
+			range.endIndex = Math.ceil(range.endIndex / 2) * 2 + 1
+			return defaultRangeExtractor(range)
+		},
+		getItemKey: (index) => albums[index]!.id,
+	})
+
+	useImperativeHandle(ref, () => main.current!)
+
+	const items = virtualized && virtualized.getVirtualItems()
+
 	return (
-		<div className={classNames(styles.wrapper, {[styles.scrollable]: scrollable})} ref={ref}>
-			<ul className={
-				classNames(styles.main, {
-					[styles.loading]: loading,
-					[styles["lines-2"]]: lines === 2,
-				})
-			}>
-				{albums.map((album, i) => (
-					<li className={styles.item} key={album.id}>
-						{i <= enableUpTo && (
+		<div className={classNames(styles.wrapper, { [styles.scrollable]: scrollable })} ref={main}>
+			{virtualized && items && (
+				<div style={{ minWidth: virtualized.getTotalSize() }}>
+					<ul
+						className={classNames(styles.main, {
+							[styles.loading]: loading,
+							[styles["lines-2"]]: lines === 2,
+						})}
+						style={{ transform: `translateX(${items[0]?.start}px)` }}
+					>
+						{items.map((item) => (
+							<li className={styles.item} key={item.key} data-index={item.index}>
+								<AlbumItem
+									album={albums[item.index]!}
+									onSelect={onSelect}
+									onClick={onClick}
+									selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
+									selectable={selectable}
+								/>
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+			{!virtualized && (
+				<ul className={
+					classNames(styles.main, {
+						[styles.loading]: loading,
+						[styles["lines-2"]]: lines === 2,
+					})
+				}>
+					{albums.map((album, i) => (
+						<li className={styles.item} key={album.id}>
 							<AlbumItem
 								album={album}
-								enableSiblings={i === enableUpTo && i !== albums.length - 1 ? () => setEnableUpTo(enableUpTo + 6) : undefined}
 								onSelect={onSelect}
 								onClick={onClick}
-								index={i}
-								selected={selected === album.id || (isSelection && editViewState.selection.some(({id}) => id === album.id))}
+								selected={selected === album.id || (isSelection && editViewState.selection.some(({ id }) => id === album.id))}
 								selectable={selectable}
 							/>
-						)}
-					</li>
-				))}
-			</ul>
+						</li>
+					))}
+				</ul>
+			)}
 		</div>
 	)
 })

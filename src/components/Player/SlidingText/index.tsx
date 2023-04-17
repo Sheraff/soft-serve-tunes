@@ -6,7 +6,7 @@ import styles from "./index.module.css"
 import { useGetCurrentIndex } from "client/db/useMakePlaylist"
 import { useQueryClient } from "@tanstack/react-query"
 
-export default memo(function SlidingText({
+export default memo(function SlidingText ({
 	item,
 	className,
 }: {
@@ -35,14 +35,12 @@ export default memo(function SlidingText({
 	const main = mainView.useValue()
 	const getCurrentIndex = useGetCurrentIndex()
 	const scrollToCurrent = useCallback(() => {
+		// @ts-expect-error -- this is a hack to expose the scroll function
+		const scrollToIndex = window._scrollNowPlayingToIndex as ((index: number) => void) | undefined
+		if (!scrollToIndex) return
 		const index = getCurrentIndex()
 		if (typeof index === "undefined") return
-		const element = document.querySelector(`[data-index="${index}"]`)
-		if (!element) return
-		element.scrollIntoView({
-			behavior: "smooth",
-			block: "center",
-		})
+		scrollToIndex(index)
 	}, [getCurrentIndex])
 	useEffect(() => {
 		if (main !== "home") return
@@ -110,7 +108,7 @@ export default memo(function SlidingText({
 	)
 
 	return (
-		<div className={classNames(styles.main, className, {[styles.sliding as string]: separator})}>
+		<div className={classNames(styles.main, className, { [styles.sliding as string]: separator })}>
 			<div className={styles.wrapper}>
 				<div className={styles.span} ref={span} key="base">
 					{content}

@@ -1,7 +1,7 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, startTransition } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, useRef, useCallback } from "react"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import TrackList from "components/TrackList"
+import TrackList, { useVirtualTracks } from "components/TrackList"
 import { trpc } from "utils/trpc"
 import { useCurrentTrackDetails, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
@@ -9,7 +9,7 @@ import CoverImages from "components/NowPlaying/Cover/Images"
 import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 import DeleteIcon from "icons/playlist_remove.svg"
 
-export default forwardRef(function PlaylistView({
+export default forwardRef(function PlaylistView ({
 	open,
 	id,
 	z,
@@ -31,7 +31,7 @@ export default forwardRef(function PlaylistView({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const {data} = trpc.playlist.get.useQuery({id}, {
+	const { data } = trpc.playlist.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
@@ -57,13 +57,42 @@ export default forwardRef(function PlaylistView({
 	)
 
 	const reorderPlaylist = useReorderPlaylist()
-	const tracks = useDeferredValue(data?.tracks)
 	const _name = data?.name ?? name
 	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const showHome = useShowHome()
+
+	const parent = useRef<HTMLDivElement>(null)
+	useImperativeHandle(ref, () => parent.current as HTMLDivElement)
+
+	const trackListProps = useVirtualTracks({
+		tracks: data?.tracks ?? [],
+		parent,
+		orderable: true,
+		virtual: true,
+	})
+
+	const { tracks } = trackListProps
+
+	const onReorder = useCallback((from: number, to: number) =>
+		reorderPlaylist(from, to, id),
+		[id, reorderPlaylist]
+	)
+
+	const onQuickSwipe = useCallback((track: { id: string }) =>
+		deleteFromPlaylist(track.id, id),
+		[id, deleteFromPlaylist]
+	)
+
+	const onClick = useCallback((trackId: string) => {
+		if (_name && tracks) startTransition(() => {
+			setPlaylist(_name, tracks, id, trackId)
+			showHome("home")
+		})
+	}, [_name, id, setPlaylist, showHome, tracks])
+
 	return (
 		<Panel
-			ref={ref}
+			ref={parent}
 			open={open}
 			z={z}
 			rect={rect}
@@ -75,26 +104,14 @@ export default forwardRef(function PlaylistView({
 			animationName={styles["bubble-open"]}
 			isTop={isTop}
 		>
-			{tracks && Boolean(tracks.length) && (
-				<TrackList
-					tracks={tracks}
-					orderable
-					onReorder={(oldIndex, newIndex) => {
-						reorderPlaylist(oldIndex, newIndex, id)
-					}}
-					onClick={(trackId) => {
-						if (_name && tracks) startTransition(() => {
-							setPlaylist(_name, tracks, id, trackId)
-							showHome("home")
-						})
-					}}
-					quickSwipeAction={(track) => {
-						deleteFromPlaylist(track.id, id)
-					}}
-					quickSwipeIcon={DeleteIcon}
-					quickSwipeDeleteAnim
-				/>
-			)}
+			<TrackList
+				{...trackListProps}
+				onReorder={onReorder}
+				onClick={onClick}
+				quickSwipeAction={onQuickSwipe}
+				quickSwipeIcon={DeleteIcon}
+				quickSwipeDeleteAnim
+			/>
 		</Panel>
 	)
 })
