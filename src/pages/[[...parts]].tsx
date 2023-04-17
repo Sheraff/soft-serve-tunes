@@ -28,8 +28,7 @@ export default function Home ({
 
 	const { data: coldStartLoading } = useQuery(["cold-start"], {
 		queryFn: () => fetch("/api/cold-start", { headers: { Cache: "no-store" } })
-			.then((res) => res.json())
-			.then((json) => !json.done)
+			.then((res) => res.status === 202)
 			.catch(() => false),
 	})
 	socketClient.loading.useSubscription({
