@@ -345,7 +345,6 @@ export default function TrackList ({
 								className={styles.item}
 								key={virtualItem.key}
 								data-index={virtualItem.index}
-								style={{ height: `${virtualItem.size}px` }}
 							>
 								<TrackItem
 									track={tracks[virtualItem.index]!}
