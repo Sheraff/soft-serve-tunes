@@ -1,4 +1,4 @@
-import { useAddToPlaylist, useCreatePlaylist } from "client/db/useMakePlaylist"
+import { useAddToPlaylist, useCreatePlaylist, usePlaylist } from "client/db/useMakePlaylist"
 import { startTransition } from "react"
 import { trpc } from "utils/trpc"
 import NewIcon from "icons/library_add.svg"
@@ -6,17 +6,20 @@ import SmartIcon from "icons/auto_mode.svg"
 import styles from "./index.module.css"
 import { useShowHome } from "components/AppContext"
 
-export default function AddToPlaylist({
+export default function AddToPlaylist ({
 	items,
 	onSelect,
 }: {
-	items: {id: string}[]
+	items: { id: string }[]
 	onSelect: () => void
 }) {
-	const {data} = trpc.playlist.list.useQuery()
+	const { data = [] } = trpc.playlist.list.useQuery()
+
+	const { data: current } = usePlaylist()
+
 	const addToPlaylist = useAddToPlaylist()
 	const createPlaylist = useCreatePlaylist()
-	const {mutateAsync: getMore} = trpc.playlist.more.useMutation()
+	const { mutateAsync: getMore } = trpc.playlist.more.useMutation()
 	const trpcClient = trpc.useContext()
 	const showHome = useShowHome()
 
@@ -44,12 +47,12 @@ export default function AddToPlaylist({
 		let name: string
 		naming: if (trackIds.length === 1) {
 			const id = trackIds[0]!
-			const local = trpcClient.track.miniature.getData({id})?.name
+			const local = trpcClient.track.miniature.getData({ id })?.name
 			if (local) {
 				name = `Similar to ${local}`
 				break naming
 			}
-			const remote = await trpcClient.track.miniature.fetch({id})
+			const remote = await trpcClient.track.miniature.fetch({ id })
 			if (remote) {
 				name = `Similar to ${remote.name}`
 			}
@@ -62,7 +65,25 @@ export default function AddToPlaylist({
 
 	return (
 		<ul>
-			{data!.map((playlist) => (
+			{current && !current.id && (
+				<li key="local">
+					<button
+						className={styles.button}
+						type="button"
+						onClick={() => {
+							navigator.vibrate(1)
+							if (!items.length) return
+							onSelect()
+							startTransition(() => {
+								addToPlaylist(null, items)
+							})
+						}}
+					>
+						{current.name}
+					</button>
+				</li>
+			)}
+			{data.map((playlist) => (
 				<li key={playlist.id}>
 					<button
 						className={styles.button}
@@ -86,7 +107,7 @@ export default function AddToPlaylist({
 					type="button"
 					onClick={onClickNew}
 				>
-					<NewIcon className={styles.icon}/>
+					<NewIcon className={styles.icon} />
 					Create new playlist
 				</button>
 			</li>
@@ -96,7 +117,7 @@ export default function AddToPlaylist({
 					type="button"
 					onClick={onClickSmart}
 				>
-					<SmartIcon className={styles.icon}/>
+					<SmartIcon className={styles.icon} />
 					Create smart playlist
 				</button>
 			</li>
