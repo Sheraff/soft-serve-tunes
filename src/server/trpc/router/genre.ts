@@ -137,13 +137,13 @@ const miniature = publicProcedure.input(z.object({
       map.set(track.artistId, (map.get(track.artistId) || 0) + 1)
     return map
   }, new Map<string, number>())
-  const fiveTopArtists = [...artistCountMap.entries()]
+  const threeTopArtists = [...artistCountMap.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    .slice(0, 3)
     .map(([id]) => id)
 
   const artists = await ctx.prisma.artist.findMany({
-    where: { id: { in: fiveTopArtists } },
+    where: { id: { in: threeTopArtists } },
     select: { coverId: true },
     distinct: ["coverId"]
   })
@@ -151,7 +151,7 @@ const miniature = publicProcedure.input(z.object({
   const extended = extendFromRecursive(meta, data, false)
   return {
     ...extended,
-    artists: artists.slice(0, 3),
+    artists,
   }
 })
 

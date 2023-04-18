@@ -32,7 +32,7 @@ function GenreItem ({
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
 		select (data) {
 			if (!data?.artists) return data
-			return { ...data, artists: [...data.artists.slice(0, 3)].reverse() }
+			return { ...data, artists: data.artists.filter(({ coverId }) => coverId).reverse() }
 		}
 	})
 
