@@ -5,7 +5,7 @@ import pluralize from "utils/pluralize"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 
-export function PastSearchGenre({
+export function PastSearchGenre ({
 	id,
 	onSettled,
 	onClick: _onClick,
@@ -35,6 +35,7 @@ export function PastSearchGenre({
 			name={entity?.name}
 			id={id}
 			type="genre"
+			coverId={entity?.artists?.[0]?.coverId}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>

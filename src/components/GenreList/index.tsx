@@ -1,6 +1,6 @@
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { startTransition, useDeferredValue, useRef } from "react"
+import { type CSSProperties, startTransition, useDeferredValue, useRef } from "react"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import PlaylistIcon from "icons/queue_music.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
@@ -16,7 +16,7 @@ type GenreListItem = {
 	name: string
 }
 
-function GenreItem({
+function GenreItem ({
 	genre,
 	onSelect,
 	selected,
@@ -29,18 +29,23 @@ function GenreItem({
 }) {
 	const makePlaylist = useMakePlaylist()
 	const showHome = useShowHome()
-	const {data} = trpc.genre.miniature.useQuery({id: genre.id})
+	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
+		select (data) {
+			if (!data?.artists) return data
+			return { ...data, artists: [...data.artists.slice(0, 3)].reverse() }
+		}
+	})
 
 	const queryClient = useQueryClient()
 	const item = useRef<HTMLButtonElement>(null)
 	const onLong = () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({type: "genre", id: genre.id}),
+			editOverlaySetter({ type: "genre", id: genre.id }),
 			queryClient
 		)
 	}
-	useLongPress({onLong, item})
+	useLongPress({ onLong, item })
 
 	const count = data?._count.tracks ?? 0
 
@@ -57,19 +62,35 @@ function GenreItem({
 				navigator.vibrate(1)
 				startTransition(() => {
 					genre && onSelect?.(genre)
-					makePlaylist({type: "genre", id: genre.id}, genre.name)
+					makePlaylist({ type: "genre", id: genre.id }, genre.name)
 					showHome("home")
 				})
 			}}
 		>
-			{isSelection && selected && (
-				<CheckboxOnIcon className={styles.icon}/>
-				)}
-			{isSelection && !selected && (
-				<CheckboxOffIcon className={styles.icon}/>
+			{!isSelection && !data?.artists?.length && (
+				<PlaylistIcon className={styles.icon} />
 			)}
-			{!isSelection && (
-				<PlaylistIcon className={styles.icon}/>
+			{data?.artists && data.artists.length > 0 && (
+				<div className={styles.artists} style={{ "--extra": data.artists.length - 1 } as CSSProperties}>
+					{data.artists.map(({ coverId }) => (
+						<img
+							key={coverId}
+							className={styles.cover}
+							alt=""
+							src={`/api/cover/${coverId}/${Math.round(56 * 2)}`}
+						/>
+					))}
+				</div>
+			)}
+			{isSelection && (
+				<div className={styles.selection}>
+					{selected && (
+						<CheckboxOnIcon className={styles.icon} />
+					)}
+					{!selected && (
+						<CheckboxOffIcon className={styles.icon} />
+					)}
+				</div>
 			)}
 			<p className={styles.span}>
 				<span className={styles.name}>{genre.name}</span>
@@ -79,14 +100,14 @@ function GenreItem({
 	)
 }
 
-export default function GenreList({
+export default function GenreList ({
 	genres,
 	onSelect,
 }: {
 	genres: GenreListItem[]
 	onSelect?: (genre: GenreListItem) => void
 }) {
-	
+
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = editViewState.type === "genre"
@@ -98,7 +119,7 @@ export default function GenreList({
 					<GenreItem
 						genre={genre}
 						onSelect={onSelect}
-						selected={isSelection && editViewState.selection.some(({id}) => id === genre.id)}
+						selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
 						isSelection={isSelection}
 					/>
 				</li>

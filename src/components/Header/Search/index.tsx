@@ -37,7 +37,7 @@ export default function Search ({
 	const tracks = useAsyncInputStringDistance(input, 25, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
 	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
-	const genres = useAsyncInputStringDistance(input, 21, genresRaw || defaultArray)
+	const genres = useAsyncInputStringDistance(input, 16, genresRaw || defaultArray)
 	const playlists = useAsyncInputStringDistance(input, 6, playlistsRaw || defaultArray, ["name", "artists"])
 
 	const [showPast, setShowPast] = useState(true)

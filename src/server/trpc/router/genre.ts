@@ -11,7 +11,7 @@ const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs["where"], undefined> 
 }
 
 export async function recursiveSubGenres<
-  TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } },
+  TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } } = { select: { id: true } },
 > (
   id: string,
   args?: TrackArgs,
@@ -124,11 +124,35 @@ const miniature = publicProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const meta = await ctx.prisma.genre.findUnique({
     where: { id: input.id },
-    select: { name: true, id: true }
+    select: {
+      name: true,
+      id: true,
+    }
   })
   if (!meta) return meta
-  const data = await recursiveSubGenres(input.id)
-  return extendFromRecursive(meta, data, false)
+  const data = await recursiveSubGenres(input.id, { select: { id: true, artistId: true } })
+
+  const artistCountMap = data.tracks.reduce((map, track) => {
+    if (track.artistId)
+      map.set(track.artistId, (map.get(track.artistId) || 0) + 1)
+    return map
+  }, new Map<string, number>())
+  const fiveTopArtists = [...artistCountMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id]) => id)
+
+  const artists = await ctx.prisma.artist.findMany({
+    where: { id: { in: fiveTopArtists } },
+    select: { coverId: true },
+    distinct: ["coverId"]
+  })
+
+  const extended = extendFromRecursive(meta, data, false)
+  return {
+    ...extended,
+    artists: artists.slice(0, 3),
+  }
 })
 
 const get = publicProcedure.input(z.object({
