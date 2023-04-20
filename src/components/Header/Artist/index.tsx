@@ -4,12 +4,13 @@ import AlbumList from "components/AlbumList"
 import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
-import { trpc } from "utils/trpc"
+import { RouterOutputs, trpc } from "utils/trpc"
 import { useSetPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
+import { useQueryClient } from "@tanstack/react-query"
 
-export default forwardRef(function ArtistView({
+export default forwardRef(function ArtistView ({
 	open,
 	id,
 	z,
@@ -31,7 +32,7 @@ export default forwardRef(function ArtistView({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const {data, isLoading} = trpc.artist.get.useQuery({id}, {
+	const { data, isLoading } = trpc.artist.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
@@ -48,10 +49,11 @@ export default forwardRef(function ArtistView({
 	}
 
 	const setPlaylist = useSetPlaylist()
+	const queryClient = useQueryClient()
 	const onClickPlay = () => {
 		if (!data) return
 
-		const tracks = data.albums.flatMap(album => album.tracks.map(track => ({
+		const tracks: Parameters<typeof setPlaylist>[1] = data.albums.flatMap(album => album.tracks.map(track => ({
 			id: track.id,
 			name: track.name,
 			artist: {
@@ -63,6 +65,21 @@ export default forwardRef(function ArtistView({
 				name: album.name,
 			},
 		})))
+
+		const albumTrackIdsSet = new Set(tracks.map(track => track.id))
+		data.tracks.forEach(track => {
+			if (albumTrackIdsSet.has(track.id)) return
+			const key = trpc.track.miniature.getQueryKey({ id: track.id })
+			const extraData = queryClient.getQueryData<RouterOutputs["track"]["miniature"]>(key)
+			if (!extraData) return
+			tracks.push({
+				id: track.id,
+				name: track.name,
+				artist: extraData.artist,
+				album: extraData.album,
+			})
+		})
+
 		setPlaylist(data.name, tracks)
 	}
 
