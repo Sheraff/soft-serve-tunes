@@ -13,6 +13,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
       OR: [
         { tracks: { some: {} } },
         { albums: { some: {} } },
+        { feats: { some: {} } },
       ]
     },
     select: {
@@ -63,6 +64,7 @@ const miniature = publicProcedure.input(z.object({
         select: {
           albums: true,
           tracks: true,
+          feats: true,
         },
       },
       cover: {
@@ -87,6 +89,16 @@ const miniature = publicProcedure.input(z.object({
 const get = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
+  const trackSelect = {
+    id: true,
+    name: true,
+    artist: {
+      select: {
+        id: true,
+        name: true,
+      }
+    },
+  } satisfies Prisma.TrackSelect
   const albumSelect = {
     id: true,
     name: true,
@@ -94,10 +106,7 @@ const get = publicProcedure.input(z.object({
       orderBy: {
         position: "asc"
       },
-      select: {
-        id: true,
-        name: true,
-      },
+      select: trackSelect,
     }
   } satisfies Prisma.AlbumSelect
   const artist = await ctx.prisma.artist.findUnique({
@@ -145,14 +154,19 @@ const get = publicProcedure.input(z.object({
   // extra albums not directly by this artist
   const albums = await ctx.prisma.album.findMany({
     where: {
-      AND: {
-        OR: [
-          { artistId: null },
-          { artistId: { not: input.id } },
-        ]
-      },
+      OR: [
+        { artistId: null },
+        { artistId: { not: input.id } },
+      ],
       id: { notIn: artist.albums.map(({ id }) => id) },
-      tracks: { some: { artistId: input.id } },
+      tracks: {
+        some: {
+          OR: [
+            { artistId: input.id },
+            { feats: { some: { id: input.id } } },
+          ]
+        }
+      },
     },
     select: albumSelect
   })
@@ -160,10 +174,13 @@ const get = publicProcedure.input(z.object({
   // extra tracks, not in albums
   const tracks = await ctx.prisma.track.findMany({
     where: {
-      artistId: input.id,
-      albumId: null,
+      OR: [
+        { artistId: input.id },
+        { feats: { some: { id: input.id } } },
+      ],
+      albumId: null
     },
-    select: { id: true, name: true }
+    select: trackSelect,
   })
 
   // playlists featuring this artist
@@ -176,7 +193,7 @@ const get = publicProcedure.input(z.object({
 
   return {
     ...artist,
-    albums: [...artist.albums, ...albums],
+    featured: albums,
     tracks,
     playlists,
   }

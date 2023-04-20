@@ -4,11 +4,10 @@ import AlbumList from "components/AlbumList"
 import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
-import { RouterOutputs, trpc } from "utils/trpc"
+import { trpc } from "utils/trpc"
 import { useSetPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
-import { useQueryClient } from "@tanstack/react-query"
 
 export default forwardRef(function ArtistView ({
 	open,
@@ -49,43 +48,59 @@ export default forwardRef(function ArtistView ({
 	}
 
 	const setPlaylist = useSetPlaylist()
-	const queryClient = useQueryClient()
 	const onClickPlay = () => {
 		if (!data) return
 
-		const tracks: Parameters<typeof setPlaylist>[1] = data.albums.flatMap(album => album.tracks.map(track => ({
-			id: track.id,
-			name: track.name,
-			artist: {
-				id,
-				name: data.name,
-			},
-			album: {
-				id: album.id,
-				name: album.name,
-			},
-		})))
 
-		const albumTrackIdsSet = new Set(tracks.map(track => track.id))
-		data.tracks.forEach(track => {
+		const tracks: Parameters<typeof setPlaylist>[1] = []
+		const albumTrackIdsSet = new Set<string>()
+
+		if (data.albums) for (const album of data.albums) {
+			for (const track of album.tracks) {
+				if (albumTrackIdsSet.has(track.id)) continue
+				albumTrackIdsSet.add(track.id)
+				tracks.push({
+					id: track.id,
+					name: track.name,
+					artist: track.artist,
+					album: {
+						id: album.id,
+						name: album.name,
+					},
+				})
+			}
+		}
+		if (data.featured) for (const album of data.featured) {
+			for (const track of album.tracks) {
+				if (albumTrackIdsSet.has(track.id)) continue
+				if (track.artist?.id !== id) continue
+				albumTrackIdsSet.add(track.id)
+				tracks.push({
+					id: track.id,
+					name: track.name,
+					artist: track.artist,
+					album: {
+						id: album.id,
+						name: album.name,
+					},
+				})
+			}
+		}
+		if (data.tracks) for (const track of data.tracks) {
 			if (albumTrackIdsSet.has(track.id)) return
-			const key = trpc.track.miniature.getQueryKey({ id: track.id })
-			const extraData = queryClient.getQueryData<RouterOutputs["track"]["miniature"]>(key)
-			if (!extraData) return
+			albumTrackIdsSet.add(track.id)
 			tracks.push({
 				id: track.id,
 				name: track.name,
-				artist: extraData.artist,
-				album: extraData.album,
+				artist: track.artist,
+				album: null,
 			})
-		})
+		}
 
 		setPlaylist(data.name, tracks)
 	}
 
-	const albums = useDeferredValue(data?.albums)
-	const tracks = useDeferredValue(data?.tracks)
-	const playlists = useDeferredValue(data?.playlists)
+	const { albums, featured, tracks, playlists } = useDeferredValue(data) || {}
 	const children = (
 		<>
 			{useMemo(() => albums && Boolean(albums.length) && (
@@ -94,6 +109,12 @@ export default forwardRef(function ArtistView ({
 					<AlbumList albums={albums} loading={isLoading} />
 				</>
 			), [albums, isLoading])}
+			{useMemo(() => featured && Boolean(featured.length) && (
+				<>
+					<SectionTitle className={styles.sectionTitle}>Featured on</SectionTitle>
+					<AlbumList albums={featured} loading={isLoading} />
+				</>
+			), [featured, isLoading])}
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>

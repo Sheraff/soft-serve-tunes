@@ -19,13 +19,13 @@ type TRPCResponse<P> = {
 function trpcQueryToCacheKey<
 	A extends RouteKey,
 	B extends SecondRouteKey<A>,
->(endpoint: `${A}.${B}` & AllRoutesString, json: RouterInputs[A][B]) {
+> (endpoint: `${A}.${B}` & AllRoutesString, json: RouterInputs[A][B]) {
 	const url = new URL(`/api/trpc/${endpoint}`, self.location.origin)
-	if (json) url.searchParams.set("input", JSON.stringify({json}))
+	if (json) url.searchParams.set("input", JSON.stringify({ json }))
 	return url
 }
 
-export async function messageCheckArtistCache({ id }: { id: string }, { source }: ExtendableMessageEvent) {
+export async function messageCheckArtistCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
 	const params: MultiCacheQueryOptions = {
 		ignoreVary: true,
@@ -41,17 +41,41 @@ export async function messageCheckArtistCache({ id }: { id: string }, { source }
 	if (hasArtistData) {
 		const artistResponse = res[0]!
 		const data = await artistResponse.json() as TRPCResponse<RouterOutputs["artist"]["get"]>
-		if (data?.result?.data?.json) {
+		findCaches: if (data?.result?.data?.json) {
 			const cache = await caches.open(CACHES.media)
-			for (const album of data?.result?.data?.json.albums) {
+			const albums = data?.result?.data?.json.albums
+			if (albums) for (const album of albums) {
 				for (const track of album.tracks) {
 					if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
 						ignoreVary: true,
 						ignoreSearch: true,
 					})) {
 						cached = true
-						break
+						break findCaches
 					}
+				}
+			}
+			const featured = data?.result?.data?.json.featured
+			if (featured) for (const album of featured) {
+				for (const track of album.tracks) {
+					if (track.artist?.id !== id) continue
+					if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
+						ignoreVary: true,
+						ignoreSearch: true,
+					})) {
+						cached = true
+						break findCaches
+					}
+				}
+			}
+			const tracks = data?.result?.data?.json.tracks
+			if (tracks) for (const track of tracks) {
+				if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
+					ignoreVary: true,
+					ignoreSearch: true,
+				})) {
+					cached = true
+					break findCaches
 				}
 			}
 		}
@@ -64,7 +88,7 @@ export async function messageCheckArtistCache({ id }: { id: string }, { source }
 	})
 }
 
-export async function messageCheckAlbumCache({ id }: { id: string }, { source }: ExtendableMessageEvent) {
+export async function messageCheckAlbumCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
 	const params: MultiCacheQueryOptions = {
 		ignoreVary: true,

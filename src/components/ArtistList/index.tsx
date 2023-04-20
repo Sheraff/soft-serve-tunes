@@ -35,7 +35,7 @@ function ArtistItem ({
 
 	const isEmpty = data && !data.cover
 	const albumCount = data?._count?.albums ?? 0
-	const trackCount = data?._count?.tracks ?? 0
+	const trackCount = (data?._count?.tracks ?? 0) + (data?._count?.feats ?? 0)
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393 - 4 * 8) / 3 * 2)}` : undefined
 
 	const queryClient = useQueryClient()
