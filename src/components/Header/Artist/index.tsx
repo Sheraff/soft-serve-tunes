@@ -9,6 +9,7 @@ import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
 import { autoplay, playAudio } from "components/Player/Audio"
+import GenreList from "components/GenreList"
 
 export default forwardRef(function ArtistView ({
 	open,
@@ -72,7 +73,6 @@ export default forwardRef(function ArtistView ({
 		if (data.featured) for (const album of data.featured) {
 			for (const track of album.tracks) {
 				if (albumTrackIdsSet.has(track.id)) continue
-				if (track.artist?.id !== id) continue
 				albumTrackIdsSet.add(track.id)
 				tracks.push({
 					id: track.id,
@@ -105,21 +105,25 @@ export default forwardRef(function ArtistView ({
 		}
 	}
 
-	const { albums, featured, tracks, playlists } = useDeferredValue(data) || {}
+	const { albums, featured, tracks, playlists, genres } = useDeferredValue(data) || {}
+	const loading = useDeferredValue(isLoading)
 	const children = (
 		<>
+			{useMemo(() => genres && Boolean(genres.length) && (
+				<GenreList genres={genres} loading={loading} scrollable />
+			), [genres, loading])}
 			{useMemo(() => albums && Boolean(albums.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
-					<AlbumList albums={albums} loading={isLoading} />
+					<AlbumList albums={albums} loading={loading} />
 				</>
-			), [albums, isLoading])}
+			), [albums, loading])}
 			{useMemo(() => featured && Boolean(featured.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Featured on</SectionTitle>
-					<AlbumList albums={featured} loading={isLoading} />
+					<AlbumList albums={featured} loading={loading} />
 				</>
-			), [featured, isLoading])}
+			), [featured, loading])}
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>

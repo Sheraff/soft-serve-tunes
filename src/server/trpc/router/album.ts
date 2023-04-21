@@ -109,7 +109,20 @@ const get = publicProcedure.input(z.object({
               id: true,
               name: true,
             }
-          }
+          },
+          feats: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          genres: {
+            select: {
+              id: true,
+              name: true,
+            },
+            where: { tracks: { some: {} } },
+          },
         },
       },
       cover: {
@@ -120,21 +133,17 @@ const get = publicProcedure.input(z.object({
       },
       lastfm: {
         select: {
-          name: true,
           releasedate: true,
         }
       },
       audiodb: {
         select: {
-          strAlbum: true,
           intYearReleased: true,
           strDescriptionEN: true,
         }
       },
       spotify: {
         select: {
-          name: true,
-          totalTracks: true,
           releaseDate: true,
         }
       }
@@ -146,10 +155,43 @@ const get = publicProcedure.input(z.object({
     return album
   }
 
+  const genres: { id: string, name: string }[] = []
+  const genreIdSet = new Set<string>()
+  for (const track of album.tracks) {
+    for (const genre of track.genres) {
+      if (!genreIdSet.has(genre.id)) {
+        genres.push(genre)
+        genreIdSet.add(genre.id)
+      }
+    }
+  }
+
+  const feats: { id: string, name: string }[] = []
+  const featIdSet = new Set<string>()
+  if (album.artist?.id) {
+    featIdSet.add(album.artist.id)
+  }
+  for (const track of album.tracks) {
+    if (track.artist && !featIdSet.has(track.artist.id)) {
+      feats.push(track.artist)
+      featIdSet.add(track.artist.id)
+    }
+    for (const feat of track.feats) {
+      if (!featIdSet.has(feat.id)) {
+        feats.push(feat)
+        featIdSet.add(feat.id)
+      }
+    }
+  }
+
   lastFm.findAlbum(input.id)
   audioDb.fetchAlbum(input.id)
 
-  return album
+  return {
+    ...album,
+    genres,
+    feats,
+  }
 })
 
 const mostFav = publicProcedure.query(({ ctx }) => {

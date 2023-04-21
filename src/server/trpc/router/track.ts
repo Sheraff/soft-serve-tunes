@@ -48,12 +48,13 @@ const miniature = publicProcedure.input(z.object({
       name: true,
       createdAt: true,
       position: true,
-      userData: { select: { favorite: true }},
-      album: { select: { id: true, name: true }},
-      artist: { select: { id: true, name: true }},
-      cover: { select: { id: true, palette: true }},
-      spotify: { select: { explicit: true }},
-      file: { select: { container: true }},
+      userData: { select: { favorite: true } },
+      album: { select: { id: true, name: true } },
+      artist: { select: { id: true, name: true } },
+      cover: { select: { id: true, palette: true } },
+      spotify: { select: { explicit: true } },
+      file: { select: { container: true } },
+      feats: { select: { id: true, name: true } },
     }
   })
   if (!track) {
@@ -87,39 +88,51 @@ const playcount = protectedProcedure.input(z.object({
   await ctx.prisma.$transaction([
     ctx.prisma.track.update({
       where: { id: input.id },
-      data: { userData: { upsert: {
-        update: { playcount: { increment: 1 }, lastListen: now },
-        create: { playcount: 1, lastListen: now }
-      }}}
+      data: {
+        userData: {
+          upsert: {
+            update: { playcount: { increment: 1 }, lastListen: now },
+            create: { playcount: 1, lastListen: now }
+          }
+        }
+      }
     }),
     ...(track.albumId ? [
       ctx.prisma.album.update({
         where: { id: track.albumId },
-        data: { userData: { upsert: {
-          update: { playcount: { increment: 1 }, lastListen: now },
-          create: { playcount: 1, lastListen: now }
-        }}}
+        data: {
+          userData: {
+            upsert: {
+              update: { playcount: { increment: 1 }, lastListen: now },
+              create: { playcount: 1, lastListen: now }
+            }
+          }
+        }
       })
     ] : []),
     ...(track.artistId ? [
       ctx.prisma.artist.update({
         where: { id: track.artistId },
-        data: { userData: { upsert: {
-          update: { playcount: { increment: 1 }, lastListen: now },
-          create: { playcount: 1, lastListen: now }
-        }}}
+        data: {
+          userData: {
+            upsert: {
+              update: { playcount: { increment: 1 }, lastListen: now },
+              create: { playcount: 1, lastListen: now }
+            }
+          }
+        }
       })
     ] : []),
   ])
 
   log("info", "200", "trpc", `playcount +1 track "${track.name}"`)
-  socketServer.emit("invalidate", {type: "track", id: input.id})
+  socketServer.emit("invalidate", { type: "track", id: input.id })
   if (track.albumId)
-    socketServer.emit("invalidate", {type: "album", id: track.albumId})
+    socketServer.emit("invalidate", { type: "album", id: track.albumId })
   if (track.artistId)
-    socketServer.emit("invalidate", {type: "artist", id: track.artistId})
+    socketServer.emit("invalidate", { type: "artist", id: track.artistId })
   if (track.albumId || track.artistId)
-    socketServer.emit("metrics", {type: "listen-count"})
+    socketServer.emit("metrics", { type: "listen-count" })
 })
 
 const like = protectedProcedure.input(z.object({
@@ -140,47 +153,59 @@ const like = protectedProcedure.input(z.object({
 
   const kind = input.toggle ? "increment" : "decrement"
   const init = input.toggle ? 1 : 0
-  const {albumId, artistId} = track
+  const { albumId, artistId } = track
   await ctx.prisma.$transaction([
     ctx.prisma.track.update({
       where: { id: input.id },
-      data: { userData: { upsert: {
-        update: { favorite: input.toggle },
-        create: { favorite: input.toggle }
-      }}}
+      data: {
+        userData: {
+          upsert: {
+            update: { favorite: input.toggle },
+            create: { favorite: input.toggle }
+          }
+        }
+      }
     }),
     ...(albumId ? [
       ctx.prisma.album.update({
         where: { id: albumId },
-        data: { userData: { upsert: {
-          update: { favorite: { [kind]: 1 } },
-          create: { favorite: init }
-        }}}
+        data: {
+          userData: {
+            upsert: {
+              update: { favorite: { [kind]: 1 } },
+              create: { favorite: init }
+            }
+          }
+        }
       })
     ] : []),
     ...(artistId ? [
       ctx.prisma.artist.update({
         where: { id: artistId },
-        data: { userData: { upsert: {
-          update: { favorite: { [kind]: 1 } },
-          create: { favorite: init }
-        }}}
+        data: {
+          userData: {
+            upsert: {
+              update: { favorite: { [kind]: 1 } },
+              create: { favorite: init }
+            }
+          }
+        }
       })
     ] : []),
   ])
 
   log("info", "200", "trpc", `like ${input.toggle} track "${track.name}"`)
-  socketServer.emit("invalidate", {type: "track", id: input.id})
+  socketServer.emit("invalidate", { type: "track", id: input.id })
   if (albumId)
-    socketServer.emit("invalidate", {type: "album", id: albumId})
+    socketServer.emit("invalidate", { type: "album", id: albumId })
   if (artistId)
-    socketServer.emit("invalidate", {type: "artist", id: artistId})
-  socketServer.emit("metrics", {type: "likes"})
+    socketServer.emit("invalidate", { type: "artist", id: artistId })
+  socketServer.emit("metrics", { type: "likes" })
 
   return track
 })
 
-export function getSpotifyTracksByMultiTraitsWithTarget(
+export function getSpotifyTracksByMultiTraitsWithTarget (
   traits: {
     trait: z.infer<typeof zTrackTraits>,
     value: number | string
@@ -200,7 +225,7 @@ export function getSpotifyTracksByMultiTraitsWithTarget(
       AND ${traits.map((t) => `ABS(${t.value}-${t.trait}) < 0.5`).join(" AND ")}
     )
     ORDER BY score DESC LIMIT ${count} OFFSET ${offset}
-  `) as unknown as {trackId: string}[]
+  `) as unknown as { trackId: string }[]
 }
 
 const byMultiTraits = publicProcedure.input(z.object({
@@ -212,7 +237,7 @@ const byMultiTraits = publicProcedure.input(z.object({
   const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
   const ids = spotifyTracks.map((t) => t.trackId)
   const tracks = await ctx.prisma.track.findMany({
-    where: {id: { in: ids }},
+    where: { id: { in: ids } },
   })
   tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
   return tracks

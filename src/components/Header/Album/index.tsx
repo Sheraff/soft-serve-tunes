@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, useMemo } from "react"
+import { type ForwardedRef, forwardRef, useDeferredValue, useMemo, Fragment } from "react"
 import pluralize from "utils/pluralize"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
@@ -8,6 +8,7 @@ import { trpc } from "utils/trpc"
 import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
 import { autoplay, playAudio } from "components/Player/Audio"
+import GenreList from "components/GenreList"
 
 export default forwardRef(function AlbumView ({
 	open,
@@ -31,7 +32,7 @@ export default forwardRef(function AlbumView ({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const { data } = trpc.album.get.useQuery({ id }, {
+	const { data, isLoading } = trpc.album.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
@@ -42,23 +43,45 @@ export default forwardRef(function AlbumView ({
 		const string = typeof date === "number" ? date.toString() : date.getFullYear().toString()
 		infos.push(string)
 	}
-	if (data?.artist) {
+	const artist = data?.artist
+	if (artist) {
 		infos.push(
 			<button type="button" onClick={() => {
-				if (data.artist) {
-					navigator.vibrate(1)
-					openPanel("artist", {
-						id: data.artist.id,
-						name: data.artist.name,
-					})
-				}
+				navigator.vibrate(1)
+				openPanel("artist", {
+					id: artist.id,
+					name: artist.name,
+				})
 			}}>
-				{`${data.artist?.name}`}
+				{`${artist.name}`}
 			</button>
 		)
 	}
 	if (data?._count?.tracks) {
 		infos.push(`${data?._count.tracks} track${pluralize(data?._count.tracks)}`)
+	}
+	if (data?.feats?.length) {
+		infos.push(
+			<>
+				featuring
+				{data.feats.slice(0, 3).map((artist, i) => (
+					<Fragment key={artist.id}>
+						{" "}
+						<button key={artist.id} type="button" onClick={() => {
+							navigator.vibrate(1)
+							openPanel("artist", {
+								id: artist.id,
+								name: artist.name,
+							})
+						}}>
+							{`${artist.name}`}
+						</button>
+						{i !== data.feats.length - 1 && ","}
+					</Fragment>
+				))}
+				{data.feats.length > 3 && ` and ${data.feats.length - 3} more`}
+			</>
+		)
 	}
 
 	const onClickPlay = () => {
@@ -84,13 +107,21 @@ export default forwardRef(function AlbumView ({
 		}
 	}
 
-	const tracks = useDeferredValue(data?.tracks)
-	const children = useMemo(() => tracks && Boolean(tracks.length) && (
+	const { tracks, genres } = useDeferredValue(data) || {}
+	const loading = useDeferredValue(isLoading)
+	const children = (
 		<>
-			<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
-			<TrackList tracks={tracks} />
+			{useMemo(() => genres && Boolean(genres.length) && (
+				<GenreList genres={genres} loading={loading} scrollable />
+			), [genres, loading])}
+			{useMemo(() => tracks && Boolean(tracks.length) && (
+				<>
+					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
+					<TrackList tracks={tracks} />
+				</>
+			), [tracks])}
 		</>
-	), [tracks])
+	)
 
 	return (
 		<Panel

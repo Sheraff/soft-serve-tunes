@@ -10,6 +10,7 @@ import pluralize from "utils/pluralize"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { autoplay, playAudio } from "components/Player/Audio"
+import classNames from "classnames"
 
 type GenreListItem = {
 	id: string
@@ -107,9 +108,13 @@ function GenreItem ({
 export default function GenreList ({
 	genres,
 	onSelect,
+	scrollable,
+	loading,
 }: {
 	genres: GenreListItem[]
 	onSelect?: (genre: GenreListItem) => void
+	scrollable?: boolean
+	loading?: boolean
 }) {
 
 	const _editViewState = editOverlay.useValue()
@@ -117,17 +122,22 @@ export default function GenreList ({
 	const isSelection = editViewState.type === "genre"
 
 	return (
-		<ul className={styles.main}>
-			{genres?.map(genre => (
-				<li key={genre.id} className={styles.item}>
-					<GenreItem
-						genre={genre}
-						onSelect={onSelect}
-						selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
-						isSelection={isSelection}
-					/>
-				</li>
-			))}
-		</ul>
+		<div className={classNames(styles.wrapper, {
+			[styles.scrollable]: scrollable,
+			[styles.loading]: loading,
+		})}>
+			<ul className={styles.main}>
+				{genres?.map(genre => (
+					<li key={genre.id} className={styles.item}>
+						<GenreItem
+							genre={genre}
+							onSelect={onSelect}
+							selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
+							isSelection={isSelection}
+						/>
+					</li>
+				))}
+			</ul>
+		</div>
 	)
 }

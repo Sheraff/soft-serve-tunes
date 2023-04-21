@@ -190,7 +190,14 @@ const TrackItem = memo(function _TrackItem ({
 						{data?.name}
 					</span>
 					{data?.album?.name && <span className={styles.credits}>{data?.album.name}</span>}
-					{data?.artist?.name && <span className={styles.credits}>{data?.artist.name}</span>}
+					{Boolean(data?.artist?.name || data?.feats?.length) && (
+						<span className={styles.credits}>
+							{data?.artist?.name}
+							{data?.artist?.name && data?.feats?.length > 0 && " · "}
+							{Boolean(data?.feats?.length) && "featuring "}
+							{data?.feats?.map(({ name }) => name).join(", ")}
+						</span>
+					)}
 					{(explicit || offline || recent || high) && (
 						<span className={styles.icons}>
 							<>

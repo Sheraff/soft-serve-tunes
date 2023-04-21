@@ -1,15 +1,44 @@
+.wrapper {
+	width: 100%;
+	height: min-content;
+	z-index: 0;
+}
+
+.wrapper::-webkit-scrollbar {
+	display: none;
+}
+
+.scrollable {
+	overflow: scroll hidden;
+	scroll-padding-left: 7px;
+}
+
 .main {
 	display: flex;
 	flex-wrap: wrap;
 	column-gap: 6px;
 	row-gap: 8px;
-	padding: 0 8px;
+	padding: 0 8px 0 7px;
+}
+
+.scrollable .main {
+	width: fit-content;
+	flex-wrap: nowrap;
+}
+
+.scrollable.loading .main {
+	height: 40px;
 }
 
 .item {
 	max-width: 60%;
 	border-radius: 4px;
 	overflow: hidden;
+}
+
+.scrollable .item {
+	max-width: none;
+	width: max-content;
 }
 
 .button {

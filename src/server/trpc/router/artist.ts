@@ -98,29 +98,30 @@ const get = publicProcedure.input(z.object({
         name: true,
       }
     },
-  } satisfies Prisma.TrackSelect
-  const albumSelect = {
-    id: true,
-    name: true,
-    tracks: {
-      orderBy: {
-        position: "asc"
+    genres: {
+      select: {
+        id: true,
+        name: true,
       },
-      select: trackSelect,
-    }
-  } satisfies Prisma.AlbumSelect
+      where: { tracks: { some: {} } },
+    },
+  } satisfies Prisma.TrackSelect
   const artist = await ctx.prisma.artist.findUnique({
     where: { id: input.id },
     select: {
+      id: true,
       name: true,
-      _count: {
-        select: {
-          albums: true,
-          tracks: true,
-        },
-      },
       albums: {
-        select: albumSelect,
+        select: {
+          id: true,
+          name: true,
+          tracks: {
+            orderBy: {
+              position: "asc"
+            },
+            select: trackSelect,
+          },
+        }
       },
       cover: {
         select: {
@@ -135,11 +136,6 @@ const get = publicProcedure.input(z.object({
           strBiographyEN: true,
         }
       },
-      spotify: {
-        select: {
-          name: true,
-        }
-      },
     }
   })
 
@@ -148,11 +144,8 @@ const get = publicProcedure.input(z.object({
     return artist
   }
 
-  lastFm.findArtist(input.id)
-  audioDb.fetchArtist(input.id)
-
   // extra albums not directly by this artist
-  const albums = await ctx.prisma.album.findMany({
+  const featured = await ctx.prisma.album.findMany({
     where: {
       OR: [
         { artistId: null },
@@ -168,7 +161,22 @@ const get = publicProcedure.input(z.object({
         }
       },
     },
-    select: albumSelect
+    select: {
+      id: true,
+      name: true,
+      tracks: {
+        orderBy: {
+          position: "asc"
+        },
+        select: trackSelect,
+        where: {
+          OR: [
+            { artistId: input.id },
+            { feats: { some: { id: input.id } } },
+          ]
+        }
+      },
+    }
   })
 
   // extra tracks, not in albums
@@ -186,14 +194,71 @@ const get = publicProcedure.input(z.object({
   // playlists featuring this artist
   const playlists = await ctx.prisma.playlist.findMany({
     where: {
-      tracks: { some: { track: { artistId: input.id } } }
+      tracks: {
+        some: {
+          track: {
+            OR: [
+              { artistId: input.id },
+              { feats: { some: { id: input.id } } },
+            ],
+          }
+        }
+      }
     },
     select: { id: true, name: true }
   })
 
+  const genres: { id: string, name: string }[] = []
+  const genreIdSet = new Set<string>()
+  for (const album of artist.albums) {
+    for (const track of album.tracks) {
+      for (const genre of track.genres) {
+        if (!genreIdSet.has(genre.id)) {
+          genres.push(genre)
+          genreIdSet.add(genre.id)
+        }
+      }
+    }
+  }
+  for (const album of featured) {
+    for (const track of album.tracks) {
+      for (const genre of track.genres) {
+        if (!genreIdSet.has(genre.id)) {
+          genres.push(genre)
+          genreIdSet.add(genre.id)
+        }
+      }
+    }
+  }
+  for (const track of tracks) {
+    for (const genre of track.genres) {
+      if (!genreIdSet.has(genre.id)) {
+        genres.push(genre)
+        genreIdSet.add(genre.id)
+      }
+    }
+  }
+
+  const tracksCount =
+    artist.albums.reduce((acc, { tracks }) => acc + tracks.length, 0)
+    + tracks.length
+    + featured.reduce((acc, { tracks }) => acc + tracks.length, 0)
+
+  lastFm.findArtist(input.id)
+  audioDb.fetchArtist(input.id)
+
   return {
-    ...artist,
-    featured: albums,
+    id: artist.id,
+    name: artist.name,
+    albums: artist.albums,
+    _count: {
+      albums: artist.albums.length,
+      tracks: tracksCount,
+    },
+    audiodb: artist.audiodb,
+    cover: artist.cover,
+    genres,
+    featured,
     tracks,
     playlists,
   }
