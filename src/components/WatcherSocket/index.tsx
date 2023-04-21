@@ -60,7 +60,7 @@ export default function WatcherSocket () {
 							const hash = hashQueryKey([queryKey, queryParams])
 							const cacheUnsubscribe = cache.subscribe((event) => {
 								if (event.type === "observerRemoved" || event.type === "observerAdded") {
-									if (hashQueryKey(event.query.queryKey) === hash && !event.query.isActive()) {
+									if (hashQueryKey(event.query.queryKey) === hash) {
 										unsubscribe()
 										queryClient.setQueryData([queryKey, queryParams], message.data)
 									}
