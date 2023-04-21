@@ -8,6 +8,7 @@
 	background: var(--palette-bg-main);
 
 	overflow: hidden scroll;
+	overscroll-behavior: contain;
 	width: 100vw;
 	display: grid;
 	grid-template-columns: 100vw;
@@ -20,6 +21,9 @@
 
 	will-change: transform, clip-path;
 	contain: strict;
+}
+.main::-webkit-scrollbar {
+	display: none;
 }
 .main[data-open="true"]:not([data-bubble="true"]) {
 	transform: translateX(0);
