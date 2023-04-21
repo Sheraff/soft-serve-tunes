@@ -12,5 +12,5 @@ export default async function makePlaylist (
 	name: string,
 ) {
 	const uniqueName = await uniqueNameFromName(trpcClient, name)
-	await setPlaylist(uniqueName, list)
+	return await setPlaylist(uniqueName, list)
 }

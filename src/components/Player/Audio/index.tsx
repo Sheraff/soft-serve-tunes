@@ -9,6 +9,7 @@ let audioElement: HTMLAudioElement | null = null
 export function playAudio () {
 	if (!audioElement) return
 	audioElement.play()
+	if (autoplay.getValue()) return
 	autoplay.setState(true)
 }
 

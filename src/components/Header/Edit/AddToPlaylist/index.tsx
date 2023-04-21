@@ -1,10 +1,11 @@
-import { useAddToPlaylist, useCreatePlaylist, usePlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useAddToPlaylist, useCreatePlaylist, usePlaylist } from "client/db/useMakePlaylist"
 import { startTransition } from "react"
 import { trpc } from "utils/trpc"
 import NewIcon from "icons/library_add.svg"
 import SmartIcon from "icons/auto_mode.svg"
 import styles from "./index.module.css"
 import { useShowHome } from "components/AppContext"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 export default function AddToPlaylist ({
 	items,
@@ -28,8 +29,14 @@ export default function AddToPlaylist ({
 		if (!items.length) return
 		onSelect()
 		startTransition(() => {
+			const currentPlaylist = getPlaylist()
 			createPlaylist(items.map((item) => item.id))
+				.then((playlist) => {
+					if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
+						playAudio()
+				})
 			showHome("home")
+			autoplay.setState(true)
 		})
 	}
 

@@ -1,7 +1,7 @@
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { type CSSProperties, startTransition, useDeferredValue, useRef } from "react"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 import PlaylistIcon from "icons/queue_music.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
@@ -9,7 +9,7 @@ import { trpc } from "utils/trpc"
 import pluralize from "utils/pluralize"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 type GenreListItem = {
 	id: string
@@ -60,7 +60,12 @@ function GenreItem ({
 				navigator.vibrate(1)
 				startTransition(() => {
 					genre && onSelect?.(genre)
+					const currentPlaylist = getPlaylist()
 					makePlaylist({ type: "genre", id: genre.id }, genre.name)
+						.then((playlist) => {
+							if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
+								playAudio()
+						})
 					showHome("home")
 					autoplay.setState(true)
 				})

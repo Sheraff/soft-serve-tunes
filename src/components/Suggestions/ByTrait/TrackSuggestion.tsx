@@ -1,6 +1,6 @@
 import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 import { useShowHome } from "components/AppContext"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import TrackList from "components/TrackList"
@@ -11,7 +11,7 @@ import { trpc } from "utils/trpc"
 import styles from "../index.module.css"
 import PillChoice from "../PillChoice"
 import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSelectedOptions, Trait } from "./utils"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 const preferredTrackList = suspensePersistedState<Trait[]>("preferredTrackList", [{
 	trait: "danceability",
@@ -35,7 +35,12 @@ export default function TracksByTraitSuggestion () {
 			<div className={styles.buttons}>
 				<button type="button" onClick={() => {
 					navigator.vibrate(1)
+					const currentPlaylist = getPlaylist()
 					makePlaylist({ type: "by-multi-traits", traits: preferredOptions }, title)
+						.then((playlist) => {
+							if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
+								playAudio()
+						})
 					showHome("home")
 					autoplay.setState(true)
 				}}><PlaylistIcon /></button>

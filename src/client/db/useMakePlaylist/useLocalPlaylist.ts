@@ -108,9 +108,6 @@ export function useCurrentTrack () {
  */
 export function getPlaylist () {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
-	if (!playlist) {
-		throw new Error("trying to find \"playlist\" index, but query doesn't exist yet")
-	}
 	return playlist
 }
 
@@ -119,6 +116,7 @@ export function getPlaylist () {
  */
 export function getCurrentIndex () {
 	const playlist = getPlaylist()
+	if (!playlist) return undefined
 	const index = playlist.tracks.findIndex(({ id }) => id === playlist.current)
 	if (index < 0) return undefined
 	return index

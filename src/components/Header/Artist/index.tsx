@@ -5,10 +5,10 @@ import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
 import { trpc } from "utils/trpc"
-import { setPlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 export default forwardRef(function ArtistView ({
 	open,
@@ -50,7 +50,6 @@ export default forwardRef(function ArtistView ({
 
 	const onClickPlay = () => {
 		if (!data) return
-
 
 		const tracks: Parameters<typeof setPlaylist>[1] = []
 		const albumTrackIdsSet = new Set<string>()
@@ -97,8 +96,13 @@ export default forwardRef(function ArtistView ({
 			})
 		}
 
+		const playlist = getPlaylist()
 		setPlaylist(data.name, tracks)
-		autoplay.setState(true)
+		if (playlist?.current && playlist.current === tracks[0]?.id) {
+			playAudio()
+		} else {
+			autoplay.setState(true)
+		}
 	}
 
 	const { albums, featured, tracks, playlists } = useDeferredValue(data) || {}

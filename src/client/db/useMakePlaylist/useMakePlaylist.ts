@@ -14,7 +14,7 @@ export function useMakePlaylist () {
 	) => {
 		const list = await trpcClient.playlist.generate.fetch(params)
 		if (!list) return
-		await makePlaylist(trpcClient, list, name)
+		return await makePlaylist(trpcClient, list, name)
 	}, [trpcClient])
 }
 
@@ -26,7 +26,7 @@ export function useCreatePlaylist () {
 	const trpcClient = trpc.useContext()
 	return useCallback(async (ids: string[], name = "New Playlist") => {
 		const tracks = await tracksDataFromTrackIds(ids, trpcClient)
-		await makePlaylist(trpcClient, tracks, name)
+		return await makePlaylist(trpcClient, tracks, name)
 	}, [trpcClient])
 }
 

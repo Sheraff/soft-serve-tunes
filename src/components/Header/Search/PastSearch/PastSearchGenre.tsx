@@ -2,9 +2,9 @@ import { trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
-import { useMakePlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 export function PastSearchGenre ({
 	id,
@@ -17,7 +17,12 @@ export function PastSearchGenre ({
 	const showHome = useShowHome()
 	const onClick = () => {
 		_onClick?.()
+		const currentPlaylist = getPlaylist()
 		makePlaylist({ type: "genre", id }, entity ? entity.name : "New Playlist")
+			.then((playlist) => {
+				if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
+					playAudio()
+			})
 		showHome("home")
 		autoplay.setState(true)
 	}

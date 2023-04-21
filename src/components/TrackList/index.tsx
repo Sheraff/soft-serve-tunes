@@ -144,8 +144,8 @@ const TrackItem = memo(function _TrackItem ({
 					}
 					if (data) {
 						startTransition(() => {
-							const { current } = getPlaylist()
-							if (current === track.id) {
+							const playlist = getPlaylist()
+							if (playlist?.current === track.id) {
 								playAudio()
 							} else {
 								addNextToPlaylist(data, true)

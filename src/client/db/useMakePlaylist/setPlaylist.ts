@@ -35,7 +35,8 @@ export async function setPlaylist (
 		id,
 		order,
 	}
-	queryClient.setQueryData<Playlist>(["playlist"], { tracks, ...meta })
+	const playlist: Playlist = { tracks, ...meta }
+	queryClient.setQueryData<Playlist>(["playlist"], playlist)
 	await Promise.all([
 		deleteAllFromIndexedDB("playlist").then(() => (
 			storeListInIndexedDB<PlaylistDBEntry>("playlist", tracks.map((track, i) => ({
@@ -48,4 +49,5 @@ export async function setPlaylist (
 		)),
 		storeInIndexedDB<PlaylistMeta>("appState", "playlist-meta", meta),
 	])
+	return playlist
 }

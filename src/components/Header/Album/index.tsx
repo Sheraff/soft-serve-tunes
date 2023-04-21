@@ -5,9 +5,9 @@ import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import SectionTitle from "atoms/SectionTitle"
 import { trpc } from "utils/trpc"
-import { setPlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 export default forwardRef(function AlbumView ({
 	open,
@@ -75,8 +75,13 @@ export default forwardRef(function AlbumView ({
 				name: data.name,
 			},
 		}))
+		const playlist = getPlaylist()
 		setPlaylist(playlistName, tracks)
-		autoplay.setState(true)
+		if (playlist?.current && playlist.current === tracks[0]?.id) {
+			playAudio()
+		} else {
+			autoplay.setState(true)
+		}
 	}
 
 	const tracks = useDeferredValue(data?.tracks)

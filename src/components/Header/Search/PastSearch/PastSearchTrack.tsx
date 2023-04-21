@@ -1,11 +1,12 @@
 import { trpc } from "utils/trpc"
 import { useShowHome } from "components/AppContext"
-import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import { useCachedTrack } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
+import { autoplay, playAudio } from "components/Player/Audio"
 
-export function PastSearchTrack({
+export function PastSearchTrack ({
 	id,
 	onSettled,
 	onClick: _onClick,
@@ -18,7 +19,13 @@ export function PastSearchTrack({
 		_onClick?.()
 		if (!entity)
 			return console.warn("PastSearch could not add track to playlist as it was not able to fetch associated data")
-		addNextToPlaylist(entity, true)
+		const playlist = getPlaylist()
+		if (playlist?.current === id) {
+			playAudio()
+		} else {
+			addNextToPlaylist(entity, true)
+			autoplay.setState(true)
+		}
 		showHome("home")
 	}
 
@@ -34,7 +41,7 @@ export function PastSearchTrack({
 	}
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id, enabled: !online})
+	const { data: cached } = useCachedTrack({ id, enabled: !online })
 	const offline = !online && cached
 
 	return (
