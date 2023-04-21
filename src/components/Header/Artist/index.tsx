@@ -5,9 +5,10 @@ import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import TrackList from "components/TrackList"
 import { trpc } from "utils/trpc"
-import { useSetPlaylist } from "client/db/useMakePlaylist"
+import { setPlaylist } from "client/db/useMakePlaylist"
 import PlaylistList from "components/PlaylistList"
 import Panel from "../Panel"
+import { autoplay } from "components/Player/Audio"
 
 export default forwardRef(function ArtistView ({
 	open,
@@ -47,7 +48,6 @@ export default forwardRef(function ArtistView ({
 		infos.push(`${data._count.tracks} track${pluralize(data._count.tracks)}`)
 	}
 
-	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
 		if (!data) return
 
@@ -98,6 +98,7 @@ export default forwardRef(function ArtistView ({
 		}
 
 		setPlaylist(data.name, tracks)
+		autoplay.setState(true)
 	}
 
 	const { albums, featured, tracks, playlists } = useDeferredValue(data) || {}

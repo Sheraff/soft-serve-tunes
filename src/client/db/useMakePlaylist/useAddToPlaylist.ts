@@ -11,13 +11,13 @@ import tracksDataFromTrackIds from "./tracksDataFromTrackIds"
 /**
  * @description add a track to a playlist, remote and/or local
  */
-export function useAddToPlaylist() {
+export function useAddToPlaylist () {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
-	const {mutateAsync} = trpc.playlist.modify.useMutation()
+	const { mutateAsync } = trpc.playlist.modify.useMutation()
 	return useCallback(async (
 		playlistId: Playlist["id"] = null,
-		track: {id: string} | {id: string}[],
+		track: { id: string } | { id: string }[],
 	) => {
 		const tracks = Array.isArray(track) ? track : [track]
 		const cache = queryClient.getQueryData<Playlist>(["playlist"])
@@ -26,7 +26,7 @@ export function useAddToPlaylist() {
 			await mutateAsync({
 				type: "add-track",
 				id: playlistId!,
-				params: {id: tracks.map(({id}) => id)},
+				params: { id: tracks.map(({ id }) => id) },
 			})
 			return
 		}
@@ -35,17 +35,17 @@ export function useAddToPlaylist() {
 			// playlist already contains track
 			return
 		}
-		const fullTracks = await tracksDataFromTrackIds(tracks.map(({id}) => id), trpcClient)
+		const fullTracks = await tracksDataFromTrackIds(tracks.map(({ id }) => id), trpcClient)
 		const newTracks = [...cache.tracks, ...fullTracks]
-		const newOrder = !shuffle.getValue(queryClient)
-			? [...cache.order, ...fullTracks.map(({id}) => id)]
+		const newOrder = !shuffle.getValue()
+			? [...cache.order, ...fullTracks.map(({ id }) => id)]
 			// TODO: below shouldn't reshuffle entire playlist, just everything after what's been played so far (up to and including cache.current in cache.order)
 			// TODO: bonus would be to also not shuffle any of the current stack of "play next" tracks
 			: [
 				...(cache.current ? [cache.current] : []),
 				...shuffleArray([
 					...cache.order.filter((id) => id !== cache.current),
-					...fullTracks.map(({id}) => id),
+					...fullTracks.map(({ id }) => id),
 				])
 			]
 		queryClient.setQueryData<Playlist>(["playlist"], {
@@ -69,7 +69,7 @@ export function useAddToPlaylist() {
 			await mutateAsync({
 				type: "add-track",
 				id: playlistId,
-				params: {id: tracks.map(({id}) => id)},
+				params: { id: tracks.map(({ id }) => id) },
 			})
 		}
 

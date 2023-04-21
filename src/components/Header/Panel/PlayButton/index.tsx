@@ -5,7 +5,6 @@ import useLongPress from "components/AlbumList/useLongPress"
 import { useShowHome } from "components/AppContext"
 import { shuffle } from "components/Player"
 import ShuffleIcon from "icons/shuffle.svg"
-import { useQueryClient } from "@tanstack/react-query"
 
 export default function PlayButton ({
 	onClick,
@@ -24,8 +23,7 @@ export default function PlayButton ({
 
 	const showHome = useShowHome()
 
-	const queryClient = useQueryClient()
-	const isShuffle = useRef(shuffle.getValue(queryClient))
+	const isShuffle = useRef(shuffle.getValue())
 
 	return (
 		<div className={className}>
@@ -50,7 +48,7 @@ export default function PlayButton ({
 					onClick={() => {
 						navigator.vibrate(1)
 						startTransition(() => {
-							shuffle.setState(!isShuffle.current, queryClient)
+							shuffle.setState(!isShuffle.current)
 							onClick()
 							showHome("home")
 						})

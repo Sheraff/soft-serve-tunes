@@ -10,25 +10,25 @@ import { getPlaylistByIdRemoteOrLocal } from "./getRemotePlaylistAsLocal"
 /**
  * @description reorder a playlist, remote and/or local
  */
-export function useReorderPlaylist() {
+export function useReorderPlaylist () {
 	const queryClient = useQueryClient()
 	const trpcClient = trpc.useContext()
-	const {mutateAsync} = trpc.playlist.modify.useMutation()
+	const { mutateAsync } = trpc.playlist.modify.useMutation()
 
 	return useCallback(async (oldIndex: number, newIndex: number, id: Playlist["id"] = null) => {
-		const {playlist, isLocal} = await getPlaylistByIdRemoteOrLocal(id, trpcClient, queryClient)
+		const { playlist, isLocal } = await getPlaylistByIdRemoteOrLocal(id, trpcClient, queryClient)
 
 		const newItems = [...playlist.tracks]
 		const [item] = newItems.splice(oldIndex, 1)
 		newItems.splice(newIndex, 0, item!)
-		const newOrder = shuffle.getValue(queryClient)
+		const newOrder = shuffle.getValue()
 			? playlist.order // if playlist is already shuffled, `order` is not correlated to `tracks`, so only update tracks
-			: newItems.map(({id}) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
+			: newItems.map(({ id }) => id) // if playlist is not shuffled, `order` is correlated to `tracks`, so update order too
 
 		if (playlist.id) {
-			trpcClient.playlist.get.setData({id: playlist.id}, (old) => {
+			trpcClient.playlist.get.setData({ id: playlist.id }, (old) => {
 				if (!old) return old
-				const tracks = newItems.reduce<typeof old["tracks"]>((acc, {id}) => {
+				const tracks = newItems.reduce<typeof old["tracks"]>((acc, { id }) => {
 					const track = old.tracks.find((track) => track.id === id)
 					if (track) acc.push(track)
 					return acc
@@ -47,7 +47,7 @@ export function useReorderPlaylist() {
 				tracks: newItems,
 				order: newOrder,
 			})
-			if (shuffle.getValue(queryClient)) {
+			if (shuffle.getValue()) {
 				await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 					...meta,
 					order: newOrder,

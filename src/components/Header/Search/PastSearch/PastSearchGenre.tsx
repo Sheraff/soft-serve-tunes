@@ -4,6 +4,7 @@ import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { useMakePlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
+import { autoplay } from "components/Player/Audio"
 
 export function PastSearchGenre ({
 	id,
@@ -18,6 +19,7 @@ export function PastSearchGenre ({
 		_onClick?.()
 		makePlaylist({ type: "genre", id }, entity ? entity.name : "New Playlist")
 		showHome("home")
+		autoplay.setState(true)
 	}
 
 	const info = []

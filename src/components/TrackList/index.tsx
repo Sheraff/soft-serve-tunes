@@ -32,8 +32,8 @@ import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
-import { useQueryClient } from "@tanstack/react-query"
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual"
+import { autoplay } from "components/Player/Audio"
 
 const emptyFunction = () => { }
 
@@ -97,12 +97,10 @@ const TrackItem = memo(function _TrackItem ({
 		if (data)
 			onNext?.(data)
 	}
-	const queryClient = useQueryClient()
 	callbacks.current.onLong = () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({ type: "track", id: track.id }),
-			queryClient
+			editOverlaySetter({ type: "track", id: track.id })
 		)
 	}
 	useSlideTrack(item, callbacks, { quickSwipeDeleteAnim })
@@ -132,7 +130,7 @@ const TrackItem = memo(function _TrackItem ({
 				})}
 				type="button"
 				onClick={() => {
-					if (editOverlay.getValue(queryClient).type === "track") {
+					if (editOverlay.getValue().type === "track") {
 						callbacks.current.onLong!()
 						return
 					}
@@ -146,6 +144,7 @@ const TrackItem = memo(function _TrackItem ({
 						startTransition(() => {
 							addNextToPlaylist(data, true)
 							showHome("home")
+							autoplay.setState(true)
 						})
 						return
 					}

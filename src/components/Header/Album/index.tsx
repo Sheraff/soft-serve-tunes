@@ -5,11 +5,11 @@ import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 import SectionTitle from "atoms/SectionTitle"
 import { trpc } from "utils/trpc"
-import { useSetPlaylist } from "client/db/useMakePlaylist"
-import { useQueryClient } from "@tanstack/react-query"
+import { setPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
+import { autoplay } from "components/Player/Audio"
 
-export default forwardRef(function AlbumView({
+export default forwardRef(function AlbumView ({
 	open,
 	id,
 	z,
@@ -31,12 +31,11 @@ export default forwardRef(function AlbumView({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const {data} = trpc.album.get.useQuery({id}, {
+	const { data } = trpc.album.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
 
-	const queryClient = useQueryClient()
 	const infos = []
 	const date = data?.spotify?.releaseDate || data?.audiodb?.intYearReleased || data?.lastfm?.releasedate
 	if (date) {
@@ -51,7 +50,7 @@ export default forwardRef(function AlbumView({
 					openPanel("artist", {
 						id: data.artist.id,
 						name: data.artist.name,
-					}, queryClient)
+					})
 				}
 			}}>
 				{`${data.artist?.name}`}
@@ -62,7 +61,6 @@ export default forwardRef(function AlbumView({
 		infos.push(`${data?._count.tracks} track${pluralize(data?._count.tracks)}`)
 	}
 
-	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
 		if (!data) return
 		const playlistName = !data.artist
@@ -78,6 +76,7 @@ export default forwardRef(function AlbumView({
 			},
 		}))
 		setPlaylist(playlistName, tracks)
+		autoplay.setState(true)
 	}
 
 	const tracks = useDeferredValue(data?.tracks)

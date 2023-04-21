@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useNextCachedTrack } from "client/sw/useSWCached"
 import { repeat } from "components/Player"
-import { useCallback, useEffect } from "react"
-import { trpc } from "utils/trpc"
+import { useEffect } from "react"
+import { queryClient, trpc } from "utils/trpc"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import extractPlaylistCredits from "./extractPlaylistCredits"
 import { type Playlist, type PlaylistDBEntry, type PlaylistMeta } from "./types"
@@ -16,7 +16,7 @@ const defaultPlaylist: Playlist = {
 	order: [],
 }
 
-async function playlistQueryFn(queryClient: QueryClient): Promise<Playlist> {
+async function playlistQueryFn (): Promise<Playlist> {
 	const cache = queryClient.getQueryData<Playlist>(["playlist"])
 	if (cache) return cache
 	const [results, meta] = await Promise.all([
@@ -38,37 +38,33 @@ async function playlistQueryFn(queryClient: QueryClient): Promise<Playlist> {
 		...defaultPlaylist,
 		tracks,
 		current: tracks[0]?.id,
-		order: tracks.map(({id}) => id),
+		order: tracks.map(({ id }) => id),
 	}
 }
 
 /**
  * @description reads the playlist from indexedDB into react-query cache
  */
-export function usePreloadPlaylist() {
-	const queryClient = useQueryClient()
+export function usePreloadPlaylist () {
 	useEffect(() => {
-		playlistQueryFn(queryClient).then((playlist) => {
+		playlistQueryFn().then((playlist) => {
 			queryClient.setQueryData<Playlist>(["playlist"], playlist)
 		})
-	}, [queryClient])
+	}, [])
 }
 
 /**
  * @description `useQuery` wrapper for local playlist
  */
-export function usePlaylist<T = Playlist>({
+export function usePlaylist<T = Playlist> ({
 	select,
 	enabled = true,
 }: {
 	select?: (playlist: Playlist) => T,
 	enabled?: boolean,
 } = {}) {
-	const queryClient = useQueryClient()
 	return useQuery<Playlist, unknown, T>(["playlist"], {
-		queryFn() {
-			return playlistQueryFn(queryClient)
-		},
+		queryFn: playlistQueryFn,
 		enabled,
 		cacheTime: 0,
 		select,
@@ -76,7 +72,7 @@ export function usePlaylist<T = Playlist>({
 }
 
 
-function selectDetails({tracks, name, id}: Playlist) {
+function selectDetails ({ tracks, name, id }: Playlist) {
 	if (!tracks || !tracks.length) return {}
 
 	const credits = extractPlaylistCredits(tracks)
@@ -94,44 +90,41 @@ function selectDetails({tracks, name, id}: Playlist) {
 /**
  * @description `usePlaylist` wrapper that uses `extractPlaylistCredits` in the select function
  */
-export function usePlaylistExtractedDetails() {
-	const {data} = usePlaylist({select: selectDetails})
+export function usePlaylistExtractedDetails () {
+	const { data } = usePlaylist({ select: selectDetails })
 	return data || {}
 }
 
 /**
  * @description `usePlaylist` wrapper that returns only the current track
  */
-export function useCurrentTrack() {
-	const { data } = usePlaylist({select: ({tracks, current}) => tracks.find(({id}) => id === current)})
+export function useCurrentTrack () {
+	const { data } = usePlaylist({ select: ({ tracks, current }) => tracks.find(({ id }) => id === current) })
 	return data
 }
 
 /**
  * @description stateless function to obtain the current index of the *local* playlist
  */
-export function useGetCurrentIndex() {
-	const queryClient = useQueryClient()
-	return useCallback(() => {
-		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
-		if (!playlist) {
-			throw new Error("trying to find \"playlist\" index, but query doesn't exist yet")
-		}
-		const index = playlist.tracks.findIndex(({id}) => id === playlist.current)
-		if (index < 0) return undefined
-		return index
-	}, [queryClient])
+export function getCurrentIndex () {
+	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
+	if (!playlist) {
+		throw new Error("trying to find \"playlist\" index, but query doesn't exist yet")
+	}
+	const index = playlist.tracks.findIndex(({ id }) => id === playlist.current)
+	if (index < 0) return undefined
+	return index
 }
 
 /**
  * @description `usePlaylist` wrapper that returns the next track based on `order`, `shuffle`, `repeat` and `online`
  */
-export function useNextTrack() {
+export function useNextTrack () {
 	const repeatType = repeat.useValue()
 	const online = useIsOnline()
-	const { data: {order = [], from} = {} } = usePlaylist({
+	const { data: { order = [], from } = {} } = usePlaylist({
 		enabled: !online,
-		select: ({order, current}) => ({order, from: order.findIndex((id) => id === current) + 1}),
+		select: ({ order, current }) => ({ order, from: order.findIndex((id) => id === current) + 1 }),
 	})
 	const { data: offlineNext } = useNextCachedTrack({
 		enabled: !online,
@@ -139,25 +132,27 @@ export function useNextTrack() {
 		loop: repeatType === 1,
 		tracks: order!,
 	})
-	const { data } = usePlaylist({select: ({tracks, current, order}) => {
-		if (repeatType === 2) return undefined
-		if (!online) return tracks.find(({id}) => id === offlineNext)
-		const index = order.findIndex((id) => id === current)
-		if (index < 0) return undefined
-		if (repeatType === 0 && index >= tracks.length - 1) return undefined
-		const nextIndex = index >= tracks.length - 1
-			? 0
-			: index + 1
-		const nextTrack = tracks.find(({id}) => id === order[nextIndex])
-		return nextTrack
-	}})
+	const { data } = usePlaylist({
+		select: ({ tracks, current, order }) => {
+			if (repeatType === 2) return undefined
+			if (!online) return tracks.find(({ id }) => id === offlineNext)
+			const index = order.findIndex((id) => id === current)
+			if (index < 0) return undefined
+			if (repeatType === 0 && index >= tracks.length - 1) return undefined
+			const nextIndex = index >= tracks.length - 1
+				? 0
+				: index + 1
+			const nextTrack = tracks.find(({ id }) => id === order[nextIndex])
+			return nextTrack
+		}
+	})
 	return data
 }
 
 /**
  * @description `trpc.track.miniature.useQuery` wrapper that fetches the current *local* playlist track
  */
-export function useCurrentTrackDetails() {
+export function useCurrentTrackDetails () {
 	const track = useCurrentTrack()
 
 	const { data } = trpc.track.miniature.useQuery({

@@ -3,11 +3,12 @@ import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { trpc } from "utils/trpc"
-import { useCurrentTrackDetails, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylist } from "client/db/useMakePlaylist"
+import { setPlaylist, useCurrentTrackDetails, useRemoveFromPlaylist, useReorderPlaylist } from "client/db/useMakePlaylist"
 import Panel from "../Panel"
 import CoverImages from "components/NowPlaying/Cover/Images"
 import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 import DeleteIcon from "icons/playlist_remove.svg"
+import { autoplay } from "components/Player/Audio"
 
 export default forwardRef(function PlaylistView ({
 	open,
@@ -42,10 +43,10 @@ export default forwardRef(function PlaylistView ({
 	})
 	const infos = [description]
 
-	const setPlaylist = useSetPlaylist()
 	const onClickPlay = () => {
 		if (data) startTransition(() => {
 			setPlaylist(data.name, data.tracks, id)
+			autoplay.setState(true)
 		})
 	}
 
@@ -88,7 +89,7 @@ export default forwardRef(function PlaylistView ({
 			setPlaylist(_name, tracks, id, trackId)
 			showHome("home")
 		})
-	}, [_name, id, setPlaylist, showHome, tracks])
+	}, [_name, id, showHome, tracks])
 
 	return (
 		<Panel

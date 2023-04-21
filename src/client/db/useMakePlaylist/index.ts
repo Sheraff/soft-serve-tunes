@@ -1,21 +1,21 @@
 export { type Playlist } from "./types"
-export { useAddNextToPlaylist, useShufflePlaylist } from "./stack"
+export { useAddNextToPlaylist, shufflePlaylist } from "./stack"
 export { onPlaylistSaved } from "./onPlaylistSaved"
 export { useRenamePlaylist } from "./useRenamePlaylist"
 export { useReorderPlaylist } from "./useReorderPlaylist"
 export { useAddToPlaylist } from "./useAddToPlaylist"
-export { useSetPlaylistIndex } from "./useSetPlaylistIndex"
+export { setPlaylistIndex, nextPlaylistIndex, prevPlaylistIndex } from "./useSetPlaylistIndex"
 export { useRemoveFromPlaylist } from "./useRemoveFromPlaylist"
 export {
 	usePreloadPlaylist,
 	usePlaylist,
 	usePlaylistExtractedDetails,
 	useCurrentTrack,
-	useGetCurrentIndex,
+	getCurrentIndex,
 	useNextTrack,
 	useCurrentTrackDetails,
 } from "./useLocalPlaylist"
-export { useSetPlaylist } from "./useSetPlaylist"
+export { setPlaylist } from "./setPlaylist"
 export {
 	useMakePlaylist,
 	useCreatePlaylist,

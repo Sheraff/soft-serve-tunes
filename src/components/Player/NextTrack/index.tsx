@@ -1,11 +1,11 @@
-import { useNextTrack, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { nextPlaylistIndex, useNextTrack } from "client/db/useMakePlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import Head from "next/head"
 import { memo, useEffect, type RefObject } from "react"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { trpc } from "utils/trpc"
 
-export default memo(function NextTrack({
+export default memo(function NextTrack ({
 	audio,
 	id,
 }: {
@@ -13,9 +13,8 @@ export default memo(function NextTrack({
 	id?: string
 }) {
 	const nextItem = useNextTrack()
-	const {nextPlaylistIndex} = useSetPlaylistIndex()
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id})
+	const { data: cached } = useCachedTrack({ id })
 
 	useEffect(() => {
 		const element = audio.current
@@ -29,9 +28,9 @@ export default memo(function NextTrack({
 				element.load()
 			}
 			nextPlaylistIndex(audio)
-		}, {signal: controller.signal})
+		}, { signal: controller.signal })
 		return () => controller.abort()
-	}, [audio, nextPlaylistIndex, nextItem])
+	}, [audio, nextItem])
 
 	const enabled = Boolean(online && cached && nextItem)
 

@@ -1,7 +1,6 @@
-import { type QueryClient, useQueryClient } from "@tanstack/react-query"
-import { useCallback, useEffect } from "react"
+import { useEffect } from "react"
 import { editOverlay, editOverlaySetter } from "./editOverlay"
-import globalState from "./globalState"
+import globalState from "client/globalState"
 
 type ArtistPanel = {
 	type: "artist"
@@ -56,13 +55,13 @@ type Panel =
 export const panelStack = globalState<Panel[]>(
 	"panelStack",
 	[],
-	(_, queryClient) => {
-		editOverlay.setState(editOverlaySetter(null), queryClient)
+	() => {
+		editOverlay.setState(editOverlaySetter(null))
 		history.pushState({}, "just-allow-back-button")
 	}
 )
 
-export function openPanel<P extends Panel>(type: P["type"], value: Omit<P["value"], "open">, queryClient: QueryClient) {
+export function openPanel<P extends Panel> (type: P["type"], value: Omit<P["value"], "open">) {
 	panelStack.setState(prev => {
 		// const clean = prev.filter(({value: {id}}) => id !== value.id)
 		const clean = prev.filter((panel) => panel.type !== type)
@@ -78,95 +77,89 @@ export function openPanel<P extends Panel>(type: P["type"], value: Omit<P["value
 				}
 			} as Panel
 		]
-	}, queryClient)
+	})
 }
 
 type SearchView = {
 	open: boolean,
 }
-export const searchView = globalState<SearchView>("searchView", {
-	open: false,
-}, () => {
-	history.pushState({}, "just-allow-back-button")
-})
+export const searchView = globalState<SearchView>(
+	"searchView",
+	{ open: false },
+	() => history.pushState({}, "just-allow-back-button")
+)
 
 type LibraryView = {
 	open: boolean,
 }
-export const libraryView = globalState<LibraryView>("libraryView", {
-	open: false,
-}, () => {
-	history.pushState({}, "just-allow-back-button")
-})
+export const libraryView = globalState<LibraryView>(
+	"libraryView",
+	{ open: false },
+	() => history.pushState({}, "just-allow-back-button")
+)
 
 type MainView = "suggestions" | "home"
 export const mainView = globalState<MainView>(
 	"mainView",
 	"suggestions",
-	(_, queryClient) => {
-		editOverlay.setState(editOverlaySetter(null), queryClient)
-	}
+	() => editOverlay.setState(editOverlaySetter(null))
 )
 
-export function useIsHome() {
+export function useIsHome () {
 	const stack = panelStack.useValue()
 	const view = mainView.useValue()
 	return stack.length === 0 && view === "suggestions"
 }
 
-export function useShowHome() {
-	const queryClient = useQueryClient()
+function showHome (which?: MainView) {
+	if (which) {
+		mainView.setState(which)
+	}
 
-	return useCallback((which?: MainView) => {
-		if (which) {
-			mainView.setState(which, queryClient)
-		}
+	const search = searchView.getValue()
+	if (search.open) {
+		searchView.setState({ open: false })
+	}
 
-		const search = searchView.getValue(queryClient)
-		if (search.open) {
-			searchView.setState({open: false}, queryClient)
-		}
+	const stack = panelStack.getValue()
+	if (stack.length > 0) {
+		const { type, key, value } = stack.at(-1)!
+		panelStack.setState([{
+			type,
+			key,
+			value: {
+				...value,
+				open: "close",
+			}
+		} as Panel])
+	}
 
-		const stack = panelStack.getValue(queryClient)
-		if (stack.length > 0) {
-			const {type, key, value} = stack.at(-1)!
-			panelStack.setState([{
-				type,
-				key,
-				value: {
-					...value,
-					open: "close",
-				}
-			} as Panel], queryClient)
-		}
-
-		const library = libraryView.getValue(queryClient)
-		if (library.open) {
-			libraryView.setState({open: false}, queryClient)
-		}
-
-	}, [queryClient])
+	const library = libraryView.getValue()
+	if (library.open) {
+		libraryView.setState({ open: false })
+	}
+}
+export function useShowHome () {
+	return showHome
 }
 
-export function AppState() {
-	const queryClient = useQueryClient()
-
+export function AppState () {
 	useEffect(() => {
 		const controller = new AbortController()
 		const backNav = () => {
 			history.pushState({}, "just-allow-back-button")
 
-			if (editOverlay.getValue(queryClient).type !== null) {
-				editOverlay.setState(editOverlaySetter(null), queryClient)
+			if (editOverlay.getValue().type !== null) {
+				editOverlay.setState(editOverlaySetter(null))
 				return
 			}
 
-			if (searchView.getValue(queryClient).open) {
-				searchView.setState({open: false}, queryClient)
+			if (searchView.getValue().open) {
+				searchView.setState({ open: false })
 				return
 			}
 
-			const stack = panelStack.getValue(queryClient)
+			const stack = panelStack.getValue()
 			if (stack.length > 1) {
 				// at least 2 in stack, force-open the penultimate, it will auto-trigger the closing of the last
 				const rest = stack.slice(0, -2)
@@ -190,13 +183,13 @@ export function AppState() {
 						open: "force-open",
 					}
 				} as Panel
-				panelStack.setState([...rest, next, close], queryClient)
+				panelStack.setState([...rest, next, close])
 				return
 			}
 			if (stack.length > 0) {
 				// only 1 in stack, close it
 				const rest = stack.slice(0, -1)
-				const {type, key, value} = stack.at(-1)!
+				const { type, key, value } = stack.at(-1)!
 				const close = {
 					type,
 					key,
@@ -205,23 +198,23 @@ export function AppState() {
 						open: "close",
 					}
 				} as Panel
-				panelStack.setState([...rest, close], queryClient)
+				panelStack.setState([...rest, close])
 				return
 			}
 
-			const library = libraryView.getValue(queryClient)
+			const library = libraryView.getValue()
 			if (library.open) {
-				libraryView.setState({open: false}, queryClient)
+				libraryView.setState({ open: false })
 				return
 			}
 
-			mainView.setState(value => value === "home" ? "suggestions" : "home", queryClient)
+			mainView.setState(value => value === "home" ? "suggestions" : "home")
 		}
 
 		addEventListener("popstate", event => {
 			backNav()
 			event.preventDefault()
-		}, {capture: true, signal: controller.signal})
+		}, { capture: true, signal: controller.signal })
 
 		window.addEventListener("keydown", (event) => {
 			// @ts-expect-error -- it's fine if contentEditable doesn't exist, the value will just be undefined and it works
@@ -231,10 +224,10 @@ export function AppState() {
 				event.stopPropagation()
 				backNav()
 			}
-		}, {capture: true, passive: false, signal: controller.signal})
+		}, { capture: true, passive: false, signal: controller.signal })
 
 		return () => controller.abort()
-	}, [queryClient])
+	}, [])
 
 	return null
 }

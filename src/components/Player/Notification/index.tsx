@@ -1,13 +1,12 @@
 import { type RefObject, useEffect, memo } from "react"
-import { useCurrentTrackDetails, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { nextPlaylistIndex, prevPlaylistIndex, useCurrentTrackDetails } from "client/db/useMakePlaylist"
 
-export default memo(function Notification({
+export default memo(function Notification ({
 	audio
 }: {
 	audio: RefObject<HTMLAudioElement>
 }) {
 	const data = useCurrentTrackDetails()
-	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
 	const hasData = Boolean(data)
 
 	useEffect(() => {
@@ -17,21 +16,23 @@ export default memo(function Notification({
 			title: data.name,
 			artist: data.artist?.name,
 			album: data.album?.name,
-			...(data.cover?.id ? {artwork: [
-				{
-					src: `/api/cover/${data.cover.id}`,
-					type: "image/avif",
-					sizes: "786x786",
-				},
-			]} : {}),
+			...(data.cover?.id ? {
+				artwork: [
+					{
+						src: `/api/cover/${data.cover.id}`,
+						type: "image/avif",
+						sizes: "786x786",
+					},
+				]
+			} : {}),
 		})
 	}, [data])
 
 	useEffect(() => {
-		if(!hasData) return
+		if (!hasData) return
 		navigator.mediaSession.setActionHandler("previoustrack", () => prevPlaylistIndex())
 		navigator.mediaSession.setActionHandler("nexttrack", () => nextPlaylistIndex(audio))
-	}, [hasData, prevPlaylistIndex, nextPlaylistIndex, audio])
+	}, [hasData, audio])
 
 	return null
 })

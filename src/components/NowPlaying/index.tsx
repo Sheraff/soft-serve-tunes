@@ -1,4 +1,4 @@
-import { usePlaylist, useRemoveFromPlaylist, useReorderPlaylist, useSetPlaylistIndex } from "client/db/useMakePlaylist"
+import { setPlaylistIndex, usePlaylist, useRemoveFromPlaylist, useReorderPlaylist } from "client/db/useMakePlaylist"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { memo, startTransition, useCallback, useRef } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
@@ -9,7 +9,6 @@ import AddMoreButton from "./AddMoreButton"
 export default memo(function NowPlaying () {
 	const { data } = usePlaylist()
 	const reorderPlaylist = useReorderPlaylist()
-	const { setPlaylistIndex } = useSetPlaylistIndex()
 	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const parent = useRef<HTMLDivElement>(null)
 
@@ -24,7 +23,7 @@ export default memo(function NowPlaying () {
 
 	const onTrackClick = useCallback((id: string) => startTransition(() => {
 		setPlaylistIndex(tracks.findIndex((item) => item.id === id))
-	}), [tracks, setPlaylistIndex])
+	}), [tracks])
 
 	const onReorder = useCallback((from: number, to: number) =>
 		reorderPlaylist(from, to, data?.id),

@@ -3,8 +3,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { type RouterOutputs } from "utils/trpc"
 import { mainView, openPanel, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { useGetCurrentIndex } from "client/db/useMakePlaylist"
-import { useQueryClient } from "@tanstack/react-query"
+import { getCurrentIndex } from "client/db/useMakePlaylist"
 
 export default memo(function SlidingText ({
 	item,
@@ -13,8 +12,6 @@ export default memo(function SlidingText ({
 	item: Exclude<RouterOutputs["playlist"]["generate"], undefined>[number] | undefined
 	className?: string
 }) {
-	const queryClient = useQueryClient()
-
 	const [separator, setSeparator] = useState(false)
 	const span = useRef<HTMLDivElement>(null)
 	useEffect(() => {
@@ -33,7 +30,6 @@ export default memo(function SlidingText ({
 	const showHome = useShowHome()
 	const focusRef = useRef<boolean>(false)
 	const main = mainView.useValue()
-	const getCurrentIndex = useGetCurrentIndex()
 	const scrollToCurrent = useCallback(() => {
 		// @ts-expect-error -- this is a hack to expose the scroll function
 		const scrollToIndex = window._scrollNowPlayingToIndex as ((index: number) => void) | undefined
@@ -41,7 +37,7 @@ export default memo(function SlidingText ({
 		const index = getCurrentIndex()
 		if (typeof index === "undefined") return
 		scrollToIndex(index)
-	}, [getCurrentIndex])
+	}, [])
 	useEffect(() => {
 		if (main !== "home") return
 		if (!focusRef.current) return
@@ -80,7 +76,7 @@ export default memo(function SlidingText ({
 							openPanel("album", {
 								id: album.id,
 								name: album.name,
-							}, queryClient)
+							})
 						}}
 					>
 						{album.name}
@@ -97,7 +93,7 @@ export default memo(function SlidingText ({
 							openPanel("artist", {
 								id: artist.id,
 								name: artist.name,
-							}, queryClient)
+							})
 						}}
 					>
 						{artist.name}

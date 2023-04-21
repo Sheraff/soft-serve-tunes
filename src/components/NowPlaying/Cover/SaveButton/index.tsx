@@ -7,7 +7,7 @@ import SaveIcon from "icons/library_add.svg"
 import SavedIcon from "icons/collections_bookmark.svg"
 import { useQueryClient } from "@tanstack/react-query"
 
-function SaveButton({
+function SaveButton ({
 	id = null,
 	className
 }: {
@@ -17,8 +17,8 @@ function SaveButton({
 	const button = useRef<HTMLButtonElement>(null)
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
-	const {mutate: savePlaylistMutation} = trpc.playlist.save.useMutation()
-	const {mutate: deletePlaylistMutation} = trpc.playlist.delete.useMutation()
+	const { mutate: savePlaylistMutation } = trpc.playlist.save.useMutation()
+	const { mutate: deletePlaylistMutation } = trpc.playlist.delete.useMutation()
 
 	const [freezeId, setFreezeId] = useState<boolean | null>(null)
 
@@ -31,17 +31,17 @@ function SaveButton({
 		let conditions = 0
 
 		const intro = target.animate([
-			{ transform: "scale(1) rotateY(0)"},
-			{ transform: "scale(1.5) rotateY(1turn)"},
+			{ transform: "scale(1) rotateY(0)" },
+			{ transform: "scale(1.5) rotateY(1turn)" },
 		], { duration: 600, iterations: 1, easing: "ease-in" })
 		intro.finished.then(() => {
 			target.animate([
-				{ transform: "scale(1.5)"},
-				{ transform: "scale(1.2)"},
+				{ transform: "scale(1.5)" },
+				{ transform: "scale(1.2)" },
 			], { duration: 800, iterations: Infinity, easing: "linear", direction: "alternate", composite: "add" })
 			target.animate([
-				{ transform: "rotateY(0)"},
-				{ transform: "rotateY(1turn)"},
+				{ transform: "rotateY(0)" },
+				{ transform: "rotateY(1turn)" },
 			], { duration: 400, iterations: Infinity, easing: "linear", composite: "add" })
 		})
 		setTimeout(() => {
@@ -72,18 +72,18 @@ function SaveButton({
 			}
 			savePlaylistMutation({
 				name: cache.name,
-				tracks: cache.tracks.map(({id}, index) => ({id, index}))
+				tracks: cache.tracks.map(({ id }, index) => ({ id, index }))
 			}, {
-				onSuccess(playlist) {
+				onSuccess (playlist) {
 					if (!playlist) {
 						throw new Error("Trying to save a playlist, but mutation returned null")
 					}
-					trpcClient.playlist.get.setData({id: playlist.id}, playlist)
-					onPlaylistSaved(queryClient, playlist.id, playlist.name)
+					trpcClient.playlist.get.setData({ id: playlist.id }, playlist)
+					onPlaylistSaved(playlist.id, playlist.name)
 					conditions++
 					onEnd()
 				},
-				onError() {
+				onError () {
 					target.getAnimations().forEach(anim => anim.cancel())
 					element.classList.remove(styles.save)
 					setFreezeId(null)
@@ -104,13 +104,13 @@ function SaveButton({
 		let conditions = 0
 
 		const intro = target.animate([
-			{ transform: "rotate(0)"},
-			{ transform: "rotate(65deg)"},
+			{ transform: "rotate(0)" },
+			{ transform: "rotate(65deg)" },
 		], { duration: 300, iterations: 1, easing: "ease-in" })
 		intro.finished.then(() => {
 			target.animate([
-				{ transform: "rotate(65deg)"},
-				{ transform: "rotate(25deg)"},
+				{ transform: "rotate(65deg)" },
+				{ transform: "rotate(25deg)" },
 			], { duration: 500, iterations: Infinity, easing: "ease-in-out", direction: "alternate" })
 		})
 		setTimeout(() => {
@@ -132,13 +132,13 @@ function SaveButton({
 		}
 		startTransition(() => {
 			deletePlaylistMutation({ id }, {
-				onSuccess() {
-					trpcClient.playlist.get.setData({id}, null)
-					onPlaylistSaved(queryClient, null, null)
+				onSuccess () {
+					trpcClient.playlist.get.setData({ id }, null)
+					onPlaylistSaved(null, null)
 					conditions++
 					onEnd()
 				},
-				onError() {
+				onError () {
 					target.getAnimations().forEach(anim => anim.cancel())
 					element.classList.remove(styles.delete)
 					setFreezeId(null)
@@ -165,12 +165,12 @@ function SaveButton({
 		>
 			{(freezeId ?? id) ? (
 				<>
-					<SavedIcon/>
+					<SavedIcon />
 					<span>Delete Playlist</span>
 				</>
 			) : (
 				<>
-					<SaveIcon/>
+					<SaveIcon />
 					<span>Save Playlist</span>
 				</>
 			)}

@@ -1,22 +1,20 @@
 import { trpc } from "utils/trpc"
 import { openPanel } from "components/AppContext"
-import { useQueryClient } from "@tanstack/react-query"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import pluralize from "utils/pluralize"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedAlbum } from "client/sw/useSWCached"
 
-export function PastSearchAlbum({
+export function PastSearchAlbum ({
 	id,
 	onSettled,
 	onClick: _onClick,
 	showType = true,
 }: PastSearchProps) {
 	const { data: entity } = trpc.album.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
-	const queryClient = useQueryClient()
 	const onClick = () => {
 		_onClick?.()
-		openPanel("album", { id, name: entity?.name }, queryClient)
+		openPanel("album", { id, name: entity?.name })
 	}
 
 	const info = []
@@ -31,7 +29,7 @@ export function PastSearchAlbum({
 	}
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedAlbum({id, enabled: !online})
+	const { data: cached } = useCachedAlbum({ id, enabled: !online })
 	const offline = !online && cached
 
 	return (

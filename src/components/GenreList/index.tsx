@@ -9,7 +9,7 @@ import { trpc } from "utils/trpc"
 import pluralize from "utils/pluralize"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
-import { useQueryClient } from "@tanstack/react-query"
+import { autoplay } from "components/Player/Audio"
 
 type GenreListItem = {
 	id: string
@@ -36,13 +36,11 @@ function GenreItem ({
 		}
 	})
 
-	const queryClient = useQueryClient()
 	const item = useRef<HTMLButtonElement>(null)
 	const onLong = () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({ type: "genre", id: genre.id }),
-			queryClient
+			editOverlaySetter({ type: "genre", id: genre.id })
 		)
 	}
 	useLongPress({ onLong, item })
@@ -55,7 +53,7 @@ function GenreItem ({
 			className={styles.button}
 			type="button"
 			onClick={() => {
-				if (onLong && editOverlay.getValue(queryClient).type === "genre") {
+				if (onLong && editOverlay.getValue().type === "genre") {
 					onLong()
 					return
 				}
@@ -64,6 +62,7 @@ function GenreItem ({
 					genre && onSelect?.(genre)
 					makePlaylist({ type: "genre", id: genre.id }, genre.name)
 					showHome("home")
+					autoplay.setState(true)
 				})
 			}}
 		>

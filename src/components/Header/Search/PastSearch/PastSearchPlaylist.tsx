@@ -2,20 +2,18 @@ import { trpc } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
-import { useQueryClient } from "@tanstack/react-query"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 
-export function PastSearchPlaylist({
+export function PastSearchPlaylist ({
 	id,
 	onSettled,
 	onClick: _onClick,
 	showType = true,
 }: PastSearchProps) {
 	const { data: entity } = trpc.playlist.get.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
-	const queryClient = useQueryClient()
 	const onClick = () => {
 		_onClick?.()
-		openPanel("playlist", { id, name: entity?.name }, queryClient)
+		openPanel("playlist", { id, name: entity?.name })
 	}
 
 	const info = []

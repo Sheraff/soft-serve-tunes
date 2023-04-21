@@ -1,4 +1,4 @@
-import globalState from "./globalState"
+import globalState from "client/globalState"
 
 type EditOverlay = {
 	type: "artist" | "album" | "track" | "playlist" | "genre" | null
@@ -8,9 +8,9 @@ type EditOverlay = {
 	}[]
 }
 
-export const editOverlay = globalState<EditOverlay>("editOverlay", {type: null, selection: []})
+export const editOverlay = globalState<EditOverlay>("editOverlay", { type: null, selection: [] })
 
-export function editOverlaySetter(item: EditOverlay["selection"][number] | null) {
+export function editOverlaySetter (item: EditOverlay["selection"][number] | null) {
 	return (prev: EditOverlay) => {
 		if (item === null) {
 			return {

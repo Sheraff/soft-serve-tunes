@@ -1,23 +1,21 @@
 import { trpc } from "utils/trpc"
 import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
-import { useQueryClient } from "@tanstack/react-query"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import pluralize from "utils/pluralize"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedArtist } from "client/sw/useSWCached"
 
-export function PastSearchArtist({
+export function PastSearchArtist ({
 	id,
 	onSettled,
 	onClick: _onClick,
 	showType = true,
 }: PastSearchProps) {
 	const { data: entity } = trpc.artist.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
-	const queryClient = useQueryClient()
 	const onClick = () => {
 		_onClick?.()
-		openPanel("artist", { id, name: entity?.name }, queryClient)
+		openPanel("artist", { id, name: entity?.name })
 	}
 
 	const info = []
@@ -32,7 +30,7 @@ export function PastSearchArtist({
 	}
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedArtist({id, enabled: !online})
+	const { data: cached } = useCachedArtist({ id, enabled: !online })
 	const offline = !online && cached
 
 	return (

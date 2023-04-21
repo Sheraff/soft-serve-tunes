@@ -1,13 +1,12 @@
-import { type useQueryClient } from "@tanstack/react-query"
 import { modifyInIndexedDB } from "client/db/utils"
 import { type Playlist, type PlaylistMeta } from "./types"
+import { queryClient } from "utils/trpc"
 
 /**
  * @description sets the *local* playlist `id` and `name` from the return of a `trpc.playlist.save` mutation
  * (saving a playlist to the server returns the new playlist's ID and the name might have changed in case of collision)
  */
-export async function onPlaylistSaved(
-	queryClient: ReturnType<typeof useQueryClient>,
+export async function onPlaylistSaved (
 	id: string | null,
 	name: string | null,
 ) {

@@ -23,7 +23,6 @@ import DashboardIcon from "icons/dashboard.svg"
 import QueueMusicIcon from "icons/queue_music.svg"
 import LibraryIcon from "icons/library_music.svg"
 import Upload from "./Upload"
-import { useQueryClient } from "@tanstack/react-query"
 
 type Panel = ReturnType<typeof panelStack.useValue>[number]
 
@@ -35,7 +34,7 @@ const PANEL_COMPONENTS = {
 	playlist: PlaylistView,
 } as const
 
-const SinglePane = memo(function BasePane({
+const SinglePane = memo(function BasePane ({
 	panel,
 	index,
 	isTop,
@@ -45,7 +44,6 @@ const SinglePane = memo(function BasePane({
 	isTop: boolean
 }) {
 	const ref = useRef<HTMLDivElement>(null)
-	const queryClient = useQueryClient()
 	const state = useDisplayAndShow(panel.value.open, ref, (open) => {
 		// if force-open, close above (should be done where force-open is set)
 		// if open, force-close below
@@ -55,7 +53,7 @@ const SinglePane = memo(function BasePane({
 			panelStack.setState(prev => {
 				const before = prev.slice(0, index)
 				const after = prev.slice(index)
-				const next: Panel[] = [...before.map(({type, key, value}) => ({
+				const next: Panel[] = [...before.map(({ type, key, value }) => ({
 					type,
 					key,
 					value: {
@@ -64,9 +62,9 @@ const SinglePane = memo(function BasePane({
 					}
 				} as Panel)), ...after]
 				return next
-			}, queryClient)
-			if (searchView.getValue(queryClient).open) {
-				searchView.setState(prev => ({...prev, open: false}), queryClient)
+			})
+			if (searchView.getValue().open) {
+				searchView.setState(prev => ({ ...prev, open: false }))
 			}
 			return
 		}
@@ -76,7 +74,7 @@ const SinglePane = memo(function BasePane({
 				const after = prev.slice(index + 1)
 				const next: Panel[] = [...before, ...after]
 				return next
-			}, queryClient)
+			})
 			return
 		}
 	})
@@ -95,7 +93,7 @@ const SinglePane = memo(function BasePane({
 	)
 })
 
-function PanelStack({stack}: {stack: Panel[]}) {
+function PanelStack ({ stack }: { stack: Panel[] }) {
 	return (
 		<>
 			{stack.map((panel, i) => (
@@ -110,9 +108,9 @@ function PanelStack({stack}: {stack: Panel[]}) {
 	)
 }
 
-export default function Header() {
+export default function Header () {
 	const stack = panelStack.useValue()
-	
+
 	// search
 	const [search, setSearch] = searchView.useState()
 	const searchToggle = useRef<HTMLButtonElement>(null)
@@ -159,7 +157,7 @@ export default function Header() {
 				<Upload className={styles.button} />
 				<button onClick={() => {
 					navigator.vibrate(1)
-					setLibrary({open: !library.open})
+					setLibrary({ open: !library.open })
 				}} className={styles.button}>
 					<LibraryIcon />
 				</button>
@@ -171,13 +169,13 @@ export default function Header() {
 					ref={searchToggle}
 					className={styles.toggle}
 					data-open={searchState.show}
-					style={{"--z": BASE_HEADER_Z - 1} as CSSProperties}
+					style={{ "--z": BASE_HEADER_Z - 1 } as CSSProperties}
 					onClick={() => {
 						navigator.vibrate(1)
 						if (search.open) {
 							showHome()
 						} else {
-							setSearch(prev => ({...prev, open: true}))
+							setSearch(prev => ({ ...prev, open: true }))
 						}
 					}}
 				>

@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { deleteFromIndexedDB, listAllFromIndexedDB, storeInIndexedDB } from "./utils"
+import { queryClient } from "utils/trpc"
 
 const MAX_ITEMS_COUNT = 30
 
@@ -10,9 +11,9 @@ export type PastSearchItem = {
 	timestamp: number
 }
 
-export function usePastSearchesQuery() {
+export function usePastSearchesQuery () {
 	return useQuery<PastSearchItem[]>(["pastSearches"], {
-		async queryFn() {
+		async queryFn () {
 			const results = await listAllFromIndexedDB<PastSearchItem>("pastSearches")
 			return results.sort((a, b) => b.timestamp - a.timestamp)
 		},
@@ -20,14 +21,13 @@ export function usePastSearchesQuery() {
 	})
 }
 
-export function usePastSearchesMutation() {
-	const queryClient = useQueryClient()
+export function usePastSearchesMutation () {
 	return useMutation(["pastSearches"], {
-		async mutationFn({
+		async mutationFn ({
 			type,
 			id,
 		}: Pick<PastSearchItem, "type" | "id">) {
-			const entry = {type, key:id, id, timestamp: Date.now()}
+			const entry = { type, key: id, id, timestamp: Date.now() }
 			await storeInIndexedDB("pastSearches", id, entry)
 			const list = await listAllFromIndexedDB<PastSearchItem>("pastSearches")
 			if (list.length > MAX_ITEMS_COUNT) {
@@ -40,19 +40,18 @@ export function usePastSearchesMutation() {
 			}
 			return entry
 		},
-		onSuccess() {
+		onSuccess () {
 			queryClient.invalidateQueries(["pastSearches"])
 		}
 	})
 }
 
-export function useRemoveFromPastSearches() {
-	const queryClient = useQueryClient()
+export function useRemoveFromPastSearches () {
 	return useMutation(["pastSearches"], {
-		async mutationFn({id}: Pick<PastSearchItem, "id">) {
+		async mutationFn ({ id }: Pick<PastSearchItem, "id">) {
 			return deleteFromIndexedDB("pastSearches", id)
 		},
-		onSuccess(_, {id}) {
+		onSuccess (_, { id }) {
 			queryClient.setQueryData<PastSearchItem[]>(["pastSearches"], (list) => {
 				if (!list) return []
 				return list.filter(item => item.id !== id)

@@ -1,22 +1,21 @@
-import { type useQueryClient } from "@tanstack/react-query"
 import { type PlaylistDBEntry, type Playlist, PlaylistMeta } from "./types"
 import { repeat, shuffle } from "components/Player"
 import shuffleArray from "utils/shuffleArray"
 import { findFirstCachedTrack } from "client/sw/useSWCached"
 import { deleteAllFromIndexedDB, storeInIndexedDB, storeListInIndexedDB } from "client/db/utils"
+import { queryClient } from "utils/trpc"
 
 /**
  * @description sets the *local* playlist in react-query cache and indexedDB
  */
-export default async function setPlaylist(
-	queryClient: ReturnType<typeof useQueryClient>,
+export async function setPlaylist (
 	name: Playlist["name"],
-	id: Playlist["id"],
 	tracks: Playlist["tracks"],
+	id: Playlist["id"] = null,
 	current?: Playlist["current"],
 ) {
-	const regularOrder = tracks.map(({id}) => id)
-	const order = shuffle.getValue(queryClient)
+	const regularOrder = tracks.map(({ id }) => id)
+	const order = shuffle.getValue()
 		? shuffleArray(regularOrder)
 		: regularOrder
 	const newCurrent = await (async () => {
@@ -26,7 +25,7 @@ export default async function setPlaylist(
 		const nextCached = await findFirstCachedTrack({
 			tracks: order,
 			from: current ? order.indexOf(current) + 1 : 0,
-			loop: repeat.getValue(queryClient) === 1,
+			loop: repeat.getValue() === 1,
 		})
 		return nextCached || current || order[0]
 	})()

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { startTransition, useCallback } from "react"
-import { trpc } from "utils/trpc"
+import { queryClient, trpc } from "utils/trpc"
 import { modifyInIndexedDB, storeInIndexedDB } from "client/db/utils"
 import makePlaylist from "./makePlaylist"
 import { type PlaylistMeta, type Playlist, type PlaylistTrack, type PlaylistDBEntry } from "./types"
@@ -20,19 +20,19 @@ const playNextStack: string[] = []
  * 
  * If the playlist doesn't exist, it will be created with the track as first and current.
  */
-export function useAddNextToPlaylist() {
+export function useAddNextToPlaylist () {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
-	const {mutateAsync} = trpc.playlist.modify.useMutation()
+	const { mutateAsync } = trpc.playlist.modify.useMutation()
 	return useCallback(async (track: PlaylistTrack, forceCurrent?: boolean) => {
 		const cache = queryClient.getQueryData<Playlist>(["playlist"])
 		// playlist doesn't exist, create it with new track as current
 		if (!cache) {
-			await makePlaylist(trpcClient, queryClient, [track], "New Playlist")
+			await makePlaylist(trpcClient, [track], "New Playlist")
 			return
 		}
 		// playlist already contains track, do nothing
-		if (cache.tracks.some(({id}) => id === track.id)) {
+		if (cache.tracks.some(({ id }) => id === track.id)) {
 			if (forceCurrent) {
 				queryClient.setQueryData<Playlist>(["playlist"], {
 					...cache,
@@ -47,15 +47,15 @@ export function useAddNextToPlaylist() {
 		}
 		// playlist is inactive, just add track to the end (or to the start if `forceCurrent`)
 		if (typeof cache.current === "undefined") {
-			const baseOrder = cache.tracks.map(({id}) => id)
-			const newOrder = shuffle.getValue(queryClient)
+			const baseOrder = cache.tracks.map(({ id }) => id)
+			const newOrder = shuffle.getValue()
 				? forceCurrent
 					? [track.id, ...shuffleArray(baseOrder)]
 					: shuffleArray([track.id, ...baseOrder])
 				: forceCurrent
 					? [track.id, ...baseOrder]
 					: [...baseOrder, track.id]
-			
+
 			queryClient.setQueryData<Playlist>(["playlist"], {
 				...cache,
 				current: forceCurrent ? track.id : undefined,
@@ -87,7 +87,7 @@ export function useAddNextToPlaylist() {
 					}
 				})
 			}
-			
+
 			return
 		}
 		/**
@@ -112,10 +112,10 @@ export function useAddNextToPlaylist() {
 		 * (after which "shuffle" will resume, meaning the rest of the playlist is out-of-sync between order and tracks)
 		*/
 		const currentIndex = cache.order.findIndex((id) => id === cache.current)
-		const {index, isStack} = forceCurrent
-			? {index: currentIndex + 1, isStack: true}
+		const { index, isStack } = forceCurrent
+			? { index: currentIndex + 1, isStack: true }
 			: findEndOfStack(cache.order, currentIndex)
-		const tracksIndex = cache.tracks.findIndex(({id}) => id === cache.order[index - 1]) + 1
+		const tracksIndex = cache.tracks.findIndex(({ id }) => id === cache.order[index - 1]) + 1
 		if (!isStack) {
 			playNextStack.length = 0
 		}
@@ -156,13 +156,13 @@ export function useAddNextToPlaylist() {
 	}, [trpcClient, queryClient, mutateAsync])
 }
 
-function findEndOfStack(order: Playlist["order"], currentIndex: number, isStack = false): {index: number, isStack: boolean} {
+function findEndOfStack (order: Playlist["order"], currentIndex: number, isStack = false): { index: number, isStack: boolean } {
 	const index = currentIndex + 1
 	if (index === order.length) {
-		return {index, isStack}
+		return { index, isStack }
 	}
 	if (!playNextStack.includes(order[index]!)) {
-		return {index, isStack}
+		return { index, isStack }
 	}
 	return findEndOfStack(order, index, true)
 }
@@ -172,40 +172,37 @@ function findEndOfStack(order: Playlist["order"], currentIndex: number, isStack 
  * The "visual" order will not change.
  * The current track will be the first track in the new order.
  */
-export function useShufflePlaylist() {
-	const queryClient = useQueryClient()
-	return useCallback(() => {
-		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
-		if (!playlist) {
-			throw new Error("trying to reorder \"playlist\" query, but query doesn't exist yet")
-		}
-		const isShuffle = shuffle.getValue(queryClient)
-		if (!isShuffle) {
-			playNextStack.length = 0
-		}
-		startTransition(() => {
-			shuffle.setState(isShuffle ? false : true, queryClient)
-			const baseOrder = playlist.tracks.map(({id}) => id)
-			const newOrder = isShuffle
-				? baseOrder
-				: (() => {
-					if (playlist.current) {
-						// if playlist has a current item, set the current at the top, shuffle the rest
-						// this avoids setting shuffle on, only to have just 3 tracks playing and the playlist stopping because it
-						// reached an "invisible" end
-						return [playlist.current, ...shuffleArray(baseOrder.filter(id => id !== playlist.current))]
-					} else {
-						return shuffleArray(baseOrder)
-					}
-				})()
-			queryClient.setQueryData<Playlist>(["playlist"], {
-				...playlist,
-				order: newOrder,
-			})
-			modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
-				...meta,
-				order: newOrder,
-			}))
+export function shufflePlaylist () {
+	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
+	if (!playlist) {
+		throw new Error("trying to reorder \"playlist\" query, but query doesn't exist yet")
+	}
+	const isShuffle = shuffle.getValue()
+	if (!isShuffle) {
+		playNextStack.length = 0
+	}
+	startTransition(() => {
+		shuffle.setState(isShuffle ? false : true)
+		const baseOrder = playlist.tracks.map(({ id }) => id)
+		const newOrder = isShuffle
+			? baseOrder
+			: (() => {
+				if (playlist.current) {
+					// if playlist has a current item, set the current at the top, shuffle the rest
+					// this avoids setting shuffle on, only to have just 3 tracks playing and the playlist stopping because it
+					// reached an "invisible" end
+					return [playlist.current, ...shuffleArray(baseOrder.filter(id => id !== playlist.current))]
+				} else {
+					return shuffleArray(baseOrder)
+				}
+			})()
+		queryClient.setQueryData<Playlist>(["playlist"], {
+			...playlist,
+			order: newOrder,
 		})
-	}, [queryClient])
+		modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
+			...meta,
+			order: newOrder,
+		}))
+	})
 }

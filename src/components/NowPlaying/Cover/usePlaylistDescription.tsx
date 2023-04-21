@@ -1,9 +1,8 @@
-import { useQueryClient } from "@tanstack/react-query"
 import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptionFromPlaylistCredits"
 import { openPanel } from "components/AppContext"
 import { Fragment, useMemo } from "react"
 
-export default function usePlaylistDescription({
+export default function usePlaylistDescription ({
 	artistData,
 	length,
 }: {
@@ -13,7 +12,6 @@ export default function usePlaylistDescription({
 	}[]
 	length?: number
 }) {
-	const queryClient = useQueryClient()
 	const description = useMemo(() => {
 		const string = descriptionFromPlaylistCredits(artistData, length, true)
 		const parts = string.split("{{name}}")
@@ -30,14 +28,14 @@ export default function usePlaylistDescription({
 							openPanel("artist", {
 								id: artistData[i]!.id,
 								name: artistData[i]!.name,
-							}, queryClient)
+							})
 						}}
 					>
 						{artistData[i]!.name}
 					</button>
 				)
 		])
-	}, [artistData, length, queryClient])
-	
+	}, [artistData, length])
+
 	return description
 }

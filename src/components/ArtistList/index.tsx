@@ -5,7 +5,6 @@ import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import CheckIcon from "icons/done.svg"
 import OfflineIcon from "icons/wifi_off.svg"
-import { useQueryClient } from "@tanstack/react-query"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { useCachedArtist } from "client/sw/useSWCached"
@@ -38,13 +37,10 @@ function ArtistItem ({
 	const trackCount = (data?._count?.tracks ?? 0) + (data?._count?.feats ?? 0)
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393 - 4 * 8) / 3 * 2)}` : undefined
 
-	const queryClient = useQueryClient()
-
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({ type: "artist", id: artist.id }),
-			queryClient
+			editOverlaySetter({ type: "artist", id: artist.id })
 		)
 	} : undefined
 	useLongPress({ onLong, item })
@@ -61,7 +57,7 @@ function ArtistItem ({
 			})}
 			type="button"
 			onClick={(event) => {
-				if (onLong && editOverlay.getValue(queryClient).type === "artist") {
+				if (onLong && editOverlay.getValue().type === "artist") {
 					onLong()
 					return
 				}
@@ -78,7 +74,7 @@ function ArtistItem ({
 						id: artist.id,
 						name: data?.name || artist.name,
 						rect: { top, left, width, src }
-					}, queryClient)
+					})
 				})
 			}}
 		>

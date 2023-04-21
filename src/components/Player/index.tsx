@@ -1,5 +1,5 @@
 import { memo, startTransition, Suspense, useCallback, useEffect, useRef } from "react"
-import Audio from "./Audio"
+import Audio, { autoplay } from "./Audio"
 import styles from "./index.module.css"
 import useAudio from "./useAudio"
 import ProgressInput from "./ProgressInput"
@@ -14,7 +14,7 @@ import GlobalPalette from "./GlobalPalette"
 import Notification from "components/Player/Notification"
 import { useCachedTrack } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
-import { useCurrentTrack, usePlaylist, useSetPlaylistIndex, useShufflePlaylist } from "client/db/useMakePlaylist"
+import { useCurrentTrack, usePlaylist, shufflePlaylist, prevPlaylistIndex, nextPlaylistIndex } from "client/db/useMakePlaylist"
 import ShuffleIcon from "icons/shuffle.svg"
 import RepeatIcon from "icons/repeat.svg"
 import RepeatOneIcon from "icons/repeat_one.svg"
@@ -30,7 +30,7 @@ export const shuffle = suspensePersistedState<boolean>("shuffle", false)
  */
 export const repeat = suspensePersistedState<0 | 1 | 2>("repeat", 0)
 
-function RightTimeSlot({
+function RightTimeSlot ({
 	displayRemainingTime,
 	displayTotalTime,
 }: {
@@ -55,26 +55,25 @@ function RightTimeSlot({
 	)
 }
 
-function ShuffleButton() {
+function ShuffleButton () {
 	const isShuffle = shuffle.useValue()
 
-	const _shufflePlaylist = useShufflePlaylist()
-	const shufflePlaylist = useCallback(() => {
-		_shufflePlaylist()
+	const onClick = useCallback(() => {
+		shufflePlaylist()
 		navigator.vibrate(1)
-	}, [_shufflePlaylist])
+	}, [])
 
 	return (
 		<button
 			className={isShuffle ? styles.enabled : undefined}
-			onClick={shufflePlaylist}
+			onClick={onClick}
 		>
 			<ShuffleIcon />
 		</button>
 	)
 }
 
-function RepeatButton() {
+function RepeatButton () {
 	const [repeatType, setRepeatType] = repeat.useState()
 
 	const cycleRepeatTypes = useCallback(() => {
@@ -83,7 +82,7 @@ function RepeatButton() {
 			setRepeatType((repeatType = 0) => (repeatType + 1) % 3 as 0 | 1 | 2)
 		})
 	}, [setRepeatType])
-	
+
 	return (
 		<button
 			className={repeatType ? styles.enabled : undefined}
@@ -94,11 +93,10 @@ function RepeatButton() {
 	)
 }
 
-export default memo(function Player() {
+export default memo(function Player () {
 	const audio = useRef<HTMLAudioElement>(null)
-	const {data: playlist} = usePlaylist()
+	const { data: playlist } = usePlaylist()
 	const item = useCurrentTrack()
-	const {nextPlaylistIndex, prevPlaylistIndex} = useSetPlaylistIndex()
 
 	const playPrev = useCallback(
 		async () => {
@@ -112,7 +110,7 @@ export default memo(function Player() {
 				navigator.vibrate(1)
 			}
 		},
-		[prevPlaylistIndex]
+		[]
 	)
 	const playNext = useCallback(
 		async () => {
@@ -121,7 +119,7 @@ export default memo(function Player() {
 				navigator.vibrate(1)
 			}
 		},
-		[nextPlaylistIndex]
+		[]
 	)
 
 	const {
@@ -141,6 +139,7 @@ export default memo(function Player() {
 			audio.current.pause()
 		} else {
 			audio.current.play()
+			autoplay.setState(true)
 		}
 	}, [playing])
 
@@ -156,12 +155,12 @@ export default memo(function Player() {
 				event.stopPropagation()
 				togglePlay()
 			}
-		}, {capture: true, passive: false, signal: controller.signal})
+		}, { capture: true, passive: false, signal: controller.signal })
 		return () => controller.abort()
 	}, [togglePlay])
 
 	const online = useIsOnline()
-	const {data: cached} = useCachedTrack({id: item?.id})
+	const { data: cached } = useCachedTrack({ id: item?.id })
 
 	const hasPrevNext = playlist && playlist.tracks.length > 1
 
@@ -189,7 +188,7 @@ export default memo(function Player() {
 				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
 				<>
 					{(online || cached) && (
-						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon/> : <PlayIcon/>}</button>
+						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
 					)}
 					{(!online && !cached) && (
 						<OfflineIcon />
@@ -200,11 +199,11 @@ export default memo(function Player() {
 					<RepeatButton />
 				</Suspense>
 			</div>
-			<Audio ref={audio}/>
+			<Audio ref={audio} />
 			<GlobalPalette />
 			<Notification audio={audio} />
 			<Suspense>
-				<NextTrack audio={audio} id={item?.id}/>
+				<NextTrack audio={audio} id={item?.id} />
 			</Suspense>
 		</div>
 	)

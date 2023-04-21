@@ -1,20 +1,17 @@
-import { useQueryClient } from "@tanstack/react-query"
 import { openPanel } from "components/AppContext"
 import CoverImages from "components/NowPlaying/Cover/Images"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
 
-function PlaylistItem({
+function PlaylistItem ({
 	playlist,
 	onSelect,
 }: {
-	playlist: {id: string, name: string}
+	playlist: { id: string, name: string }
 	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
 }) {
-	const {data} = trpc.playlist.get.useQuery({id: playlist.id})
-
-	const queryClient = useQueryClient()
+	const { data } = trpc.playlist.get.useQuery({ id: playlist.id })
 
 	return (
 		<button
@@ -26,13 +23,13 @@ function PlaylistItem({
 					if (!data) return
 					onSelect?.(data)
 					const element = event.currentTarget
-					const {top, height} = element.getBoundingClientRect()
+					const { top, height } = element.getBoundingClientRect()
 					startTransition(() => {
 						openPanel("playlist", {
 							id: playlist.id,
 							name: data?.name || playlist.name,
-							rect: {top, height}
-						}, queryClient)
+							rect: { top, height }
+						})
 					})
 				})
 			}}
@@ -49,11 +46,11 @@ function PlaylistItem({
 	)
 }
 
-export default function PlaylistList({
+export default function PlaylistList ({
 	playlists,
 	onSelect,
 }: {
-	playlists: {id: string, name: string}[]
+	playlists: { id: string, name: string }[]
 	onSelect?: Parameters<typeof PlaylistItem>[0]["onSelect"]
 }) {
 	return (

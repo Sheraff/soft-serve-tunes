@@ -5,7 +5,6 @@ import { openPanel } from "components/AppContext"
 import CheckIcon from "icons/done.svg"
 import OfflineIcon from "icons/wifi_off.svg"
 import styles from "./index.module.css"
-import { useQueryClient } from "@tanstack/react-query"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import useLongPress from "./useLongPress"
 import { useCachedAlbum } from "client/sw/useSWCached"
@@ -37,13 +36,10 @@ function AlbumItem ({
 	const trackCount = data?._count?.tracks ?? 0
 	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2)}` : ""
 
-	const queryClient = useQueryClient()
-
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)
 		editOverlay.setState(
-			editOverlaySetter({ type: "album", id: album.id }),
-			queryClient
+			editOverlaySetter({ type: "album", id: album.id })
 		)
 	} : undefined
 	useLongPress({ onLong, item })
@@ -61,7 +57,7 @@ function AlbumItem ({
 			})}
 			type="button"
 			onClick={(event) => {
-				if (onLong && editOverlay.getValue(queryClient).type === "album") {
+				if (onLong && editOverlay.getValue().type === "album") {
 					onLong()
 					return
 				}
@@ -78,7 +74,7 @@ function AlbumItem ({
 						id: album.id,
 						name: data?.name || album.name,
 						rect: { top, left, width, src }
-					}, queryClient)
+					})
 				})
 			}}
 		>
@@ -181,7 +177,7 @@ export default forwardRef(function AlbumList ({
 						[styles["lines-2"]]: lines === 2,
 					})
 				}>
-					{albums.map((album, i) => (
+					{albums.map((album) => (
 						<li className={styles.item} key={album.id}>
 							<AlbumItem
 								album={album}
