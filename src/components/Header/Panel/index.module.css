@@ -102,7 +102,7 @@
 	z-index: 1;
 	margin: 0 8px 0 0;
 	position: relative;
-
+	align-self: start;
 }
 
 .section {
