@@ -21,6 +21,8 @@ model File {
   birthTime DateTime
   trackId   String   @unique
   track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([trackId], type: Hash)
 }
 
 model Track {
@@ -56,6 +58,8 @@ model Track {
   coverLocked     Boolean         @default(false)
 
   @@unique([simplified, artistId, albumId])
+  @@index([artistId], type: Hash)
+  @@index([albumId], type: Hash)
 }
 
 model UserTrack {
@@ -140,6 +144,9 @@ model UserArtist {
   playcount  Int       @default(0)
   favorite   Int       @default(0)
   lastListen DateTime?
+
+  @@index([lastListen])
+  @@index([favorite])
 }
 
 model Album {
@@ -168,6 +175,7 @@ model Album {
   coverLocked Boolean    @default(false)
 
   @@unique([simplified, artistId])
+  @@index([artistId], type: Hash)
 }
 
 model UserAlbum {
@@ -176,6 +184,9 @@ model UserAlbum {
   playcount  Int       @default(0)
   favorite   Int       @default(0)
   lastListen DateTime?
+
+  @@index([lastListen])
+  @@index([favorite])
 }
 
 model Genre {
@@ -205,6 +216,8 @@ model LastFmTrack {
   playcount Int
   mbid      String?
   name      String
+
+  @@index([entityId], type: Hash)
 }
 
 model LastFmAlbum {
@@ -223,6 +236,8 @@ model LastFmAlbum {
   coverUrl    String?
   coverId     String?
   cover       Image?        @relation(fields: [coverId], references: [id])
+
+  @@index([entityId], type: Hash)
 }
 
 model LastFmArtist {
@@ -239,6 +254,8 @@ model LastFmArtist {
   coverUrl  String?
   coverId   String?
   cover     Image?        @relation(fields: [coverId], references: [id])
+
+  @@index([entityId], type: Hash)
 }
 
 model AudioDbArtist {
@@ -272,6 +289,8 @@ model AudioDbArtist {
   strArtistBanner    String?
   bannerId           String?
   banner             Image?  @relation(name: "AudioDbArtistBanner", fields: [bannerId], references: [id])
+
+  @@index([entityId], type: Hash)
 }
 
 model AudioDbAlbum {
@@ -307,6 +326,8 @@ model AudioDbAlbum {
   strMusicMozID      String?
   strItunesID        String?
   strAmazonID        String?
+
+  @@index([entityId], type: Hash)
 }
 
 model AudioDbTrack {
@@ -326,6 +347,8 @@ model AudioDbTrack {
   strTrackThumb String?
   thumbId       String?
   thumb         Image?  @relation(fields: [thumbId], references: [id])
+
+  @@index([entityId], type: Hash)
 }
 
 model SpotifyArtist {
@@ -342,6 +365,8 @@ model SpotifyArtist {
 
   artistId String? @unique
   artist   Artist? @relation(fields: [artistId], references: [id])
+
+  @@index([artistId], type: Hash)
 }
 
 model SpotifyAlbum {
@@ -360,6 +385,8 @@ model SpotifyAlbum {
 
   albumId String? @unique
   album   Album?  @relation(fields: [albumId], references: [id])
+
+  @@index([albumId], type: Hash)
 }
 
 model SpotifyTrack {
@@ -391,6 +418,8 @@ model SpotifyTrack {
 
   trackId String @unique
   track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([trackId], type: Hash)
 }
 
 model FileToCreate {
