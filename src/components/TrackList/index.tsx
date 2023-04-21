@@ -28,12 +28,12 @@ import HighIcon from "icons/high_quality.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import useDragTrack, { type Callbacks as DragCallbacks } from "./useDragTrack"
-import { useAddNextToPlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import AddToPlaylist from "./AddToPlaylist"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual"
-import { autoplay } from "components/Player/Audio"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 const emptyFunction = () => { }
 
@@ -135,16 +135,23 @@ const TrackItem = memo(function _TrackItem ({
 						return
 					}
 					navigator.vibrate(1)
-					data && onSelect?.(data)
+					if (data && onSelect) {
+						onSelect(data)
+					}
 					if (onClick) {
 						onClick(track.id, track.name)
 						return
 					}
 					if (data) {
 						startTransition(() => {
-							addNextToPlaylist(data, true)
+							const { current } = getPlaylist()
+							if (current === track.id) {
+								playAudio()
+							} else {
+								addNextToPlaylist(data, true)
+								autoplay.setState(true)
+							}
 							showHome("home")
-							autoplay.setState(true)
 						})
 						return
 					}

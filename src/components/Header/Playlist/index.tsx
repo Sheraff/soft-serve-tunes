@@ -1,5 +1,4 @@
 import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, useRef, useCallback } from "react"
-import { useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { trpc } from "utils/trpc"
@@ -60,7 +59,6 @@ export default forwardRef(function PlaylistView ({
 	const reorderPlaylist = useReorderPlaylist()
 	const _name = data?.name ?? name
 	const deleteFromPlaylist = useRemoveFromPlaylist()
-	const showHome = useShowHome()
 
 	const parent = useRef<HTMLDivElement>(null)
 	useImperativeHandle(ref, () => parent.current as HTMLDivElement)
@@ -72,8 +70,6 @@ export default forwardRef(function PlaylistView ({
 		virtual: true,
 	})
 
-	const { tracks } = trackListProps
-
 	const onReorder = useCallback((from: number, to: number) =>
 		reorderPlaylist(from, to, id),
 		[id, reorderPlaylist]
@@ -83,13 +79,6 @@ export default forwardRef(function PlaylistView ({
 		deleteFromPlaylist(track.id, id),
 		[id, deleteFromPlaylist]
 	)
-
-	const onClick = useCallback((trackId: string) => {
-		if (_name && tracks) startTransition(() => {
-			setPlaylist(_name, tracks, id, trackId)
-			showHome("home")
-		})
-	}, [_name, id, showHome, tracks])
 
 	return (
 		<Panel
@@ -108,7 +97,6 @@ export default forwardRef(function PlaylistView ({
 			<TrackList
 				{...trackListProps}
 				onReorder={onReorder}
-				onClick={onClick}
 				quickSwipeAction={onQuickSwipe}
 				quickSwipeIcon={DeleteIcon}
 				quickSwipeDeleteAnim

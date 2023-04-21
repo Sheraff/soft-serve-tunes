@@ -5,6 +5,7 @@ import DeleteIcon from "icons/playlist_remove.svg"
 import Cover from "./Cover"
 import styles from "./index.module.css"
 import AddMoreButton from "./AddMoreButton"
+import { autoplay, playAudio } from "components/Player/Audio"
 
 export default memo(function NowPlaying () {
 	const { data } = usePlaylist()
@@ -19,24 +20,31 @@ export default memo(function NowPlaying () {
 		virtual: true,
 		exposeScrollFn: true,
 	})
+
 	const { tracks } = trackListProps
+	const current = data?.current
+	const id = data?.id
 
 	const onTrackClick = useCallback((id: string) => startTransition(() => {
-		setPlaylistIndex(tracks.findIndex((item) => item.id === id))
-	}), [tracks])
+		if (current === id) {
+			playAudio()
+		} else {
+			setPlaylistIndex(tracks.findIndex((item) => item.id === id))
+			autoplay.setState(true)
+		}
+	}), [tracks, current])
 
 	const onReorder = useCallback((from: number, to: number) =>
-		reorderPlaylist(from, to, data?.id),
-		[data?.id, reorderPlaylist]
+		reorderPlaylist(from, to, id),
+		[id, reorderPlaylist]
 	)
 
 	const onQuickSwipe = useCallback((track: { id: string }) =>
-		deleteFromPlaylist(track.id, data?.id),
-		[data?.id, deleteFromPlaylist]
+		deleteFromPlaylist(track.id, id),
+		[id, deleteFromPlaylist]
 	)
 
 	if (!data) return null
-	const { current, id } = data
 
 	return (
 		<div className={styles.main} ref={parent}>
@@ -52,7 +60,7 @@ export default memo(function NowPlaying () {
 			/>
 			{tracks.length < 100 && (
 				<AddMoreButton
-					id={id}
+					id={id!}
 					tracks={tracks}
 				/>
 			)}

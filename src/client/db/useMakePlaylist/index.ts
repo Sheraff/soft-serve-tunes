@@ -11,6 +11,7 @@ export {
 	usePlaylist,
 	usePlaylistExtractedDetails,
 	useCurrentTrack,
+	getPlaylist,
 	getCurrentIndex,
 	useNextTrack,
 	useCurrentTrackDetails,

@@ -104,13 +104,21 @@ export function useCurrentTrack () {
 }
 
 /**
- * @description stateless function to obtain the current index of the *local* playlist
+ * @description stateless function to obtain the *local* playlist
  */
-export function getCurrentIndex () {
+export function getPlaylist () {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	if (!playlist) {
 		throw new Error("trying to find \"playlist\" index, but query doesn't exist yet")
 	}
+	return playlist
+}
+
+/**
+ * @description stateless function to obtain the current index of the *local* playlist
+ */
+export function getCurrentIndex () {
+	const playlist = getPlaylist()
 	const index = playlist.tracks.findIndex(({ id }) => id === playlist.current)
 	if (index < 0) return undefined
 	return index
