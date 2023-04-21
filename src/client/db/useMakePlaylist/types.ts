@@ -1,6 +1,15 @@
-import { type RouterOutputs } from "utils/trpc"
-
-export type PlaylistTrack = Exclude<RouterOutputs["playlist"]["generate"], undefined>[number]
+export type PlaylistTrack = {
+	id: string
+	name: string
+	artist: {
+		id: string
+		name: string
+	} | null
+	album: {
+		id: string
+		name: string
+	} | null
+}
 
 export type PlaylistDBEntry = {
 	/** @description index of order of tracks inside the playlist */

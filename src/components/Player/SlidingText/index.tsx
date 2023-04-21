@@ -1,15 +1,26 @@
 import classNames from "classnames"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
-import { type RouterOutputs } from "utils/trpc"
 import { mainView, openPanel, useShowHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { getCurrentIndex } from "client/db/useMakePlaylist"
+
+type SlidingTextItem = {
+	name: string
+	album: {
+		id: string
+		name: string
+	} | null
+	artist: {
+		id: string
+		name: string
+	} | null
+}
 
 export default memo(function SlidingText ({
 	item,
 	className,
 }: {
-	item: Exclude<RouterOutputs["playlist"]["generate"], undefined>[number] | undefined
+	item: SlidingTextItem | undefined
 	className?: string
 }) {
 	const [separator, setSeparator] = useState(false)

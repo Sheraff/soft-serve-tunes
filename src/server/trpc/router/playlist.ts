@@ -29,24 +29,32 @@ const trackSelect = {
   }
 } satisfies Prisma.TrackSelect
 
-async function getResolve(id: string) {
+async function getResolve (id: string) {
   const result = await prisma.playlist.findUnique({
     where: { id },
     include: {
       tracks: {
-        include: {track: {select: {
-          id: true,
-          name: true,
-          artist: { select: {
-            id: true,
-            name: true
-          }},
-          album: { select: {
-            id: true,
-            name: true,
-            coverId: true
-          }},
-        }}},
+        include: {
+          track: {
+            select: {
+              id: true,
+              name: true,
+              artist: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+              album: {
+                select: {
+                  id: true,
+                  name: true,
+                  coverId: true
+                }
+              },
+            }
+          }
+        },
         orderBy: { index: "asc" },
       },
       _count: {
@@ -57,8 +65,8 @@ async function getResolve(id: string) {
   if (!result) {
     return result
   }
-  const tracks = result.tracks.map(({track}) => track)
-  const {artists, albums} = extractPlaylistCredits(tracks)
+  const tracks = result.tracks.map(({ track }) => track)
+  const { artists, albums } = extractPlaylistCredits(tracks)
   const description = descriptionFromPlaylistCredits(artists, tracks.length)
   return {
     ...result,
@@ -83,14 +91,14 @@ const generate = publicProcedure.input(z.union([
   }),
 ])).query(async ({ input, ctx }) => {
   if (input.type === "genre") {
-    const data = await recursiveSubGenres(input.id, {select: trackSelect})
+    const data = await recursiveSubGenres(input.id, { select: trackSelect })
     return data.tracks
   }
   if (input.type === "by-multi-traits") {
     const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
     const ids = spotifyTracks.map((t) => t.trackId)
     const tracks = await ctx.prisma.track.findMany({
-      where: {id: { in: ids }},
+      where: { id: { in: ids } },
       select: trackSelect,
     })
     tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
@@ -106,7 +114,7 @@ const more = publicProcedure.input(
 ).mutation(async ({ input, ctx }) => {
   if (input.type === "by-similar-tracks") {
     const features = await ctx.prisma.spotifyTrack.aggregate({
-      where: {trackId: { in: input.trackIds }},
+      where: { trackId: { in: input.trackIds } },
       _avg: {
         danceability: true,
         energy: true,
@@ -145,7 +153,7 @@ const more = publicProcedure.input(
       ids.push(...newIds)
     } while (ids.length < count)
     const tracks = await ctx.prisma.track.findMany({
-      where: {id: { in: ids.slice(0, count) }},
+      where: { id: { in: ids.slice(0, count) } },
       select: trackSelect,
     })
     tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
@@ -224,14 +232,16 @@ const save = protectedProcedure.input(z.object({
   const playlist = await ctx.prisma.playlist.create({
     data: {
       name,
-      tracks: { create: input.tracks.map(({id, index}) => ({
-        index,
-        trackId: id,
-      }))},
+      tracks: {
+        create: input.tracks.map(({ id, index }) => ({
+          index,
+          trackId: id,
+        }))
+      },
     },
-    select: {id: true},
+    select: { id: true },
   })
-  socketServer.emit("add", {type: "playlist", id: playlist.id})
+  socketServer.emit("add", { type: "playlist", id: playlist.id })
   return getResolve(playlist.id)
 })
 
@@ -280,11 +290,11 @@ const modify = protectedProcedure.input(z.union([
             lte: max,
           },
         },
-        select: {id: true, index: true},
+        select: { id: true, index: true },
       })
       for (const entry of entries) {
         await tx.playlistEntry.update({
-          where: {id: entry.id},
+          where: { id: entry.id },
           data: {
             index: entry.index === input.params.from
               ? input.params.to
@@ -305,7 +315,7 @@ const modify = protectedProcedure.input(z.union([
           playlistId: input.id,
           trackId: input.params.id
         },
-        select: {index: true, id: true}
+        select: { index: true, id: true }
       })
       if (!entry) {
         throw new TRPCError({
@@ -314,14 +324,14 @@ const modify = protectedProcedure.input(z.union([
         })
       }
       await tx.playlistEntry.delete({
-        where: {id: entry.id}
+        where: { id: entry.id }
       })
       const entries = await tx.playlistEntry.findMany({
         where: {
           playlistId: input.id,
-          index: {gte: entry.index},
+          index: { gte: entry.index },
         },
-        select: {id: true, index: true},
+        select: { id: true, index: true },
       })
       for (const entry of entries) {
         await tx.playlistEntry.update({
@@ -341,8 +351,8 @@ const modify = protectedProcedure.input(z.union([
       const index = input.params.index!
       await ctx.prisma.$transaction(async (tx) => {
         const entries = await tx.playlistEntry.findMany({
-          where: {playlistId: input.id},
-          select: {id: true, index: true, trackId: true},
+          where: { playlistId: input.id },
+          select: { id: true, index: true, trackId: true },
         })
         const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))
         for (const entry of entries) {
@@ -373,7 +383,7 @@ const modify = protectedProcedure.input(z.union([
         const entries = await tx.playlistEntry.findMany({
           where: { playlistId: input.id },
           orderBy: { index: "desc" },
-          select: {index: true, trackId: true},
+          select: { index: true, trackId: true },
         })
         const last = entries[0]
         if (!last) {
@@ -425,7 +435,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
     throw new TRPCError({ code: "UNAUTHORIZED" })
   }
   try {
-    const [,playlist] = await ctx.prisma.$transaction([
+    const [, playlist] = await ctx.prisma.$transaction([
       ctx.prisma.playlistEntry.deleteMany({
         where: { playlistId: input.id },
       }),
@@ -439,7 +449,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
   } catch (e) {
     console.warn(e)
     // at this point the playlist is corrupted, probably because the transaction happened during a bad time for the DB
-    let tracks: {id: string}[] | null = null
+    let tracks: { id: string }[] | null = null
     try {
       const entries = await ctx.prisma.playlist.findUnique({
         where: { id: input.id },
@@ -448,7 +458,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
       if (entries) {
         tracks = entries.tracks
       }
-    } catch {}
+    } catch { }
     if (!tracks) {
       try {
         const entries = await ctx.prisma.playlistEntry.findMany({
@@ -456,7 +466,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
           select: { id: true }
         })
         tracks = entries
-      } catch {}
+      } catch { }
     }
     if (!tracks) {
       const reason = "Couldn't recover, the playlist itself doesn't seem to exist anymore and we can't find the playlistEntries anymore"
@@ -477,14 +487,14 @@ const deleteEndpoint = protectedProcedure.input(z.object({
           where: { id: entry.id }
         })
       } catch (e) {
-        console.warn(new Error("this is probably normal, we're trying to recover from the previous warning", {cause: e}))
+        console.warn(new Error("this is probably normal, we're trying to recover from the previous warning", { cause: e }))
       }
     }
     try {
       await ctx.prisma.playlist.delete({
         where: { id: input.id },
       })
-    } catch {}
+    } catch { }
     const playlist = { id: input.id }
     socketServer.emit("remove", { type: "playlist", id: playlist.id })
     return playlist
