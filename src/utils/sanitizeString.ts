@@ -1,16 +1,17 @@
 import toTitleCase from "titlecase"
 
-export default function sanitizeString(string: string) {
+export default function sanitizeString (string: string) {
 	return string
 		.replace(/\$/g, "s") // Ke$ha
 		.replace(/ï/g, "i") // Hawaï
+		.replace(/î/g, "i") // Maître Gims
 		.replace(/’/g, "'")
 		.replace(/[^\p{L}\p{N}\s'&]+/gu, " ") // remove all non-alphanumeric characters (any language) except for "' &"
 		.replace(/\s+/g, " ") // concatenate consecutive spaces
 		.trim()
 }
 
-export function simplifiedName(name: string) {
+export function simplifiedName (name: string) {
 	const removeThe = name.replace(/\bthe\b/gi, "").replace(/\s+/g, "")
 	const noEmpty = removeThe || name
 	return sanitizeString(noEmpty).toLowerCase().replace(/\s+/g, "")
@@ -37,7 +38,7 @@ const GENRE_REPLACERS = [
 	[/\balt\b/g, "alternative"],
 ] as const
 
-export function cleanGenreList(genres: string[]) {
+export function cleanGenreList (genres: string[]) {
 	const names = genres.flatMap((genre) => genre.split(/\/|,|;|\|/))
 
 	const uniqueSimplifiedNames = new Set<string>()
