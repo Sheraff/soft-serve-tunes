@@ -24,10 +24,11 @@
 .scrollable .main {
 	width: fit-content;
 	flex-wrap: nowrap;
+	column-gap: 0;
 }
 
 .scrollable.loading .main {
-	height: 40px;
+	height: 36px;
 }
 
 .item {
@@ -39,6 +40,7 @@
 .scrollable .item {
 	max-width: none;
 	width: max-content;
+	padding-right: 6px;
 }
 
 .button {
@@ -46,9 +48,11 @@
 	width: 100%;
 	display: grid;
 	grid-template-areas: "left right";
-	border-top-left-radius: 99px;
-	border-bottom-left-radius: 99px;
-	padding: 4px 2px;
+	border-top-left-radius: 18px;
+	border-bottom-left-radius: 18px;
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+	padding: 2px;
 	background-color: var(--palette-primary);
 	color: var(--palette-bg-main);
 	touch-action: pan-x pan-y;
@@ -90,6 +94,7 @@
 	height: 36px;
 	margin-top: -2px;
 	margin-bottom: -2px;
+	margin-left: -2px;
 	grid-auto-flow: column;
 }
 

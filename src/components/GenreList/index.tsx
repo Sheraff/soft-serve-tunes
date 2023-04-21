@@ -11,6 +11,7 @@ import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import { autoplay, playAudio } from "components/Player/Audio"
 import classNames from "classnames"
+import { useVirtualizer } from "@tanstack/react-virtual"
 
 type GenreListItem = {
 	id: string
@@ -121,13 +122,21 @@ export default function GenreList ({
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = editViewState.type === "genre"
 
-	return (
-		<div className={classNames(styles.wrapper, {
-			[styles.scrollable]: scrollable,
-			[styles.loading]: loading,
-		})}>
+	const main = useRef<HTMLDivElement>(null)
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- `scrollable` never changes once the component is mounted
+	const virtualized = scrollable && useVirtualizer({
+		count: genres.length,
+		horizontal: true,
+		overscan: 0,
+		getScrollElement: () => main.current,
+		estimateSize: () => 125,
+		getItemKey: (index) => genres[index]!.id,
+	})
+
+	if (!virtualized) {
+		return (
 			<ul className={styles.main}>
-				{genres?.map(genre => (
+				{genres.map(genre => (
 					<li key={genre.id} className={styles.item}>
 						<GenreItem
 							genre={genre}
@@ -138,6 +147,37 @@ export default function GenreList ({
 					</li>
 				))}
 			</ul>
+		)
+	}
+
+	const items = virtualized.getVirtualItems()
+
+	return (
+		<div
+			ref={main}
+			className={classNames(styles.wrapper, styles.scrollable, {
+				[styles.loading]: loading,
+			})}
+		>
+			<div style={{ minWidth: virtualized.getTotalSize() }}>
+				<ul className={styles.main} style={{ transform: `translateX(${items[0]?.start}px)` }}>
+					{items.map(item => (
+						<li
+							ref={virtualized.measureElement}
+							className={styles.item}
+							key={item.key}
+							data-index={item.index}
+						>
+							<GenreItem
+								genre={genres[item.index]!}
+								onSelect={onSelect}
+								selected={isSelection && editViewState.selection.some(({ id }) => id === item.key)}
+								isSelection={isSelection}
+							/>
+						</li>
+					))}
+				</ul>
+			</div>
 		</div>
 	)
 }
