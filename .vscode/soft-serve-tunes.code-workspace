@@ -30,7 +30,9 @@
 			"subgenres",
 			"superjson",
 			"supgenres",
+			"svgr",
 			"tanstack",
+			"titlecase",
 			"toptags",
 			"trpc"
 		],

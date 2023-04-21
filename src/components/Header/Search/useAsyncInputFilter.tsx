@@ -89,20 +89,21 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 		worker.current.postMessage({ type: "list", list: namedObjects, size })
 		let lastInputValue: string
 		const onInput = () => {
-			if (worker.current && inputMemo.value) {
-				if (lastInputValue === inputMemo.value) return
+			const value = inputMemo.value.trim()
+			if (worker.current && value) {
+				if (lastInputValue === value) return
 				if (!isWorking.current) {
-					worker.current.postMessage({ type: "input", input: inputMemo.value })
+					worker.current.postMessage({ type: "input", input: value })
 					isWorking.current = true
 				} else {
-					nextValue.current = inputMemo.value
+					nextValue.current = value
 				}
-			} else if (!inputMemo.value) {
+			} else if (!value) {
 				startTransition(() => {
 					setList([])
 				})
 			}
-			lastInputValue = inputMemo.value
+			lastInputValue = value
 		}
 		onInput()
 
