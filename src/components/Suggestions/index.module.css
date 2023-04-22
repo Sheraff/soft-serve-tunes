@@ -2,7 +2,7 @@
 	grid-column: 1 / 2;
 	grid-row: 2 / 3;
 	overflow: hidden scroll;
-	overscroll-behavior: contain;
+	overscroll-behavior-x: contain;
 	padding: 1em 0;
 	contain: strict;
 }

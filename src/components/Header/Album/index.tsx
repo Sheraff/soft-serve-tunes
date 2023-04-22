@@ -61,10 +61,12 @@ export default forwardRef(function AlbumView ({
 		infos.push(`${data?._count.tracks} track${pluralize(data?._count.tracks)}`)
 	}
 	if (data?.feats?.length) {
+		const feats = data.feats.length > 4 ? data.feats.slice(0, 3) : data.feats
+		const moreCount = data.feats.length - feats.length
 		infos.push(
 			<>
 				featuring
-				{data.feats.slice(0, 3).map((artist, i) => (
+				{feats.map((artist, i) => (
 					<Fragment key={artist.id}>
 						{" "}
 						<button key={artist.id} type="button" onClick={() => {
@@ -75,11 +77,11 @@ export default forwardRef(function AlbumView ({
 							})
 						}}>
 							{`${artist.name}`}
+							{i !== data.feats.length - 1 && ","}
 						</button>
-						{i !== data.feats.length - 1 && ","}
 					</Fragment>
 				))}
-				{data.feats.length > 3 && ` and ${data.feats.length - 3} more`}
+				{Boolean(moreCount) && ` and ${moreCount} more`}
 			</>
 		)
 	}

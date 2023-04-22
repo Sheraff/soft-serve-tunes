@@ -8,7 +8,7 @@
 	background: var(--palette-bg-main);
 
 	overflow: hidden scroll;
-	overscroll-behavior: contain;
+	overscroll-behavior-x: contain;
 	width: 100vw;
 	display: grid;
 	grid-template-columns: 100vw;
