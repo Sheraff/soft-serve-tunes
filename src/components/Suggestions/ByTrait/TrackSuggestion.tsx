@@ -1,7 +1,7 @@
 import Dialog from "atoms/Dialog"
 import SectionTitle from "atoms/SectionTitle"
 import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import TrackList from "components/TrackList"
 import FilterIcon from "icons/filter_list.svg"
@@ -23,7 +23,6 @@ export default function TracksByTraitSuggestion () {
 	const [preferredOptions, setPreferredTracks] = preferredTrackList.useState()
 	const onSelect = addNewTraitByOption(setPreferredTracks)
 	const makePlaylist = useMakePlaylist()
-	const showHome = useShowHome()
 	const { data: tracks = [] } = trpc.track.byMultiTraits.useQuery({ traits: preferredOptions }, {
 		keepPreviousData: true,
 	})

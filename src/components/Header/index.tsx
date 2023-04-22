@@ -5,7 +5,7 @@ import {
 	panelStack,
 	searchView,
 	libraryView,
-	useShowHome,
+	showHome,
 } from "components/AppContext"
 import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
@@ -127,7 +127,6 @@ export default function Header () {
 	const editZ = stack.length
 
 	// dashboard
-	const showHome = useShowHome()
 	const main = mainView.useValue()
 	const showDashboardIcon = main === "home"
 	const onClickMainIcon = () => {

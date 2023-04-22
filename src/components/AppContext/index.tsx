@@ -61,7 +61,10 @@ export const panelStack = globalState<Panel[]>(
 	}
 )
 
-export function openPanel<P extends Panel> (type: P["type"], value: Omit<P["value"], "open">) {
+export function openPanel<P extends Panel> (
+	type: P["type"],
+	value: Omit<P["value"], "open">
+) {
 	panelStack.setState(prev => {
 		// const clean = prev.filter(({value: {id}}) => id !== value.id)
 		const clean = prev.filter((panel) => panel.type !== type)
@@ -111,7 +114,7 @@ export function useIsHome () {
 	return stack.length === 0 && view === "suggestions"
 }
 
-function showHome (which?: MainView) {
+export function showHome (which?: MainView) {
 	if (which) {
 		mainView.setState(which)
 	}
@@ -138,9 +141,6 @@ function showHome (which?: MainView) {
 	if (library.open) {
 		libraryView.setState({ open: false })
 	}
-}
-export function useShowHome () {
-	return showHome
 }
 
 export function AppState () {
@@ -202,8 +202,7 @@ export function AppState () {
 				return
 			}
 
-			const library = libraryView.getValue()
-			if (library.open) {
+			if (libraryView.getValue().open) {
 				libraryView.setState({ open: false })
 				return
 			}

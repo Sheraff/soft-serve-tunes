@@ -1,5 +1,5 @@
 import { trpc } from "utils/trpc"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import { getPlaylist, useAddNextToPlaylist } from "client/db/useMakePlaylist"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
 import { useCachedTrack } from "client/sw/useSWCached"
@@ -14,7 +14,6 @@ export function PastSearchTrack ({
 }: PastSearchProps) {
 	const { data: entity } = trpc.track.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const addNextToPlaylist = useAddNextToPlaylist()
-	const showHome = useShowHome()
 	const onClick = () => {
 		_onClick?.()
 		if (!entity)

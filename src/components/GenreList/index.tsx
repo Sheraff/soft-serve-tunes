@@ -1,4 +1,4 @@
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { type CSSProperties, startTransition, useDeferredValue, useRef } from "react"
 import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
@@ -30,7 +30,6 @@ function GenreItem ({
 	isSelection: boolean
 }) {
 	const makePlaylist = useMakePlaylist()
-	const showHome = useShowHome()
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
 		select (data) {
 			if (!data?.artists) return data

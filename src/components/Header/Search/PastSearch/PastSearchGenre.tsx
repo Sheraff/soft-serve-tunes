@@ -1,5 +1,5 @@
 import { trpc } from "utils/trpc"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
@@ -14,7 +14,6 @@ export function PastSearchGenre ({
 }: PastSearchProps) {
 	const { data: entity } = trpc.genre.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const makePlaylist = useMakePlaylist()
-	const showHome = useShowHome()
 	const onClick = () => {
 		_onClick?.()
 		const currentPlaylist = getPlaylist()

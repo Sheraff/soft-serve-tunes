@@ -1,6 +1,6 @@
 import classNames from "classnames"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
-import { mainView, openPanel, useShowHome } from "components/AppContext"
+import { mainView, openPanel, showHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { getCurrentIndex } from "client/db/useMakePlaylist"
 
@@ -38,7 +38,6 @@ export default memo(function SlidingText ({
 		return () => observer.disconnect()
 	}, [])
 
-	const showHome = useShowHome()
 	const focusRef = useRef<boolean>(false)
 	const main = mainView.useValue()
 	const scrollToCurrent = useCallback(() => {

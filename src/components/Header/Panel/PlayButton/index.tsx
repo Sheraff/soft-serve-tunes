@@ -2,7 +2,7 @@ import { startTransition, useState, useRef } from "react"
 import styles from "./index.module.css"
 import PlayIcon from "icons/play_arrow.svg"
 import useLongPress from "components/AlbumList/useLongPress"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import { shuffle } from "components/Player"
 import ShuffleIcon from "icons/shuffle.svg"
 
@@ -20,8 +20,6 @@ export default function PlayButton ({
 		setOpen(true)
 	}
 	useLongPress({ onLong, item: ref })
-
-	const showHome = useShowHome()
 
 	const isShuffle = useRef(shuffle.getValue())
 

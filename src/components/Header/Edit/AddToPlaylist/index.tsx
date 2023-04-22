@@ -4,7 +4,7 @@ import { trpc } from "utils/trpc"
 import NewIcon from "icons/library_add.svg"
 import SmartIcon from "icons/auto_mode.svg"
 import styles from "./index.module.css"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import { autoplay, playAudio } from "components/Player/Audio"
 
 export default function AddToPlaylist ({
@@ -22,7 +22,6 @@ export default function AddToPlaylist ({
 	const createPlaylist = useCreatePlaylist()
 	const { mutateAsync: getMore } = trpc.playlist.more.useMutation()
 	const trpcClient = trpc.useContext()
-	const showHome = useShowHome()
 
 	const onClickNew = () => {
 		navigator.vibrate(1)

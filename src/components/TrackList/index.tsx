@@ -12,7 +12,7 @@ import {
 	useEffect,
 } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
-import { useShowHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import styles from "./index.module.css"
 import useSlideTrack, { type Callbacks as SlideCallbacks } from "./useSlideTrack"
@@ -73,7 +73,6 @@ const TrackItem = memo(function _TrackItem ({
 	const { data } = trpc.track.miniature.useQuery({ id: track.id })
 
 	const addNextToPlaylist = useAddNextToPlaylist()
-	const showHome = useShowHome()
 
 	const isEmpty = !data?.cover
 
