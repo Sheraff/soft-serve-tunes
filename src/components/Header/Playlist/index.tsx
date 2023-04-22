@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, startTransition, useImperativeHandle, useRef, useCallback } from "react"
+import { type ForwardedRef, forwardRef, useImperativeHandle, useRef, useCallback } from "react"
 import styles from "./index.module.css"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { trpc } from "utils/trpc"
