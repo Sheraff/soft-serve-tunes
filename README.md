@@ -19,16 +19,6 @@ https://user-images.githubusercontent.com/1325721/212537689-021062ec-f67c-4b37-8
 
 ------
 
-## TODO
-- [ ] `linkAlbum` in `createTrack` fails a lot and slowly
-  <details>
-    <summary>prisma.track.update logic issue</summary>
-    <pre>
-    code: 'P2002',
-    meta: { target: [ 'simplified', 'artistId', 'albumId' ] }
-    </pre>
-  </details>
-
 
 ## RESOURCES
 - favicon: https://realfavicongenerator.net/
