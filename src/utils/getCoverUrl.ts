@@ -10,6 +10,7 @@ const dpi = env.NEXT_PUBLIC_MAIN_DEVICE_DENSITY
 const baseScreenSize = env.NEXT_PUBLIC_MAIN_DEVICE_WIDTH
 
 const sizes = {
+	full: baseScreenSize,
 	half: (baseScreenSize - 3 * 8) / 2 - 10,
 	third: (baseScreenSize - 4 * 8) / 3,
 	mini: 56,
@@ -20,6 +21,5 @@ export function getCoverUrl (
 	size: Size
 ) {
 	if (!coverId) return ""
-	if (size === "full") return `/api/cover/${coverId}`
 	return `/api/cover/${coverId}/${Math.round(sizes[size] * dpi)}`
 }
