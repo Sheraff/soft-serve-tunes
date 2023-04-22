@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useId, useRef, useState } from "react"
+import { type CSSProperties, useEffect, useId, useRef, useState, useDeferredValue, type RefObject, forwardRef, ForwardedRef } from "react"
 import useAsyncInputStringDistance from "./useAsyncInputFilter"
 import styles from "./index.module.css"
 import ArtistList from "components/ArtistList"
@@ -13,6 +13,152 @@ import PlaylistList from "components/PlaylistList"
 
 const defaultArray = [] as never[]
 
+const ArtistSearch = forwardRef(function _ArtistSearch ({
+	enabled,
+	input,
+	onSelect,
+}: {
+	enabled: boolean
+	input: RefObject<HTMLInputElement>
+	onSelect: (item: { type: "artist", id: string }) => void
+}, ref: ForwardedRef<HTMLDivElement>) {
+	const { data: artistsRaw } = trpc.artist.searchable.useQuery(undefined, { enabled })
+	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
+			<ArtistList
+				ref={ref}
+				artists={artists}
+				onSelect={({ id }) => onSelect({ type: "artist", id })}
+				loading={!artists.length}
+			/>
+		</div>
+	)
+})
+
+const AlbumSearch = forwardRef(function _AlbumSearch ({
+	enabled,
+	input,
+	onSelect,
+}: {
+	enabled: boolean
+	input: RefObject<HTMLInputElement>
+	onSelect: (item: { type: "album", id: string }) => void
+}, ref: ForwardedRef<HTMLDivElement>) {
+	const { data: albumsRaw } = trpc.album.searchable.useQuery(undefined, { enabled })
+	const _albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
+	const deferredAlbums = useDeferredValue(_albums)
+	const albums = deferredAlbums.length === 0 ? _albums : deferredAlbums
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
+			<AlbumList
+				ref={ref}
+				scrollable
+				albums={albums}
+				onSelect={({ id }) => onSelect({ type: "album", id })}
+				loading={!albums.length}
+			/>
+		</div>
+	)
+})
+
+function GenreSearch ({
+	enabled,
+	input,
+	onSelect,
+}: {
+	enabled: boolean
+	input: RefObject<HTMLInputElement>
+	onSelect: (item: { type: "genre", id: string }) => void
+}) {
+	const { data: genresRaw } = trpc.genre.list.useQuery(undefined, { enabled })
+	const _genres = useAsyncInputStringDistance(input, 16, genresRaw || defaultArray)
+	const genres = useDeferredValue(_genres)
+
+	if (!genres.length) return null
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Genres</SectionTitle>
+			<GenreList
+				genres={genres}
+				onSelect={({ id }) => onSelect({ type: "genre", id })}
+			/>
+		</div>
+	)
+}
+
+function PlaylistSearch ({
+	enabled,
+	input,
+	onSelect,
+}: {
+	enabled: boolean
+	input: RefObject<HTMLInputElement>
+	onSelect: (item: { type: "playlist", id: string }) => void
+}) {
+	const { data: playlistsRaw } = trpc.playlist.searchable.useQuery(undefined, { enabled })
+	const _playlists = useAsyncInputStringDistance(input, 6, playlistsRaw || defaultArray, ["name", "artists"])
+	const playlists = useDeferredValue(_playlists)
+
+	if (!playlists.length) return null
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
+			<PlaylistList
+				playlists={playlists}
+				onSelect={({ id }) => onSelect({ type: "playlist", id })}
+			/>
+		</div>
+	)
+}
+
+function TrackSearch ({
+	enabled,
+	input,
+	onSelect,
+}: {
+	enabled: boolean
+	input: RefObject<HTMLInputElement>
+	onSelect: (item: { type: "track", id: string }) => void
+}) {
+	const { data: tracksRaw } = trpc.track.searchable.useQuery(undefined, { enabled })
+	const _tracks = useAsyncInputStringDistance(input, 25, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
+	const tracks = useDeferredValue(_tracks)
+
+	if (!tracks.length) return null
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
+			<TrackList
+				tracks={tracks}
+				onSelect={({ id }) => onSelect({ type: "track", id })}
+			/>
+		</div>
+	)
+}
+
+function LatestSearches () {
+	const { data: latestSearches = [] } = usePastSearchesQuery()
+
+	if (latestSearches.length === 0) return null
+
+	return (
+		<div>
+			<SectionTitle className={styles.sectionTitle}>Recent searches</SectionTitle>
+			{latestSearches.map((item) => (
+				<PastSearch key={item.id} id={item.id} type={item.type} />
+			))}
+		</div>
+	)
+}
+
 export default function Search ({
 	open,
 	z,
@@ -20,25 +166,12 @@ export default function Search ({
 	open: boolean
 	z: number
 }) {
-
 	const head = useRef<HTMLFormElement>(null)
 	const input = useRef<HTMLInputElement>(null)
 	const results = useRef<HTMLOutputElement>(null)
 	const artistList = useRef<HTMLDivElement>(null)
 	const albumList = useRef<HTMLDivElement>(null)
 	const [enabled, setEnabled] = useState(false)
-
-	const { data: tracksRaw } = trpc.track.searchable.useQuery(undefined, { enabled })
-	const { data: albumsRaw } = trpc.album.searchable.useQuery(undefined, { enabled })
-	const { data: artistsRaw } = trpc.artist.searchable.useQuery(undefined, { enabled })
-	const { data: genresRaw } = trpc.genre.list.useQuery(undefined, { enabled })
-	const { data: playlistsRaw } = trpc.playlist.searchable.useQuery(undefined, { enabled })
-
-	const tracks = useAsyncInputStringDistance(input, 25, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
-	const albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
-	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
-	const genres = useAsyncInputStringDistance(input, 16, genresRaw || defaultArray)
-	const playlists = useAsyncInputStringDistance(input, 6, playlistsRaw || defaultArray, ["name", "artists"])
 
 	const [showPast, setShowPast] = useState(true)
 
@@ -91,7 +224,6 @@ export default function Search ({
 		return () => controller.abort()
 	}, [showPast, open])
 
-	const { data: latestSearches = [] } = usePastSearchesQuery()
 	const { mutate: onSelect } = usePastSearchesMutation()
 
 	const id = useId()
@@ -120,63 +252,39 @@ export default function Search ({
 				htmlFor={id}
 				style={{ "--z": z } as CSSProperties}
 			>
-				{showPast && latestSearches.length > 0 && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Recent searches</SectionTitle>
-						{latestSearches.map((item) => (
-							<PastSearch key={item.id} id={item.id} type={item.type} />
-						))}
-					</div>
+				{showPast && (
+					<LatestSearches />
 				)}
 				{!showPast && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
-						<ArtistList
+					<>
+						<ArtistSearch
 							ref={artistList}
-							artists={artists}
-							onSelect={({ id }) => onSelect({ type: "artist", id })}
-							loading={!artists.length}
+							onSelect={onSelect}
+							enabled={enabled}
+							input={input}
 						/>
-					</div>
-				)}
-				{!showPast && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
-						<AlbumList
+						<AlbumSearch
 							ref={albumList}
-							scrollable
-							albums={albums}
-							onSelect={({ id }) => onSelect({ type: "album", id })}
-							loading={!albums.length}
+							onSelect={onSelect}
+							enabled={enabled}
+							input={input}
 						/>
-					</div>
-				)}
-				{!showPast && Boolean(genres.length) && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Genres</SectionTitle>
-						<GenreList
-							genres={genres}
-							onSelect={({ id }) => onSelect({ type: "genre", id })}
+						<GenreSearch
+							onSelect={onSelect}
+							enabled={enabled}
+							input={input}
 						/>
-					</div>
-				)}
-				{!showPast && Boolean(playlists.length) && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
-						<PlaylistList
-							playlists={playlists}
-							onSelect={({ id }) => onSelect({ type: "playlist", id })}
+						<PlaylistSearch
+							onSelect={onSelect}
+							enabled={enabled}
+							input={input}
 						/>
-					</div>
-				)}
-				{!showPast && Boolean(tracks.length) && (
-					<div>
-						<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
-						<TrackList
-							tracks={tracks}
-							onSelect={({ id }) => onSelect({ type: "track", id })}
+						<TrackSearch
+							onSelect={onSelect}
+							enabled={enabled}
+							input={input}
 						/>
-					</div>
+					</>
 				)}
 			</output>
 		</>
