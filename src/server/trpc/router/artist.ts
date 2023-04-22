@@ -80,10 +80,6 @@ const miniature = publicProcedure.input(z.object({
   if (artist) {
     lastFm.findArtist(input.id)
     audioDb.fetchArtist(input.id)
-    // TODO: remove asap, this might be a bit heavy
-    if (!artist.cover) {
-      computeArtistCover(input.id, { tracks: false, album: false })
-    }
   } else {
     log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
   }
@@ -251,7 +247,7 @@ const get = publicProcedure.input(z.object({
 
   lastFm.findArtist(input.id)
   audioDb.fetchArtist(input.id)
-  // TODO: maybe this is temporary, maybe not, but right now many artists don't have a cover
+  // TODO: maybe this is temporary, maybe not (at some point many artists did not have a cover but I think it's because audiodb didn't use to call "compute covers")
   if (!artist.cover) {
     computeArtistCover(input.id, { tracks: false, album: false })
   }
