@@ -17,8 +17,15 @@
 	width: fit-content;
 	--side: calc((100vw - 4 * 8px) / 3);
 }
+.virtualized {
+	column-gap: 0px;
+	padding: 0px;
+}
 .main:not(.lines-1) {
 	padding-right: calc(var(--side) / 2 + 8px);
+}
+.virtualized:not(.lines-1) {
+	padding-right: calc(var(--side) / 2);
 }
 .lines-3 {
 	grid-template-rows: auto auto auto;
@@ -27,8 +34,15 @@
 	width: var(--side);
 	contain: inline-size;
 }
+.virtualized .item {
+	width: calc(var(--side) + 8px);
+	padding-right: 8px;
+}
 .lines-3 .item:nth-child(3n + 2) {
 	transform: translateX(calc(50% + 4px));
+}
+.virtualized.lines-3 .item:nth-child(3n + 2) {
+	transform: translateX(50%);
 }
 
 .loading {

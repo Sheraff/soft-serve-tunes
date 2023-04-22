@@ -128,6 +128,7 @@ export default forwardRef(function ArtistList ({
 		count: artists.length,
 		horizontal: true,
 		overscan: lines,
+		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 3 && index % 3 !== 0) return 0
@@ -153,7 +154,7 @@ export default forwardRef(function ArtistList ({
 		>
 			<div style={{ minWidth: virtualized.getTotalSize() }}>
 				<ul
-					className={classNames(styles.main, styles[`lines-${lines}`], { [styles.loading]: loading })}
+					className={classNames(styles.main, styles.virtualized, styles[`lines-${lines}`], { [styles.loading]: loading })}
 					style={{ transform: `translateX(${items[0]?.start}px)` }}
 				>
 					{items.map((item) => (

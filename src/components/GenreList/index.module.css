@@ -25,6 +25,7 @@
 	width: fit-content;
 	flex-wrap: nowrap;
 	column-gap: 0;
+	padding: 0px;
 }
 
 .scrollable.loading .main {

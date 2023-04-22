@@ -128,6 +128,7 @@ export default function GenreList ({
 		count: genres.length,
 		horizontal: true,
 		overscan: 1,
+		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: () => 125,
 		getItemKey: (index) => genres[index]!.id,

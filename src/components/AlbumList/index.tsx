@@ -129,6 +129,7 @@ export default forwardRef(function AlbumList ({
 		count: albums.length,
 		horizontal: true,
 		overscan: lines,
+		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 2 && index % 2 !== 0) return 0
@@ -152,7 +153,7 @@ export default forwardRef(function AlbumList ({
 			{virtualized && items && (
 				<div style={{ minWidth: virtualized.getTotalSize() }}>
 					<ul
-						className={classNames(styles.main, {
+						className={classNames(styles.main, styles.virtualized, {
 							[styles.loading]: loading,
 							[styles["lines-2"]]: lines === 2,
 						})}

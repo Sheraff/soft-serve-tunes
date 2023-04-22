@@ -19,6 +19,10 @@
 	padding: 0 8px;
 	width: fit-content;
 }
+.virtualized {
+	column-gap: 0px;
+	padding: 0px;
+}
 
 .loading {
 	height: var(--side);
@@ -29,6 +33,10 @@
 
 .item {
 	width: var(--side);
+}
+.virtualized .item {
+	width: calc(var(--side) + 8px);
+	padding-right: 8px;
 }
 
 .scrollable {
@@ -43,9 +51,6 @@
 }
 .scrollable .lines-2 {
 	grid-template-rows: auto auto;
-}
-.scrollable .item {
-	width: var(--side);
 }
 
 .button {
