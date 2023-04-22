@@ -1,26 +1,27 @@
 import classNames from "classnames"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 type AlbumMiniature = Exclude<RouterOutputs["album"]["miniature"], null>
 
-export default function CoverImages({
+export default function CoverImages ({
 	albums = [],
 	className,
 }: {
-	albums?: {id: string}[]
+	albums?: { id: string }[]
 	className?: string
 }) {
-	const {albumData = []} = trpc
-		.useQueries((t) => albums.map(({id}) => t.album.miniature({id})))
+	const { albumData = [] } = trpc
+		.useQueries((t) => albums.map(({ id }) => t.album.miniature({ id })))
 		.reduce<{
 			albumData: AlbumMiniature[]
-		}>((acc, {data}) => {
+		}>((acc, { data }) => {
 			if (data?.cover) {
 				acc.albumData.push(data)
 			}
 			return acc
-		}, {albumData: []})
+		}, { albumData: [] })
 
 	return (
 		<div className={classNames(styles.main, className, styles[`count-${albumData.length}` as keyof typeof styles])}>
@@ -28,7 +29,7 @@ export default function CoverImages({
 				<img
 					key={album.id}
 					className={styles.img}
-					src={albumData.length > 4 ? `/api/cover/${album.cover!.id}/${Math.round(174.5 * 2)}` : `/api/cover/${album.cover!.id}`}
+					src={getCoverUrl(album.cover?.id, albumData.length > 4 ? "half" : "full")}
 					alt=""
 				/>
 			))}

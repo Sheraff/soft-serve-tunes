@@ -4,6 +4,7 @@ import Head from "next/head"
 import { memo, useEffect, type RefObject } from "react"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { trpc } from "utils/trpc"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 export default memo(function NextTrack ({
 	audio,
@@ -53,10 +54,10 @@ export default memo(function NextTrack ({
 			/>
 			{Boolean(data?.cover?.id) && (
 				<link
-					key={`/api/cover/${data?.cover?.id}`}
+					key={data?.cover?.id}
 					rel="prefetch"
 					as="image"
-					href={`/api/cover/${data?.cover?.id}`}
+					href={getCoverUrl(data?.cover?.id, "full")}
 					// @ts-expect-error -- fetchpriority does exist
 					fetchpriority="low"
 				/>

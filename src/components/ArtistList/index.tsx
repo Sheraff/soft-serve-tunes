@@ -10,6 +10,7 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import { useCachedArtist } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 type ArtistListItem = {
 	id: string
@@ -35,7 +36,7 @@ function ArtistItem ({
 	const isEmpty = data && !data.cover
 	const albumCount = data?._count?.albums ?? 0
 	const trackCount = (data?._count?.tracks ?? 0) + (data?._count?.feats ?? 0)
-	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round((393 - 4 * 8) / 3 * 2)}` : undefined
+	const src = getCoverUrl(data?.cover?.id, "third")
 
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)

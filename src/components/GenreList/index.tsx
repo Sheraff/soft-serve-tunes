@@ -12,6 +12,7 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import { autoplay, playAudio } from "components/Player/Audio"
 import classNames from "classnames"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 type GenreListItem = {
 	id: string
@@ -82,7 +83,7 @@ function GenreItem ({
 							key={coverId}
 							className={styles.cover}
 							alt=""
-							src={`/api/cover/${coverId}/${Math.round(56 * 2)}`}
+							src={getCoverUrl(coverId, "mini")}
 						/>
 					))}
 				</div>

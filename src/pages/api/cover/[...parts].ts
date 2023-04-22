@@ -13,7 +13,7 @@ import {
   computeArtistCover,
 } from "server/db/computeCover"
 
-const deviceWidth = env.MAIN_DEVICE_WIDTH * env.MAIN_DEVICE_DENSITY
+const deviceWidth = env.NEXT_PUBLIC_MAIN_DEVICE_WIDTH * env.NEXT_PUBLIC_MAIN_DEVICE_DENSITY
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type
 const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
@@ -22,8 +22,8 @@ globalThis.sharpQueue = queue
 
 const runningTransforms = new Set<string>()
 
-export default async function cover(req: NextApiRequest, res: NextApiResponse) {
-  const {parts} = req.query
+export default async function cover (req: NextApiRequest, res: NextApiResponse) {
+  const { parts } = req.query
   if (!parts) {
     return res.status(400).json({ error: "Missing path" })
   }
@@ -38,10 +38,10 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
   }
   const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
 
-  const width = Math.round(dimension ? Number(dimension) : deviceWidth)
+  const width = Math.min(deviceWidth, Math.round(dimension ? Number(dimension) : deviceWidth))
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
 
-  let returnStream: ({pipe: (res: NextApiResponse) => NextApiResponse}) | null = null
+  let returnStream: ({ pipe: (res: NextApiResponse) => NextApiResponse }) | null = null
   let etag: string | undefined
   try {
     const stats = await stat(exactFilePath)
@@ -74,7 +74,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     try {
       await queue.next()
       const stats = await stat(originalFilePath)
-      
+
       if (stats.size === 0) {
         throw new Error(`Original file is 0 bytes (${originalFilePath})`)
       }
@@ -142,7 +142,7 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
     })
 }
 
-export async function removeImageEntry(id: string) {
+export async function removeImageEntry (id: string) {
   const tracks = await prisma.track.findMany({
     where: { coverId: id },
   })
@@ -157,17 +157,17 @@ export async function removeImageEntry(id: string) {
     select: { path: true },
   })
   for (const track of tracks) {
-    await computeTrackCover(track.id, {album: false, artist: false})
+    await computeTrackCover(track.id, { album: false, artist: false })
   }
   for (const album of albums) {
-    await computeAlbumCover(album.id, {artist: false, tracks: true})
+    await computeAlbumCover(album.id, { artist: false, tracks: true })
   }
   for (const artist of artists) {
-    await computeArtistCover(artist.id, {album: false, tracks: false})
+    await computeArtistCover(artist.id, { album: false, tracks: false })
   }
   try {
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     await unlink(originalFilePath)
-  } catch {}
+  } catch { }
   log("warn", "500", "sharp", `deleted entry for file: cover #${id} (${cover.path})`)
 }

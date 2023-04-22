@@ -6,8 +6,9 @@ import useLongPress from "components/AlbumList/useLongPress"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import OfflineIcon from "icons/wifi_off.svg"
+import { getCoverUrl } from "utils/getCoverUrl"
 
-export function BasePastSearchItem({
+export function BasePastSearchItem ({
 	className,
 	coverId,
 	onClick,
@@ -26,15 +27,15 @@ export function BasePastSearchItem({
 	id: string
 	offline?: boolean
 }) {
-	const src = coverId ? `/api/cover/${coverId}/${Math.round(56 * 2)}` : undefined
+	const src = getCoverUrl(coverId, "mini")
 
 	const item = useRef<HTMLButtonElement>(null)
 	const [_edit, setEdit] = editOverlay.useState()
 	const onLong = () => {
 		navigator.vibrate(1)
-		setEdit(editOverlaySetter({type, id}))
+		setEdit(editOverlaySetter({ type, id }))
 	}
-	useLongPress({onLong, item})
+	useLongPress({ onLong, item })
 
 	const edit = useDeferredValue(_edit)
 	const selection = edit.selection.length > 0

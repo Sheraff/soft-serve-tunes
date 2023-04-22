@@ -34,6 +34,7 @@ import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual"
 import { autoplay, playAudio } from "components/Player/Audio"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 const emptyFunction = () => { }
 
@@ -169,7 +170,7 @@ const TrackItem = memo(function _TrackItem ({
 				{!isEmpty && (
 					<div className={styles.img}>
 						<img
-							src={`/api/cover/${data.cover?.id}/${Math.round(48 * 2)}`}
+							src={getCoverUrl(data.cover?.id, "mini")}
 							alt=""
 							loading={index > 4 ? "lazy" : undefined}
 							decoding={index > 4 ? "async" : undefined}

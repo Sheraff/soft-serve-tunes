@@ -10,6 +10,7 @@ import useLongPress from "./useLongPress"
 import { useCachedAlbum } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 type AlbumListItem = {
 	id: string
@@ -34,7 +35,7 @@ function AlbumItem ({
 
 	const isEmpty = !data?.cover
 	const trackCount = data?._count?.tracks ?? 0
-	const src = data?.cover ? `/api/cover/${data.cover.id}/${Math.round(174.5 * 2)}` : ""
+	const src = getCoverUrl(data?.cover?.id, "half")
 
 	const onLong = selectable ? () => {
 		navigator.vibrate(1)

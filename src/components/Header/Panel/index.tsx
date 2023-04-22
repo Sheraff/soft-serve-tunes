@@ -6,6 +6,7 @@ import classNames from "classnames"
 import styles from "./index.module.css"
 import SectionTitle from "atoms/SectionTitle"
 import PlayButton from "./PlayButton"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 export default forwardRef(function PanelView ({
 	open: _open,
@@ -108,7 +109,7 @@ export default forwardRef(function PanelView ({
 			{!coverElement && coverId && (
 				<img
 					className={styles.img}
-					src={`/api/cover/${coverId}`}
+					src={getCoverUrl(coverId, "full")}
 					alt=""
 					decoding={initialImageSrc.current ? "async" : undefined}
 				/>

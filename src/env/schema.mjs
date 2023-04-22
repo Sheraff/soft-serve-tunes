@@ -21,8 +21,6 @@ export const serverSchema = z.object({
   ACOUST_ID_API_KEY: z.string(),
   MUSIC_BRAINZ_USER_AGENT: z.string(),
   WEBSOCKET_SERVER_PORT: z.string().transform(Number),
-  MAIN_DEVICE_WIDTH: z.string().transform(Number),
-  MAIN_DEVICE_DENSITY: z.string().transform(Number),
   DAYS_BETWEEN_REFETCH: z.string().transform(days => 1000 * 60 * 60 * 24 * Number(days)),
   ALLOWED_USERS: z.preprocess(
     (string) => {
@@ -51,6 +49,8 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_WEBSOCKET_URL: z.string(),
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
   NEXT_PUBLIC_ENV: z.enum(["development", "test", "production"]),
+  NEXT_PUBLIC_MAIN_DEVICE_WIDTH: z.number(),
+  NEXT_PUBLIC_MAIN_DEVICE_DENSITY: z.number(),
 })
 
 /**
@@ -64,4 +64,6 @@ export const clientEnv = {
   NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
   NEXT_PUBLIC_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_MAIN_DEVICE_WIDTH: Number(process.env.NEXT_PUBLIC_MAIN_DEVICE_WIDTH),
+  NEXT_PUBLIC_MAIN_DEVICE_DENSITY: Number(process.env.NEXT_PUBLIC_MAIN_DEVICE_DENSITY),
 }

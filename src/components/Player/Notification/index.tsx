@@ -1,5 +1,6 @@
 import { type RefObject, useEffect, memo } from "react"
 import { nextPlaylistIndex, prevPlaylistIndex, useCurrentTrackDetails } from "client/db/useMakePlaylist"
+import { getCoverUrl } from "utils/getCoverUrl"
 
 export default memo(function Notification ({
 	audio
@@ -19,7 +20,7 @@ export default memo(function Notification ({
 			...(data.cover?.id ? {
 				artwork: [
 					{
-						src: `/api/cover/${data.cover.id}`,
+						src: getCoverUrl(data.cover.id, "full"),
 						type: "image/avif",
 						sizes: "786x786",
 					},
