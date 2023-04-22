@@ -127,7 +127,7 @@ export default function GenreList ({
 	const virtualized = scrollable && useVirtualizer({
 		count: genres.length,
 		horizontal: true,
-		overscan: 0,
+		overscan: 1,
 		getScrollElement: () => main.current,
 		estimateSize: () => 125,
 		getItemKey: (index) => genres[index]!.id,

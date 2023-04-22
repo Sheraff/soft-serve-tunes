@@ -126,7 +126,7 @@ export default forwardRef(function ArtistList ({
 	const virtualized = useVirtualizer({
 		count: artists.length,
 		horizontal: true,
-		overscan: 0,
+		overscan: lines,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 3 && index % 3 !== 0) return 0

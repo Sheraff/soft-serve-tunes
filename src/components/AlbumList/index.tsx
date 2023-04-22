@@ -127,7 +127,7 @@ export default forwardRef(function AlbumList ({
 	const virtualized = scrollable && useVirtualizer({
 		count: albums.length,
 		horizontal: true,
-		overscan: 0,
+		overscan: lines,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 2 && index % 2 !== 0) return 0
