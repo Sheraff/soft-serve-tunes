@@ -232,9 +232,7 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	tracks: T
 	exposeScrollFn?: boolean
 }) {
-	const staticOrderable = useRef(orderable)
-	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `orderable` doesn't change once a component is mounted
-	const deferredTracks = staticOrderable.current ? tracks : useDeferredValue(tracks)
+	const deferredTracks = useDeferredValue(tracks)
 
 	const forceInsertVirtualDragItem = useRef<number | null>(null)
 	const forwardOverScan = 1 //2 // numbers to use without innerWidth offsets
@@ -242,10 +240,10 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	const weirdAdjust = virtual ? window.innerWidth : 0
 	// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `virtual` doesn't change once a component is mounted
 	const rowVirtualizer = virtual && useVirtualizer({
-		count: tracks.length,
+		count: deferredTracks.length,
 		getScrollElement: () => parent?.current,
 		estimateSize: () => 65, // calc(48px + 2 * 8px + 1px)
-		getItemKey: (index) => tracks[index]!.id,
+		getItemKey: (index) => deferredTracks[index]!.id,
 		rangeExtractor: (range) => {
 			const extra = forceInsertVirtualDragItem.current
 			if (extra !== null && range.startIndex - backwardOverScan > extra) {
@@ -294,7 +292,7 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 }
 
 export default function TrackList ({
-	tracks,
+	tracks: _tracks,
 	current,
 	onClick,
 	onSelect,
@@ -326,13 +324,30 @@ export default function TrackList ({
 	const callbacks = useRef<DragCallbacks>({
 		onDrop: emptyFunction
 	})
+
+	const [orderedTracks, setOrderedTracks] = useState<TrackListItem[] | null>(null)
+	const tracks = orderedTracks ?? _tracks
 	callbacks.current.onDrop = (from, to) => {
 		if (onReorder) {
 			navigator.vibrate(1)
-			onReorder(from, to)
+			setOrderedTracks((tracks) => {
+				const newTracks = [...(tracks ?? _tracks)]
+				const [track] = newTracks.splice(from, 1)
+				if (!track) return tracks
+				newTracks.splice(to, 0, track)
+				return newTracks
+			})
+			startTransition(() => {
+				onReorder(from, to)
+			})
 		}
 	}
+	// eslint-disable-next-line react-hooks/rules-of-hooks -- orderable is static over the lifetime of this component
+	if (orderable) useEffect(() => {
+		setOrderedTracks(null)
+	}, [_tracks])
 	useDragTrack(ref, !!orderable, callbacks, tracks.length, forceInsertVirtualDragItem)
+
 	const addNextToPlaylist = useAddNextToPlaylist()
 
 	const [itemToAdd, setItemToAdd] = useState<TrackListItem | null>(null)
