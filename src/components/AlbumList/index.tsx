@@ -11,6 +11,7 @@ import { useCachedAlbum } from "client/sw/useSWCached"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
+import pluralize from "utils/pluralize"
 
 type AlbumListItem = {
 	id: string
@@ -91,7 +92,7 @@ function AlbumItem ({
 			})}>
 				<span className={styles.name}>{data?.name || album.name}</span>
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
-				<span>{trackCount} track{trackCount > 1 ? "s" : ""}</span>
+				<span>{trackCount} track{pluralize(trackCount)}</span>
 				{selected && <CheckIcon className={styles.icon} />}
 				{!selected && offline && <OfflineIcon className={styles.icon} />}
 			</p>
