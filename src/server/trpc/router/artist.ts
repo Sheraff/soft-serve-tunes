@@ -4,6 +4,7 @@ import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 import { Prisma } from "@prisma/client"
+import { computeArtistCover } from "server/db/computeCover"
 
 const LISTS_SIZE = 30
 
@@ -79,6 +80,10 @@ const miniature = publicProcedure.input(z.object({
   if (artist) {
     lastFm.findArtist(input.id)
     audioDb.fetchArtist(input.id)
+    // TODO: remove asap, this might be a bit heavy
+    if (!artist.cover) {
+      computeArtistCover(input.id, { tracks: false, album: false })
+    }
   } else {
     log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
   }
@@ -246,6 +251,10 @@ const get = publicProcedure.input(z.object({
 
   lastFm.findArtist(input.id)
   audioDb.fetchArtist(input.id)
+  // TODO: maybe this is temporary, maybe not, but right now many artists don't have a cover
+  if (!artist.cover) {
+    computeArtistCover(input.id, { tracks: false, album: false })
+  }
 
   return {
     id: artist.id,

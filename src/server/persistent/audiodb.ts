@@ -7,61 +7,65 @@ import log from "utils/logger"
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
+import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 
-const audiodbArtistSchema = z.object({artists:
-	z.array(z.object({
-		idArtist: z.string().transform(Number),
-		strArtist: z.string(),
-		intFormedYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-		intBornYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-		strMusicBrainzID: z.union([z.string().optional(), z.null()]),
-		strBiographyEN: z.union([z.string().optional(), z.null()]),
-		strArtistThumb: z.union([z.string().optional(), z.null()]),
-		strArtistLogo: z.union([z.string().optional(), z.null()]),
-		strArtistCutout: z.union([z.string().optional(), z.null()]),
-		strArtistClearart: z.union([z.string().optional(), z.null()]),
-		strArtistWideThumb: z.union([z.string().optional(), z.null()]),
-		strArtistBanner: z.union([z.string().optional(), z.null()]),
-	}))
+const audiodbArtistSchema = z.object({
+	artists:
+		z.array(z.object({
+			idArtist: z.string().transform(Number),
+			strArtist: z.string(),
+			intFormedYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
+			intBornYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
+			strBiographyEN: z.union([z.string().optional(), z.null()]),
+			strArtistThumb: z.union([z.string().optional(), z.null()]),
+			strArtistLogo: z.union([z.string().optional(), z.null()]),
+			strArtistCutout: z.union([z.string().optional(), z.null()]),
+			strArtistClearart: z.union([z.string().optional(), z.null()]),
+			strArtistWideThumb: z.union([z.string().optional(), z.null()]),
+			strArtistBanner: z.union([z.string().optional(), z.null()]),
+		}))
 })
 
-const audiodbAlbumSchema = z.object({album:
-	z.array(z.object({
-		idAlbum: z.string().transform(Number),
-		idArtist: z.string().transform(Number),
-		strAlbum: z.string(),
-		intYearReleased: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-		strMusicBrainzID: z.union([z.string().optional(), z.null()]),
-		strDescriptionEN: z.union([z.string().optional(), z.null()]),
-		strAlbumThumb: z.union([z.string().optional(), z.null()]),
-		strAlbumThumbHQ: z.union([z.string().optional(), z.null()]),
-		strAlbumCDart: z.union([z.string().optional(), z.null()]),
-		strAllMusicID: z.union([z.string().optional(), z.null()]),
-		strBBCReviewID: z.union([z.string().optional(), z.null()]),
-		strRateYourMusicID: z.union([z.string().optional(), z.null()]),
-		strDiscogsID: z.union([z.string().optional(), z.null()]),
-		strWikidataID: z.union([z.string().optional(), z.null()]),
-		strWikipediaID: z.union([z.string().optional(), z.null()]),
-		strGeniusID: z.union([z.string().optional(), z.null()]),
-		strLyricWikiID: z.union([z.string().optional(), z.null()]),
-		strMusicMozID: z.union([z.string().optional(), z.null()]),
-		strItunesID: z.union([z.string().optional(), z.null()]),
-		strAmazonID: z.union([z.string().optional(), z.null()]),
-	}))
+const audiodbAlbumSchema = z.object({
+	album:
+		z.array(z.object({
+			idAlbum: z.string().transform(Number),
+			idArtist: z.string().transform(Number),
+			strAlbum: z.string(),
+			intYearReleased: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
+			strDescriptionEN: z.union([z.string().optional(), z.null()]),
+			strAlbumThumb: z.union([z.string().optional(), z.null()]),
+			strAlbumThumbHQ: z.union([z.string().optional(), z.null()]),
+			strAlbumCDart: z.union([z.string().optional(), z.null()]),
+			strAllMusicID: z.union([z.string().optional(), z.null()]),
+			strBBCReviewID: z.union([z.string().optional(), z.null()]),
+			strRateYourMusicID: z.union([z.string().optional(), z.null()]),
+			strDiscogsID: z.union([z.string().optional(), z.null()]),
+			strWikidataID: z.union([z.string().optional(), z.null()]),
+			strWikipediaID: z.union([z.string().optional(), z.null()]),
+			strGeniusID: z.union([z.string().optional(), z.null()]),
+			strLyricWikiID: z.union([z.string().optional(), z.null()]),
+			strMusicMozID: z.union([z.string().optional(), z.null()]),
+			strItunesID: z.union([z.string().optional(), z.null()]),
+			strAmazonID: z.union([z.string().optional(), z.null()]),
+		}))
 })
 
-const audiodbTrackSchema = z.object({track:
-	z.array(z.object({
-		idTrack: z.string().transform(Number),
-		idAlbum: z.string().transform(Number),
-		strTrack: z.string(),
-		intDuration: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-		strGenre: z.union([z.string().optional(), z.null()]),
-		strTrackThumb: z.union([z.string().optional(), z.null()]),
-		strMusicVid: z.union([z.string().optional(), z.null()]),
-		intTrackNumber: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-		strMusicBrainzID: z.union([z.string().optional(), z.null()]),
-	}))
+const audiodbTrackSchema = z.object({
+	track:
+		z.array(z.object({
+			idTrack: z.string().transform(Number),
+			idAlbum: z.string().transform(Number),
+			strTrack: z.string(),
+			intDuration: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
+			strGenre: z.union([z.string().optional(), z.null()]),
+			strTrackThumb: z.union([z.string().optional(), z.null()]),
+			strMusicVid: z.union([z.string().optional(), z.null()]),
+			intTrackNumber: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
+		}))
 })
 class AudioDb {
 	static RATE_LIMIT = 2000
@@ -85,7 +89,7 @@ class AudioDb {
 		"searchtrack": audiodbTrackSchema, // ?s=artist&t=track
 	} as const
 
-	async #audiodbFetch(endpoint: keyof typeof AudioDb["ENDPOINT_SCHEMAS"], ...params: [string, string][]) {
+	async #audiodbFetch (endpoint: keyof typeof AudioDb["ENDPOINT_SCHEMAS"], ...params: [string, string][]) {
 		const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, "https://theaudiodb.com")
 		params.forEach(([key, value]) => {
 			url.searchParams.append(key, value)
@@ -102,7 +106,7 @@ class AudioDb {
 	}
 
 	#runningArtists = new Set<string>()
-	async fetchArtist(id: string) {
+	async fetchArtist (id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningArtists.has(id)) return
 		this.#runningArtists.add(id)
@@ -114,7 +118,7 @@ class AudioDb {
 		this.#runningArtists.delete(id)
 	}
 
-	async #fetchArtist(id: string) {
+	async #fetchArtist (id: string) {
 		const artist = await retryable(() => prisma.artist.findUnique({
 			where: { id },
 			select: {
@@ -122,8 +126,8 @@ class AudioDb {
 				name: true,
 				audiodbDate: true,
 				mbid: true,
-				lastfm: { select: { mbid: true }},
-				audiodb: { select: { idArtist: true }}
+				lastfm: { select: { mbid: true } },
+				audiodb: { select: { idArtist: true } }
 			}
 		}))
 
@@ -183,24 +187,27 @@ class AudioDb {
 			"strArtistBanner",
 		])
 		await retryable(async () => prisma.audioDbArtist.create({
-				data: {
-					entityId: id,
-					...audiodbArtist!,
-					thumbId: imageIds.strArtistThumb,
-					logoId: imageIds.strArtistLogo,
-					cutoutId: imageIds.strArtistCutout,
-					clearartId: imageIds.strArtistClearart,
-					wideThumbId: imageIds.strArtistWideThumb,
-					bannerId: imageIds.strArtistBanner,
-				},
-			})
+			data: {
+				entityId: id,
+				...audiodbArtist!,
+				thumbId: imageIds.strArtistThumb,
+				logoId: imageIds.strArtistLogo,
+				cutoutId: imageIds.strArtistCutout,
+				clearartId: imageIds.strArtistClearart,
+				wideThumbId: imageIds.strArtistWideThumb,
+				bannerId: imageIds.strArtistBanner,
+			},
+		})
 		)
-		socketServer.emit("invalidate", {type: "artist", id})
+		const artistChangedCover = await computeArtistCover(id, { tracks: false, album: false })
+		if (!artistChangedCover) {
+			socketServer.emit("invalidate", { type: "artist", id })
+		}
 		log("ready", "200", "audiodb", `fetched artist ${audiodbArtist.strArtist}`)
 	}
 
 	#runningAlbums = new Set<string>()
-	async fetchAlbum(id: string) {
+	async fetchAlbum (id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningAlbums.has(id)) return
 		this.#runningAlbums.add(id)
@@ -212,7 +219,7 @@ class AudioDb {
 		this.#runningAlbums.delete(id)
 	}
 
-	async #fetchAlbum(id: string) {
+	async #fetchAlbum (id: string) {
 		const album = await retryable(() => prisma.album.findUnique({
 			where: { id },
 			select: {
@@ -220,9 +227,9 @@ class AudioDb {
 				name: true,
 				audiodbDate: true,
 				mbid: true,
-				lastfm: { select: { mbid: true }},
-				audiodb: { select: { idAlbum: true }},
-				artist: { select: { name: true }},
+				lastfm: { select: { mbid: true } },
+				audiodb: { select: { idAlbum: true } },
+				artist: { select: { name: true } },
 			}
 		}))
 
@@ -281,21 +288,23 @@ class AudioDb {
 			"strAlbumCDart",
 		])
 		await retryable(async () => prisma.audioDbAlbum.create({
-				data: {
-					entityId: id,
-					...audiodbAlbum!,
-					thumbId: imageIds.strAlbumThumb,
-					thumbHqId: imageIds.strAlbumThumbHQ,
-					cdArtId: imageIds.strAlbumCDart,
-				}
-			})
-		)
-		socketServer.emit("invalidate", {type: "album", id})
+			data: {
+				entityId: id,
+				...audiodbAlbum!,
+				thumbId: imageIds.strAlbumThumb,
+				thumbHqId: imageIds.strAlbumThumbHQ,
+				cdArtId: imageIds.strAlbumCDart,
+			}
+		}))
+		const albumChangedCover = await computeAlbumCover(id, { tracks: true, artist: true })
+		if (!albumChangedCover) {
+			socketServer.emit("invalidate", { type: "album", id })
+		}
 		log("ready", "200", "audiodb", `fetched album ${audiodbAlbum.strAlbum}`)
 	}
 
 	#runningTracks = new Set<string>()
-	async fetchTrack(id: string) {
+	async fetchTrack (id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningTracks.has(id)) return
 		this.#runningTracks.add(id)
@@ -307,7 +316,7 @@ class AudioDb {
 		this.#runningTracks.delete(id)
 	}
 
-	async #fetchTrack(id: string) {
+	async #fetchTrack (id: string) {
 		const track = await retryable(() => prisma.track.findUnique({
 			where: { id },
 			select: {
@@ -315,13 +324,13 @@ class AudioDb {
 				name: true,
 				audiodbDate: true,
 				mbid: true,
-				lastfm: { select: { mbid: true }},
-				audiodb: { select: { idTrack: true }},
-				artist: { select: { name: true }},
-				album: { select: { name: true }},
+				lastfm: { select: { mbid: true } },
+				audiodb: { select: { idTrack: true } },
+				artist: { select: { name: true } },
+				album: { select: { name: true } },
 				position: true,
 				metaPosition: true,
-				spotify: { select: { trackNumber: true }},
+				spotify: { select: { trackNumber: true } },
 			}
 		}))
 
@@ -381,17 +390,19 @@ class AudioDb {
 			return
 		}
 
-		const {strGenre, ...data} = audiodbTrack
+		const { strGenre, ...data } = audiodbTrack
 		const existingConnection = await prisma.audioDbTrack.findUnique({
-			where: {idTrack: data.idTrack},
+			where: { idTrack: data.idTrack },
 			select: {
-				entity: { select: {
-					id: true,
-					// TODO: all the info below should be removed, it's only temporary until I can debug why there are duplicate audioDbTracks
-					name: true,
-					artist: { select: { name: true } },
-					album: { select: { name: true } },
-				}}
+				entity: {
+					select: {
+						id: true,
+						// TODO: all the info below should be removed, it's only temporary until I can debug why there are duplicate audioDbTracks
+						name: true,
+						artist: { select: { name: true } },
+						album: { select: { name: true } },
+					}
+				}
 			}
 		})
 		if (existingConnection && existingConnection.entity) {
@@ -405,14 +416,14 @@ class AudioDb {
 		if (existingConnection) {
 			try {
 				await prisma.audioDbTrack.update({
-					where: {idTrack: data.idTrack},
+					where: { idTrack: data.idTrack },
 					data: { entityId: id }
 				})
 			} catch (e) {
 				console.error(new Error(
 					`audiodb track found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"
 					it already existed, so we tried to connect it to the track, but this seems to fail too (${data.strTrack} idTrack#${data.idTrack})`,
-					{cause: e}
+					{ cause: e }
 				))
 			}
 			const newPosition = track.metaPosition ?? track.spotify?.trackNumber ?? data.intTrackNumber ?? null
@@ -431,7 +442,7 @@ class AudioDb {
 				entityId: id,
 				...data,
 				genres: {
-					connectOrCreate: genres.map(({name, simplified}) => ({
+					connectOrCreate: genres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -446,7 +457,10 @@ class AudioDb {
 				data: { position: newPosition }
 			})
 		}
-		socketServer.emit("invalidate", {type: "track", id})
+		const changedTrackCover = await computeTrackCover(id, { album: true, artist: true })
+		if (!changedTrackCover) {
+			socketServer.emit("invalidate", { type: "track", id })
+		}
 		log("ready", "200", "audiodb", `fetched track ${data.strTrack}`)
 	}
 }
@@ -454,15 +468,15 @@ class AudioDb {
 async function keysAndInputToImageIds<
 	AllKeys extends readonly (keyof Input)[],
 	Key extends AllKeys[keyof AllKeys] & string,
-	Input extends {[key in Key]?: string | number | null | undefined} & {[key in Exclude<string, Key>]: unknown},
-	Result extends {[key in keyof Pick<Input, Key>]: string}
->(input: Input, keys: AllKeys): Promise<Result> {
+	Input extends { [key in Key]?: string | number | null | undefined } & { [key in Exclude<string, Key>]: unknown },
+	Result extends { [key in keyof Pick<Input, Key>]: string }
+> (input: Input, keys: AllKeys): Promise<Result> {
 	const imageIds = await Promise.allSettled(keys.map(async (key) => {
 		const url = input[key]
 		if (url) {
-			const {hash, path, mimetype, palette} = await fetchAndWriteImage(url as string)
+			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url as string)
 			if (hash) {
-				const {id} = await prisma.image.upsert({
+				const { id } = await prisma.image.upsert({
 					where: { id: hash },
 					update: {},
 					create: {
@@ -477,7 +491,7 @@ async function keysAndInputToImageIds<
 		}
 	}))
 	const fulfilled = imageIds.filter((result) => result.status === "fulfilled") as PromiseFulfilledResult<[Key, string] | undefined>[]
-	const values = fulfilled.map(({value}) => value)
+	const values = fulfilled.map(({ value }) => value)
 	const content = values.filter(Boolean) as [Key, string][]
 	return Object.fromEntries(content) as Result
 }
