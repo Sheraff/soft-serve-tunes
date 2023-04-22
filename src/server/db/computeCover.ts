@@ -2,7 +2,7 @@ import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
 
-export async function computeAlbumCover(id: string, propagate: {artist?: boolean, tracks?: boolean}) {
+export async function computeAlbumCover (id: string, propagate: { artist?: boolean, tracks?: boolean }) {
   const album = await retryable(() => prisma.album.findUnique({
     where: { id },
     select: {
@@ -19,16 +19,16 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
 
   if (changed && propagate.artist) {
     if (album.artistId) {
-      await retryable(() => computeArtistCover(album.artistId!, {album: false, tracks: true}))
+      await retryable(() => computeArtistCover(album.artistId!, { album: false, tracks: true }))
     }
   }
   if (changed && propagate.tracks) {
     const albumWithTracks = await retryable(() => prisma.album.findUnique({
-      where: {id},
-      select: {tracks: {select: {id: true}}}
+      where: { id },
+      select: { tracks: { select: { id: true } } }
     }))
     for (const track of albumWithTracks!.tracks) {
-      await retryable(() => computeTrackCover(track.id, {album: false, artist: true}))
+      await retryable(() => computeTrackCover(track.id, { album: false, artist: true }))
     }
   }
 
@@ -39,7 +39,7 @@ export async function computeAlbumCover(id: string, propagate: {artist?: boolean
   return changed
 }
 
-export async function listAlbumCovers(id: string, include: {tracks?: boolean} = {}) {
+export async function listAlbumCovers (id: string, include: { tracks?: boolean } = {}) {
   const data = await prisma.album.findUnique({
     where: { id },
     select: {
@@ -57,14 +57,14 @@ export async function listAlbumCovers(id: string, include: {tracks?: boolean} = 
   if (data?.lastfm?.coverId) covers.add(data.lastfm.coverId)
   if (include.tracks) {
     for (const track of data.tracks!) {
-      const trackCovers = await listTrackCovers(track.id, {album: false})
+      const trackCovers = await listTrackCovers(track.id, { album: false })
       trackCovers.forEach(covers.add, covers)
     }
   }
   return Array.from(covers)
 }
 
-async function getAndSetAlbumCover(id: string, album: { artistId: string | null; coverId: string | null }) {
+async function getAndSetAlbumCover (id: string, album: { artistId: string | null; coverId: string | null }) {
   let newCoverId: string | null | undefined
   cover: {
     const spotify = await prisma.spotifyAlbum.findUnique({
@@ -112,7 +112,7 @@ async function getAndSetAlbumCover(id: string, album: { artistId: string | null;
   return false
 }
 
-export async function computeTrackCover(id: string, propagate: {album?: boolean, artist?: boolean}) {
+export async function computeTrackCover (id: string, propagate: { album?: boolean, artist?: boolean }) {
   const track = await retryable(() => prisma.track.findUnique({
     where: { id },
     select: {
@@ -131,12 +131,12 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
 
   if (changed && propagate.album) {
     if (track.albumId) {
-      await retryable(() => computeAlbumCover(track.albumId!, {artist: true, tracks: false}))
+      await retryable(() => computeAlbumCover(track.albumId!, { artist: true, tracks: false }))
     }
   }
   if (changed && propagate.artist) {
     if (track.artistId) {
-      await retryable(() => computeArtistCover(track.artistId!, {album: true, tracks: false}))
+      await retryable(() => computeArtistCover(track.artistId!, { album: true, tracks: false }))
     }
   }
 
@@ -147,7 +147,7 @@ export async function computeTrackCover(id: string, propagate: {album?: boolean,
   return changed
 }
 
-export async function listTrackCovers(id: string, include: {album?: boolean} = {}) {
+export async function listTrackCovers (id: string, include: { album?: boolean } = {}) {
   const data = await prisma.track.findUnique({
     where: { id },
     select: {
@@ -165,59 +165,59 @@ export async function listTrackCovers(id: string, include: {album?: boolean} = {
   if (data?.lastfm?.album?.coverId) covers.add(data.lastfm.album.coverId)
   if (data?.metaImageId) covers.add(data.metaImageId)
   if (include.album) {
-    const albumCovers = await listAlbumCovers(data.album!.id, {tracks: false})
+    const albumCovers = await listAlbumCovers(data.album!.id, { tracks: false })
     albumCovers.forEach(covers.add, covers)
   }
   return Array.from(covers)
 }
 
-async function getAndSetTrackCover(id: string, track: {
-  albumId: string | null;
-  artistId: string | null;
-  coverId: string | null;
-  metaImageId: string | null;
+async function getAndSetTrackCover (id: string, track: {
+  albumId: string | null
+  artistId: string | null
+  coverId: string | null
+  metaImageId: string | null
 }) {
   let newCoverId: string | null | undefined
   cover: {
     if (track.albumId) {
       const album = await prisma.album.findUnique({
-        where: {id: track.albumId},
-        select: {coverId: true}
+        where: { id: track.albumId },
+        select: { coverId: true }
       })
       if (newCoverId = album?.coverId) break cover
     }
 
     const spotify = await prisma.spotifyTrack.findUnique({
-      where: {trackId: id},
-      select: {album: {select: {imageId: true}}}
+      where: { trackId: id },
+      select: { album: { select: { imageId: true } } }
     })
     if (newCoverId = spotify?.album?.imageId) break cover
 
     const audioDb = await prisma.audioDbTrack.findUnique({
-      where: {entityId: id},
-      select: {thumbId: true}
+      where: { entityId: id },
+      select: { thumbId: true }
     })
     if (newCoverId = audioDb?.thumbId) break cover
 
     const lastFm = await prisma.lastFmTrack.findUnique({
-      where: {entityId: id},
-      select: {album: {select: {coverId: true}}}
+      where: { entityId: id },
+      select: { album: { select: { coverId: true } } }
     })
     if (newCoverId = lastFm?.album?.coverId) break cover
-    
+
     if (newCoverId = track.metaImageId) break cover
   }
   if (newCoverId && newCoverId !== track.coverId) {
     await prisma.track.update({
-      where: {id},
-      data: {cover: {connect: {id: newCoverId}}}
+      where: { id },
+      data: { cover: { connect: { id: newCoverId } } }
     })
     return newCoverId
   }
   return false
 }
 
-export async function computeArtistCover(id: string, propagate: {album?: boolean, tracks?: boolean}) {
+export async function computeArtistCover (id: string, propagate: { album?: boolean, tracks?: boolean }) {
   const artist = await retryable(() => prisma.artist.findUnique({
     where: { id },
     select: {
@@ -243,8 +243,8 @@ export async function computeArtistCover(id: string, propagate: {album?: boolean
   return changed
 }
 
-async function getAndSetArtistCover(id: string, artist: {
-  coverId: string | null;
+async function getAndSetArtistCover (id: string, artist: {
+  coverId: string | null
 }) {
   let newCoverId: string | null | undefined
   cover: {
@@ -280,6 +280,15 @@ async function getAndSetArtistCover(id: string, artist: {
       }
     })
     if (newCoverId = track?.coverId)
+      break cover
+
+    const feat = await prisma.track.findFirst({
+      where: {
+        feats: { some: { id } },
+        coverId: { not: null }
+      }
+    })
+    if (newCoverId = feat?.coverId)
       break cover
   }
   if (newCoverId && newCoverId !== artist.coverId) {
