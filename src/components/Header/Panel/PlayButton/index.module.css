@@ -32,6 +32,8 @@
 .extra > * {
 	width: 32px;
 	height: 32px;
+	background-color: var(--palette-bg-main);
+	border-color: var(--palette-bg-gradient);
 	animation: 300ms pop-open var(--delay) cubic-bezier(.5,2,.64,.66) backwards;
 }
 
