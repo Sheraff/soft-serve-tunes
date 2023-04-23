@@ -1,5 +1,5 @@
 .main,
-.secondary {
+.extra > * {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -13,23 +13,34 @@
 	height: 48px;
 }
 
-.secondary {
+.extra {
+	display: flex;
+	flex-direction: column-reverse;
+	align-items: center;
+	gap: 8px;
 	position: absolute;
-	top: 50%;
+	bottom: calc(100% + 8px);
 	left: 50%;
-	transform: translate(-50%, calc(-50% - 48px));
+	transform: translateX(-50%);
 	font-size: 14px;
+}
+
+.extra > :nth-child(1) { --delay: 0ms; }
+.extra > :nth-child(2) { --delay: 75ms; }
+.extra > :nth-child(3) { --delay: 150ms; }
+
+.extra > * {
 	width: 32px;
 	height: 32px;
-	animation: 300ms pop-open cubic-bezier(.5,2,.64,.66) backwards;
+	animation: 300ms pop-open var(--delay) cubic-bezier(.5,2,.64,.66) backwards;
 }
 
 @keyframes pop-open {
-	0%   { transform: translate(-50%, calc(-50% - 48px)) scale(0); }
-	100% { transform: translate(-50%, calc(-50% - 48px)) scale(1); }
+	0%   { transform: scale(0); }
+	100% { transform: scale(1); }
 }
 
-.secondary::after {
+.extra > *::after {
 	content: '';
 	display: block;
 	position: absolute;
@@ -37,7 +48,7 @@
 	border-radius: 50%;
 	border: 1px solid currentColor;
 	opacity: 0;
-	animation: 300ms blip 50ms ease-out backwards;
+	animation: 300ms blip calc(50ms + var(--delay)) ease-out backwards;
 }
 
 @keyframes blip {

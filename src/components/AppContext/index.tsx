@@ -83,6 +83,32 @@ export function openPanel<P extends Panel> (
 	})
 }
 
+export function closePanel (id: string) {
+	panelStack.setState(prev => {
+		const match = prev.findIndex(({ value }) => value.id === id)
+		if (match === -1) return prev
+		if (match !== prev.length - 1) {
+			return [
+				...prev.slice(0, match),
+				...prev.slice(match + 1),
+			]
+		} else {
+			const replacement = {
+				...prev[match]!,
+				value: {
+					...prev[match]!.value,
+					open: "close",
+					rect: undefined,
+				}
+			} as const
+			return [
+				...prev.slice(0, match),
+				replacement,
+			]
+		}
+	})
+}
+
 type SearchView = {
 	open: boolean,
 }

@@ -8,6 +8,8 @@ import CoverImages from "components/NowPlaying/Cover/Images"
 import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 import DeleteIcon from "icons/playlist_remove.svg"
 import { autoplay, playAudio } from "components/Player/Audio"
+import SaveButton from "components/NowPlaying/Cover/SaveButton"
+import { closePanel } from "components/AppContext"
 
 export default forwardRef(function PlaylistView ({
 	open,
@@ -31,10 +33,16 @@ export default forwardRef(function PlaylistView ({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const { data } = trpc.playlist.get.useQuery({ id }, {
+	const { data: _data } = trpc.playlist.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
+	const frozenData = useRef<typeof _data | null>(null)
+	const data = frozenData.current ?? _data
+
+	const onBeforeDelete = () => frozenData.current = data
+	const onErrorDelete = () => frozenData.current = null
+	const onSuccessDelete = () => closePanel(id)
 
 	const description = usePlaylistDescription({
 		artistData: data?.artists ?? [],
@@ -98,6 +106,13 @@ export default forwardRef(function PlaylistView ({
 			onClickPlay={onClickPlay}
 			animationName={styles["bubble-open"]}
 			isTop={isTop}
+			buttons={<SaveButton
+				id={id}
+				noText
+				onBefore={onBeforeDelete}
+				onError={onErrorDelete}
+				onSuccess={onSuccessDelete}
+			/>}
 		>
 			<TrackList
 				{...trackListProps}

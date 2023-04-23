@@ -1,4 +1,4 @@
-import { startTransition, useState, useRef } from "react"
+import { startTransition, useState, useRef, type ReactElement, type ReactFragment } from "react"
 import styles from "./index.module.css"
 import PlayIcon from "icons/play_arrow.svg"
 import useLongPress from "components/AlbumList/useLongPress"
@@ -9,9 +9,11 @@ import ShuffleIcon from "icons/shuffle.svg"
 export default function PlayButton ({
 	onClick,
 	className,
+	children,
 }: {
 	onClick: () => void
 	className: string
+	children?: ReactElement | ReactFragment
 }) {
 	const ref = useRef<HTMLButtonElement>(null)
 	const [open, setOpen] = useState(false)
@@ -40,20 +42,22 @@ export default function PlayButton ({
 				{isShuffle.current ? <ShuffleIcon /> : <PlayIcon />}
 			</button>
 			{open && (
-				<button
-					className={styles.secondary}
-					type="button"
-					onClick={() => {
-						navigator.vibrate(1)
-						startTransition(() => {
-							shuffle.setState(!isShuffle.current)
-							onClick()
-							showHome("home")
-						})
-					}}
-				>
-					{isShuffle.current ? <PlayIcon /> : <ShuffleIcon />}
-				</button>
+				<div className={styles.extra}>
+					<button
+						type="button"
+						onClick={() => {
+							navigator.vibrate(1)
+							startTransition(() => {
+								shuffle.setState(!isShuffle.current)
+								onClick()
+								showHome("home")
+							})
+						}}
+					>
+						{isShuffle.current ? <PlayIcon /> : <ShuffleIcon />}
+					</button>
+					{children}
+				</div>
 			)}
 		</div>
 	)

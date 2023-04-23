@@ -21,7 +21,7 @@
 }
 
 .reappear {
-	animation: 300ms fade-in ease-in-out backwards;
+	animation: 300ms fade-in 500ms ease-in-out backwards;
 }
 @keyframes fade-in {
 	0%   { opacity: 0; }

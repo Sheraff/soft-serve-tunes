@@ -1,4 +1,19 @@
-import { type ForwardedRef, forwardRef, useDeferredValue, useState, useRef, useEffect, type ReactNode, useImperativeHandle, type CSSProperties, Children, Fragment, cloneElement, type ReactElement } from "react"
+import {
+	type ForwardedRef,
+	forwardRef,
+	useDeferredValue,
+	useState,
+	useRef,
+	useEffect,
+	type ReactNode,
+	useImperativeHandle,
+	type CSSProperties,
+	Children,
+	Fragment,
+	cloneElement,
+	type ReactElement,
+	type ReactFragment,
+} from "react"
 import { type Prisma } from "@prisma/client"
 import { paletteToCSSProperties } from "components/Palette"
 import Head from "next/head"
@@ -22,6 +37,7 @@ export default forwardRef(function PanelView ({
 	children,
 	animationName,
 	isTop,
+	buttons,
 }: {
 	open: boolean
 	z: number
@@ -42,6 +58,7 @@ export default forwardRef(function PanelView ({
 	children: ReactNode
 	animationName: string
 	isTop: boolean
+	buttons?: ReactElement | ReactFragment
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
 
@@ -156,7 +173,9 @@ export default forwardRef(function PanelView ({
 				<PlayButton
 					onClick={onClickPlay}
 					className={styles.play}
-				/>
+				>
+					{buttons}
+				</PlayButton>
 			</div>
 			{Children.map(children, child => (
 				<div className={styles.section}>
