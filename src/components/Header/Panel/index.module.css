@@ -73,7 +73,7 @@
 	transform-origin: center top 0;
 	transform: translateZ(-1px) scale(2);
 	grid-area: 1 / 1 / 2 / 2;
-	contain: strict;
+	contain: paint style layout;
 }
 .preview {
 	z-index: 1;
