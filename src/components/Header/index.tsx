@@ -10,13 +10,12 @@ import {
 import { editOverlay } from "components/AppContext/editOverlay"
 import useDisplayAndShow from "components/useDisplayAndShow"
 import { signOut } from "next-auth/react"
-import { type CSSProperties, memo, useRef, useEffect, Suspense } from "react"
+import { type CSSProperties, memo, useRef, Suspense } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import PlaylistView from "./Playlist"
 import EditOverlay from "./Edit"
 import Library from "./Library"
-import { trpc } from "utils/trpc"
 import SearchIcon from "icons/search.svg"
 import LogoutIcon from "icons/logout.svg"
 import DashboardIcon from "icons/dashboard.svg"
@@ -115,10 +114,6 @@ export default function Header () {
 	const [search, setSearch] = searchView.useState()
 	const searchToggle = useRef<HTMLButtonElement>(null)
 	const searchState = useDisplayAndShow(search.open, searchToggle)
-	const trpcClient = trpc.useContext()
-	useEffect(() => {
-		trpcClient.track.searchable.prefetch()
-	}, [trpcClient])
 
 	// edit
 	const edit = editOverlay.useValue()
