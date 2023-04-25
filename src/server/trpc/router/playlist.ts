@@ -91,7 +91,7 @@ const generate = publicProcedure.input(z.union([
   }),
 ])).query(async ({ input, ctx }) => {
   if (input.type === "genre") {
-    const data = await recursiveSubGenres(input.id, { select: trackSelect })
+    const data = await recursiveSubGenres([input.id], { select: trackSelect })
     return data.tracks
   }
   if (input.type === "by-multi-traits") {
@@ -280,7 +280,7 @@ const modify = protectedProcedure.input(z.union([
   if (input.type === "reorder") {
     const min = Math.min(input.params.from, input.params.to)
     const max = Math.max(input.params.from, input.params.to)
-    const direction = input.params.from < input.params.to ? -1 : 1
+    const direction = input.params.from < input.params.to ? "decrement" : "increment"
     await ctx.prisma.$transaction(async (tx) => {
       const entries = await tx.playlistEntry.findMany({
         where: {
@@ -292,16 +292,33 @@ const modify = protectedProcedure.input(z.union([
         },
         select: { id: true, index: true },
       })
+      let target = ""
+      const rest: string[] = []
       for (const entry of entries) {
-        await tx.playlistEntry.update({
-          where: { id: entry.id },
-          data: {
-            index: entry.index === input.params.from
-              ? input.params.to
-              : entry.index + direction
-          }
-        })
+        if (entry.index === input.params.from) {
+          target = entry.id
+        } else {
+          rest.push(entry.id)
+        }
       }
+      if (!target) throw new TRPCError({
+        message: `Target track not found at index ${input.params.from} in playlist ${input.id}`,
+        code: "UNPROCESSABLE_CONTENT",
+      })
+      tx.playlistEntry.updateMany({
+        where: { id: { in: rest } },
+        data: {
+          index: {
+            [direction]: 1,
+          }
+        }
+      })
+      tx.playlistEntry.update({
+        where: { id: target },
+        data: {
+          index: input.params.to,
+        }
+      })
       await tx.playlist.update({
         where: { id: input.id },
         data: { modifiedAt: new Date().toISOString() },
@@ -326,19 +343,13 @@ const modify = protectedProcedure.input(z.union([
       await tx.playlistEntry.delete({
         where: { id: entry.id }
       })
-      const entries = await tx.playlistEntry.findMany({
+      await tx.playlistEntry.updateMany({
         where: {
           playlistId: input.id,
           index: { gte: entry.index },
         },
-        select: { id: true, index: true },
+        data: { index: { decrement: 1 } },
       })
-      for (const entry of entries) {
-        await tx.playlistEntry.update({
-          where: { id: entry.id },
-          data: { index: entry.index - 1 },
-        })
-      }
       await tx.playlist.update({
         where: { id: input.id },
         data: { modifiedAt: new Date().toISOString() },
@@ -355,24 +366,17 @@ const modify = protectedProcedure.input(z.union([
           select: { id: true, index: true, trackId: true },
         })
         const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))
-        for (const entry of entries) {
-          if (entry.index >= index) {
-            await tx.playlistEntry.update({
-              where: { id: entry.id },
-              data: { index: entry.index + newIds.length },
-            })
-          }
-        }
-        for (let i = 0; i < newIds.length; i++) {
-          const id = newIds[i]!
-          await tx.playlistEntry.create({
-            data: {
-              index: index + i,
-              playlistId: input.id,
-              trackId: id,
-            }
-          })
-        }
+        await tx.playlistEntry.updateMany({
+          where: { playlistId: input.id, index: { gte: index } },
+          data: { index: { increment: newIds.length } },
+        })
+        await tx.playlistEntry.createMany({
+          data: newIds.map((id, i) => ({
+            index: index + i,
+            playlistId: input.id,
+            trackId: id,
+          }))
+        })
         await tx.playlist.update({
           where: { id: input.id },
           data: { modifiedAt: new Date().toISOString() },
@@ -393,16 +397,13 @@ const modify = protectedProcedure.input(z.union([
           })
         }
         const newIds = ids.filter(id => !entries.some(entry => entry.trackId === id))
-        for (let i = 0; i < newIds.length; i++) {
-          const id = newIds[i]!
-          await tx.playlistEntry.create({
-            data: {
-              index: last.index + 1 + i,
-              playlistId: input.id,
-              trackId: id,
-            }
-          })
-        }
+        await tx.playlistEntry.createMany({
+          data: newIds.map((id, i) => ({
+            index: last.index + 1 + i,
+            playlistId: input.id,
+            trackId: id,
+          }))
+        })
         await tx.playlist.update({
           where: { id: input.id },
           data: { modifiedAt: new Date().toISOString() },
