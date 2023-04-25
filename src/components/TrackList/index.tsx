@@ -261,10 +261,15 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	})
 
 	if (exposeScrollFn) {
-		// eslint-disable-next-line react-hooks/rules-of-hooks -- this should be OK as `exposeScrollFn` doesn't change once a component is mounted
+		/* eslint-disable react-hooks/rules-of-hooks -- this should be OK as `exposeScrollFn` doesn't change once a component is mounted */
+		const trackRef = useRef(deferredTracks)
+		trackRef.current = deferredTracks
 		useEffect(() => {
 			// @ts-expect-error -- this is a hack to expose the scroll function
-			window._scrollNowPlayingToIndex = (index: number) => {
+			window._scrollNowPlayingToId = (id?: string) => {
+				if (!id) return
+				const index = trackRef.current.findIndex((track) => track.id === id)
+				if (index === -1) return
 				parent.current?.scrollTo({
 					top: index * 65,
 					behavior: "smooth",
@@ -272,9 +277,10 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 			}
 			return () => {
 				// @ts-expect-error -- this is a hack to expose the scroll function
-				window._scrollNowPlayingToIndex = undefined
+				window._scrollNowPlayingToId = undefined
 			}
 		}, [parent])
+		/* eslint-enable react-hooks/rules-of-hooks */
 	}
 	const items = rowVirtualizer ? rowVirtualizer.getVirtualItems() : undefined
 	return {

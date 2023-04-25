@@ -2,7 +2,7 @@ import classNames from "classnames"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { mainView, openPanel, showHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { getCurrentIndex } from "client/db/useMakePlaylist"
+import { getPlaylist } from "client/db/useMakePlaylist"
 
 type SlidingTextItem = {
 	name: string
@@ -42,11 +42,10 @@ export default memo(function SlidingText ({
 	const main = mainView.useValue()
 	const scrollToCurrent = useCallback(() => {
 		// @ts-expect-error -- this is a hack to expose the scroll function
-		const scrollToIndex = window._scrollNowPlayingToIndex as ((index: number) => void) | undefined
-		if (!scrollToIndex) return
-		const index = getCurrentIndex()
-		if (typeof index === "undefined") return
-		scrollToIndex(index)
+		const scrollToId = window._scrollNowPlayingToId as ((id?: string) => void) | undefined
+		if (!scrollToId) return
+		const playlist = getPlaylist()
+		scrollToId(playlist?.current)
 	}, [])
 	useEffect(() => {
 		if (main !== "home") return

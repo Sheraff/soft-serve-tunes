@@ -9,24 +9,18 @@ import { queryClient } from "utils/trpc"
 /**
  * @description changes the current track in the *local* playlist
  */
-export async function setPlaylistIndex (index: number) {
+export async function setPlaylistCurrent (id: string) {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	if (!playlist) {
 		throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")
 	}
-	const newIndex = index < 0
-		? playlist.tracks.length - 1
-		: index >= playlist.tracks.length
-			? 0
-			: index
-	const current = playlist.tracks[newIndex]!.id
 	queryClient.setQueryData<Playlist>(["playlist"], {
 		...playlist,
-		current,
+		current: id,
 	})
 	await modifyInIndexedDB<PlaylistMeta>("appState", "playlist-meta", (meta) => ({
 		...meta,
-		current,
+		current: id,
 	}))
 }
 

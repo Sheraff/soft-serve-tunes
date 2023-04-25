@@ -1,4 +1,4 @@
-import { setPlaylistIndex, usePlaylist, useRemoveFromPlaylist, useReorderPlaylist } from "client/db/useMakePlaylist"
+import { setPlayOrder, setPlaylistCurrent, usePlaylist, useRemoveFromPlaylist, useReorderPlaylist } from "client/db/useMakePlaylist"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import { memo, startTransition, useCallback, useRef } from "react"
 import DeleteIcon from "icons/playlist_remove.svg"
@@ -6,13 +6,19 @@ import Cover from "./Cover"
 import styles from "./index.module.css"
 import AddMoreButton from "./AddMoreButton"
 import { autoplay, playAudio } from "components/Player/Audio"
+import { shuffle } from "components/Player"
 
 export default memo(function NowPlaying () {
-	const { data } = usePlaylist()
-	const reorderPlaylist = useReorderPlaylist()
-	const deleteFromPlaylist = useRemoveFromPlaylist()
-	const parent = useRef<HTMLDivElement>(null)
+	const isShuffle = shuffle.useValue()
+	const { data } = usePlaylist({
+		select (playlist) {
+			if (!isShuffle) return playlist
+			const tracks = playlist.order.map((id) => playlist.tracks.find((track) => track.id === id)!)
+			return { ...playlist, tracks }
+		}
+	})
 
+	const parent = useRef<HTMLDivElement>(null)
 	const trackListProps = useVirtualTracks({
 		tracks: data?.tracks ?? [],
 		parent,
@@ -29,16 +35,19 @@ export default memo(function NowPlaying () {
 		if (current === id) {
 			playAudio()
 		} else {
-			setPlaylistIndex(tracks.findIndex((item) => item.id === id))
+			setPlaylistCurrent(id)
 			autoplay.setState(true)
 		}
-	}), [tracks, current])
+	}), [current])
 
-	const onReorder = useCallback((from: number, to: number) =>
-		reorderPlaylist(from, to, id),
-		[id, reorderPlaylist]
+	const reorderPlaylist = useReorderPlaylist()
+	const onReorder = useCallback((from: number, to: number) => isShuffle
+		? setPlayOrder(from, to)
+		: reorderPlaylist(from, to, id),
+		[id, reorderPlaylist, isShuffle]
 	)
 
+	const deleteFromPlaylist = useRemoveFromPlaylist()
 	const onQuickSwipe = useCallback((track: { id: string }) =>
 		deleteFromPlaylist(track.id, id),
 		[id, deleteFromPlaylist]

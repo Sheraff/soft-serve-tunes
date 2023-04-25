@@ -112,17 +112,6 @@ export function getPlaylist () {
 }
 
 /**
- * @description stateless function to obtain the current index of the *local* playlist
- */
-export function getCurrentIndex () {
-	const playlist = getPlaylist()
-	if (!playlist) return undefined
-	const index = playlist.tracks.findIndex(({ id }) => id === playlist.current)
-	if (index < 0) return undefined
-	return index
-}
-
-/**
  * @description `usePlaylist` wrapper that returns the next track based on `order`, `shuffle`, `repeat` and `online`
  */
 export function useNextTrack () {

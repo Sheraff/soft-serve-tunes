@@ -107,7 +107,7 @@ export function useAddNextToPlaylist () {
 		 * - order is the order in which tracks will be played
 		 * - tracks is the order in which tracks will be displayed
 		 * when adding via "play next", tracks are added "after the current" in both `order` and `tracks`
-		 * so that they appear predictably in visual order below the current
+		 * so that they appear predictably in order below the current
 		 * and they will play predictably in order after the current
 		 * (after which "shuffle" will resume, meaning the rest of the playlist is out-of-sync between order and tracks)
 		*/
@@ -169,7 +169,7 @@ function findEndOfStack (order: Playlist["order"], currentIndex: number, isStack
 
 /**
  * @description shuffle the playlist.
- * The "visual" order will not change.
+ * The "static" order will not change (order of un-shuffled playlist / order of playlist on server).
  * The current track will be the first track in the new order.
  */
 export function shufflePlaylist () {
@@ -205,4 +205,26 @@ export function shufflePlaylist () {
 			order: newOrder,
 		}))
 	})
+}
+
+/**
+ * @description Change track order in "play order" but not in "static order".
+ * This should only matter when they are not the same: when the playlist is shuffled.
+ */
+export function setPlayOrder (oldIndex: number, newIndex: number) {
+	const cache = queryClient.getQueryData<Playlist>(["playlist"])
+	// playlist doesn't exist, create it with new track as current
+	if (!cache) {
+		throw new Error("trying to change play order of local \"playlist\" query, but query doesn't exist yet")
+	}
+	const trackId = cache.order[oldIndex]!
+	const newOrder = [...cache.order]
+	newOrder.splice(oldIndex, 1)
+	newOrder.splice(newIndex, 0, trackId)
+
+	queryClient.setQueryData<Playlist>(["playlist"], {
+		...cache,
+		order: newOrder,
+	})
+	playNextStack.length = 0
 }
