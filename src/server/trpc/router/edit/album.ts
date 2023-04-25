@@ -21,7 +21,7 @@ const albumInputSchema = z.object({
 
 type Input = z.infer<typeof albumInputSchema>
 
-async function getAlbum(input: {id: string}) {
+async function getAlbum (input: { id: string }) {
 	const album = await prisma.album.findUnique({
 		where: { id: input.id },
 		select: {
@@ -46,7 +46,7 @@ async function getAlbum(input: {id: string}) {
 
 type Album = Awaited<ReturnType<typeof getAlbum>>
 
-async function getCover(input: Input, album: Album) {
+async function getCover (input: Input, album: Album) {
 	if (input.coverId && album.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
@@ -62,7 +62,7 @@ async function getCover(input: Input, album: Album) {
 	}
 }
 
-async function getArtist(input: Input) {
+async function getArtist (input: Input) {
 	if (!input.artist?.id && !input.artist?.name) return
 	if (input.artist?.id) {
 		const artist = await prisma.artist.findUnique({
@@ -88,12 +88,12 @@ async function getArtist(input: Input) {
 	return artist
 }
 
-async function getName(input: Input) {
+async function getName (input: Input) {
 	if (!input.name) return
 	return input.name
 }
 
-async function checkNameConflict(
+async function checkNameConflict (
 	input: Input,
 	album: Album,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -124,7 +124,7 @@ const modify = protectedProcedure.input(albumInputSchema).mutation(async ({ inpu
 
 	// validate artist (id or name)
 	const linkArtist = await getArtist(input)
-	
+
 	// validate name
 	const name = await getName(input)
 	await checkNameConflict(input, album, name, linkArtist)
@@ -141,11 +141,11 @@ const modify = protectedProcedure.input(albumInputSchema).mutation(async ({ inpu
 	}
 	if (input.name || input.artist) {
 		data.lastfmDate = null
-		if (album.lastfm) data.lastfm = {delete: true}
+		if (album.lastfm) data.lastfm = { delete: true }
 		data.audiodbDate = null
-		if (album.audiodb) data.audiodb = {delete: true}
+		if (album.audiodb) data.audiodb = { delete: true }
 		data.spotifyDate = null
-		if (album.spotify) data.spotify = {delete: true}
+		if (album.spotify) data.spotify = { delete: true }
 	}
 
 	if (linkArtist) {
@@ -178,9 +178,9 @@ const modify = protectedProcedure.input(albumInputSchema).mutation(async ({ inpu
 						audiodbDate: null,
 						lastfmDate: null,
 						spotifyDate: null,
-						audiodb: track.audiodb ? {delete: true} : undefined,
-						lastfm: track.lastfm ? {delete: true} : undefined,
-						spotify: track.spotify ? {delete: true} : undefined,
+						audiodb: track.audiodb ? { delete: true } : undefined,
+						lastfm: track.lastfm ? { delete: true } : undefined,
+						spotify: track.spotify ? { delete: true } : undefined,
 					}
 				})
 			}
@@ -188,20 +188,20 @@ const modify = protectedProcedure.input(albumInputSchema).mutation(async ({ inpu
 		return newAlbum
 	})
 
-	await computeAlbumCover(album.id, {tracks: false, artist: false})
+	await computeAlbumCover(album.id, { tracks: false, artist: false })
 	for (const track of album.tracks) {
-		await computeTrackCover(track.id, {album: false, artist: true})
+		await computeTrackCover(track.id, { album: false, artist: true })
 	}
 	if (album.artist) {
-		await computeArtistCover(album.artist.id, {album: false, tracks: false})
+		await computeArtistCover(album.artist.id, { album: false, tracks: false })
 	}
 
-	socketServer.emit("invalidate", {type: "album", id: album.id})
+	socketServer.emit("invalidate", { type: "album", id: album.id })
 	if (input.artist && album.artist) {
-		socketServer.emit("invalidate", {type: "artist", id: album.artist.id})
+		socketServer.emit("invalidate", { type: "artist", id: album.artist.id })
 	}
 	if (input.artist && newAlbum.artist) {
-		socketServer.emit("invalidate", {type: "artist", id: newAlbum.artist.id})
+		socketServer.emit("invalidate", { type: "artist", id: newAlbum.artist.id })
 	}
 
 	fileWatcher.scheduleCleanup()
@@ -215,7 +215,7 @@ const validate = publicProcedure.input(albumInputSchema).mutation(async ({ input
 
 	// validate artist (id or name)
 	const linkArtist = await getArtist(input)
-	
+
 	// validate name
 	const name = await getName(input)
 	await checkNameConflict(input, album, name, linkArtist)

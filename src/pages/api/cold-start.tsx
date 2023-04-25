@@ -79,6 +79,7 @@ function act () {
 		.then(async ([trackPaths, imagePaths]) => {
 			try {
 				// remove tracks without files
+				console.log("track.findMany from /api/cold-start")
 				const orphanTracks = await prisma.track.findMany({
 					where: { file: { is: null } },
 					select: { id: true, name: true }

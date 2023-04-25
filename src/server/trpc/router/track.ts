@@ -20,6 +20,7 @@ export const zTrackTraits = z.union([
 ])
 
 const searchable = publicProcedure.query(({ ctx }) => {
+  console.log("track.findMany from /trpc/track > searchable")
   return ctx.prisma.track.findMany({
     select: {
       id: true,
@@ -236,6 +237,7 @@ const byMultiTraits = publicProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
   const ids = spotifyTracks.map((t) => t.trackId)
+  console.log("track.findMany from /trpc/track > multitrait")
   const tracks = await ctx.prisma.track.findMany({
     where: { id: { in: ids } },
   })
