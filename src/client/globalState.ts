@@ -38,6 +38,7 @@ function getAtomValue<T> (key: string) {
 
 export default function globalState<T> (key: string, initial: T, sideEffects?: (value: T, queryClient: QueryClient) => void) {
 	global[key] = initial
+	queryClient.setQueryData<T>([SESSION_ATOM_KEY, key], initial)
 	return {
 		useValue: () => useAtomValue<T>(key, initial),
 		setState: (value: T | ((prev: T) => T)) => setAtomValue<T>(key, value, sideEffects),
