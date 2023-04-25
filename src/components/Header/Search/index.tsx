@@ -76,7 +76,7 @@ function GenreSearch ({
 	onSelect: (item: { type: "genre", id: string }) => void
 }) {
 	const { data: genresRaw } = trpc.genre.list.useQuery(undefined, { enabled })
-	const _genres = useAsyncInputStringDistance(input, 16, genresRaw || defaultArray)
+	const _genres = useAsyncInputStringDistance(input, 12, genresRaw || defaultArray)
 	const genres = useDeferredValue(_genres)
 
 	if (!genres.length) return null
@@ -102,7 +102,7 @@ function PlaylistSearch ({
 	onSelect: (item: { type: "playlist", id: string }) => void
 }) {
 	const { data: playlistsRaw } = trpc.playlist.searchable.useQuery(undefined, { enabled })
-	const _playlists = useAsyncInputStringDistance(input, 6, playlistsRaw || defaultArray, ["name", "artists"])
+	const _playlists = useAsyncInputStringDistance(input, 3, playlistsRaw || defaultArray, ["name", "artists"])
 	const playlists = useDeferredValue(_playlists)
 
 	if (!playlists.length) return null
@@ -128,7 +128,7 @@ function TrackSearch ({
 	onSelect: (item: { type: "track", id: string }) => void
 }) {
 	const { data: tracksRaw } = trpc.track.searchable.useQuery(undefined, { enabled })
-	const _tracks = useAsyncInputStringDistance(input, 25, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
+	const _tracks = useAsyncInputStringDistance(input, 12, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const tracks = useDeferredValue(_tracks)
 
 	if (!tracks.length) return null
