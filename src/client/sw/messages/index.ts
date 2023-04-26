@@ -6,6 +6,7 @@ import { messageCheckTrackCache, messageCheckFirstCachedTrack, messageListTrackC
 import { messageListPlaylistCache } from "./cachedPlaylist"
 import { messageListGenreCache } from "./cachedGenre"
 import trpcRevalidation from "./trpcRevalidation"
+import { cleanupCache, pauseCacheCleanup } from "./cleanupCache"
 
 export default function onMessage (event: ExtendableMessageEvent) {
 	switch (event.data.type) {
@@ -31,6 +32,10 @@ export default function onMessage (event: ExtendableMessageEvent) {
 			return trpcRevalidation(event.data.payload)
 		case "sw-trpc-offline-post":
 			return retryPostOnOnline()
+		case "sw-app-blur":
+			return cleanupCache()
+		case "sw-app-focus":
+			return pauseCacheCleanup()
 		default:
 			console.error(new Error(`SW: unknown message type: ${event.data.type}`))
 	}
