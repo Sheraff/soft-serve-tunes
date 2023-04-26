@@ -141,11 +141,12 @@ async function cleanupNextCache () {
 		const index = (startIndex + i) % keys.length
 		const key = keys[index]!
 
-		const ping = await fetch(key.url, { method: "HEAD" })
-		if (!cleanupActive) return
-		if (ping.status !== 404) continue
-
-		await cache.delete(key)
+		try {
+			const ping = await fetch(key.url, { method: "HEAD" })
+			if (!cleanupActive) return
+			if (ping.status !== 404) continue
+			await cache.delete(key)
+		} catch { }
 		if (!cleanupActive) return
 	}
 }
