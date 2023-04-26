@@ -85,15 +85,19 @@ export async function recursiveSubGenres<
 }
 
 function extendFromRecursive<
-  Meta extends Record<string, any>,
+  Meta extends object,
+  Data extends {
+    tracks: unknown[]
+    genreSet: Set<string>
+  },
   Keep extends boolean
 > (
   meta: Meta,
-  data: Awaited<ReturnType<typeof recursiveSubGenres>>,
+  data: Data,
   keepTracks: Keep
 ): Meta & {
   _count: { tracks: number, from: number }
-  tracks: Keep extends true ? Awaited<ReturnType<typeof recursiveSubGenres>>["tracks"] : never
+  tracks: Keep extends true ? Data["tracks"] : never
 } {
   if (keepTracks) {
     return {
@@ -103,7 +107,10 @@ function extendFromRecursive<
         tracks: data.tracks.length,
         from: data.genreSet.size,
       }
-    } as any // WARN: i didn't manage to type this, it might become a problem if i'm not careful
+    } as Meta & {
+      _count: { tracks: number, from: number }
+      tracks: Keep extends true ? Data["tracks"] : never
+    }
   } else {
     return {
       ...meta,
@@ -111,7 +118,10 @@ function extendFromRecursive<
         tracks: data.tracks.length,
         from: data.genreSet.size,
       }
-    } as any // WARN: i didn't manage to type this, it might become a problem if i'm not careful
+    } as Meta & {
+      _count: { tracks: number, from: number }
+      tracks: Keep extends true ? Data["tracks"] : never
+    }
   }
 }
 
@@ -217,7 +227,7 @@ const get = publicProcedure.input(z.object({
   return result
 })
 
-const list = publicProcedure.query(async ({ ctx }) => {
+const searchable = publicProcedure.query(async ({ ctx }) => {
   const seed = await ctx.prisma.genre.findMany({
     where: nonEmptyGenreWhere,
     orderBy: { name: "asc" },
@@ -268,6 +278,6 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
 export const genreRouter = router({
   miniature,
   get,
-  list,
+  searchable,
   mostFav,
 })

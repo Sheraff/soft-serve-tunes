@@ -75,7 +75,7 @@ function GenreSearch ({
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "genre", id: string }) => void
 }) {
-	const { data: genresRaw } = trpc.genre.list.useQuery(undefined, { enabled })
+	const { data: genresRaw } = trpc.genre.searchable.useQuery(undefined, { enabled })
 	const _genres = useAsyncInputStringDistance(input, 12, genresRaw || defaultArray)
 	const genres = useDeferredValue(_genres)
 

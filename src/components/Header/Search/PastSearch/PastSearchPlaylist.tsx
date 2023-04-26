@@ -9,6 +9,7 @@ export function PastSearchPlaylist ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
+	forceOffline = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.playlist.get.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const onClick = () => {
@@ -32,6 +33,7 @@ export function PastSearchPlaylist ({
 			name={entity?.name}
 			id={id}
 			type="playlist"
+			offline={forceOffline}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>

@@ -13,7 +13,7 @@ export default function WatcherSocket () {
 		revalidateSwCache(["track", "searchable"])
 		revalidateSwCache(["artist", "searchable"])
 		revalidateSwCache(["album", "searchable"])
-		revalidateSwCache(["genre", "list"])
+		revalidateSwCache(["genre", "searchable"])
 		revalidateSwCache(["artist", "mostFav"])
 		revalidateSwCache(["artist", "mostRecentListen"])
 		revalidateSwCache(["artist", "leastRecentListen"])

@@ -14,7 +14,7 @@ export default function AddToPlaylist ({
 	items: { id: string }[]
 	onSelect: () => void
 }) {
-	const { data = [] } = trpc.playlist.list.useQuery()
+	const { data = [] } = trpc.playlist.searchable.useQuery()
 
 	const { data: current } = usePlaylist()
 

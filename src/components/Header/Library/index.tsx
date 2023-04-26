@@ -1,4 +1,14 @@
-import { type ForwardedRef, forwardRef, type CSSProperties, useRef, useEffect, useImperativeHandle, useCallback, useMemo } from "react"
+import {
+	type ForwardedRef,
+	forwardRef,
+	type CSSProperties,
+	useRef,
+	useEffect,
+	useImperativeHandle,
+	useCallback,
+	useMemo,
+	useState,
+} from "react"
 import styles from "./index.module.css"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { trpc } from "utils/trpc"
@@ -9,6 +19,15 @@ import { PastSearchPlaylist } from "components/Header/Search/PastSearch/PastSear
 import { PastSearchTrack } from "components/Header/Search/PastSearch/PastSearchTrack"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import getTouchFromId from "utils/getTouchFromId"
+import {
+	useCachedAlbumList,
+	useCachedArtistList,
+	useCachedGenreList,
+	useCachedPlaylistList,
+	useCachedTrackList,
+} from "client/sw/useSWCached"
+import OfflineIcon from "icons/wifi_off.svg"
+import OnlineIcon from "icons/wifi_on.svg"
 
 function indexableString (str: string) {
 	if (!str) return ""
@@ -107,12 +126,14 @@ const AlphabetScrollWithRef = forwardRef(function AlphabetScroll ({
 function BaseList ({
 	data: _data,
 	component: Component,
+	isCache,
 }: {
 	data: {
 		id: string
 		name: string
 	}[]
-	component: (props: { id: string, showType: false }) => JSX.Element
+	component: (props: { id: string, showType: false, forceOffline?: boolean }) => JSX.Element
+	isCache: boolean
 }) {
 	const data = useMemo(
 		() => [..._data].sort((a, b) => indexableString(a.name) < indexableString(b.name) ? -1 : 1),
@@ -126,7 +147,7 @@ function BaseList ({
 		getScrollElement: () => scrollable.current,
 		estimateSize: () => 56 + 8,
 		getItemKey: (index) => data[index]!.id,
-		overscan: 10,
+		overscan: 4,
 		paddingStart: 8,
 	})
 
@@ -187,7 +208,11 @@ function BaseList ({
 								"--virtual-item-start": `${virtualItem.start}px`,
 							} as CSSProperties}
 						>
-							<Component id={data[virtualItem.index]!.id} showType={false} />
+							<Component
+								id={data[virtualItem.index]!.id}
+								showType={false}
+								forceOffline={isCache}
+							/>
 						</div>
 					))}
 				</div>
@@ -207,30 +232,85 @@ const LIST_COMPONENTS = {
 		name: "Artists",
 		component: PastSearchArtist,
 		useQuery: () => trpc.artist.searchable.useQuery(),
+		useCache: useCachedArtistList,
 	},
 	Albums: {
 		name: "Albums",
 		component: PastSearchAlbum,
 		useQuery: () => trpc.album.searchable.useQuery(),
+		useCache: useCachedAlbumList,
 	},
 	Playlists: {
 		name: "Playlists",
 		component: PastSearchPlaylist,
 		useQuery: () => trpc.playlist.searchable.useQuery(),
+		useCache: useCachedPlaylistList,
 	},
 	Genres: {
 		name: "Genres",
 		component: PastSearchGenre,
-		useQuery: () => trpc.genre.list.useQuery(),
+		useQuery: () => trpc.genre.searchable.useQuery(),
+		useCache: useCachedGenreList,
 	},
 	Tracks: {
 		name: "Tracks",
 		component: PastSearchTrack,
 		useQuery: () => trpc.track.searchable.useQuery(),
+		useCache: useCachedTrackList,
 	},
 }
 
-export const libraryTab = suspensePersistedState<keyof typeof LIST_COMPONENTS>("libraryTab", "Artists")
+type TabKey = keyof typeof LIST_COMPONENTS
+
+export const libraryTab = suspensePersistedState<TabKey>("libraryTab", "Artists")
+
+function InnerLibrary ({
+	tab,
+	setTab,
+	cache,
+	setCache,
+}: {
+	tab: TabKey
+	setTab: (tab: TabKey) => void
+	cache: boolean
+	setCache: (cache: boolean) => void
+}) {
+	const { component, useQuery, useCache } = LIST_COMPONENTS[tab]
+	const { data = [], isLoading } = (cache ? useCache : useQuery)()
+	return (
+		<>
+			<div className={styles.tabs}>
+				{Object.entries(LIST_COMPONENTS).map(([key, { name }]) => (
+					<button
+						key={key}
+						data-active={key === tab}
+						onClick={() => setTab(key as TabKey)}
+					>
+						{name}
+						{key === tab && (
+							<span className={styles.count}>
+								({isLoading ? "--" : data.length})
+							</span>
+						)}
+					</button>
+				))}
+				<button
+					key="more"
+					onClick={() => setCache(!cache)}
+				>
+					{cache ? <OfflineIcon /> : <OnlineIcon />}
+				</button>
+			</div>
+			<BaseList
+				key={tab}
+				data={data}
+				component={component}
+				isCache={cache}
+			/>
+		</>
+	)
+}
+
 
 export default forwardRef(function Library ({
 	z,
@@ -240,8 +320,7 @@ export default forwardRef(function Library ({
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const [tab, setTab] = libraryTab.useState()
-	const { component, useQuery } = LIST_COMPONENTS[tab]
-	const { data = [] } = useQuery()
+	const [cache, setCache] = useState(false)
 	return (
 		<div
 			className={styles.main}
@@ -251,26 +330,12 @@ export default forwardRef(function Library ({
 				"--z": z,
 			} as CSSProperties}
 		>
-			<div className={styles.tabs}>
-				{Object.entries(LIST_COMPONENTS).map(([key, { name }]) => (
-					<button
-						key={key}
-						data-active={key === tab}
-						onClick={() => setTab(key as keyof typeof LIST_COMPONENTS)}
-					>
-						{name}
-						{key === tab && (
-							<span className={styles.count}>
-								({data.length})
-							</span>
-						)}
-					</button>
-				))}
-			</div>
-			<BaseList
-				key={tab}
-				data={data}
-				component={component}
+			<InnerLibrary
+				key={String(cache)}
+				tab={tab}
+				setTab={setTab}
+				cache={cache}
+				setCache={setCache}
 			/>
 		</div>
 	)

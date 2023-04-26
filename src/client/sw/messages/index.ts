@@ -1,19 +1,32 @@
 /// <reference lib="webworker" />
 import { retryPostOnOnline } from "../fetch/trpcPost"
-import { messageCheckAlbumCache, messageCheckArtistCache } from "./cachedArtistAlbum"
-import { messageCheckTrackCache, messageCheckFirstCachedTrack } from "./cachedTrack"
+import { messageCheckAlbumCache, messageListAlbumCache } from "./cachedAlbum"
+import { messageCheckArtistCache, messageListArtistCache } from "./cachedArtist"
+import { messageCheckTrackCache, messageCheckFirstCachedTrack, messageListTrackCache } from "./cachedTrack"
+import { messageListPlaylistCache } from "./cachedPlaylist"
+import { messageListGenreCache } from "./cachedGenre"
 import trpcRevalidation from "./trpcRevalidation"
 
-export default function onMessage(event: ExtendableMessageEvent) {
+export default function onMessage (event: ExtendableMessageEvent) {
 	switch (event.data.type) {
 		case "sw-cached-track":
 			return messageCheckTrackCache(event.data.payload, event)
 		case "sw-first-cached-track":
 			return messageCheckFirstCachedTrack(event.data.payload, event)
+		case "sw-cached-track-list":
+			return messageListTrackCache(event)
 		case "sw-cached-album":
 			return messageCheckAlbumCache(event.data.payload, event)
+		case "sw-cached-album-list":
+			return messageListAlbumCache(event)
 		case "sw-cached-artist":
 			return messageCheckArtistCache(event.data.payload, event)
+		case "sw-cached-artist-list":
+			return messageListArtistCache(event)
+		case "sw-cached-playlist-list":
+			return messageListPlaylistCache(event)
+		case "sw-cached-genre-list":
+			return messageListGenreCache(event)
 		case "sw-trpc-revalidate":
 			return trpcRevalidation(event.data.payload)
 		case "sw-trpc-offline-post":

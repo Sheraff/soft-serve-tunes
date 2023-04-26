@@ -91,3 +91,5 @@ export function keyArrayToString<R extends AllRoutes> (route: R) {
 export function keyStringToArray<K extends AllRoutesString> (key: K) {
   return key.split(".") as typeof key extends `${infer A}.${infer B}` ? [A, B] : never
 }
+
+export type TrpcResponse<T> = { result: { data: { json: T } } }

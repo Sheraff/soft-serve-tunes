@@ -162,19 +162,6 @@ const more = publicProcedure.input(
   }
 })
 
-const list = publicProcedure.query(({ ctx }) => {
-  return ctx.prisma.playlist.findMany({
-    select: {
-      name: true,
-      id: true,
-      modifiedAt: true,
-    },
-    orderBy: {
-      modifiedAt: "desc"
-    }
-  })
-})
-
 const get = publicProcedure.input(z.object({
   id: z.string()
 })).query(({ input }) => {
@@ -186,6 +173,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
     select: {
       id: true,
       name: true,
+      modifiedAt: true,
       tracks: {
         select: {
           track: {
@@ -199,7 +187,10 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
           }
         }
       }
-    }
+    },
+    orderBy: {
+      modifiedAt: "desc"
+    },
   })
   const result = playlists.map(playlist => {
     const artists = new Set<string | undefined>()
@@ -506,7 +497,6 @@ const deleteEndpoint = protectedProcedure.input(z.object({
 export const playlistRouter = router({
   generate,
   more,
-  list,
   get,
   searchable,
   save,

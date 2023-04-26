@@ -21,7 +21,7 @@ export default memo(function Suggestions () {
 	const { data: albumRecent = [], isLoading: albumRecentLoading } = trpc.album.mostRecentListen.useQuery(undefined, { enabled, keepPreviousData: true })
 	const { data: albumNewest = [], isLoading: albumNewestLoading } = trpc.album.mostRecentAdd.useQuery(undefined, { enabled, keepPreviousData: true })
 	const { data: genreFavs = [] } = trpc.genre.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
-	const { data: playlists = [] } = trpc.playlist.list.useQuery(undefined, {
+	const { data: playlists = [] } = trpc.playlist.searchable.useQuery(undefined, {
 		enabled,
 		keepPreviousData: true,
 		select (playlists) {

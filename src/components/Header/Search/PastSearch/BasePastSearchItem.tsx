@@ -97,4 +97,5 @@ export type PastSearchProps = {
 	onSettled?: (data: boolean) => void
 	onClick?: () => void
 	showType?: boolean
+	forceOffline?: boolean
 }

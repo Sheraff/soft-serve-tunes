@@ -11,6 +11,7 @@ export function PastSearchArtist ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
+	forceOffline = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.artist.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const onClick = () => {
@@ -30,8 +31,8 @@ export function PastSearchArtist ({
 	}
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedArtist({ id, enabled: !online })
-	const offline = !online && cached
+	const { data: cached } = useCachedArtist({ id, enabled: !online && !forceOffline })
+	const offline = forceOffline || (!online && cached)
 
 	return (
 		<BasePastSearchItem
