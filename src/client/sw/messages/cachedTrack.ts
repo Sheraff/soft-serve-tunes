@@ -3,18 +3,32 @@ import { type RouterOutputs, type TrpcResponse } from "utils/trpc"
 import { CACHES } from "../utils/constants"
 import { type JSONValue } from "superjson/dist/types"
 import { deserialize } from "superjson"
+import { checkTrackCache } from "client/sw/messages/utils"
 
 export async function messageCheckTrackCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
-	const cache = await caches.match(new URL(`/api/file/${id}`, self.location.origin), {
-		ignoreVary: true,
-		ignoreSearch: true,
-		cacheName: CACHES.media,
-	})
+
+	let cached = false
+	checkCache: {
+		const hasMedia = await caches.match(new URL(`/api/file/${id}`, self.location.origin), {
+			ignoreVary: true,
+			ignoreSearch: true,
+			cacheName: CACHES.media,
+		})
+		if (!hasMedia) break checkCache
+		const url = new URL("/api/trpc/track.miniature", self.location.origin)
+		url.searchParams.set("input", `{"json":{"id":"${id}"}}`)
+		const hasTrpc = await caches.match(url, {
+			ignoreVary: true,
+			ignoreSearch: false,
+			cacheName: CACHES.trpc,
+		})
+		cached = Boolean(hasTrpc)
+	}
 	source.postMessage({
 		type: "sw-cached-track", payload: {
 			id,
-			cached: Boolean(cache),
+			cached,
 		}
 	})
 }
@@ -35,7 +49,7 @@ export async function messageCheckFirstCachedTrack ({
 }: ExtendableMessageEvent
 ) {
 	if (!source) return
-	const cache = await caches.open(CACHES.media)
+	const [mediaCache, trpcCache] = await Promise.all([caches.open(CACHES.media), caches.open(CACHES.trpc)])
 	let next = null
 	const reverse = params.direction === -1
 	const max = reverse
@@ -51,11 +65,7 @@ export async function messageCheckFirstCachedTrack ({
 		reverse ? i-- : i++
 	) {
 		const track = params.tracks[(i + params.tracks.length) % params.tracks.length]!
-		const cached = await cache.match(new URL(`/api/file/${track}`, self.location.origin), {
-			ignoreVary: true,
-			ignoreSearch: true,
-		})
-		if (cached) {
+		if (await checkTrackCache(mediaCache, trpcCache, track)) {
 			next = track
 			break
 		}

@@ -7,7 +7,7 @@ import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
 import { deserialize } from "superjson"
 import { type JSONValue } from "superjson/dist/types"
-import { cacheMatchTrpcQuery } from "client/sw/messages/utils"
+import { cacheMatchTrpcQuery, checkTrackCache } from "client/sw/messages/utils"
 
 
 export async function messageCheckGenreCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
@@ -20,16 +20,13 @@ export async function messageCheckGenreCache ({ id }: { id: string }, { source }
 			break findCache
 
 		const data = await res.json()
-		const cache = await caches.open(CACHES.media)
+		const [mediaCache, trpcCache] = await Promise.all([caches.open(CACHES.media), caches.open(CACHES.trpc)])
 		if (!data?.result?.data?.json)
 			break findCache
 
 		const tracks = data.result.data.json.tracks
 		for (const track of tracks) {
-			if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
-				ignoreVary: true,
-				ignoreSearch: true,
-			})) {
+			if (await checkTrackCache(mediaCache, trpcCache, track.id)) {
 				cached = true
 				break findCache
 			}

@@ -237,7 +237,7 @@ const byMultiTraits = protectedProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
   const ids = spotifyTracks.map((t) => t.trackId)
-  console.log("track.findMany from /trpc/track > multitrait")
+  console.log("track.findMany from /trpc/track > multiTrait")
   const tracks = await ctx.prisma.track.findMany({
     where: { id: { in: ids } },
   })

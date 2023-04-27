@@ -3,7 +3,7 @@ import {
 	type RouterOutputs,
 	type TrpcResponse,
 } from "utils/trpc"
-import { cacheMatchTrpcQuery } from "./utils"
+import { cacheMatchTrpcQuery, checkTrackCache } from "./utils"
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
 import { type JSONValue } from "superjson/dist/types"
@@ -19,15 +19,12 @@ export async function messageCheckAlbumCache ({ id }: { id: string }, { source }
 	let cached = false
 	const hasAlbumData = res.filter(Boolean).length === 2
 	if (hasAlbumData) {
-		const cache = await caches.open(CACHES.media)
+		const [mediaCache, trpcCache] = await Promise.all([caches.open(CACHES.media), caches.open(CACHES.trpc)])
 		const albumResponse = res[0]!
 		const data = await albumResponse.json()
 		if (data?.result?.data?.json) {
 			for (const track of data?.result?.data?.json.tracks) {
-				if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
-					ignoreVary: true,
-					ignoreSearch: true,
-				})) {
+				if (await checkTrackCache(mediaCache, trpcCache, track.id)) {
 					cached = true
 					break
 				}

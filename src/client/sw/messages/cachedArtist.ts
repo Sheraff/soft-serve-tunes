@@ -3,7 +3,7 @@ import {
 	type RouterOutputs,
 	type TrpcResponse,
 } from "utils/trpc"
-import { cacheMatchTrpcQuery } from "./utils"
+import { cacheMatchTrpcQuery, checkTrackCache } from "./utils"
 import { getAllCachedAlbums } from "./cachedAlbum"
 import { CACHES } from "../utils/constants"
 import { type JSONValue } from "superjson/dist/types"
@@ -22,14 +22,11 @@ export async function messageCheckArtistCache ({ id }: { id: string }, { source 
 		const artistResponse = res[0]!
 		const data = await artistResponse.json()
 		findCaches: if (data?.result?.data?.json) {
-			const cache = await caches.open(CACHES.media)
+			const [mediaCache, trpcCache] = await Promise.all([caches.open(CACHES.media), caches.open(CACHES.trpc)])
 			const albums = data?.result?.data?.json.albums
 			if (albums) for (const album of albums) {
 				for (const track of album.tracks) {
-					if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
-						ignoreVary: true,
-						ignoreSearch: true,
-					})) {
+					if (await checkTrackCache(mediaCache, trpcCache, track.id)) {
 						cached = true
 						break findCaches
 					}
@@ -39,10 +36,7 @@ export async function messageCheckArtistCache ({ id }: { id: string }, { source 
 			if (featured) for (const album of featured) {
 				for (const track of album.tracks) {
 					if (track.artist?.id !== id) continue
-					if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
-						ignoreVary: true,
-						ignoreSearch: true,
-					})) {
+					if (await checkTrackCache(mediaCache, trpcCache, track.id)) {
 						cached = true
 						break findCaches
 					}
@@ -50,10 +44,7 @@ export async function messageCheckArtistCache ({ id }: { id: string }, { source 
 			}
 			const tracks = data?.result?.data?.json.tracks
 			if (tracks) for (const track of tracks) {
-				if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
-					ignoreVary: true,
-					ignoreSearch: true,
-				})) {
+				if (await checkTrackCache(mediaCache, trpcCache, track.id)) {
 					cached = true
 					break findCaches
 				}

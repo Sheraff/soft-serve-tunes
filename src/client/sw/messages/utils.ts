@@ -35,3 +35,18 @@ export function cacheMatchTrpcQuery<
 		json (): Promise<TrpcResponse<RouterOutputs[A][B]>>
 	})>
 }
+
+export async function checkTrackCache (mediaCache: Cache, trpcCache: Cache, id: string) {
+	const hasMedia = await mediaCache.match(new URL(`/api/file/${id}`, self.location.origin), {
+		ignoreVary: true,
+		ignoreSearch: true,
+	})
+	if (!hasMedia) return false
+	const url = new URL("/api/trpc/track.miniature", self.location.origin)
+	url.searchParams.set("input", `{"json":{"id":"${id}"}}`)
+	const hasTrpc = await trpcCache.match(url, {
+		ignoreVary: true,
+		ignoreSearch: false,
+	})
+	return Boolean(hasTrpc)
+}
