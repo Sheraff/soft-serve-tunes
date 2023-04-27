@@ -3,27 +3,23 @@ import {
 	type RouterOutputs,
 	type TrpcResponse,
 } from "utils/trpc"
-import { trpcQueryToCacheKey } from "./utils"
+import { cacheMatchTrpcQuery } from "./utils"
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
 
 export async function messageCheckAlbumCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
-	const params: MultiCacheQueryOptions = {
-		ignoreVary: true,
-		ignoreSearch: false,
-		cacheName: CACHES.trpc,
-	}
+
 	const res = await Promise.all([
-		caches.match(trpcQueryToCacheKey("album.get", { id }), params),
-		caches.match(trpcQueryToCacheKey("album.miniature", { id }), params),
+		cacheMatchTrpcQuery("album.get", { id }),
+		cacheMatchTrpcQuery("album.miniature", { id }),
 	])
 	let cached = false
 	const hasAlbumData = res.filter(Boolean).length === 2
 	if (hasAlbumData) {
 		const cache = await caches.open(CACHES.media)
 		const albumResponse = res[0]!
-		const data = await albumResponse.json() as TrpcResponse<RouterOutputs["album"]["get"]>
+		const data = await albumResponse.json()
 		if (data?.result?.data?.json) {
 			for (const track of data?.result?.data?.json.tracks) {
 				if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {

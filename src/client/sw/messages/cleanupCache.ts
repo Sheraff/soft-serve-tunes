@@ -5,6 +5,7 @@ import { CACHES } from "../utils/constants"
 
 export const listOfAllGetRoutes: {
 	readonly [K in RouteKey]: {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic must match *any* type
 		[L in keyof AppRouter["_def"]["procedures"][K]["_def"]["procedures"]]: AppRouter["_def"]["procedures"][K]["_def"]["procedures"][L] extends BuildProcedure<"query", any, any>
 		? true
 		: undefined

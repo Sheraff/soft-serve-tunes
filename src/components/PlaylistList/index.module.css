@@ -1,6 +1,4 @@
-.list {
-
-}
+.list {}
 
 .item {
 	position: relative;
@@ -25,13 +23,20 @@
 
 .text {
 	font-size: 8px;
-	display: flex;
-	flex-direction: column;
 	width: calc(100vw - 144px);
-	gap: 4px;
+
 	color: hsl(0, 0%, 83%);
 	mix-blend-mode: luminosity;
+
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: auto auto;
+	grid-template-areas:
+		"title"
+		"desc";
+	gap: 4px;
 }
+
 .text::after {
 	content: '';
 	position: absolute;
@@ -40,10 +45,26 @@
 	z-index: -1;
 }
 
+.offline {
+	width: calc(100vw - 116px);
+	grid-template-columns: auto 1fr;
+	grid-template-areas:
+		"icon title"
+		"icon desc";
+}
+
+.icon {
+	grid-area: icon;
+	font-size: 20px;
+	align-self: center;
+}
+
 .title {
+	grid-area: title;
 	font-size: 12px;
 }
 
 .desc {
+	grid-area: desc;
 	line-height: 1.4;
 }

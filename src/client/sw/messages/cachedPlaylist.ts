@@ -5,6 +5,41 @@ import {
 } from "utils/trpc"
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
+import { cacheMatchTrpcQuery } from "client/sw/messages/utils"
+
+
+export async function messageCheckPlaylistCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
+	if (!source) return
+
+	let cached = false
+	findCache: {
+		const res = await cacheMatchTrpcQuery("playlist.get", { id })
+		if (!res)
+			break findCache
+
+		const data = await res.json()
+		const cache = await caches.open(CACHES.media)
+		if (!data?.result?.data?.json)
+			break findCache
+
+		const tracks = data.result.data.json.tracks
+		for (const track of tracks) {
+			if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
+				ignoreVary: true,
+				ignoreSearch: true,
+			})) {
+				cached = true
+				break findCache
+			}
+		}
+	}
+	source.postMessage({
+		type: "sw-cached-playlist", payload: {
+			id,
+			cached,
+		}
+	})
+}
 
 async function getAllCachedPlaylists (trpcCache: Cache, mediaCache: Cache) {
 	const [

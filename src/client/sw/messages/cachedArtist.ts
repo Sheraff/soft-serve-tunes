@@ -3,26 +3,22 @@ import {
 	type RouterOutputs,
 	type TrpcResponse,
 } from "utils/trpc"
-import { trpcQueryToCacheKey } from "./utils"
+import { cacheMatchTrpcQuery } from "./utils"
 import { getAllCachedAlbums } from "./cachedAlbum"
 import { CACHES } from "../utils/constants"
 
 export async function messageCheckArtistCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
-	const params: MultiCacheQueryOptions = {
-		ignoreVary: true,
-		ignoreSearch: false,
-		cacheName: CACHES.trpc,
-	}
+
 	const res = await Promise.all([
-		caches.match(trpcQueryToCacheKey("artist.get", { id }), params),
-		caches.match(trpcQueryToCacheKey("artist.miniature", { id }), params),
+		cacheMatchTrpcQuery("artist.get", { id }),
+		cacheMatchTrpcQuery("artist.miniature", { id }),
 	])
 	let cached = false
 	const hasArtistData = res.filter(Boolean).length === 2
 	if (hasArtistData) {
 		const artistResponse = res[0]!
-		const data = await artistResponse.json() as TrpcResponse<RouterOutputs["artist"]["get"]>
+		const data = await artistResponse.json()
 		findCaches: if (data?.result?.data?.json) {
 			const cache = await caches.open(CACHES.media)
 			const albums = data?.result?.data?.json.albums
@@ -91,6 +87,7 @@ async function getAllCachedArtists (trpcCache: Cache, mediaCache: Cache) {
 					const r = await response.json() as TrpcResponse<RouterOutputs["artist"]["get"]>
 					if (r.result.data.json)
 						albumsMap.set(r.result.data.json.id, r.result.data.json.albums.map((album) => album.id))
+					// TODO: also check `featured` and `tracks` (like above when checking if single artist is cached)
 				}))
 				return albumsMap
 			}),

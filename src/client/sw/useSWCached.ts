@@ -5,6 +5,7 @@ type SWQueryEvent =
 	| "sw-cached-track"
 	| "sw-cached-album"
 	| "sw-cached-artist"
+	| "sw-cached-playlist"
 	| "sw-cached-track-list"
 	| "sw-cached-album-list"
 	| "sw-cached-artist-list"
@@ -72,6 +73,10 @@ export function useCachedArtist (params: SWQueryPayload) {
 
 export function useCachedArtistList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["artist"]["searchable"]>("sw-cached-artist-list", [], params)
+}
+
+export function useCachedPlaylist (params: SWQueryPayload) {
+	return useSWQuery<boolean>("sw-cached-playlist", false, params)
 }
 
 export function useCachedPlaylistList (params?: { enabled?: boolean }) {

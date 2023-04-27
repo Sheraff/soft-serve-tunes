@@ -3,7 +3,7 @@ import { retryPostOnOnline } from "../fetch/trpcPost"
 import { messageCheckAlbumCache, messageListAlbumCache } from "./cachedAlbum"
 import { messageCheckArtistCache, messageListArtistCache } from "./cachedArtist"
 import { messageCheckTrackCache, messageCheckFirstCachedTrack, messageListTrackCache } from "./cachedTrack"
-import { messageListPlaylistCache } from "./cachedPlaylist"
+import { messageCheckPlaylistCache, messageListPlaylistCache } from "./cachedPlaylist"
 import { messageListGenreCache } from "./cachedGenre"
 import trpcRevalidation from "./trpcRevalidation"
 import { cleanupCache, pauseCacheCleanup } from "./cleanupCache"
@@ -24,6 +24,8 @@ export default function onMessage (event: ExtendableMessageEvent) {
 			return messageCheckArtistCache(event.data.payload, event)
 		case "sw-cached-artist-list":
 			return messageListArtistCache(event)
+		case "sw-cached-playlist":
+			return messageCheckPlaylistCache(event.data.payload, event)
 		case "sw-cached-playlist-list":
 			return messageListPlaylistCache(event)
 		case "sw-cached-genre-list":

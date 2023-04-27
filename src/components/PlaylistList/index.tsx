@@ -3,6 +3,10 @@ import CoverImages from "components/NowPlaying/Cover/Images"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedPlaylist } from "client/sw/useSWCached"
+import OfflineIcon from "icons/wifi_off.svg"
+import classNames from "classnames"
 
 function PlaylistItem ({
 	playlist,
@@ -12,6 +16,10 @@ function PlaylistItem ({
 	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
 }) {
 	const { data } = trpc.playlist.get.useQuery({ id: playlist.id })
+
+	const online = useIsOnline()
+	const { data: cached } = useCachedPlaylist({ id: playlist.id, enabled: !online })
+	const offline = !online && cached
 
 	return (
 		<button
@@ -38,7 +46,8 @@ function PlaylistItem ({
 				className={styles.img}
 				albums={data ? data.albums.slice(0, 6) : []}
 			/>
-			<p className={styles.text} key="text">
+			<p className={classNames(styles.text, { [styles.offline]: offline })} key="text">
+				{offline && <OfflineIcon className={styles.icon} />}
 				<span className={styles.title}>{playlist.name}</span>
 				<span className={styles.desc}>{data?.description}</span>
 			</p>
