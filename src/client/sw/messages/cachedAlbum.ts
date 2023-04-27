@@ -6,6 +6,8 @@ import {
 import { cacheMatchTrpcQuery } from "./utils"
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
+import { type JSONValue } from "superjson/dist/types"
+import { deserialize } from "superjson"
 
 export async function messageCheckAlbumCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
@@ -91,25 +93,25 @@ export async function messageListAlbumCache ({ source }: ExtendableMessageEvent)
 
 	const [
 		albumIds,
-		searchableEntry,
+		searchableData,
 	] = await Promise.all([
 		getAllCachedAlbums(trpcCache, mediaCache),
 		trpcCache.match(new URL("/api/trpc/album.searchable", self.location.origin), { ignoreSearch: true })
 			.then(r => r
-				? r.json() as Promise<TrpcResponse<RouterOutputs["album"]["searchable"]>>
+				? r.json() as Promise<TrpcResponse<JSONValue>>
 				: null
 			),
 	])
 
-	if (!searchableEntry) return source.postMessage({
+	if (!searchableData) return source.postMessage({
 		type: "sw-cached-album-list",
 		payload: {
 			cached: [],
 		},
 	})
 
-	const result = searchableEntry.result.data.json
-		.filter(({ id }) => albumIds.has(id))
+	const searchableEntry = deserialize<RouterOutputs["album"]["searchable"]>(searchableData.result.data)
+	const result = searchableEntry.filter(({ id }) => albumIds.has(id))
 
 	source.postMessage({
 		type: "sw-cached-album-list",

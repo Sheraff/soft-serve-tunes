@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 import { type RouterOutputs, type TrpcResponse } from "utils/trpc"
 import { CACHES } from "../utils/constants"
+import { type JSONValue } from "superjson/dist/types"
+import { deserialize } from "superjson"
 
 export async function messageCheckTrackCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
 	if (!source) return
@@ -101,25 +103,25 @@ export async function messageListTrackCache ({ source }: ExtendableMessageEvent)
 
 	const [
 		mediaIds,
-		searchableEntry,
+		searchableData,
 	] = await Promise.all([
 		getAllCachedTracks(trpcCache, mediaCache),
 		trpcCache.match(new URL("/api/trpc/track.searchable", self.location.origin), { ignoreSearch: true })
 			.then(r => r
-				? r.json() as Promise<TrpcResponse<RouterOutputs["track"]["searchable"]>>
+				? r.json() as Promise<TrpcResponse<JSONValue>>
 				: null
 			),
 	] as const)
 
-	if (!searchableEntry) return source.postMessage({
+	if (!searchableData) return source.postMessage({
 		type: "sw-cached-track-list",
 		payload: {
 			cached: [],
 		},
 	})
 
-	const result = searchableEntry.result.data.json
-		.filter(({ id }) => mediaIds.has(id))
+	const searchableEntry = deserialize<RouterOutputs["track"]["searchable"]>(searchableData.result.data)
+	const result = searchableEntry.filter(({ id }) => mediaIds.has(id))
 
 	source.postMessage({
 		type: "sw-cached-track-list",

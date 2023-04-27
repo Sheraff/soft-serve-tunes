@@ -6,6 +6,8 @@ import {
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
 import { cacheMatchTrpcQuery } from "client/sw/messages/utils"
+import { type JSONValue } from "superjson/dist/types"
+import { deserialize } from "superjson"
 
 
 export async function messageCheckPlaylistCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
@@ -79,25 +81,25 @@ export async function messageListPlaylistCache ({ source }: ExtendableMessageEve
 
 	const [
 		playlistIds,
-		searchableEntry,
+		searchableData,
 	] = await Promise.all([
 		getAllCachedPlaylists(trpcCache, mediaCache),
 		trpcCache.match(new URL("/api/trpc/playlist.searchable", self.location.origin), { ignoreSearch: true })
 			.then(r => r
-				? r.json() as Promise<TrpcResponse<RouterOutputs["playlist"]["searchable"]>>
+				? r.json() as Promise<TrpcResponse<JSONValue>>
 				: null
 			),
 	])
 
-	if (!searchableEntry) return source.postMessage({
+	if (!searchableData) return source.postMessage({
 		type: "sw-cached-playlist-list",
 		payload: {
 			cached: [],
 		},
 	})
 
-	const result = searchableEntry.result.data.json
-		.filter(({ id }) => playlistIds.has(id))
+	const searchableEntry = deserialize<RouterOutputs["playlist"]["searchable"]>(searchableData.result.data)
+	const result = searchableEntry.filter(({ id }) => playlistIds.has(id))
 
 	source.postMessage({
 		type: "sw-cached-playlist-list",

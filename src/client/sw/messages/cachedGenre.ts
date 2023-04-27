@@ -5,6 +5,8 @@ import {
 } from "utils/trpc"
 import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
+import { deserialize } from "superjson"
+import { type JSONValue } from "superjson/dist/types"
 
 /**
  * @todo genre.get is not used anywhere (so never in cache)
@@ -62,25 +64,26 @@ export async function messageListGenreCache ({ source }: ExtendableMessageEvent)
 
 	const [
 		genreIds,
-		searchableEntry,
+		searchableData,
 	] = await Promise.all([
 		getAllCachedGenres(trpcCache, mediaCache),
 		trpcCache.match(new URL("/api/trpc/genre.searchable", self.location.origin), { ignoreSearch: true })
 			.then(r => r
-				? r.json() as Promise<TrpcResponse<RouterOutputs["genre"]["searchable"]>>
+				? r.json() as Promise<TrpcResponse<JSONValue>>
 				: null
 			),
 	])
 
-	if (!searchableEntry) return source.postMessage({
+	if (!searchableData) return source.postMessage({
 		type: "sw-cached-genre-list",
 		payload: {
 			cached: [],
 		},
 	})
 
-	const result = searchableEntry.result.data.json
-		.filter(({ id }) => genreIds.has(id))
+	const searchableEntry = deserialize<RouterOutputs["genre"]["searchable"]>(searchableData.result.data)
+
+	const result = searchableEntry.filter(({ id }) => genreIds.has(id))
 
 	source.postMessage({
 		type: "sw-cached-genre-list",
