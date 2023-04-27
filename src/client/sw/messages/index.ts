@@ -4,7 +4,7 @@ import { messageCheckAlbumCache, messageListAlbumCache } from "./cachedAlbum"
 import { messageCheckArtistCache, messageListArtistCache } from "./cachedArtist"
 import { messageCheckTrackCache, messageCheckFirstCachedTrack, messageListTrackCache } from "./cachedTrack"
 import { messageCheckPlaylistCache, messageListPlaylistCache } from "./cachedPlaylist"
-import { messageListGenreCache } from "./cachedGenre"
+import { messageCheckGenreCache, messageListGenreCache } from "./cachedGenre"
 import trpcRevalidation from "./trpcRevalidation"
 import { cleanupCache, pauseCacheCleanup } from "./cleanupCache"
 
@@ -28,6 +28,8 @@ export default function onMessage (event: ExtendableMessageEvent) {
 			return messageCheckPlaylistCache(event.data.payload, event)
 		case "sw-cached-playlist-list":
 			return messageListPlaylistCache(event)
+		case "sw-cached-genre":
+			return messageCheckGenreCache(event.data.payload, event)
 		case "sw-cached-genre-list":
 			return messageListGenreCache(event)
 		case "sw-trpc-revalidate":

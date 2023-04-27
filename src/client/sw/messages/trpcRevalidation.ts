@@ -158,7 +158,6 @@ workerSocketClient.remove.subscribe({
 			trpcRevalidation({ key: ["genre", "searchable"] })
 			trpcRevalidation({ key: ["genre", "miniature"], params: { id } })
 			trpcRevalidation({ key: ["genre", "get"], params: { id } })
-			trpcRevalidation({ key: ["playlist", "generate"], params: { type: "genre", id } })
 		}
 	}
 })

@@ -77,23 +77,13 @@ async function getResolve (id: string) {
   }
 }
 
-const generate = protectedProcedure.input(z.union([
-  z.object({
-    type: z.enum(["genre"]),
-    id: z.string(),
-  }),
-  z.object({
-    type: z.literal("by-multi-traits"),
-    traits: z.array(z.object({
-      trait: zTrackTraits,
-      value: z.string(),
-    })),
-  }),
-])).query(async ({ input, ctx }) => {
-  if (input.type === "genre") {
-    const data = await recursiveSubGenres([input.id], { select: trackSelect })
-    return data.tracks
-  }
+const generate = protectedProcedure.input(z.object({
+  type: z.literal("by-multi-traits"),
+  traits: z.array(z.object({
+    trait: zTrackTraits,
+    value: z.string(),
+  })),
+})).query(async ({ input, ctx }) => {
   if (input.type === "by-multi-traits") {
     const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
     const ids = spotifyTracks.map((t) => t.trackId)

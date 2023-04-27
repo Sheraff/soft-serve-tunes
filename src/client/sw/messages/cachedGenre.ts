@@ -7,12 +7,42 @@ import { CACHES } from "../utils/constants"
 import { getAllCachedTracks } from "./cachedTrack"
 import { deserialize } from "superjson"
 import { type JSONValue } from "superjson/dist/types"
+import { cacheMatchTrpcQuery } from "client/sw/messages/utils"
 
-/**
- * @todo genre.get is not used anywhere (so never in cache)
- * it was meant to be used for the genre page, but that page is not implemented yet
- * in the meantime, we're using playlist.generate to get the tracks of a genre, so we could use that here too
- */
+
+export async function messageCheckGenreCache ({ id }: { id: string }, { source }: ExtendableMessageEvent) {
+	if (!source) return
+
+	let cached = false
+	findCache: {
+		const res = await cacheMatchTrpcQuery("genre.get", { id })
+		if (!res)
+			break findCache
+
+		const data = await res.json()
+		const cache = await caches.open(CACHES.media)
+		if (!data?.result?.data?.json)
+			break findCache
+
+		const tracks = data.result.data.json.tracks
+		for (const track of tracks) {
+			if (await cache.match(new URL(`/api/file/${track.id}`, self.location.origin), {
+				ignoreVary: true,
+				ignoreSearch: true,
+			})) {
+				cached = true
+				break findCache
+			}
+		}
+	}
+	source.postMessage({
+		type: "sw-cached-genre", payload: {
+			id,
+			cached,
+		}
+	})
+}
+
 async function getAllCachedGenres (trpcCache: Cache, mediaCache: Cache) {
 	const [
 		mediaIds,
