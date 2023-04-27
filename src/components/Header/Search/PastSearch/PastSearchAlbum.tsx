@@ -10,7 +10,7 @@ export function PastSearchAlbum ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
-	forceOffline = false,
+	forceAvailable = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.album.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const onClick = () => {
@@ -30,8 +30,8 @@ export function PastSearchAlbum ({
 	}
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedAlbum({ id, enabled: !online && !forceOffline })
-	const offline = forceOffline || (!online && cached)
+	const { data: cached } = useCachedAlbum({ id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<BasePastSearchItem
@@ -40,7 +40,7 @@ export function PastSearchAlbum ({
 			name={entity?.name}
 			id={id}
 			type="album"
-			offline={offline}
+			available={available}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>

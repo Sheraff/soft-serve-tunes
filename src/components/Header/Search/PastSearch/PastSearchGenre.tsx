@@ -14,17 +14,17 @@ export function PastSearchGenre ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
-	forceOffline = false,
+	forceAvailable = false,
 }: PastSearchProps) {
 	const online = useIsOnline()
-	const { data: cached } = useCachedGenre({ id, enabled: !online && !forceOffline })
-	const offline = forceOffline || (!online && cached)
+	const { data: cached } = useCachedGenre({ id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	const { data: entity } = trpc.genre.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const trpcClient = trpc.useContext()
 	const onClick = () => {
 		_onClick?.()
-		if (!online && !cached) return
+		if (!available) return
 		trpcClient.genre.get.fetch({ id }).then((data) => {
 			if (!data) return
 			startTransition(() => {
@@ -56,7 +56,7 @@ export function PastSearchGenre ({
 			id={id}
 			type="genre"
 			coverId={entity?.artists?.[0]?.coverId}
-			offline={offline}
+			available={available}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>

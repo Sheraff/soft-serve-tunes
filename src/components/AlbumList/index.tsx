@@ -48,14 +48,14 @@ function AlbumItem ({
 
 	const online = useIsOnline()
 	const { data: cached } = useCachedAlbum({ id: album.id, enabled: !online })
-	const offline = !online && cached
+	const available = online || cached
 
 	return (
 		<button
 			ref={item}
 			className={classNames(styles.button, {
 				[styles.selected]: selected,
-				[styles.withIcon]: selected || offline
+				[styles.withIcon]: selected || !available
 			})}
 			type="button"
 			onClick={(event) => {
@@ -94,7 +94,7 @@ function AlbumItem ({
 				{data?.artist?.name && <span>{data?.artist?.name}</span>}
 				<span>{trackCount} track{pluralize(trackCount)}</span>
 				{selected && <CheckIcon className={styles.icon} />}
-				{!selected && offline && <OfflineIcon className={styles.icon} />}
+				{!selected && !available && <OfflineIcon className={styles.icon} />}
 			</p>
 		</button>
 	)

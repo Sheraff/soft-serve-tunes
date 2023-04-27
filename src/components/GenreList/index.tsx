@@ -53,7 +53,7 @@ function GenreItem ({
 
 	const online = useIsOnline()
 	const { data: cached } = useCachedGenre({ id: genre.id, enabled: !online })
-	const offline = !online && cached
+	const available = online || cached
 
 	const trpcClient = trpc.useContext()
 	return (
@@ -68,7 +68,7 @@ function GenreItem ({
 				}
 				navigator.vibrate(1)
 				genre && onSelect?.(genre)
-				if (!online && !cached) return
+				if (!available) return
 				trpcClient.genre.get.fetch({ id: genre.id }).then((data) => {
 					if (!data) return
 					startTransition(() => {
@@ -103,9 +103,9 @@ function GenreItem ({
 					))}
 				</div>
 			)}
-			{(isSelection || offline) && (
+			{(isSelection || !available) && (
 				<div className={styles.selection}>
-					{!isSelection && offline && (
+					{!isSelection && !available && (
 						<OfflineIcon className={styles.icon} />
 					)}
 					{isSelection && selected && (

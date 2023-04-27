@@ -132,7 +132,7 @@ function BaseList ({
 		id: string
 		name: string
 	}[]
-	component: (props: { id: string, showType: false, forceOffline?: boolean }) => JSX.Element
+	component: (props: { id: string, showType: false, forceAvailable?: boolean }) => JSX.Element
 	isCache: boolean
 }) {
 	const data = useMemo(
@@ -211,7 +211,7 @@ function BaseList ({
 							<Component
 								id={data[virtualItem.index]!.id}
 								showType={false}
-								forceOffline={isCache}
+								forceAvailable={isCache}
 							/>
 						</div>
 					))}

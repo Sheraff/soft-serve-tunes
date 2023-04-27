@@ -11,7 +11,7 @@ export function PastSearchPlaylist ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
-	forceOffline = false,
+	forceAvailable = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.playlist.get.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const onClick = () => {
@@ -28,8 +28,8 @@ export function PastSearchPlaylist ({
 	}
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedPlaylist({ id, enabled: !online && !forceOffline })
-	const offline = forceOffline || (!online && cached)
+	const { data: cached } = useCachedPlaylist({ id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<BasePastSearchItem
@@ -39,7 +39,7 @@ export function PastSearchPlaylist ({
 			name={entity?.name}
 			id={id}
 			type="playlist"
-			offline={offline}
+			available={available}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>

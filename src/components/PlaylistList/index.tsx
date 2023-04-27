@@ -19,7 +19,7 @@ function PlaylistItem ({
 
 	const online = useIsOnline()
 	const { data: cached } = useCachedPlaylist({ id: playlist.id, enabled: !online })
-	const offline = !online && cached
+	const available = online || cached
 
 	return (
 		<button
@@ -46,8 +46,8 @@ function PlaylistItem ({
 				className={styles.img}
 				albums={data ? data.albums.slice(0, 6) : []}
 			/>
-			<p className={classNames(styles.text, { [styles.offline]: offline })} key="text">
-				{offline && <OfflineIcon className={styles.icon} />}
+			<p className={classNames(styles.text, { [styles.offline]: !available })} key="text">
+				{!available && <OfflineIcon className={styles.icon} />}
 				<span className={styles.title}>{playlist.name}</span>
 				<span className={styles.desc}>{data?.description}</span>
 			</p>

@@ -115,7 +115,7 @@ const TrackItem = memo(function _TrackItem ({
 	)
 	const online = useIsOnline()
 	const { data: cached } = useCachedTrack({ id: track.id, enabled: !online })
-	const offline = !online && cached
+	const available = online || cached
 	const high = data?.file?.container.toUpperCase() === "FLAC"
 
 	return (
@@ -198,10 +198,10 @@ const TrackItem = memo(function _TrackItem ({
 							{data?.feats?.map(({ name }) => name).join(", ")}
 						</span>
 					)}
-					{(explicit || offline || recent || high) && (
+					{(explicit || !available || recent || high) && (
 						<span className={styles.icons}>
 							<>
-								{offline && <OfflineIcon key="offline" className={styles.offline} />}
+								{!available && <OfflineIcon key="offline" className={styles.offline} />}
 								{high && <HighIcon key="high" />}
 								{recent && <NewIcon key="recent" />}
 								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}

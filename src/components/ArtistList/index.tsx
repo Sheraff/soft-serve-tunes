@@ -49,7 +49,7 @@ function ArtistItem ({
 
 	const online = useIsOnline()
 	const { data: cached } = useCachedArtist({ id: artist.id, enabled: !online })
-	const offline = !online && cached
+	const available = online || cached
 
 	return (
 		<button
@@ -97,7 +97,7 @@ function ArtistItem ({
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{pluralize(trackCount)}</span>}
 			</p>
 			{selected && <CheckIcon className={styles.check} />}
-			{!selected && offline && <OfflineIcon className={styles.check} />}
+			{!selected && !available && <OfflineIcon className={styles.check} />}
 		</button>
 	)
 }

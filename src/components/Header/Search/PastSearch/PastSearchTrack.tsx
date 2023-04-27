@@ -11,7 +11,7 @@ export function PastSearchTrack ({
 	onSettled,
 	onClick: _onClick,
 	showType = true,
-	forceOffline = false,
+	forceAvailable = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.track.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const addNextToPlaylist = useAddNextToPlaylist()
@@ -41,8 +41,8 @@ export function PastSearchTrack ({
 	}
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedTrack({ id, enabled: !online && !forceOffline })
-	const offline = forceOffline || (!online && cached)
+	const { data: cached } = useCachedTrack({ id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<BasePastSearchItem
@@ -51,7 +51,7 @@ export function PastSearchTrack ({
 			name={entity?.name}
 			id={id}
 			type="track"
-			offline={offline}
+			available={available}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>
