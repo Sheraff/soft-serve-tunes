@@ -77,7 +77,7 @@ async function getResolve (id: string) {
   }
 }
 
-const generate = publicProcedure.input(z.union([
+const generate = protectedProcedure.input(z.union([
   z.object({
     type: z.enum(["genre"]),
     id: z.string(),
@@ -107,7 +107,7 @@ const generate = publicProcedure.input(z.union([
   }
 })
 
-const more = publicProcedure.input(
+const more = protectedProcedure.input(
   z.object({
     type: z.literal("by-similar-tracks"),
     trackIds: z.array(z.string()),

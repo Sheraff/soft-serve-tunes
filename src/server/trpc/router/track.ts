@@ -229,7 +229,7 @@ export function getSpotifyTracksByMultiTraitsWithTarget (
   `) as unknown as { trackId: string }[]
 }
 
-const byMultiTraits = publicProcedure.input(z.object({
+const byMultiTraits = protectedProcedure.input(z.object({
   traits: z.array(z.object({
     trait: zTrackTraits,
     value: z.string(),

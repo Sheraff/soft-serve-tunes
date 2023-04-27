@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "server/trpc/trpc"
+import { router, publicProcedure, protectedProcedure } from "server/trpc/trpc"
 import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
@@ -261,7 +261,7 @@ function getAlbumsBySpotifyTracksByMultiTraitsWithTarget (
   `) as unknown as { albumId: string, score: number | null }[]
 }
 
-const byMultiTraits = publicProcedure.input(z.object({
+const byMultiTraits = protectedProcedure.input(z.object({
   traits: z.array(z.object({
     trait: zTrackTraits,
     value: z.string(),
