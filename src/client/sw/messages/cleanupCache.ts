@@ -68,7 +68,6 @@ export const listOfAllGetRoutes: {
 let cleanupActive = false
 
 export function cleanupCache () {
-	console.log("cleanupCache")
 	cleanupActive = true
 	cleanupTrpcCache()
 	cleanupNextCache()
@@ -76,7 +75,6 @@ export function cleanupCache () {
 }
 
 export function pauseCacheCleanup () {
-	console.log("pauseCacheCleanup")
 	cleanupActive = false
 }
 
