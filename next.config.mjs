@@ -6,8 +6,8 @@
  * @param {T} config - A generic parameter that flows through to the return type
  * @constraint {{import('next').NextConfig}}
  */
-function defineNextConfig(config) {
-  return config;
+function defineNextConfig (config) {
+  return config
 }
 
 export default defineNextConfig({
@@ -25,7 +25,7 @@ export default defineNextConfig({
     // !! WARN !!
     ignoreBuildErrors: true,
   },
-  async headers() {
+  async headers () {
     return [
       {
         source: '/:path*',
@@ -34,24 +34,30 @@ export default defineNextConfig({
             key: 'Service-Worker-Allowed',
             value: '/',
           },
+          {
+            key: 'Accept-CH',
+            value: 'Sec-CH-DPR, Sec-CH-Viewport-Width, Downlink',
+          }
         ],
       },
     ]
   },
-  webpack(config) {
+  webpack (config) {
     config.module.rules.push({
       test: /\.svg$/i,
       issuer: /\.[jt]sx?$/,
-      use: [{loader: '@svgr/webpack', options: {
-        typescript: true,
-        svgoConfig: {
-          plugins: [
-            'removeDimensions',
-            'removeXMLNS',
-          ],
+      use: [{
+        loader: '@svgr/webpack', options: {
+          typescript: true,
+          svgoConfig: {
+            plugins: [
+              'removeDimensions',
+              'removeXMLNS',
+            ],
+          }
         }
-      }}],
+      }],
     })
     return config
   },
-});
+})

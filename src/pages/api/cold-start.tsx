@@ -6,7 +6,7 @@ import listFilesFromDir from "server/db/listFilesFromDir"
 import log from "utils/logger"
 import { socketServer } from "utils/typedWs/server"
 import { stat, unlink } from "fs/promises"
-import { removeImageEntry } from "pages/api/cover/[...parts]"
+import { removeImageEntry } from "pages/api/cover/[id]"
 import { join, relative } from "path"
 import { env } from "env/server.mjs"
 

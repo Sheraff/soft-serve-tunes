@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { constants, createReadStream } from "node:fs"
+import { type ReadStream, createReadStream } from "node:fs"
 import { join } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
-import { access, stat, unlink } from "node:fs/promises"
+import { stat, unlink } from "node:fs/promises"
 import log from "utils/logger"
 import Queue from "utils/Queue"
 import {
@@ -12,8 +12,7 @@ import {
   computeTrackCover,
   computeArtistCover,
 } from "server/db/computeCover"
-
-const deviceWidth = env.NEXT_PUBLIC_MAIN_DEVICE_WIDTH * env.NEXT_PUBLIC_MAIN_DEVICE_DENSITY
+import { COVER_SIZES } from "utils/getCoverUrl"
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type
 const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
@@ -23,25 +22,35 @@ globalThis.sharpQueue = queue
 const runningTransforms = new Set<string>()
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
-  const { parts } = req.query
-  if (!parts) {
-    return res.status(400).json({ error: "Missing path" })
-  }
-  const [id, dimension] = Array.isArray(parts) ? parts : [parts]
+  const { id, ...search } = req.query
   if (!id) {
     return res.status(400).json({ error: "Missing id" })
   }
-
+  if (Array.isArray(id)) {
+    return res.status(400).json({ error: "Malformed cover path" })
+  }
   const [a, b, c] = id
   if (!a || !b || !c) {
     return res.status(400).json({ error: "Invalid id" })
   }
-  const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
 
-  const width = Math.min(deviceWidth, Math.round(dimension ? Number(dimension) : deviceWidth))
+  const format = Object.keys(search)[0]
+  if (!format || !(format in COVER_SIZES)) {
+    return res.status(400).json({ error: "Missing format" })
+  }
+
+  const dpr = Number(req.headers["sec-ch-dpr"])
+  const viewport = Number(req.headers["sec-ch-viewport-width"])
+  if (isNaN(dpr) || isNaN(viewport)) {
+    return res.status(400).json({ error: "Missing viewport and/or dpr header" })
+  }
+
+  const width = Math.round(COVER_SIZES[format as keyof typeof COVER_SIZES]((Number(viewport) * Number(dpr))))
+
+  const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
 
-  let returnStream: ({ pipe: (res: NextApiResponse) => NextApiResponse }) | null = null
+  let returnStream: ReadStream | sharp.Sharp | null = null
   let etag: string | undefined
   try {
     const stats = await stat(exactFilePath)
@@ -131,10 +140,12 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
   }
 
   res
+    .setHeader("Vary", "sec-ch-dpr, sec-ch-viewport-width")
+    .setHeader("Critical-CH", "sec-ch-dpr, sec-ch-viewport-width")
     .setHeader("Content-Type", "image/avif")
     .setHeader("Cache-Control", "max-age=604800, stale-while-revalidate=31536000") // keep for 1 week, revalidate 1 year
     .setHeader("ETag", etag)
-  return returnStream
+  returnStream
     .pipe(res)
     .on("error", (error: NodeJS.ErrnoException) => {
       res.status(500).json({ error })
