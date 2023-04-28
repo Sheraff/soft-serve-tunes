@@ -4,10 +4,10 @@ import styles from "./index.module.css"
 import uploadLoop from "../uploadLoop"
 import PlaceItemIcon from "icons/place_item.svg"
 
-export default memo(function DropTarget({
+export default memo(function DropTarget ({
 	onUserAction,
 }: {
-	onUserAction: () => void
+	onUserAction?: () => void
 }) {
 	const ref = useRef<HTMLDivElement>(null)
 	const setProgress = useProgressBar()
@@ -16,7 +16,7 @@ export default memo(function DropTarget({
 		document.body.addEventListener("dragover", e => {
 			ref.current?.classList.add(styles.hover)
 			e.preventDefault()
-			onUserAction()
+			onUserAction?.()
 		}, { signal: controller.signal })
 		ref.current?.addEventListener("dragleave", () => {
 			ref.current?.classList.remove(styles.hover)
@@ -52,21 +52,21 @@ export default memo(function DropTarget({
 	)
 })
 
-function fileFromFileEntry(fileEntry: FileSystemFileEntry) {
+function fileFromFileEntry (fileEntry: FileSystemFileEntry) {
 	return new Promise<File | null>((resolve, reject) => fileEntry.file(resolve, reject))
 		.catch(() => null)
 }
 
-function isFile(entry: FileSystemEntry): entry is FileSystemFileEntry {
+function isFile (entry: FileSystemEntry): entry is FileSystemFileEntry {
 	return entry.isFile
 }
 
-function isDirectory(entry: FileSystemEntry): entry is FileSystemDirectoryEntry {
+function isDirectory (entry: FileSystemEntry): entry is FileSystemDirectoryEntry {
 	return entry.isDirectory
 }
 
 // Drop handler function to get all files
-async function getAllFileEntries(dataTransferItemList: DataTransferItemList) {
+async function getAllFileEntries (dataTransferItemList: DataTransferItemList) {
 	const fileEntries = []
 	const queue: FileSystemEntry[] = []
 	for (const item of dataTransferItemList) {
@@ -88,7 +88,7 @@ async function getAllFileEntries(dataTransferItemList: DataTransferItemList) {
 }
 
 
-async function readAllDirectoryEntries(directoryReader: FileSystemDirectoryReader) {
+async function readAllDirectoryEntries (directoryReader: FileSystemDirectoryReader) {
 	const entries = []
 	let readEntries
 	do {
@@ -100,7 +100,7 @@ async function readAllDirectoryEntries(directoryReader: FileSystemDirectoryReade
 
 // readEntries will return only some of the entries in a directory
 // e.g. Chrome returns at most 100 entries at a time
-function readEntriesPromise(directoryReader: FileSystemDirectoryReader) {
+function readEntriesPromise (directoryReader: FileSystemDirectoryReader) {
 	return new Promise<FileSystemEntry[]>((resolve) => {
 		directoryReader.readEntries(resolve, () => resolve([]))
 	})
