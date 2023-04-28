@@ -27,11 +27,13 @@ function GenreItem ({
 	onSelect,
 	selected,
 	isSelection,
+	forceAvailable,
 }: {
 	genre: GenreListItem
 	onSelect?: (genre: GenreListItem) => void
 	selected?: boolean
 	isSelection: boolean
+	forceAvailable?: boolean
 }) {
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
 		select (data) {
@@ -52,8 +54,8 @@ function GenreItem ({
 	const count = data?._count.tracks ?? 0
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedGenre({ id: genre.id, enabled: !online })
-	const available = online || cached
+	const { data: cached } = useCachedGenre({ id: genre.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	const trpcClient = trpc.useContext()
 	return (
@@ -129,11 +131,13 @@ export default function GenreList ({
 	onSelect,
 	scrollable,
 	loading,
+	forceAvailable = false,
 }: {
 	genres: GenreListItem[]
 	onSelect?: (genre: GenreListItem) => void
 	scrollable?: boolean
 	loading?: boolean
+	forceAvailable?: boolean
 }) {
 
 	const _editViewState = editOverlay.useValue()
@@ -162,6 +166,7 @@ export default function GenreList ({
 							onSelect={onSelect}
 							selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
 							isSelection={isSelection}
+							forceAvailable={forceAvailable}
 						/>
 					</li>
 				))}
@@ -192,6 +197,7 @@ export default function GenreList ({
 								onSelect={onSelect}
 								selected={isSelection && editViewState.selection.some(({ id }) => id === item.key)}
 								isSelection={isSelection}
+								forceAvailable={forceAvailable}
 							/>
 						</li>
 					))}

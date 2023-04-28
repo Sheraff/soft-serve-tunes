@@ -24,12 +24,14 @@ function AlbumItem ({
 	onClick,
 	selected,
 	selectable,
+	forceAvailable,
 }: {
 	album: AlbumListItem
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	onClick?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
 	selected: boolean
 	selectable: boolean
+	forceAvailable?: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const { data } = trpc.album.miniature.useQuery({ id: album.id })
@@ -47,8 +49,8 @@ function AlbumItem ({
 	useLongPress({ onLong, item })
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedAlbum({ id: album.id, enabled: !online })
-	const available = online || cached
+	const { data: cached } = useCachedAlbum({ id: album.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<button
@@ -109,6 +111,7 @@ export default forwardRef(function AlbumList ({
 	loading = false,
 	selected,
 	selectable = true,
+	forceAvailable = false,
 }: {
 	albums: AlbumListItem[]
 	onSelect?: (album: Exclude<RouterOutputs["album"]["miniature"], null>) => void
@@ -118,6 +121,7 @@ export default forwardRef(function AlbumList ({
 	loading?: boolean
 	selected?: string
 	selectable?: boolean
+	forceAvailable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
@@ -167,6 +171,7 @@ export default forwardRef(function AlbumList ({
 									onClick={onClick}
 									selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
 									selectable={selectable}
+									forceAvailable={forceAvailable}
 								/>
 							</li>
 						))}
@@ -188,6 +193,7 @@ export default forwardRef(function AlbumList ({
 								onClick={onClick}
 								selected={selected === album.id || (isSelection && editViewState.selection.some(({ id }) => id === album.id))}
 								selectable={selectable}
+								forceAvailable={forceAvailable}
 							/>
 						</li>
 					))}

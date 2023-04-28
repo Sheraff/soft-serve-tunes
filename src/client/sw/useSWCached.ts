@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { RouterOutputs } from "utils/trpc"
+import { type FetchQueryOptions, type UseQueryOptions, useQuery } from "@tanstack/react-query"
+import { type RouterOutputs, queryClient } from "utils/trpc"
 
 type SWQueryEvent =
 	| "sw-cached-track"
@@ -18,9 +18,13 @@ type SWQueryPayload = {
 	enabled?: boolean,
 }
 
-function useSWQuery<T> (type: SWQueryEvent, fallback: T, params?: SWQueryPayload) {
+function getSWQueryOptions<T> (
+	type: SWQueryEvent,
+	fallback: T,
+	params?: SWQueryPayload
+): UseQueryOptions<T, unknown, T, (string | undefined)[]> & FetchQueryOptions<T, unknown, T, (string | undefined)[]> {
 	const withId = params && ("id" in params)
-	return useQuery({
+	return {
 		enabled: Boolean(!withId || params.id) && params?.enabled !== false,
 		queryKey: withId ? [type, params.id] : [type],
 		queryFn ({ signal }) {
@@ -49,7 +53,15 @@ function useSWQuery<T> (type: SWQueryEvent, fallback: T, params?: SWQueryPayload
 		staleTime: 60_000,
 		cacheTime: Infinity,
 		networkMode: "offlineFirst",
-	})
+	}
+}
+
+function useSWQuery<T> (type: SWQueryEvent, fallback: T, params?: SWQueryPayload) {
+	return useQuery(getSWQueryOptions<T>(type, fallback, params))
+}
+
+function prefetchSWQuery<T> (type: SWQueryEvent, fallback: T, params?: SWQueryPayload) {
+	return queryClient.prefetchQuery(getSWQueryOptions<T>(type, fallback, params))
 }
 
 export function useCachedTrack (params: SWQueryPayload) {
@@ -60,12 +72,20 @@ export function useCachedTrackList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["track"]["searchable"]>("sw-cached-track-list", [], params)
 }
 
+export function prefetchCachedTrackList () {
+	return prefetchSWQuery<RouterOutputs["track"]["searchable"]>("sw-cached-track-list", [])
+}
+
 export function useCachedAlbum (params: SWQueryPayload) {
 	return useSWQuery<boolean>("sw-cached-album", false, params)
 }
 
 export function useCachedAlbumList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["album"]["searchable"]>("sw-cached-album-list", [], params)
+}
+
+export function prefetchCachedAlbumList () {
+	return prefetchSWQuery<RouterOutputs["album"]["searchable"]>("sw-cached-album-list", [])
 }
 
 export function useCachedArtist (params: SWQueryPayload) {
@@ -76,6 +96,10 @@ export function useCachedArtistList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["artist"]["searchable"]>("sw-cached-artist-list", [], params)
 }
 
+export function prefetchCachedArtistList () {
+	return prefetchSWQuery<RouterOutputs["artist"]["searchable"]>("sw-cached-artist-list", [])
+}
+
 export function useCachedPlaylist (params: SWQueryPayload) {
 	return useSWQuery<boolean>("sw-cached-playlist", false, params)
 }
@@ -84,12 +108,20 @@ export function useCachedPlaylistList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["playlist"]["searchable"]>("sw-cached-playlist-list", [], params)
 }
 
+export function prefetchCachedPlaylistList () {
+	return prefetchSWQuery<RouterOutputs["playlist"]["searchable"]>("sw-cached-playlist-list", [])
+}
+
 export function useCachedGenre (params: SWQueryPayload) {
 	return useSWQuery<boolean>("sw-cached-genre", false, params)
 }
 
 export function useCachedGenreList (params?: { enabled?: boolean }) {
 	return useSWQuery<RouterOutputs["genre"]["searchable"]>("sw-cached-genre-list", [], params)
+}
+
+export function prefetchCachedGenreList () {
+	return prefetchSWQuery<RouterOutputs["genre"]["searchable"]>("sw-cached-genre-list", [])
 }
 
 export async function findFirstCachedTrack (

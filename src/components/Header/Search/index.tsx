@@ -10,19 +10,35 @@ import { usePastSearchesMutation, usePastSearchesQuery } from "client/db/indexed
 import SectionTitle from "atoms/SectionTitle"
 import { trpc } from "utils/trpc"
 import PlaylistList from "components/PlaylistList"
+import OfflineIcon from "icons/wifi_off.svg"
+import OnlineIcon from "icons/wifi_on.svg"
+import {
+	prefetchCachedAlbumList,
+	prefetchCachedArtistList,
+	prefetchCachedGenreList,
+	prefetchCachedPlaylistList,
+	prefetchCachedTrackList,
+	useCachedAlbumList,
+	useCachedArtistList,
+	useCachedGenreList,
+	useCachedPlaylistList,
+	useCachedTrackList,
+} from "client/sw/useSWCached"
 
 const defaultArray = [] as never[]
 
 const ArtistSearch = forwardRef(function _ArtistSearch ({
-	enabled,
 	input,
 	onSelect,
+	offline,
 }: {
-	enabled: boolean
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "artist", id: string }) => void
+	offline: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const { data: artistsRaw } = trpc.artist.searchable.useQuery(undefined, { enabled })
+	const { data: artistsRaw } = offline
+		? useCachedArtistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
+		: trpc.artist.searchable.useQuery()
 	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
 
 	return (
@@ -33,21 +49,24 @@ const ArtistSearch = forwardRef(function _ArtistSearch ({
 				artists={artists}
 				onSelect={({ id }) => onSelect({ type: "artist", id })}
 				loading={!artists.length}
+				forceAvailable={offline}
 			/>
 		</div>
 	)
 })
 
 const AlbumSearch = forwardRef(function _AlbumSearch ({
-	enabled,
 	input,
 	onSelect,
+	offline,
 }: {
-	enabled: boolean
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "album", id: string }) => void
+	offline: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const { data: albumsRaw } = trpc.album.searchable.useQuery(undefined, { enabled })
+	const { data: albumsRaw } = offline
+		? useCachedAlbumList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
+		: trpc.album.searchable.useQuery()
 	const _albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
 	const deferredAlbums = useDeferredValue(_albums)
 	const albums = deferredAlbums.length === 0 ? _albums : deferredAlbums
@@ -61,21 +80,24 @@ const AlbumSearch = forwardRef(function _AlbumSearch ({
 				albums={albums}
 				onSelect={({ id }) => onSelect({ type: "album", id })}
 				loading={!albums.length}
+				forceAvailable={offline}
 			/>
 		</div>
 	)
 })
 
 function GenreSearch ({
-	enabled,
 	input,
 	onSelect,
+	offline
 }: {
-	enabled: boolean
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "genre", id: string }) => void
+	offline: boolean
 }) {
-	const { data: genresRaw } = trpc.genre.searchable.useQuery(undefined, { enabled })
+	const { data: genresRaw } = offline
+		? useCachedGenreList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
+		: trpc.genre.searchable.useQuery()
 	const _genres = useAsyncInputStringDistance(input, 12, genresRaw || defaultArray)
 	const genres = useDeferredValue(_genres)
 
@@ -87,21 +109,24 @@ function GenreSearch ({
 			<GenreList
 				genres={genres}
 				onSelect={({ id }) => onSelect({ type: "genre", id })}
+				forceAvailable={offline}
 			/>
 		</div>
 	)
 }
 
 function PlaylistSearch ({
-	enabled,
 	input,
 	onSelect,
+	offline
 }: {
-	enabled: boolean
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "playlist", id: string }) => void
+	offline: boolean
 }) {
-	const { data: playlistsRaw } = trpc.playlist.searchable.useQuery(undefined, { enabled })
+	const { data: playlistsRaw } = offline
+		? useCachedPlaylistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
+		: trpc.playlist.searchable.useQuery()
 	const _playlists = useAsyncInputStringDistance(input, 3, playlistsRaw || defaultArray, ["name", "artists"])
 	const playlists = useDeferredValue(_playlists)
 
@@ -113,21 +138,24 @@ function PlaylistSearch ({
 			<PlaylistList
 				playlists={playlists}
 				onSelect={({ id }) => onSelect({ type: "playlist", id })}
+				forceAvailable={offline}
 			/>
 		</div>
 	)
 }
 
 function TrackSearch ({
-	enabled,
 	input,
 	onSelect,
+	offline
 }: {
-	enabled: boolean
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "track", id: string }) => void
+	offline: boolean
 }) {
-	const { data: tracksRaw } = trpc.track.searchable.useQuery(undefined, { enabled })
+	const { data: tracksRaw } = offline
+		? useCachedTrackList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
+		: trpc.track.searchable.useQuery()
 	const _tracks = useAsyncInputStringDistance(input, 12, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
 	const tracks = useDeferredValue(_tracks)
 
@@ -139,6 +167,7 @@ function TrackSearch ({
 			<TrackList
 				tracks={tracks}
 				onSelect={({ id }) => onSelect({ type: "track", id })}
+				forceAvailable={offline}
 			/>
 		</div>
 	)
@@ -171,7 +200,6 @@ export default function Search ({
 	const results = useRef<HTMLOutputElement>(null)
 	const artistList = useRef<HTMLDivElement>(null)
 	const albumList = useRef<HTMLDivElement>(null)
-	const [enabled, setEnabled] = useState(false)
 
 	const [showPast, setShowPast] = useState(true)
 
@@ -226,6 +254,29 @@ export default function Search ({
 
 	const { mutate: onSelect } = usePastSearchesMutation()
 
+	const [offline, setOffline] = useState(false)
+
+	const prefetches = useRef({ queries: false, caches: false })
+	const trpcClient = trpc.useContext()
+	const prefetchQueries = () => {
+		if (prefetches.current.queries) return
+		prefetches.current.queries = true
+		trpcClient.artist.searchable.prefetch()
+		trpcClient.album.searchable.prefetch()
+		trpcClient.genre.searchable.prefetch()
+		trpcClient.playlist.searchable.prefetch()
+		trpcClient.track.searchable.prefetch()
+	}
+	const prefetchCache = () => {
+		if (prefetches.current.caches) return
+		prefetches.current.caches = true
+		prefetchCachedArtistList()
+		prefetchCachedAlbumList()
+		prefetchCachedGenreList()
+		prefetchCachedPlaylistList()
+		prefetchCachedTrackList()
+	}
+
 	const id = useId()
 	return (
 		<>
@@ -239,11 +290,28 @@ export default function Search ({
 				<input
 					ref={input}
 					type="text"
-					onFocus={!enabled ? (() => { setEnabled(true) }) : undefined}
-					onChange={() => input.current?.value ? setShowPast(false) : setShowPast(true)}
+					onFocus={() => {
+						if (offline) prefetchCache()
+						else prefetchQueries()
+					}}
+					onChange={() => {
+						const newShowPast = !input.current?.value
+						if (newShowPast === showPast) return
+						setShowPast(newShowPast)
+					}}
 					defaultValue=""
 					inputMode="search"
 				/>
+				<button
+					type="button"
+					onClick={() => {
+						setOffline(!offline)
+						if (!offline) prefetchCache()
+						else prefetchQueries()
+					}}
+				>
+					{offline ? <OnlineIcon /> : <OfflineIcon />}
+				</button>
 			</form>
 			<output
 				ref={results}
@@ -260,29 +328,34 @@ export default function Search ({
 						<ArtistSearch
 							ref={artistList}
 							onSelect={onSelect}
-							enabled={enabled}
 							input={input}
+							offline={offline}
+							key={`Artist${offline}`}
 						/>
 						<AlbumSearch
 							ref={albumList}
 							onSelect={onSelect}
-							enabled={enabled}
 							input={input}
+							offline={offline}
+							key={`Album${offline}`}
 						/>
 						<GenreSearch
 							onSelect={onSelect}
-							enabled={enabled}
 							input={input}
+							offline={offline}
+							key={`Genre${offline}`}
 						/>
 						<PlaylistSearch
 							onSelect={onSelect}
-							enabled={enabled}
 							input={input}
+							offline={offline}
+							key={`Playlist${offline}`}
 						/>
 						<TrackSearch
 							onSelect={onSelect}
-							enabled={enabled}
 							input={input}
+							offline={offline}
+							key={`Track${offline}`}
 						/>
 					</>
 				)}

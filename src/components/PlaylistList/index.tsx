@@ -11,15 +11,17 @@ import classNames from "classnames"
 function PlaylistItem ({
 	playlist,
 	onSelect,
+	forceAvailable,
 }: {
 	playlist: { id: string, name: string }
 	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
+	forceAvailable?: boolean
 }) {
 	const { data } = trpc.playlist.get.useQuery({ id: playlist.id })
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedPlaylist({ id: playlist.id, enabled: !online })
-	const available = online || cached
+	const { data: cached } = useCachedPlaylist({ id: playlist.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<button
@@ -58,9 +60,11 @@ function PlaylistItem ({
 export default function PlaylistList ({
 	playlists,
 	onSelect,
+	forceAvailable = false,
 }: {
 	playlists: { id: string, name: string }[]
 	onSelect?: Parameters<typeof PlaylistItem>[0]["onSelect"]
+	forceAvailable?: boolean
 }) {
 	return (
 		<ul className={styles.list}>
@@ -69,6 +73,7 @@ export default function PlaylistList ({
 					<PlaylistItem
 						playlist={playlist}
 						onSelect={onSelect}
+						forceAvailable={forceAvailable}
 					/>
 				</li>
 			))}
