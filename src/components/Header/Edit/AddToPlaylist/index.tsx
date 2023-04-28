@@ -6,6 +6,8 @@ import SmartIcon from "icons/auto_mode.svg"
 import styles from "./index.module.css"
 import { showHome } from "components/AppContext"
 import { autoplay, playAudio } from "components/Player/Audio"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import OfflineIcon from "icons/wifi_off.svg"
 
 export default function AddToPlaylist ({
 	items,
@@ -22,6 +24,7 @@ export default function AddToPlaylist ({
 	const createPlaylist = useCreatePlaylist()
 	const { mutateAsync: getMore } = trpc.playlist.more.useMutation()
 	const trpcClient = trpc.useContext()
+	const online = useIsOnline()
 
 	const onClickNew = () => {
 		navigator.vibrate(1)
@@ -69,6 +72,24 @@ export default function AddToPlaylist ({
 		})
 	}
 
+	const onClickLocal = () => {
+		navigator.vibrate(1)
+		if (!items.length) return
+		onSelect()
+		startTransition(() => {
+			addToPlaylist(null, items)
+		})
+	}
+
+	const onClickRemote = (id: string) => {
+		navigator.vibrate(1)
+		if (!items.length) return
+		onSelect()
+		startTransition(() => {
+			addToPlaylist(id, items)
+		})
+	}
+
 	return (
 		<ul>
 			{current && !current.id && (
@@ -76,14 +97,7 @@ export default function AddToPlaylist ({
 					<button
 						className={styles.button}
 						type="button"
-						onClick={() => {
-							navigator.vibrate(1)
-							if (!items.length) return
-							onSelect()
-							startTransition(() => {
-								addToPlaylist(null, items)
-							})
-						}}
+						onClick={onClickLocal}
 					>
 						{current.name}
 					</button>
@@ -94,15 +108,9 @@ export default function AddToPlaylist ({
 					<button
 						className={styles.button}
 						type="button"
-						onClick={() => {
-							navigator.vibrate(1)
-							if (!items.length) return
-							onSelect()
-							startTransition(() => {
-								addToPlaylist(playlist.id, items)
-							})
-						}}
+						onClick={online ? () => onClickRemote(playlist.id) : undefined}
 					>
+						{!online && <OfflineIcon />}
 						{playlist.name}
 					</button>
 				</li>
@@ -113,7 +121,7 @@ export default function AddToPlaylist ({
 					type="button"
 					onClick={onClickNew}
 				>
-					<NewIcon className={styles.icon} />
+					<NewIcon />
 					Create new playlist
 				</button>
 			</li>
@@ -121,9 +129,10 @@ export default function AddToPlaylist ({
 				<button
 					className={styles.button}
 					type="button"
-					onClick={onClickSmart}
+					onClick={online ? onClickSmart : undefined}
 				>
-					<SmartIcon className={styles.icon} />
+					{!online && <OfflineIcon />}
+					{online && <SmartIcon />}
 					Create smart playlist
 				</button>
 			</li>

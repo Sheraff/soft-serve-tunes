@@ -5,8 +5,8 @@
 	padding: 8px 0;
 }
 
-.icon {
+.button svg {
 	font-size: 16px;
-	margin-right: 4px;
+	margin: -1px 4px -1px 0;
 	vertical-align: text-top;
 }
