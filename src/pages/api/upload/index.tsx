@@ -1,7 +1,5 @@
 import { IAudioMetadata, parseFile } from "music-metadata"
 import type { NextApiRequest, NextApiResponse } from "next"
-import { getServerSession } from "next-auth"
-import { authOptions as nextAuthOptions } from "pages/api/auth/[...nextauth]"
 import formidable, { Fields, Files } from "formidable"
 import { mkdir, rename, stat, unlink } from "node:fs/promises"
 import { basename, dirname, extname, join, relative, sep } from "node:path"
@@ -15,9 +13,10 @@ import { isVariousArtists, notArtistName } from "server/db/createTrack"
 import { prisma } from "server/db/client"
 import { acoustId } from "server/persistent/acoustId"
 import { socketServer } from "utils/typedWs/server"
+import { getServerAuthSession } from "server/common/get-server-auth-session"
 
 export default async function upload (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerSession(req, res, nextAuthOptions)
+	const session = await getServerAuthSession({ req, res })
 	if (!session) {
 		return res.status(401).json({ error: "authentication required" })
 	}

@@ -13,6 +13,7 @@ import {
   computeArtistCover,
 } from "server/db/computeCover"
 import { COVER_SIZES } from "utils/getCoverUrl"
+import { getServerAuthSession } from "server/common/get-server-auth-session"
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type
 const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
@@ -22,6 +23,10 @@ globalThis.sharpQueue = queue
 const runningTransforms = new Set<string>()
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerAuthSession({ req, res })
+  if (!session) {
+    return res.status(401).json({ error: "authentication required" })
+  }
   const { id, ...search } = req.query
   if (!id) {
     return res.status(400).json({ error: "Missing id" })
@@ -45,7 +50,8 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
     return res.status(400).json({ error: "Missing viewport and/or dpr header" })
   }
 
-  const width = Math.round(COVER_SIZES[format as keyof typeof COVER_SIZES]((Number(viewport) * Number(dpr))))
+  const vw = Number(viewport) * Number(dpr)
+  const width = Math.round(COVER_SIZES[format as keyof typeof COVER_SIZES](vw))
 
   const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`

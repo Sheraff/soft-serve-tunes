@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
+import { getServerAuthSession } from "server/common/get-server-auth-session"
 import { prisma } from "server/db/client"
 import { cleanGenreList } from "utils/sanitizeString"
 
@@ -11,7 +12,11 @@ const MB_GENRE_HIERARCHY = {
 	// "influenced by": "supgenres",
 } as const
 
-export default async function cover(req: NextApiRequest, res: NextApiResponse) {
+export default async function cover (req: NextApiRequest, res: NextApiResponse) {
+	const session = await getServerAuthSession({ req, res })
+	if (!session) {
+		return res.status(401).json({ error: "authentication required" })
+	}
 	const origin = await fetch("https://musicbrainz.org/genres")
 	const indexData = await origin.text()
 
@@ -28,8 +33,8 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 			name: string
 			simplified: string
 			id: string
-			subgenres: {name: string, simplified: string, id: string}[]
-			supgenres: {name: string, simplified: string, id: string}[]
+			subgenres: { name: string, simplified: string, id: string }[]
+			supgenres: { name: string, simplified: string, id: string }[]
 		} = {
 			name: parsed[0]!.name,
 			simplified: parsed[0]!.simplified,
@@ -77,20 +82,20 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 			where: { simplified: item.simplified },
 			select: {
 				name: true,
-				subgenres: {select: {name: true}},
-				supgenres: {select: {name: true}},
+				subgenres: { select: { name: true } },
+				supgenres: { select: { name: true } },
 			},
 			create: {
 				name: item.name,
 				simplified: item.simplified,
 				subgenres: {
-					connectOrCreate: item.subgenres.map(({name, simplified}) => ({
+					connectOrCreate: item.subgenres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
 				},
 				supgenres: {
-					connectOrCreate: item.supgenres.map(({name, simplified}) => ({
+					connectOrCreate: item.supgenres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -99,13 +104,13 @@ export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 			update: {
 				name: item.name,
 				subgenres: {
-					connectOrCreate: item.subgenres.map(({name, simplified}) => ({
+					connectOrCreate: item.subgenres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
 				},
 				supgenres: {
-					connectOrCreate: item.supgenres.map(({name, simplified}) => ({
+					connectOrCreate: item.supgenres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -136,7 +141,7 @@ const htmlEntities = {
 	apos: "'"
 } as const
 
-function unescapeHTML(str: string) {
+function unescapeHTML (str: string) {
 	return str.replace(/\&([^;]+);/g, (entity, entityCode: string) => {
 		let match
 
