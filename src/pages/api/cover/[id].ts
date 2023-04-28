@@ -27,6 +27,7 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
   if (!session) {
     return res.status(401).json({ error: "authentication required" })
   }
+
   const { id, ...search } = req.query
   if (!id) {
     return res.status(400).json({ error: "Missing id" })
@@ -34,6 +35,7 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
   if (Array.isArray(id)) {
     return res.status(400).json({ error: "Malformed cover path" })
   }
+
   const [a, b, c] = id
   if (!a || !b || !c) {
     return res.status(400).json({ error: "Invalid id" })
@@ -50,8 +52,7 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
     return res.status(400).json({ error: "Missing viewport and/or dpr header" })
   }
 
-  const vw = Number(viewport) * Number(dpr)
-  const width = Math.round(COVER_SIZES[format as keyof typeof COVER_SIZES](vw))
+  const width = Math.round(Number(dpr) * COVER_SIZES[format as keyof typeof COVER_SIZES](Number(viewport)))
 
   const extensionLess = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".meta", a, b, c, id) // this is how images are stored
   const exactFilePath = `${extensionLess}_${width}x${width}.avif`
@@ -101,7 +102,10 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
           withoutEnlargement: true,
           fastShrinkOnLoad: false,
         })
-        .toFormat("avif")
+        .toFormat("avif", {
+          effort: 6,
+          quality: 75,
+        })
 
       // store
       if (!runningTransforms.has(exactFilePath)) {

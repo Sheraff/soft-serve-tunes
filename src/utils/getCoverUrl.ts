@@ -1,10 +1,10 @@
 export const COVER_SIZES = {
 	// full screen, mostly for panel covers
-	full: (vw: number) => vw,
+	full: (viewport: number) => viewport,
 	// half screen, mostly for album lists
-	half: (vw: number) => (vw - 3 * 8) / 2 - 10,
+	half: (viewport: number) => (viewport - 3 * 8) / 2 - 10,
 	// third screen, mostly for artist lists
-	third: (vw: number) => (vw - 4 * 8) / 3,
+	third: (viewport: number) => (viewport - 4 * 8) / 3,
 	// thumbnail
 	mini: () => 56,
 } as const
