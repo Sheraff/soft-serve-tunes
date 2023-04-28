@@ -310,7 +310,8 @@ export default function Search ({
 						else prefetchQueries()
 					}}
 				>
-					{offline ? <OnlineIcon /> : <OfflineIcon />}
+					{offline ? <OfflineIcon /> : <OnlineIcon />}
+					<span>{offline ? "offline" : "online"}</span>
 				</button>
 			</form>
 			<output

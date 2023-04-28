@@ -29,12 +29,17 @@
 }
 .head button {
 	flex-shrink: 0;
-	font-size: 16px;
+	font-size: 12px;
 	padding:
-		max(12px, env(safe-area-inset-top))
+		0
 		max(12px, env(safe-area-inset-right))
-		12px
+		0
 		8px;
+	text-align: center;
+}
+.head button span {
+	font-size: 8px;
+	display: block;
 }
 .head::after {
 	content: '';
