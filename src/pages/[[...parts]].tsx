@@ -1,4 +1,3 @@
-import type { NextPage } from "next"
 import type { NextApiRequest, NextApiResponse } from "next"
 import Head from "next/head"
 import { getProviders } from "next-auth/react"
@@ -39,6 +38,7 @@ export default function Home ({
 			}
 		},
 		onError (error) {
+			console.error("socketClient loading subscription error")
 			console.error(error)
 			setProgress(1)
 			setReady(true)

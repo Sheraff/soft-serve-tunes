@@ -31,7 +31,7 @@ const PRISMA_NON_RETRYABLE_ERROR_CODES = new Set([
 	"P2033",
 ])
 
-export default async function retryable<T>(callback: () => (Promise<T> | T), tries = 0, originalError?: unknown): Promise<T> {
+export default async function retryable<T> (callback: () => (Promise<T> | T), tries = 0, originalError?: unknown): Promise<T> {
 	try {
 		const result = await callback()
 		return result
@@ -49,13 +49,14 @@ export default async function retryable<T>(callback: () => (Promise<T> | T), tri
 			}
 			const code = e && typeof e === "object" && ("code" in e) ? ` code:${e.code}` : ""
 			const keys = e && typeof e === "object" ? ` keys[${Object.keys(e).join(",")}]` : ""
-			console.warn(new Error(`Error in retryable${code}${keys}, will retry #${tries}`, {cause: e}))
-			await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 1000 * 2**tries))
+			console.warn(new Error(`Error in retryable${code}${keys}, will retry #${tries}`, { cause: e }))
+			await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 1000 * 2 ** tries))
 			const result = await retryable(callback, tries + 1, originalError || e)
 			return result
 		} else {
+			console.error("from retryable")
 			console.error(originalError)
-			throw new Error("Retryable failed after all retries, see above for original stack trace", {cause: e})
+			throw new Error("Retryable failed after all retries, see above for original stack trace", { cause: e })
 		}
 	}
 }

@@ -9,7 +9,7 @@ import log from "utils/logger"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
 
-type MapValueType<A> = A extends Map<string, infer V> ? V : never;
+type MapValueType<A> = A extends Map<string, infer V> ? V : never
 
 class MyWatcher {
 	static DELAY = 3_100
@@ -31,7 +31,7 @@ class MyWatcher {
 		this.init()
 	}
 
-	async init() {
+	async init () {
 		if (this.watcher) {
 			log("info", "wait", "fswatcher", "restarting...")
 			await this.watcher.close()
@@ -59,7 +59,7 @@ class MyWatcher {
 		})
 	}
 
-	onError(error: Error) {
+	onError (error: Error) {
 		log("error", "error", "fswatcher", error.name)
 		console.log(error)
 	}
@@ -71,7 +71,7 @@ class MyWatcher {
 		ino: string,
 	}> = new Map()
 
-	async onAdd(path: string, stats?: Stats) {
+	async onAdd (path: string, stats?: Stats) {
 		if (!stats) {
 			stat(path, (error, stats) => {
 				if (error) {
@@ -95,7 +95,7 @@ class MyWatcher {
 		})
 	}
 
-	async onUnlinkMany(partial: string) {
+	async onUnlinkMany (partial: string) {
 		const files = await prisma.file.findMany({
 			where: { path: { startsWith: partial } },
 			select: { ino: true, path: true },
@@ -107,7 +107,7 @@ class MyWatcher {
 		files.forEach((file) => this.scheduleUnlinkFile(file))
 	}
 
-	async onUnlink(path: string) {
+	async onUnlink (path: string) {
 		// technically, while this query is running, the entry could be modified by this.resolve, but it's unlikely
 		const file = await prisma.file.findUnique({
 			where: { path },
@@ -120,7 +120,7 @@ class MyWatcher {
 		this.scheduleUnlinkFile(file)
 	}
 
-	scheduleUnlinkFile(file: {ino: bigint, path: string}) {
+	scheduleUnlinkFile (file: { ino: bigint, path: string }) {
 		const ino = String(file.ino)
 		const entry = this.pending.get(ino)
 		if (entry) {
@@ -136,7 +136,7 @@ class MyWatcher {
 
 	resolveQueue: MapValueType<typeof this.pending>[] = []
 	cleanupTimeoutId: NodeJS.Timeout | null = null
-	async enqueueResolve(ino: string) {
+	async enqueueResolve (ino: string) {
 		const entry = this.pending.get(ino)
 		if (!entry) {
 			log("error", "error", "fswatcher", `could not find ${ino} file in pending list`)
@@ -155,6 +155,7 @@ class MyWatcher {
 					await this.resolve(nextItem)
 				} catch (e) {
 					// catching because failing to add/remove a file shouldn't fail the entire queue
+					log("error", "error", "fswatcher", "Error processing resolveQueue in enqueueResolve")
 					console.error(e)
 				}
 				this.resolveQueue.shift()
@@ -163,14 +164,14 @@ class MyWatcher {
 		this.scheduleCleanup()
 	}
 
-	scheduleCleanup() {
+	scheduleCleanup () {
 		if (this.cleanupTimeoutId) {
 			clearTimeout(this.cleanupTimeoutId)
 		}
 		this.cleanupTimeoutId = setTimeout(() => this.cleanup(), MyWatcher.CLEANUP_DELAY)
 	}
 
-	async resolve(entry: MapValueType<typeof this.pending>) {
+	async resolve (entry: MapValueType<typeof this.pending>) {
 		const { removed, added, ino } = entry
 		if (removed && added) {
 			const dbIno = BigInt(ino)
@@ -189,7 +190,7 @@ class MyWatcher {
 		}
 	}
 
-	async removeFileFromDb(path: string) {
+	async removeFileFromDb (path: string) {
 		const file = await retryable(() => prisma.file.delete({
 			where: { path },
 			select: { trackId: true, id: true },
@@ -206,7 +207,7 @@ class MyWatcher {
 		}
 	}
 
-	async removeTrackFromDb(id: string) {
+	async removeTrackFromDb (id: string) {
 		const track = await prisma.track.findUnique({
 			where: { id },
 			select: {
@@ -235,37 +236,45 @@ class MyWatcher {
 		await prisma.$transaction([
 			...(track.userData && track.albumId ? [
 				prisma.album.update({
-					where: {id: track.albumId},
-					data: {userData: {update: {
-						playcount: {decrement: track.userData.playcount},
-						...(track.userData.favorite ? {favorite: {decrement: 1}} : {}),
-					}}}
+					where: { id: track.albumId },
+					data: {
+						userData: {
+							update: {
+								playcount: { decrement: track.userData.playcount },
+								...(track.userData.favorite ? { favorite: { decrement: 1 } } : {}),
+							}
+						}
+					}
 				})
 			] : []),
 			...(track.userData && track.artistId ? [
 				prisma.artist.update({
-					where: {id: track.artistId},
-					data: {userData: {update: {
-						playcount: {decrement: track.userData.playcount},
-						...(track.userData.favorite ? {favorite: {decrement: 1}} : {}),
-					}}}
+					where: { id: track.artistId },
+					data: {
+						userData: {
+							update: {
+								playcount: { decrement: track.userData.playcount },
+								...(track.userData.favorite ? { favorite: { decrement: 1 } } : {}),
+							}
+						}
+					}
 				})
 			] : []),
 			...(track.playlistEntries.length ? [
 				prisma.playlistEntry.deleteMany({
-					where: { id: {in: track.playlistEntries.map(({id}) => id)} },
+					where: { id: { in: track.playlistEntries.map(({ id }) => id) } },
 				}),
 				...track.playlistEntries.map((entry) => (
 					prisma.playlistEntry.updateMany({
 						where: {
 							playlistId: entry.playlistId,
-							index: {gte: entry.index}
+							index: { gte: entry.index }
 						},
-						data: {index: {decrement: 1}}
+						data: { index: { decrement: 1 } }
 					})
 				)),
 				prisma.playlist.deleteMany({
-					where: {tracks: {none: {}}}
+					where: { tracks: { none: {} } }
 				}),
 			] : []),
 			prisma.track.delete({
@@ -276,7 +285,7 @@ class MyWatcher {
 		return track
 	}
 
-	async cleanup() {
+	async cleanup () {
 		this.cleanupTimeoutId = null
 		const orphanedAlbums = await prisma.album.findMany({
 			where: {
@@ -290,7 +299,7 @@ class MyWatcher {
 		})
 		const orphanedAlbumsIds = orphanedAlbums.map(album => album.id)
 		await prisma.album.deleteMany({
-			where: { id: {in: orphanedAlbumsIds} }
+			where: { id: { in: orphanedAlbumsIds } }
 		})
 		for (const album of orphanedAlbums) {
 			log("event", "event", "fswatcher", `remove album ${album.name} because it wasn't linked to any tracks anymore`)
@@ -312,7 +321,7 @@ class MyWatcher {
 		})
 		const orphanedArtistsIds = orphanedArtists.map(artist => artist.id)
 		await prisma.artist.deleteMany({
-			where: { id: {in: orphanedArtistsIds} }
+			where: { id: { in: orphanedArtistsIds } }
 		})
 		for (const artist of orphanedArtists) {
 			log("event", "event", "fswatcher", `remove artist ${artist.name} because it wasn't linked to any tracks or albums anymore`)
@@ -334,7 +343,7 @@ class MyWatcher {
 			}
 		})
 		await prisma.genre.deleteMany({
-			where: {id: {in: orphanedGenres.map(genre => genre.id)}}
+			where: { id: { in: orphanedGenres.map(genre => genre.id) } }
 		})
 		for (const genre of orphanedGenres) {
 			log("event", "event", "fswatcher", `remove genre ${genre.name} because it wasn't linked to any tracks or genre anymore`)
@@ -342,11 +351,11 @@ class MyWatcher {
 		}
 
 		const orphanedPlaylists = await prisma.playlist.findMany({
-			where: {tracks: {none: {}}},
-			select: {id: true, name: true},
+			where: { tracks: { none: {} } },
+			select: { id: true, name: true },
 		})
 		await prisma.playlist.deleteMany({
-			where: {id: {in: orphanedPlaylists.map(playlist => playlist.id)}}
+			where: { id: { in: orphanedPlaylists.map(playlist => playlist.id) } }
 		})
 		for (const playlist of orphanedPlaylists) {
 			log("event", "event", "fswatcher", `remove playlist ${playlist.name} because it wasn't linked to any tracks anymore`)
@@ -387,7 +396,7 @@ class MyWatcher {
 					await unlink(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path))
 				} catch (e) {
 					if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
-						throw e
+						throw new Error("fs watcher failed to delete image file", { cause: e })
 					}
 				}
 				await prisma.image.delete({
@@ -396,7 +405,7 @@ class MyWatcher {
 				removeCount++
 			} catch (e) {
 				failCount++
-				console.error(new Error(`error while removing image ${image.path}`, {cause: e}))
+				console.error(new Error(`error while removing image ${image.path}`, { cause: e }))
 			}
 		}
 		if (removeCount > 0) {

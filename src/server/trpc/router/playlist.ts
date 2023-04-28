@@ -7,7 +7,6 @@ import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptio
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
-import { recursiveSubGenres } from "./genre"
 import log from "utils/logger"
 import { type Prisma } from "@prisma/client"
 import { socketServer } from "utils/typedWs/server"
@@ -204,9 +203,6 @@ const save = protectedProcedure.input(z.object({
     index: z.number(),
   }))
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   const playlists = await ctx.prisma.playlist.findMany({
     select: { name: true }
   })
@@ -414,9 +410,6 @@ const modify = protectedProcedure.input(z.union([
 const deleteEndpoint = protectedProcedure.input(z.object({
   id: z.string()
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   try {
     const [, playlist] = await ctx.prisma.$transaction([
       ctx.prisma.playlistEntry.deleteMany({
@@ -430,6 +423,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
     socketServer.emit("remove", { type: "playlist", id: playlist.id })
     return playlist
   } catch (e) {
+    console.warn("Playlist deletion on a corrupted playlist, trying to recover")
     console.warn(e)
     // at this point the playlist is corrupted, probably because the transaction happened during a bad time for the DB
     let tracks: { id: string }[] | null = null

@@ -170,7 +170,7 @@ const lastFmTrackSearch = z
 		}).optional()
 	})
 
-type KnownLastFmSchema = 
+type KnownLastFmSchema =
 	| typeof lastFmCorrectionArtistSchema
 	| typeof lastFmCorrectionTrackSchema
 	| typeof lastFmArtistSchema
@@ -192,7 +192,7 @@ class LastFM {
 		this.#queue = new Queue(LastFM.RATE_LIMIT, { wait: true })
 	}
 
-	async #processWaitlist() {
+	async #processWaitlist () {
 		if (this.#waitlist.length === 1) {
 			while (this.#waitlist.length) {
 				try {
@@ -200,33 +200,34 @@ class LastFM {
 					this.#waitlist.shift()
 				} catch (e) {
 					// catching, just in case, so that 1 item in the waiting list doesn't ruin the entire list
+					log("error", "error", "lastfm", "Error processing waitlist")
 					console.error(e)
 				}
 			}
 		}
 	}
 
-	async correctArtist(artist: string) {
+	async correctArtist (artist: string) {
 		const promise = new Promise<string | false>(resolve => this.#waitlist.push(() => this.#correctArtist(artist).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async correctTrack(artist: string, track: string) {
+	async correctTrack (artist: string, track: string) {
 		const promise = new Promise<string>(resolve => this.#waitlist.push(() => this.#correctTrack(artist, track).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findTrack(id: string) {
+	async findTrack (id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findTrack(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findArtist(id: string) {
+	async findArtist (id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findArtist(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findAlbum(id: string) {
+	async findAlbum (id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findAlbum(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
@@ -236,7 +237,7 @@ class LastFM {
 	#pastResponses = new Map<string, any>()
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	#purgeStore() {
+	#purgeStore () {
 		if (!this.#purgeStoreTimeout) {
 			this.#purgeStoreTimeout = setTimeout(() => {
 				this.#purgeStoreTimeout = null
@@ -251,7 +252,7 @@ class LastFM {
 		}
 	}
 
-	async fetch<T extends KnownLastFmSchema>(url: URL | string, schema: T): Promise<z.infer<T>> {
+	async fetch<T extends KnownLastFmSchema> (url: URL | string, schema: T): Promise<z.infer<T>> {
 		const string = url.toString()
 		if (this.#pastResponses.has(string)) {
 			return this.#pastResponses.get(string)
@@ -280,7 +281,7 @@ class LastFM {
 		return json
 	}
 
-	async #correctArtist(artist: string) {
+	async #correctArtist (artist: string) {
 		const url = makeArtistCorrectionUrl(sanitizeString(artist))
 		try {
 			const lastfm = await this.fetch(url, lastFmCorrectionArtistSchema)
@@ -288,12 +289,12 @@ class LastFM {
 				return lastfm.corrections.correction.artist.name
 			}
 		} catch (e) {
-			console.error(new Error(`error while correcting artist ${artist}`, {cause: e}))
+			console.error(new Error(`error while correcting artist ${artist}`, { cause: e }))
 		}
 		return false
 	}
 
-	async #correctTrack(artist: string, track: string) {
+	async #correctTrack (artist: string, track: string) {
 		const url = makeTrackCorrectionUrl(sanitizeString(artist), sanitizeString(track))
 		try {
 			const lastfm = await this.fetch(url, lastFmCorrectionTrackSchema)
@@ -301,14 +302,14 @@ class LastFM {
 				return lastfm.corrections.correction.track.name
 			}
 		} catch (e) {
-			console.error(new Error(`error while correcting track ${track} by ${artist}`, {cause: e}))
+			console.error(new Error(`error while correcting track ${track} by ${artist}`, { cause: e }))
 		}
 		return track
 	}
 
 	#running = new Set<string>()
 
-	async #findTrack(id: string) {
+	async #findTrack (id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -445,6 +446,7 @@ class LastFM {
 				await this.#findArtist(artist.id)
 			} catch (e) {
 				// catching so that a track can still send its invalidation signal if the artist fails
+				log("error", "error", "lastfm", "Error finding artist within #findTrack")
 				console.error(e)
 			}
 		}
@@ -454,10 +456,11 @@ class LastFM {
 				await this.#findAlbum(album.id)
 			} catch (e) {
 				// catching so that a track can still send its invalidation signal if the album fails
+				log("error", "error", "lastfm", "Error finding album within #findTrack")
 				console.error(e)
 			}
 		}
-		const trackChangedCover = await computeTrackCover(id, {album: true, artist: true})
+		const trackChangedCover = await computeTrackCover(id, { album: true, artist: true })
 		if (!trackChangedCover) {
 			socketServer.emit("invalidate", { type: "track", id })
 		}
@@ -466,16 +469,16 @@ class LastFM {
 		return true
 	}
 
-	async #searchTrackUrls(trackName: string, albumName: string, artistName: string) {
+	async #searchTrackUrls (trackName: string, albumName: string, artistName: string) {
 		const url = makeTrackSearchUrl({ track: trackName, album: albumName })
 		const lastfm = await this.fetch(url, lastFmTrackSearch)
 		const albumsFound = lastfm.results?.trackmatches?.track || []
-		const matchByName = albumsFound.filter(({name, artist}) => {
+		const matchByName = albumsFound.filter(({ name, artist }) => {
 			const similarTrackName = similarStrings(name, trackName) // TODO: can we do better than just a string similarity check?
 			if (!similarTrackName) return false
 			return similarStrings(artist, artistName)
 		})
-		const matchWithMbid = matchByName.filter(({mbid}) => mbid)
+		const matchWithMbid = matchByName.filter(({ mbid }) => mbid)
 		const match = matchWithMbid[0] || matchByName[0]
 		const urls: URL[] = []
 		if (!match) {
@@ -488,7 +491,7 @@ class LastFM {
 		return urls
 	}
 
-	async #findArtist(id: string) {
+	async #findArtist (id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -608,19 +611,19 @@ class LastFM {
 				},
 			})
 		})
-		const artistChangedCover = await computeArtistCover(id, {tracks: false, album: false})
+		const artistChangedCover = await computeArtistCover(id, { tracks: false, album: false })
 		if (!artistChangedCover) {
 			socketServer.emit("invalidate", { type: "artist", id })
 		}
 		Promise.resolve().then(async () => {
 			for (const album of connectingAlbums) {
-				const albumChangedCover = await computeAlbumCover(album.id, {artist: true, tracks: true})
+				const albumChangedCover = await computeAlbumCover(album.id, { artist: true, tracks: true })
 				if (!albumChangedCover) {
 					socketServer.emit("invalidate", { type: "album", id: album.id })
 				}
 			}
 			for (const track of connectingTracks) {
-				const trackChangedCover = await computeTrackCover(track.id, {album: true, artist: true})
+				const trackChangedCover = await computeTrackCover(track.id, { album: true, artist: true })
 				if (!trackChangedCover) {
 					socketServer.emit("invalidate", { type: "track", id: track.id })
 				}
@@ -631,7 +634,7 @@ class LastFM {
 		return true
 	}
 
-	async #findAlbum(id: string) {
+	async #findAlbum (id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -714,17 +717,17 @@ class LastFM {
 			const url = makeAlbumSearchUrl({ album: album.name })
 			const lastfm = await this.fetch(url, lastFmAlbumSearch)
 			const albumsFound = lastfm.results?.albummatches?.album || []
-			const matchByName = albumsFound.filter(({name, artist}) => {
+			const matchByName = albumsFound.filter(({ name, artist }) => {
 				const similarAlbumName = similarStrings(name, album.name)
 				if (!similarAlbumName) return false
-				
+
 				if (album.artist?.name) {
 					const similarArtistName = similarStrings(artist, album.artist.name)
 					return similarArtistName
 				}
 				return true
 			})
-			const matchWithMbid = matchByName.filter(({mbid}) => mbid)
+			const matchWithMbid = matchByName.filter(({ mbid }) => mbid)
 			const match = matchWithMbid[0] || matchByName[0]
 			if (!match || !match.artist) {
 				log("warn", "404", "lastfm", `not enough info to look up album ${album.name}`)
@@ -790,19 +793,19 @@ class LastFM {
 				},
 			})
 		})
-		const albumChangedCover = await computeAlbumCover(id, {tracks: false, artist: true})
+		const albumChangedCover = await computeAlbumCover(id, { tracks: false, artist: true })
 		if (!albumChangedCover) {
 			socketServer.emit("invalidate", { type: "album", id })
 		}
 		if (connectingArtist) {
-			const artistChangedCover = await computeArtistCover(connectingArtist, {tracks: false, album: false})
+			const artistChangedCover = await computeArtistCover(connectingArtist, { tracks: false, album: false })
 			if (!artistChangedCover) {
 				socketServer.emit("invalidate", { type: "artist", id: connectingArtist })
 			}
 		}
 		Promise.resolve().then(async () => {
 			for (const track of connectingTracks) {
-				const trackChangedCover = await computeTrackCover(track, {album: true, artist: true})
+				const trackChangedCover = await computeTrackCover(track, { album: true, artist: true })
 				if (!trackChangedCover) {
 					socketServer.emit("invalidate", { type: "track", id: track })
 				}
@@ -814,7 +817,7 @@ class LastFM {
 	}
 }
 
-function makeApiUrl() {
+function makeApiUrl () {
 	const url = new URL("/2.0", "http://ws.audioscrobbler.com")
 	url.searchParams.set("format", "json")
 	url.searchParams.set("api_key", env.LAST_FM_API_KEY)
@@ -822,14 +825,14 @@ function makeApiUrl() {
 	return url
 }
 
-function makeArtistCorrectionUrl(artist: string) {
+function makeArtistCorrectionUrl (artist: string) {
 	const url = makeApiUrl()
 	url.searchParams.set("method", "artist.getcorrection")
 	url.searchParams.set("artist", artist)
 	return url
 }
 
-function makeTrackCorrectionUrl(artist: string, track: string) {
+function makeTrackCorrectionUrl (artist: string, track: string) {
 	const url = makeApiUrl()
 	url.searchParams.set("method", "track.getcorrection")
 	url.searchParams.set("artist", artist)
@@ -837,7 +840,7 @@ function makeTrackCorrectionUrl(artist: string, track: string) {
 	return url
 }
 
-function makeTrackUrl(params: {
+function makeTrackUrl (params: {
 	artist: string,
 	track: string,
 } | {
@@ -854,7 +857,7 @@ function makeTrackUrl(params: {
 	return url
 }
 
-function makeTrackSearchUrl(params: {
+function makeTrackSearchUrl (params: {
 	track: string,
 	album: string,
 }) {
@@ -865,7 +868,7 @@ function makeTrackSearchUrl(params: {
 	return url
 }
 
-function makeAlbumUrl(params: {
+function makeAlbumUrl (params: {
 	artist: string,
 	album: string,
 } | {
@@ -882,7 +885,7 @@ function makeAlbumUrl(params: {
 	return url
 }
 
-function makeAlbumSearchUrl(params: {
+function makeAlbumSearchUrl (params: {
 	album: string,
 }) {
 	const url = makeApiUrl()
@@ -891,7 +894,7 @@ function makeAlbumSearchUrl(params: {
 	return url
 }
 
-function makeArtistUrl(params: {
+function makeArtistUrl (params: {
 	artist: string,
 } | {
 	mbid: string,
@@ -906,7 +909,7 @@ function makeArtistUrl(params: {
 	return url
 }
 
-async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
+async function findConnectingArtistForTrack (trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.artist?.url) {
 		return undefined
 	}
@@ -920,7 +923,7 @@ async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof la
 	return artist.id
 }
 
-async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
+async function findConnectingAlbumForTrack (trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.album?.url) {
 		return undefined
 	}
@@ -934,7 +937,7 @@ async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof las
 	return album.id
 }
 
-async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof lastFmAlbumSchema>["album"], undefined>) {
+async function findConnectingTracksForAlbum (albumData: Exclude<z.infer<typeof lastFmAlbumSchema>["album"], undefined>) {
 	const tracks = albumData.tracks?.track
 	if (!tracks || !Array.isArray(tracks) || !tracks.length) {
 		return []
