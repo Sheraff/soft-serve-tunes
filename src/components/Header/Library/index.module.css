@@ -35,8 +35,9 @@
 }
 
 .tabs > button {
-	padding: 16px;
+	padding: 16px 14px;
 	position: relative;
+	text-align: center;
 }
 .tabs > [data-active="true"] {
 	padding-top: 0;
@@ -53,10 +54,18 @@
 }
 .count {
 	display: block;
-	text-align: center;
 	font-size: 8px;
 	font-weight: 400;
 	margin-top: 2px;
+}
+
+.tabs > .cacheToggle {
+	padding-top: 0;
+	padding-bottom: 0;
+	min-width: 54px;
+}
+.tabs > .cacheToggle > span {
+	margin-top: 0;
 }
 
 .alphabet {

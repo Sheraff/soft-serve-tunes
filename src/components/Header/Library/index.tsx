@@ -295,10 +295,12 @@ function InnerLibrary ({
 					</button>
 				))}
 				<button
+					className={styles.cacheToggle}
 					key="more"
 					onClick={() => setCache(!cache)}
 				>
 					{cache ? <OfflineIcon /> : <OnlineIcon />}
+					<span className={styles.count}>{cache ? "offline" : "online"}</span>
 				</button>
 			</div>
 			<BaseList
