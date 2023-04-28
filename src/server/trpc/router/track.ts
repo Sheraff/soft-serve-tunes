@@ -4,7 +4,6 @@ import { lastFm } from "server/persistent/lastfm"
 import { spotify } from "server/persistent/spotify"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
-import { TRPCError } from "@trpc/server"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
 import { prisma } from "server/db/client"
@@ -73,9 +72,6 @@ const miniature = publicProcedure.input(z.object({
 const playcount = protectedProcedure.input(z.object({
   id: z.string(),
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   const now = new Date().toISOString()
   const track = await retryable(() => ctx.prisma.track.findUnique({
     where: { id: input.id },
@@ -140,9 +136,6 @@ const like = protectedProcedure.input(z.object({
   id: z.string(),
   toggle: z.boolean(),
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   const track = await retryable(() => ctx.prisma.track.findUnique({
     where: { id: input.id },
     select: { albumId: true, artistId: true, name: true },
@@ -229,7 +222,7 @@ export function getSpotifyTracksByMultiTraitsWithTarget (
   `) as unknown as { trackId: string }[]
 }
 
-const byMultiTraits = publicProcedure.input(z.object({
+const byMultiTraits = protectedProcedure.input(z.object({
   traits: z.array(z.object({
     trait: zTrackTraits,
     value: z.string(),
@@ -237,7 +230,7 @@ const byMultiTraits = publicProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
   const ids = spotifyTracks.map((t) => t.trackId)
-  console.log("track.findMany from /trpc/track > multitrait")
+  console.log("track.findMany from /trpc/track > multiTrait")
   const tracks = await ctx.prisma.track.findMany({
     where: { id: { in: ids } },
   })

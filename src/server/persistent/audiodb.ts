@@ -113,6 +113,7 @@ class AudioDb {
 		try {
 			await this.#fetchArtist(id)
 		} catch (e) {
+			log("error", "error", "audiodb", `Error fetching artist "${id}"`)
 			console.error(e)
 		}
 		this.#runningArtists.delete(id)
@@ -214,6 +215,7 @@ class AudioDb {
 		try {
 			await this.#fetchAlbum(id)
 		} catch (e) {
+			log("error", "error", "audiodb", `Error fetching album "${id}"`)
 			console.error(e)
 		}
 		this.#runningAlbums.delete(id)
@@ -311,6 +313,7 @@ class AudioDb {
 		try {
 			await this.#fetchTrack(id)
 		} catch (e) {
+			log("error", "error", "audiodb", `Error fetching track "${id}"`)
 			console.error(e)
 		}
 		this.#runningTracks.delete(id)

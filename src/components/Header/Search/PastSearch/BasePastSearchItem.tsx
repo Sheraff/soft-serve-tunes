@@ -16,7 +16,7 @@ export function BasePastSearchItem ({
 	name,
 	type,
 	id,
-	offline,
+	available,
 }: {
 	className?: string
 	coverId?: string | null
@@ -25,7 +25,7 @@ export function BasePastSearchItem ({
 	name?: string
 	type: "album" | "artist" | "playlist" | "track" | "genre"
 	id: string
-	offline?: boolean
+	available?: boolean
 }) {
 	const src = getCoverUrl(coverId, "mini")
 
@@ -84,7 +84,7 @@ export function BasePastSearchItem ({
 						<p className={styles.info}>
 							{children}
 						</p>
-						{offline && <OfflineIcon className={styles.icon} />}
+						{!available && <OfflineIcon className={styles.icon} />}
 					</>
 				)}
 			</div>
@@ -97,4 +97,5 @@ export type PastSearchProps = {
 	onSettled?: (data: boolean) => void
 	onClick?: () => void
 	showType?: boolean
+	forceAvailable?: boolean
 }

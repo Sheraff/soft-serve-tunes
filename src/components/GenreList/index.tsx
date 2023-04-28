@@ -1,10 +1,11 @@
 import { showHome } from "components/AppContext"
 import styles from "./index.module.css"
 import { type CSSProperties, startTransition, useDeferredValue, useRef } from "react"
-import { getPlaylist, useMakePlaylist } from "client/db/useMakePlaylist"
+import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import PlaylistIcon from "icons/queue_music.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
+import OfflineIcon from "icons/wifi_off.svg"
 import { trpc } from "utils/trpc"
 import pluralize from "utils/pluralize"
 import useLongPress from "components/AlbumList/useLongPress"
@@ -13,6 +14,8 @@ import { autoplay, playAudio } from "components/Player/Audio"
 import classNames from "classnames"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedGenre } from "client/sw/useSWCached"
 
 type GenreListItem = {
 	id: string
@@ -24,13 +27,14 @@ function GenreItem ({
 	onSelect,
 	selected,
 	isSelection,
+	forceAvailable,
 }: {
 	genre: GenreListItem
 	onSelect?: (genre: GenreListItem) => void
 	selected?: boolean
 	isSelection: boolean
+	forceAvailable?: boolean
 }) {
-	const makePlaylist = useMakePlaylist()
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
 		select (data) {
 			if (!data?.artists) return data
@@ -49,6 +53,11 @@ function GenreItem ({
 
 	const count = data?._count.tracks ?? 0
 
+	const online = useIsOnline()
+	const { data: cached } = useCachedGenre({ id: genre.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
+
+	const trpcClient = trpc.useContext()
 	return (
 		<button
 			ref={item}
@@ -60,21 +69,29 @@ function GenreItem ({
 					return
 				}
 				navigator.vibrate(1)
-				startTransition(() => {
-					genre && onSelect?.(genre)
-					const currentPlaylist = getPlaylist()
-					makePlaylist({ type: "genre", id: genre.id }, genre.name)
-						.then((playlist) => {
-							if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
-								playAudio()
-						})
-					showHome("home")
-					autoplay.setState(true)
+				genre && onSelect?.(genre)
+				if (!available) return
+				trpcClient.genre.get.fetch({ id: genre.id }).then((data) => {
+					if (!data) return
+					startTransition(() => {
+						const playlist = getPlaylist()
+						setPlaylist(genre.name, data.tracks)
+						if (playlist?.current && playlist.current === data.tracks[0]?.id) {
+							playAudio()
+						} else {
+							autoplay.setState(true)
+						}
+						showHome("home")
+					})
 				})
 			}}
 		>
-			{!isSelection && !data?.artists?.length && (
-				<PlaylistIcon className={styles.icon} />
+			{!data?.artists?.length && (
+				<div className={styles.empty}>
+					{!isSelection && (
+						<PlaylistIcon className={styles.icon} />
+					)}
+				</div>
 			)}
 			{data?.artists && data.artists.length > 0 && (
 				<div className={styles.artists} style={{ "--extra": data.artists.length - 1 } as CSSProperties}>
@@ -88,12 +105,15 @@ function GenreItem ({
 					))}
 				</div>
 			)}
-			{isSelection && (
+			{(isSelection || !available) && (
 				<div className={styles.selection}>
-					{selected && (
+					{!isSelection && !available && (
+						<OfflineIcon className={styles.icon} />
+					)}
+					{isSelection && selected && (
 						<CheckboxOnIcon className={styles.icon} />
 					)}
-					{!selected && (
+					{isSelection && !selected && (
 						<CheckboxOffIcon className={styles.icon} />
 					)}
 				</div>
@@ -111,11 +131,13 @@ export default function GenreList ({
 	onSelect,
 	scrollable,
 	loading,
+	forceAvailable = false,
 }: {
 	genres: GenreListItem[]
 	onSelect?: (genre: GenreListItem) => void
 	scrollable?: boolean
 	loading?: boolean
+	forceAvailable?: boolean
 }) {
 
 	const _editViewState = editOverlay.useValue()
@@ -144,6 +166,7 @@ export default function GenreList ({
 							onSelect={onSelect}
 							selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
 							isSelection={isSelection}
+							forceAvailable={forceAvailable}
 						/>
 					</li>
 				))}
@@ -174,6 +197,7 @@ export default function GenreList ({
 								onSelect={onSelect}
 								selected={isSelection && editViewState.selection.some(({ id }) => id === item.key)}
 								isSelection={isSelection}
+								forceAvailable={forceAvailable}
 							/>
 						</li>
 					))}

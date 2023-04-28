@@ -119,14 +119,13 @@ workerSocketClient.add.subscribe({
 	onData ({ type, id }) {
 		console.log(`added ${type} ${id}`)
 		if (type === "playlist") {
-			trpcRevalidation({ key: ["playlist", "list"] })
 			trpcRevalidation({ key: ["playlist", "searchable"] })
 			return
 		}
 		trpcRevalidation({ key: ["track", "searchable"] })
 		trpcRevalidation({ key: ["artist", "searchable"] })
 		trpcRevalidation({ key: ["album", "searchable"] })
-		trpcRevalidation({ key: ["genre", "list"] })
+		trpcRevalidation({ key: ["genre", "searchable"] })
 		if (type === "artist") {
 			trpcRevalidation({ key: ["artist", "miniature"], params: { id } })
 			trpcRevalidation({ key: ["artist", "get"], params: { id } })
@@ -142,7 +141,6 @@ workerSocketClient.remove.subscribe({
 	onData ({ type, id }) {
 		console.log(`removed ${type} ${id}`)
 		if (type === "playlist") {
-			trpcRevalidation({ key: ["playlist", "list"] })
 			trpcRevalidation({ key: ["playlist", "searchable"] })
 			trpcRevalidation({ key: ["playlist", "get"], params: { id } })
 		} else if (type === "track") {
@@ -157,10 +155,9 @@ workerSocketClient.remove.subscribe({
 			trpcRevalidation({ key: ["album", "miniature"], params: { id } })
 			trpcRevalidation({ key: ["album", "get"], params: { id } })
 		} else if (type === "genre") {
-			trpcRevalidation({ key: ["genre", "list"] })
+			trpcRevalidation({ key: ["genre", "searchable"] })
 			trpcRevalidation({ key: ["genre", "miniature"], params: { id } })
 			trpcRevalidation({ key: ["genre", "get"], params: { id } })
-			trpcRevalidation({ key: ["playlist", "generate"], params: { type: "genre", id } })
 		}
 	}
 })
@@ -177,9 +174,8 @@ workerSocketClient.invalidate.subscribe({
 			trpcRevalidation({ key: ["artist", "miniature"], params: { id } })
 			trpcRevalidation({ key: ["artist", "get"], params: { id } })
 		} else if (type === "playlist") {
-			trpcRevalidation({ key: ["playlist", "get"], params: { id } })
-			trpcRevalidation({ key: ["playlist", "list"] })
 			trpcRevalidation({ key: ["playlist", "searchable"] })
+			trpcRevalidation({ key: ["playlist", "get"], params: { id } })
 		}
 	}
 })

@@ -24,12 +24,14 @@ function ArtistItem ({
 	onClick,
 	selected,
 	selectable,
+	forceAvailable,
 }: {
 	artist: ArtistListItem
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	onClick?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
 	selected: boolean
 	selectable?: boolean
+	forceAvailable?: boolean
 }) {
 	const item = useRef<HTMLButtonElement>(null)
 	const { data } = trpc.artist.miniature.useQuery({ id: artist.id })
@@ -48,8 +50,8 @@ function ArtistItem ({
 	useLongPress({ onLong, item })
 
 	const online = useIsOnline()
-	const { data: cached } = useCachedArtist({ id: artist.id, enabled: !online })
-	const offline = !online && cached
+	const { data: cached } = useCachedArtist({ id: artist.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<button
@@ -97,7 +99,7 @@ function ArtistItem ({
 				{albumCount <= 1 && trackCount > 0 && <span>{trackCount} track{pluralize(trackCount)}</span>}
 			</p>
 			{selected && <CheckIcon className={styles.check} />}
-			{!selected && offline && <OfflineIcon className={styles.check} />}
+			{!selected && !available && <OfflineIcon className={styles.check} />}
 		</button>
 	)
 }
@@ -110,6 +112,7 @@ export default forwardRef(function ArtistList ({
 	loading = false,
 	selected,
 	selectable = true,
+	forceAvailable = false,
 }: {
 	artists: ArtistListItem[]
 	onSelect?: (artist: Exclude<RouterOutputs["artist"]["miniature"], null>) => void
@@ -118,6 +121,7 @@ export default forwardRef(function ArtistList ({
 	loading?: boolean
 	selected?: string
 	selectable?: boolean
+	forceAvailable?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
@@ -165,6 +169,7 @@ export default forwardRef(function ArtistList ({
 								onClick={onClick}
 								selected={selected === item.key || (isSelection && editViewState.selection.some(({ id }) => id === item.key))}
 								selectable={selectable}
+								forceAvailable={forceAvailable}
 							/>
 						</li>
 					))}

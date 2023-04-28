@@ -7,7 +7,7 @@ import styles from "./index.module.css"
 
 const DELETE_TIMEOUT = 2_000
 
-export default function Delete({
+export default function Delete ({
 	type,
 	ids,
 	onDone,
@@ -18,46 +18,47 @@ export default function Delete({
 }) {
 	const button = useRef<HTMLButtonElement>(null)
 
-	const deleteTrack = trpc.edit.track.delete.useMutation({retry: 0})
-	const deleteAlbum = trpc.edit.album.delete.useMutation({retry: 0})
-	const deleteArtist = trpc.edit.artist.delete.useMutation({retry: 0})
-	const deleteGenre = trpc.edit.genre.delete.useMutation({retry: 0})
-	const deletePlaylist = trpc.playlist.delete.useMutation({retry: 0})
+	const deleteTrack = trpc.edit.track.delete.useMutation({ retry: 0 })
+	const deleteAlbum = trpc.edit.album.delete.useMutation({ retry: 0 })
+	const deleteArtist = trpc.edit.artist.delete.useMutation({ retry: 0 })
+	const deleteGenre = trpc.edit.genre.delete.useMutation({ retry: 0 })
+	const deletePlaylist = trpc.playlist.delete.useMutation({ retry: 0 })
 
 	const mutate = type === "track"
 		? deleteTrack.mutateAsync
 		: type === "album"
-		? deleteAlbum.mutateAsync
-		: type === "playlist"
-		? deletePlaylist.mutateAsync
-		: type === "artist"
-		? deleteArtist.mutateAsync
-		: type === "genre"
-		? deleteGenre.mutateAsync
-		: (() => {throw new Error(`No delete mutation for type ${type}`)})()
+			? deleteAlbum.mutateAsync
+			: type === "playlist"
+				? deletePlaylist.mutateAsync
+				: type === "artist"
+					? deleteArtist.mutateAsync
+					: type === "genre"
+						? deleteGenre.mutateAsync
+						: (() => { throw new Error(`No delete mutation for type ${type}`) })()
 
 	useEffect(() => {
 		const element = button.current
 		if (!element) return
 		const controller = new AbortController()
-		const {signal} = controller
+		const { signal } = controller
 
 		let isPressing = false
 		let end: (() => void) | null = null
 
-		function post() {
+		function post () {
 			if (!element) return
 			element.classList.add(styles.fall)
 			navigator.vibrate(1)
 
 			const transition = new Promise<void>(resolve =>
-				element.addEventListener("transitionend", () => {resolve()}, {once: true})
+				element.addEventListener("transitionend", () => { resolve() }, { once: true })
 			)
 			const deletion = new Promise<void>(async (resolve) => {
 				for (const id of ids) {
 					try {
-						await mutate({id})
+						await mutate({ id })
 					} catch (error) {
+						console.error("Failed to delete", id)
 						console.error(error)
 					}
 				}
@@ -68,9 +69,9 @@ export default function Delete({
 			}
 		}
 
-		function start(touch: Touch) {
+		function start (touch: Touch) {
 			const controller = new AbortController()
-			const {signal} = controller
+			const { signal } = controller
 			isPressing = true
 
 			let rafId: number | null = null
@@ -83,8 +84,8 @@ export default function Delete({
 			}
 			end = _end
 
-			navigator.vibrate(new Array(DELETE_TIMEOUT/200).fill(200))
-			void function loop(start?: DOMHighResTimeStamp, time?: DOMHighResTimeStamp) {
+			navigator.vibrate(new Array(DELETE_TIMEOUT / 200).fill(200))
+			void function loop (start?: DOMHighResTimeStamp, time?: DOMHighResTimeStamp) {
 				if (signal.aborted) return
 				rafId = requestAnimationFrame((time) => loop(start ?? time, time))
 				if (!start || !time) return
@@ -98,7 +99,7 @@ export default function Delete({
 
 			element!.addEventListener("contextmenu", (event) => {
 				event.preventDefault()
-			}, {signal})
+			}, { signal })
 
 			const onTouchEnd = (event: TouchEvent) => {
 				const match = getTouchFromId(event.changedTouches, touch.identifier)
@@ -108,8 +109,8 @@ export default function Delete({
 				}
 			}
 
-			window.addEventListener("touchend", onTouchEnd, {signal, passive: true})
-			window.addEventListener("touchcancel", onTouchEnd, {signal, passive: true})
+			window.addEventListener("touchend", onTouchEnd, { signal, passive: true })
+			window.addEventListener("touchcancel", onTouchEnd, { signal, passive: true })
 		}
 
 		element.addEventListener("touchstart", (event) => {
@@ -117,7 +118,7 @@ export default function Delete({
 				const touch = event.changedTouches.item(0) as Touch
 				start(touch)
 			}
-		}, {signal, passive: true})
+		}, { signal, passive: true })
 
 		return () => {
 			controller.abort()

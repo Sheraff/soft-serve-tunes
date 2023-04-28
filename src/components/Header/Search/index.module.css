@@ -7,6 +7,7 @@
 	position: relative;
 	z-index: var(--z, 1);
 	background-color: var(--palette-bg-main);
+	display: flex;
 }
 .head[data-open="true"] {
 	transform: translateX(0);
@@ -17,14 +18,28 @@
 .head input {
 	display: block;
 	appearance: textfield;
-	width: 100%;
+	flex: 1;
 	height: 100%;
 	padding:
 		max(12px, env(safe-area-inset-top))
-		max(8px, env(safe-area-inset-right))
+		0
 		12px
 		calc(max(8px, env(safe-area-inset-left)) + 20px + 8px + 4px);
 	font-size: 14px;
+}
+.head button {
+	flex-shrink: 0;
+	font-size: 12px;
+	padding:
+		0
+		max(12px, env(safe-area-inset-right))
+		0
+		8px;
+	text-align: center;
+}
+.head button span {
+	font-size: 8px;
+	display: block;
 }
 .head::after {
 	content: '';

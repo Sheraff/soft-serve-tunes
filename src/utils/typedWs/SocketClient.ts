@@ -20,10 +20,10 @@ export default class SocketClient<
 		if (ssr) {
 			this.socket = {} as any
 			this.target = {} as any
-			this.#onOnline = () => {}
-			this.#onOffline = () => {}
-			this.#onFocus = () => {}
-			this.#onMessage = () => {}
+			this.#onOnline = () => { }
+			this.#onOffline = () => { }
+			this.#onFocus = () => { }
+			this.#onMessage = () => { }
 			this.serverState = false
 			return
 		}
@@ -32,7 +32,7 @@ export default class SocketClient<
 		this.#onOnline = () => this.#initSocket()
 		this.#onOffline = () => this.socket?.close()
 		this.#onFocus = () => this.#retryOnFocus()
-		this.#onMessage = <K extends Route>(event: MessageEvent<any>) => {
+		this.#onMessage = <K extends Route> (event: MessageEvent<any>) => {
 			if (event.data === "") {
 				this.#onPong()
 				return
@@ -47,20 +47,20 @@ export default class SocketClient<
 		addEventListener("online", this.#onOnline)
 		addEventListener("offline", this.#onOffline)
 		this.serverState = navigator.onLine
-		
+
 		this.#initSocket()
 	}
 
 	#pongState = true
 	#pongIntervalId: ReturnType<typeof setInterval> | null = null
-	#onPong() {
+	#onPong () {
 		this.#pongState = true
 	}
 
 	#backOff = 1
 	#timeoutId: ReturnType<typeof setTimeout> | null = null
 
-	#initSocket() {
+	#initSocket () {
 		if (this.#timeoutId) {
 			clearTimeout(this.#timeoutId)
 			this.#timeoutId = null
@@ -109,6 +109,7 @@ export default class SocketClient<
 			}
 		}
 		socket.onerror = (e) => {
+			console.log("SocketClient main socket error")
 			console.error(e)
 			this.target.dispatchEvent(new CustomEvent("__socket-client-error__", { detail: e }))
 		}
@@ -116,7 +117,7 @@ export default class SocketClient<
 		this.socket = socket
 	}
 
-	#retryOnFocus() {
+	#retryOnFocus () {
 		if (!document.hidden) {
 			this.#initSocket()
 		}
@@ -126,10 +127,10 @@ export default class SocketClient<
 	/**
 	 * @description true if the server is online
 	 */
-	get serverState() {
+	get serverState () {
 		return this.#serverState
 	}
-	set serverState(online: boolean) {
+	set serverState (online: boolean) {
 		if (this.#serverState === online) {
 			return
 		}
@@ -137,16 +138,16 @@ export default class SocketClient<
 		this.#serverStateListeners.forEach(listener => listener(online))
 	}
 
-	addConnectionListener(listener: (online: boolean) => void) {
+	addConnectionListener (listener: (online: boolean) => void) {
 		this.#serverStateListeners.add(listener)
 	}
 
-	removeConnectionListener(listener: (online: boolean) => void) {
+	removeConnectionListener (listener: (online: boolean) => void) {
 		this.#serverStateListeners.delete(listener)
 	}
 
-	destroy() {
-		if (this.socket){
+	destroy () {
+		if (this.socket) {
 			this.socket.removeEventListener("message", this.#onMessage)
 			this.socket.onclose = null
 			this.socket.close()

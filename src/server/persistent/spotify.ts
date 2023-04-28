@@ -85,21 +85,21 @@ const trackSearchSchema = z.object({ // /search?type=track
 	tracks: z.object({
 		items: z.array(trackSchema),
 		total: z.number(),
-	}) 
+	})
 })
 
 const artistSearchSchema = z.object({ // /search?type=artist
 	artists: z.object({
 		items: z.array(artistSchema),
 		total: z.number(),
-	}) 
+	})
 })
 
 const albumSearchSchema = z.object({ // /search?type=album
 	albums: z.object({
 		items: z.array(albumSchema),
 		total: z.number(),
-	}) 
+	})
 })
 
 const albumsListSchema = z.object({ // /artists/{id}/albums
@@ -107,7 +107,7 @@ const albumsListSchema = z.object({ // /artists/{id}/albums
 	total: z.number(),
 })
 
-type SpotifyApiUrl = 
+type SpotifyApiUrl =
 	`search?${string}type=track${string}`
 	| `search?${string}type=artist${string}`
 	| `search?${string}type=album${string}`
@@ -130,7 +130,7 @@ type SpotifyApiSuccessResponse<URL extends SpotifyApiUrl> =
 
 type SpotifyApiResponse<URL extends SpotifyApiUrl> = SpotifyApiSuccessResponse<URL> | typeof notFoundSchema["_type"]
 
-function getSchema(url: SpotifyApiUrl) {
+function getSchema (url: SpotifyApiUrl) {
 	switch (true) {
 		case url.startsWith("tracks/"): return trackSchema
 		case url.startsWith("audio-features/"): return audioFeaturesSchema
@@ -143,7 +143,7 @@ function getSchema(url: SpotifyApiUrl) {
 	}
 }
 
-function isListRequest(url: SpotifyApiUrl) {
+function isListRequest (url: SpotifyApiUrl) {
 	switch (true) {
 		case url.startsWith("tracks/"): return false
 		case url.startsWith("audio-features/"): return false
@@ -180,7 +180,7 @@ class Spotify {
 	}
 
 	#refreshing: Promise<void> | null = null
-	async #refreshToken(retries = 0, callback?: () => void) {
+	async #refreshToken (retries = 0, callback?: () => void) {
 		if (this.#accessToken) {
 			return
 		}
@@ -202,11 +202,11 @@ class Spotify {
 		} catch (error) {
 			if (retries < 3) {
 				const nextRetry = retries + 1
-				await new Promise(resolve => setTimeout(resolve, 2**nextRetry * 100))
+				await new Promise(resolve => setTimeout(resolve, 2 ** nextRetry * 100))
 				await this.#refreshToken(nextRetry, resolve)
 			} else {
 				this.#refreshing = null
-				throw error
+				throw new Error("Spotify failed refresh token after 3 retries", { cause: error })
 			}
 		}
 	}
@@ -214,7 +214,7 @@ class Spotify {
 	#pastRequests: SpotifyApiUrl[] = []
 	#pastResponses: Map<SpotifyApiUrl, SpotifyApiSuccessResponse<SpotifyApiUrl>> = new Map()
 
-	async fetch<URL extends SpotifyApiUrl>(url: URL): Promise<SpotifyApiResponse<URL>> {
+	async fetch<URL extends SpotifyApiUrl> (url: URL): Promise<SpotifyApiResponse<URL>> {
 		const cached = this.#pastResponses.get(url) as (SpotifyApiSuccessResponse<URL> | undefined)
 		if (cached) {
 			return cached
@@ -247,17 +247,17 @@ class Spotify {
 		})
 
 	}
-	
+
 	/**
 	 * @description Spotify doesn't seem to like for *all* encodable chars to be encoded.
 	 * For example `+` (plus) shouldn't be encoded, and ` ` (space) encoded into a `'+'` doesn't always work
 	 */
-	sanitize(string: string): string {
+	sanitize (string: string): string {
 		return sanitizeString(string).replace(/&/g, "%26")
 	}
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	#purgeStore() {
+	#purgeStore () {
 		if (!this.#purgeStoreTimeout) {
 			this.#purgeStoreTimeout = setTimeout(() => {
 				this.#purgeStoreTimeout = null
@@ -272,7 +272,7 @@ class Spotify {
 		}
 	}
 
-	#storeResponse<URL extends SpotifyApiUrl>(url: URL, response: SpotifyApiSuccessResponse<URL>) {
+	#storeResponse<URL extends SpotifyApiUrl> (url: URL, response: SpotifyApiSuccessResponse<URL>) {
 		this.#pastRequests.push(url)
 		this.#pastResponses.set(url, response)
 		if (this.#pastRequests.length > Spotify.STORAGE_LIMIT) {
@@ -281,9 +281,9 @@ class Spotify {
 		}
 		this.#purgeStore()
 	}
-	
+
 	#running = new Set<string>()
-	async findTrack(trackDbId: string) {
+	async findTrack (trackDbId: string) {
 		if (this.#running.has(trackDbId)) {
 			return
 		}
@@ -444,7 +444,7 @@ class Spotify {
 				const candidate_album_popularity = candidate.album.popularity
 
 				const existing = await retryable(() => prisma.spotifyTrack.findUnique({
-					where: {id: candidate_id},
+					where: { id: candidate_id },
 					select: {
 						id: true,
 						trackId: true,
@@ -474,9 +474,9 @@ class Spotify {
 				}))
 				if (existing && !existing.trackId) {
 					// this should not happen as schema.prisma defines SpotifyTrack.track as `onDelete: Cascade`
-					await retryable(() => 
+					await retryable(() =>
 						prisma.spotifyTrack.update({
-							where: {id: candidate_id},
+							where: { id: candidate_id },
 							data: {
 								track: {
 									connect: {
@@ -527,17 +527,19 @@ class Spotify {
 							explicit: candidate_explicit,
 							trackNumber: candidate_track_number,
 							discNumber: candidate_disc_number,
-							...(candidateArtist ? { artist: {
-								connectOrCreate: {
-									where: {
-										id: candidateArtist.id
-									},
-									create: {
-										id: candidateArtist.id,
-										name: candidateArtist.name,
-									},
+							...(candidateArtist ? {
+								artist: {
+									connectOrCreate: {
+										where: {
+											id: candidateArtist.id
+										},
+										create: {
+											id: candidateArtist.id,
+											name: candidateArtist.name,
+										},
+									}
 								}
-							}} : {}),
+							} : {}),
 							...(featuring.length ? {
 								feats: {
 									connectOrCreate: featuring.map(artist => ({
@@ -563,17 +565,19 @@ class Spotify {
 										releaseDate: candidate_album_release_date,
 										totalTracks: candidate_album_total_tracks,
 										popularity: candidate_album_popularity,
-										...(candidateArtist ? { artist: {
-											connectOrCreate: {
-												where: {
-													id: candidateArtist.id
-												},
-												create: {
-													id: candidateArtist.id,
-													name: candidateArtist.name,
-												},
+										...(candidateArtist ? {
+											artist: {
+												connectOrCreate: {
+													where: {
+														id: candidateArtist.id
+													},
+													create: {
+														id: candidateArtist.id,
+														name: candidateArtist.name,
+													},
+												}
 											}
-										}} : {}),
+										} : {}),
 										...(albumFeat.length ? {
 											feats: {
 												connectOrCreate: albumFeat.map(artist => ({
@@ -612,11 +616,11 @@ class Spotify {
 								id: newTrackArtistId,
 								artist: null,
 							},
-							select: {id: true},
+							select: { id: true },
 						})
 						if (foundToConnect) {
 							await prisma.spotifyArtist.update({
-								where: {id: foundToConnect.id},
+								where: { id: foundToConnect.id },
 								data: {
 									artist: {
 										connect: {
@@ -637,11 +641,11 @@ class Spotify {
 								id: newTrackAlbumId,
 								album: null
 							},
-							select: {id: true},
+							select: { id: true },
 						})
 						if (foundToUpdate) {
 							await prisma.spotifyAlbum.update({
-								where: {id: foundToUpdate.id},
+								where: { id: foundToUpdate.id },
 								data: {
 									album: {
 										connect: {
@@ -683,7 +687,7 @@ class Spotify {
 				if (!image) {
 					break albumFill
 				}
-				const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
+				const { hash, path, mimetype, palette } = await fetchAndWriteImage(image.url)
 				if (hash && path && palette) {
 					const albumId = albumObject.id
 					await retryable(async () => {
@@ -731,7 +735,7 @@ class Spotify {
 				}
 				const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
 				if (image) {
-					const {hash, path, mimetype, palette} = await fetchAndWriteImage(image.url)
+					const { hash, path, mimetype, palette } = await fetchAndWriteImage(image.url)
 					if (hash && path && palette) {
 						const artistId = artistObject.id
 						const popularity = artistData.popularity
@@ -756,7 +760,7 @@ class Spotify {
 									},
 									popularity,
 									genres: {
-										connectOrCreate: cleanGenreList(artistData.genres || []).map(({name, simplified}) => ({
+										connectOrCreate: cleanGenreList(artistData.genres || []).map(({ name, simplified }) => ({
 											where: { simplified },
 											create: { name, simplified }
 										}))
@@ -775,7 +779,7 @@ class Spotify {
 							data: {
 								popularity: artistData.popularity,
 								genres: {
-									connectOrCreate: cleanGenreList(artistData.genres || []).map(({name, simplified}) => ({
+									connectOrCreate: cleanGenreList(artistData.genres || []).map(({ name, simplified }) => ({
 										where: { simplified },
 										create: { name, simplified }
 									}))
@@ -847,9 +851,9 @@ class Spotify {
 						}
 					})
 				})
-				const artistChangedCover = await computeArtistCover(result.id, {album: true, tracks: true})
+				const artistChangedCover = await computeArtistCover(result.id, { album: true, tracks: true })
 				if (!artistChangedCover) {
-					socketServer.emit("invalidate", {type: "artist", id: result.id})
+					socketServer.emit("invalidate", { type: "artist", id: result.id })
 				}
 				changedTrack = true
 			}
@@ -882,11 +886,11 @@ class Spotify {
 							id: artistId,
 							artist: null,
 						},
-						select: {id: true},
+						select: { id: true },
 					})
 					if (foundToUpdate) {
 						await prisma.spotifyAlbum.update({
-							where: {id: foundToUpdate.id},
+							where: { id: foundToUpdate.id },
 							data: {
 								album: {
 									connect: {
@@ -897,22 +901,23 @@ class Spotify {
 						})
 					}
 				})
-				const albumChangedCover = await computeAlbumCover(result.id, {artist: true, tracks: true})
+				const albumChangedCover = await computeAlbumCover(result.id, { artist: true, tracks: true })
 				if (!albumChangedCover) {
-					socketServer.emit("invalidate", {type: "album", id: result.id})
+					socketServer.emit("invalidate", { type: "album", id: result.id })
 				}
 				changedTrack = true
 			}
-	
+
 			if (changedTrack) {
-				const trackChangedCover = await computeTrackCover(trackDbId, {album: true, artist: true})
+				const trackChangedCover = await computeTrackCover(trackDbId, { album: true, artist: true })
 				if (!trackChangedCover) {
-					socketServer.emit("invalidate", {type: "track", id: trackDbId})
+					socketServer.emit("invalidate", { type: "track", id: trackDbId })
 				}
 				log("ready", "200", "spotify", `did all of the things for track ${track.name}`)
 			}
 
 		} catch (e) {
+			log("error", "error", "spotify", "General error in findTrack")
 			console.error(e)
 		}
 		this.#running.delete(trackDbId)

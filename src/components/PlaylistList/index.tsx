@@ -3,15 +3,25 @@ import CoverImages from "components/NowPlaying/Cover/Images"
 import { startTransition } from "react"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedPlaylist } from "client/sw/useSWCached"
+import OfflineIcon from "icons/wifi_off.svg"
+import classNames from "classnames"
 
 function PlaylistItem ({
 	playlist,
 	onSelect,
+	forceAvailable,
 }: {
 	playlist: { id: string, name: string }
 	onSelect?: (playlist: Exclude<RouterOutputs["playlist"]["get"], null>) => void
+	forceAvailable?: boolean
 }) {
 	const { data } = trpc.playlist.get.useQuery({ id: playlist.id })
+
+	const online = useIsOnline()
+	const { data: cached } = useCachedPlaylist({ id: playlist.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 
 	return (
 		<button
@@ -38,7 +48,8 @@ function PlaylistItem ({
 				className={styles.img}
 				albums={data ? data.albums.slice(0, 6) : []}
 			/>
-			<p className={styles.text} key="text">
+			<p className={classNames(styles.text, { [styles.offline]: !available })} key="text">
+				{!available && <OfflineIcon className={styles.icon} />}
 				<span className={styles.title}>{playlist.name}</span>
 				<span className={styles.desc}>{data?.description}</span>
 			</p>
@@ -49,9 +60,11 @@ function PlaylistItem ({
 export default function PlaylistList ({
 	playlists,
 	onSelect,
+	forceAvailable = false,
 }: {
 	playlists: { id: string, name: string }[]
 	onSelect?: Parameters<typeof PlaylistItem>[0]["onSelect"]
+	forceAvailable?: boolean
 }) {
 	return (
 		<ul className={styles.list}>
@@ -60,6 +73,7 @@ export default function PlaylistList ({
 					<PlaylistItem
 						playlist={playlist}
 						onSelect={onSelect}
+						forceAvailable={forceAvailable}
 					/>
 				</li>
 			))}

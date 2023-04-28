@@ -10,7 +10,7 @@ export default class Queue {
 		this.wait = options.wait ?? false
 	}
 
-	async #run() {
+	async #run () {
 		let nextItem
 		while (nextItem = this.queue[0]) {
 			await this.available
@@ -21,6 +21,7 @@ export default class Queue {
 					nextItem()
 				}
 			} catch (e) { // catching so that error on 1 item doesn't prevent other items from executing
+				console.error("Generic error in Queue class while processing queue...")
 				console.error(e)
 			}
 			this.queue.shift()
@@ -28,11 +29,11 @@ export default class Queue {
 		}
 	}
 
-	#isWait<T>(callback: (...value: unknown[]) => PromiseLike<T> | T): callback is (...value: unknown[]) => PromiseLike<T> {
+	#isWait<T> (callback: (...value: unknown[]) => PromiseLike<T> | T): callback is (...value: unknown[]) => PromiseLike<T> {
 		return this.wait
 	}
 
-	async push<T>(callback: (...value: unknown[]) => PromiseLike<T> | T) {
+	async push<T> (callback: (...value: unknown[]) => PromiseLike<T> | T) {
 		if (this.#isWait(callback)) {
 			let resolve: (a: T | PromiseLike<T>) => void
 			let reject: (a: T | PromiseLike<T>) => void
@@ -54,7 +55,7 @@ export default class Queue {
 		}
 	}
 
-	next() {
+	next () {
 		if (this.wait) {
 			throw new Error("This is an awaited queue, you cannot call .next()")
 		}
@@ -64,7 +65,7 @@ export default class Queue {
 	/**
 	 * @description Add some delay at the TOP of the queue
 	 */
-	delay(ms = this.rate * 10) {
+	delay (ms = this.rate * 10) {
 		this.queue.unshift(() => new Promise(resolve => setTimeout(resolve, ms)))
 	}
 }

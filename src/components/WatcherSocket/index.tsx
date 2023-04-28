@@ -9,11 +9,12 @@ export default function WatcherSocket () {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
 
+	// revalidate common "big list" queries when app starts
 	useEffect(() => {
 		revalidateSwCache(["track", "searchable"])
 		revalidateSwCache(["artist", "searchable"])
 		revalidateSwCache(["album", "searchable"])
-		revalidateSwCache(["genre", "list"])
+		revalidateSwCache(["genre", "searchable"])
 		revalidateSwCache(["artist", "mostFav"])
 		revalidateSwCache(["artist", "mostRecentListen"])
 		revalidateSwCache(["artist", "leastRecentListen"])
@@ -23,6 +24,7 @@ export default function WatcherSocket () {
 		revalidateSwCache(["genre", "mostFav"])
 	}, [])
 
+	// allow server to log on client console
 	if (env.NEXT_PUBLIC_ENV === "development") {
 		socketClient.console.useSubscription({
 			onData ({ type, message }) {
@@ -31,11 +33,32 @@ export default function WatcherSocket () {
 		})
 	}
 
+	// clean SW cache when app is out of focus (and stop when it comes back in focus)
+	useEffect(() => {
+		if (!("serviceWorker" in navigator)) return
+		let focused = true
+		const unsubscribe = focusManager.subscribe(async () => {
+			const newFocused = focusManager.isFocused()
+			if (focused === newFocused) return
+			focused = newFocused
+			const registration = await navigator.serviceWorker.ready
+			const target = registration.active
+			if (!target) return
+			const type = focused ? "sw-app-focus" : "sw-app-blur"
+			target.postMessage({ type })
+		})
+		return unsubscribe
+	}, [])
+
+	// maintain up-to-date query cache
 	useEffect(() => {
 		if (!("serviceWorker" in navigator)) return
 		const controller = new AbortController()
 		const unsubscribeSet = new Set<() => void>()
 		navigator.serviceWorker.ready.then((registration) => {
+			if (controller.signal.aborted) {
+				return
+			}
 			const target = registration.active
 			if (!target) {
 				return
@@ -43,10 +66,12 @@ export default function WatcherSocket () {
 			navigator.serviceWorker.addEventListener("message", (event) => {
 				const message = event.data
 				if (message.type === "sw-notify-when-track-cached") {
+					// when SW finishes caching a track, invalidate the query
 					const id = message.payload.url.split("/").at(-1)
 					queryClient.invalidateQueries(["sw-cached-track", id])
 					queryClient.invalidateQueries(["sw-first-cached-track"])
 				} else if (message.type === "sw-trpc-invalidation") {
+					// when SW receives new data from server, update cache (at a convenient time so user doesn't notice the update)
 					const queryKey = message.payload.key
 					const queryParams = {
 						type: "query",
@@ -93,14 +118,13 @@ export default function WatcherSocket () {
 		}
 	}, [trpcClient, queryClient])
 
+	// notify service worker when app becomes online so it can retry "pending" mutations
 	useEffect(() => {
+		if (!("serviceWorker" in navigator)) return
 		const onOnline = async () => {
-			if (!("serviceWorker" in navigator)) return
 			const registration = await navigator.serviceWorker.ready
 			const target = registration.active
-			if (!target) {
-				return
-			}
+			if (!target) return
 			target.postMessage({ type: "sw-trpc-offline-post" })
 		}
 		addEventListener("online", onOnline)

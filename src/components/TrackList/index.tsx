@@ -56,6 +56,7 @@ const TrackItem = memo(function _TrackItem ({
 	index,
 	selection,
 	selected,
+	forceAvailable,
 }: {
 	track: TrackListItem
 	current?: boolean
@@ -69,6 +70,7 @@ const TrackItem = memo(function _TrackItem ({
 	index: number
 	selection: boolean
 	selected: boolean
+	forceAvailable?: boolean
 }) {
 	const item = useRef<HTMLDivElement>(null)
 	const { data } = trpc.track.miniature.useQuery({ id: track.id })
@@ -114,8 +116,8 @@ const TrackItem = memo(function _TrackItem ({
 		[data?.createdAt]
 	)
 	const online = useIsOnline()
-	const { data: cached } = useCachedTrack({ id: track.id, enabled: !online })
-	const offline = !online && cached
+	const { data: cached } = useCachedTrack({ id: track.id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
 	const high = data?.file?.container.toUpperCase() === "FLAC"
 
 	return (
@@ -198,10 +200,10 @@ const TrackItem = memo(function _TrackItem ({
 							{data?.feats?.map(({ name }) => name).join(", ")}
 						</span>
 					)}
-					{(explicit || offline || recent || high) && (
+					{(explicit || !available || recent || high) && (
 						<span className={styles.icons}>
 							<>
-								{offline && <OfflineIcon key="offline" className={styles.offline} />}
+								{!available && <OfflineIcon key="offline" className={styles.offline} />}
 								{high && <HighIcon key="high" />}
 								{recent && <NewIcon key="recent" />}
 								{explicit && <ExplicitIcon key="explicit" className={styles.explicit} />}
@@ -311,6 +313,7 @@ export default function TrackList ({
 	getParentHeight,
 	forceInsertVirtualDragItem,
 	virtualTop,
+	forceAvailable = false,
 }: {
 	tracks: TrackListItem[]
 	current?: string
@@ -325,6 +328,7 @@ export default function TrackList ({
 	getParentHeight?: () => number
 	forceInsertVirtualDragItem?: MutableRefObject<number | null>
 	virtualTop?: number
+	forceAvailable?: boolean
 }) {
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
@@ -393,6 +397,7 @@ export default function TrackList ({
 									index={virtualItem.index}
 									selection={isSelection}
 									selected={isSelection && editViewState.selection.some(({ id }) => id === tracks[virtualItem.index]!.id)}
+									forceAvailable={forceAvailable}
 								/>
 							</li>
 						))}
@@ -417,6 +422,7 @@ export default function TrackList ({
 							index={i}
 							selection={isSelection}
 							selected={isSelection && editViewState.selection.some(({ id }) => id === track.id)}
+							forceAvailable={forceAvailable}
 						/>
 					</li>
 				))}

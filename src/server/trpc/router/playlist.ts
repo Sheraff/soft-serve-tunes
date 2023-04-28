@@ -7,7 +7,6 @@ import descriptionFromPlaylistCredits from "client/db/useMakePlaylist/descriptio
 import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
-import { recursiveSubGenres } from "./genre"
 import log from "utils/logger"
 import { type Prisma } from "@prisma/client"
 import { socketServer } from "utils/typedWs/server"
@@ -77,23 +76,13 @@ async function getResolve (id: string) {
   }
 }
 
-const generate = publicProcedure.input(z.union([
-  z.object({
-    type: z.enum(["genre"]),
-    id: z.string(),
-  }),
-  z.object({
-    type: z.literal("by-multi-traits"),
-    traits: z.array(z.object({
-      trait: zTrackTraits,
-      value: z.string(),
-    })),
-  }),
-])).query(async ({ input, ctx }) => {
-  if (input.type === "genre") {
-    const data = await recursiveSubGenres([input.id], { select: trackSelect })
-    return data.tracks
-  }
+const generate = protectedProcedure.input(z.object({
+  type: z.literal("by-multi-traits"),
+  traits: z.array(z.object({
+    trait: zTrackTraits,
+    value: z.string(),
+  })),
+})).query(async ({ input, ctx }) => {
   if (input.type === "by-multi-traits") {
     const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
     const ids = spotifyTracks.map((t) => t.trackId)
@@ -107,7 +96,7 @@ const generate = publicProcedure.input(z.union([
   }
 })
 
-const more = publicProcedure.input(
+const more = protectedProcedure.input(
   z.object({
     type: z.literal("by-similar-tracks"),
     trackIds: z.array(z.string()),
@@ -162,19 +151,6 @@ const more = publicProcedure.input(
   }
 })
 
-const list = publicProcedure.query(({ ctx }) => {
-  return ctx.prisma.playlist.findMany({
-    select: {
-      name: true,
-      id: true,
-      modifiedAt: true,
-    },
-    orderBy: {
-      modifiedAt: "desc"
-    }
-  })
-})
-
 const get = publicProcedure.input(z.object({
   id: z.string()
 })).query(({ input }) => {
@@ -186,6 +162,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
     select: {
       id: true,
       name: true,
+      modifiedAt: true,
       tracks: {
         select: {
           track: {
@@ -199,7 +176,10 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
           }
         }
       }
-    }
+    },
+    orderBy: {
+      modifiedAt: "desc"
+    },
   })
   const result = playlists.map(playlist => {
     const artists = new Set<string | undefined>()
@@ -223,9 +203,6 @@ const save = protectedProcedure.input(z.object({
     index: z.number(),
   }))
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   const playlists = await ctx.prisma.playlist.findMany({
     select: { name: true }
   })
@@ -433,9 +410,6 @@ const modify = protectedProcedure.input(z.union([
 const deleteEndpoint = protectedProcedure.input(z.object({
   id: z.string()
 })).mutation(async ({ input, ctx }) => {
-  if (!ctx.session || !ctx.session.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" })
-  }
   try {
     const [, playlist] = await ctx.prisma.$transaction([
       ctx.prisma.playlistEntry.deleteMany({
@@ -449,6 +423,7 @@ const deleteEndpoint = protectedProcedure.input(z.object({
     socketServer.emit("remove", { type: "playlist", id: playlist.id })
     return playlist
   } catch (e) {
+    console.warn("Playlist deletion on a corrupted playlist, trying to recover")
     console.warn(e)
     // at this point the playlist is corrupted, probably because the transaction happened during a bad time for the DB
     let tracks: { id: string }[] | null = null
@@ -506,7 +481,6 @@ const deleteEndpoint = protectedProcedure.input(z.object({
 export const playlistRouter = router({
   generate,
   more,
-  list,
   get,
   searchable,
   save,

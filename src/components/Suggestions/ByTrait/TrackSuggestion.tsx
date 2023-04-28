@@ -12,6 +12,8 @@ import styles from "../index.module.css"
 import PillChoice from "../PillChoice"
 import { addNewTraitByOption, options, selectionFromSelectedOptions, titleFromSelectedOptions, Trait } from "./utils"
 import { autoplay, playAudio } from "components/Player/Audio"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import OfflineIcon from "icons/wifi_off.svg"
 
 const preferredTrackList = suspensePersistedState<Trait[]>("preferredTrackList", [{
 	trait: "danceability",
@@ -28,25 +30,37 @@ export default function TracksByTraitSuggestion () {
 	})
 	const title = useMemo(() => titleFromSelectedOptions(preferredOptions, "tracks"), [preferredOptions])
 	const currentOptions = selectionFromSelectedOptions(preferredOptions)
+	const online = useIsOnline()
 	return (
 		<>
 			<SectionTitle>{title}</SectionTitle>
 			<div className={styles.buttons}>
-				<button type="button" onClick={() => {
-					navigator.vibrate(1)
-					const currentPlaylist = getPlaylist()
-					makePlaylist({ type: "by-multi-traits", traits: preferredOptions }, title)
-						.then((playlist) => {
-							if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
-								playAudio()
-						})
-					showHome("home")
-					autoplay.setState(true)
-				}}><PlaylistIcon /></button>
-				<button type="button" onClick={() => {
-					navigator.vibrate(1)
-					setOpen(true)
-				}}><FilterIcon /></button>
+				<button
+					type="button"
+					onClick={() => {
+						if (!online) return
+						navigator.vibrate(1)
+						const currentPlaylist = getPlaylist()
+						makePlaylist({ type: "by-multi-traits", traits: preferredOptions }, title)
+							.then((playlist) => {
+								if (currentPlaylist?.current && playlist?.current === currentPlaylist.current)
+									playAudio()
+							})
+						showHome("home")
+						autoplay.setState(true)
+					}}
+				>
+					{online ? <PlaylistIcon /> : <OfflineIcon />}
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						navigator.vibrate(1)
+						setOpen(true)
+					}}
+				>
+					<FilterIcon />
+				</button>
 			</div>
 			<Dialog title="Choose your mood" open={open} onClose={() => {
 				navigator.vibrate(1)

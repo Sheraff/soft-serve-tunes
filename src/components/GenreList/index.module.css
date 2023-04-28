@@ -65,7 +65,6 @@
 	grid-area: left;
 	font-size: 16px;
 	align-self: center;
-	margin-left: 4px;
 }
 
 .span {
@@ -85,6 +84,15 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.empty {
+	grid-area: left;
+	height: 32px;
+	width: 32px;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
 }
 
 .artists {
@@ -119,6 +127,7 @@
 	height: 100%;
 	display: flex;
 	justify-content: flex-end;
+	padding: 0px 8px;
 }
 
 .selection::before {

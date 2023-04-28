@@ -3,12 +3,15 @@ import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { BasePastSearchItem, type PastSearchProps } from "./BasePastSearchItem"
+import useIsOnline from "utils/typedWs/useIsOnline"
+import { useCachedPlaylist } from "client/sw/useSWCached"
 
 export function PastSearchPlaylist ({
 	id,
 	onSettled,
 	onClick: _onClick,
 	showType = true,
+	forceAvailable = false,
 }: PastSearchProps) {
 	const { data: entity } = trpc.playlist.get.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
 	const onClick = () => {
@@ -24,6 +27,10 @@ export function PastSearchPlaylist ({
 		info.push(`${entity._count.tracks} track${pluralize(entity._count.tracks)}`)
 	}
 
+	const online = useIsOnline()
+	const { data: cached } = useCachedPlaylist({ id, enabled: !online && !forceAvailable })
+	const available = forceAvailable || online || cached
+
 	return (
 		<BasePastSearchItem
 			className={styles.list}
@@ -32,6 +39,7 @@ export function PastSearchPlaylist ({
 			name={entity?.name}
 			id={id}
 			type="playlist"
+			available={available}
 		>
 			{info.join(" · ")}
 		</BasePastSearchItem>
