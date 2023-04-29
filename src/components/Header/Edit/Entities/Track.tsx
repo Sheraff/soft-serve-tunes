@@ -43,6 +43,14 @@ function aggregateTracks<K extends DeepKeyof<DeepExcludeNull<TrackMiniature>>> (
 const defaultArray = [] as never[]
 const defaultAggregate = { value: undefined, unique: undefined } as const
 
+async function awaitButNotTooLong (p: Promise<any>, timeout: number) {
+	await Promise.race([
+		p,
+		new Promise(resolve => setTimeout(resolve, timeout)),
+	])
+	return
+}
+
 export default function EditTrack ({
 	ids,
 	onDone,
@@ -282,10 +290,10 @@ export default function EditTrack ({
 		}
 		try {
 			for (const track of tracks) {
-				await updateTrack({
+				await awaitButNotTooLong(updateTrack({
 					id: track!.id,
 					...editData
-				})
+				}), 3_000)
 				increment()
 			}
 		} catch {

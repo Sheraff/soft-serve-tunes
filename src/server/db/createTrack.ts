@@ -124,10 +124,14 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
 	if (!acoustidRetry || acoustidRetry.count < 10) {
 		try {
-			fingerprinted = await acoustId.identify(path, metadata)
+			fingerprinted = await acoustId.identify(path, metadata, acoustidRetry?.count)
 		} catch (e) {
-			log("warn", "wait", "fswatcher", `could not fingerprint ${relativePath}, trying again later`)
-			console.error(e)
+			log("warn", "wait", "acoustid", `could not fingerprint ${relativePath}, trying again later`)
+			if (typeof e === "string") {
+				log("error", "wait", "acoustid", e) // ERROR: Error decoding audio frame (Invalid data found when processing input)
+			} else {
+				console.error(e)
+			}
 			await tryAgainLater(path, acoustidRetry?.count)
 			return false
 		}
@@ -376,14 +380,14 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 			log("error", "error", "fswatcher", `failed to add ${relativePath} after ${retries} retries`)
 			console.log("error keys", ...Array.from(Object.keys(error))) // code, clientVersion, meta
 			// P2002 => Unique constraint failed on the fields (prisma.track.update / target: [ 'simplified', 'artistId', 'albumId' ])
-			console.warn(error)
+			console.error(error)
 			return false
 		}
 	}
 }
 
 let retryTimeout: NodeJS.Timeout | null = null
-async function tryAgainLater (path?: string, count = -1) {
+export async function tryAgainLater (path?: string, count = -1) {
 	if (retryTimeout) clearTimeout(retryTimeout)
 	if (path) {
 		await retryable(() => prisma.fileToCreate.create({ data: { path, count: count + 1 } }))

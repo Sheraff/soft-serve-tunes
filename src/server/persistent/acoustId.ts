@@ -28,10 +28,15 @@ type FPcalcResult = {
 	duration: number
 }
 
-function execFPcalc (file: string): Promise<FPcalcResult> {
+function execFPcalc (file: string, retry?: number): Promise<FPcalcResult> {
 	return new Promise((resolve, reject) => {
+		const args = [file, "-json"]
+		if (retry) {
+			// retrying w/ shorted length: https://community.metabrainz.org/t/error-decoding-audio-frame-during-fingerprint-calculation-submitting-sound-files/349009
+			args.push("-length", `${120 - retry * 10}`) // default length is 120 seconds
+		}
 		// https://github.com/acoustid/chromaprint/blob/master/src/cmd/fpcalc.cpp
-		const cmd = spawn(join(process.cwd(), fpcalc), [file, "-json"])
+		const cmd = spawn(join(process.cwd(), fpcalc), args)
 
 		let accuData = ""
 		cmd.stdout.on("data", (data) => {
@@ -157,9 +162,9 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify (absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">): Promise<AugmentedResult | null> {
+	async identify (absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">, retry?: number): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
-		const fingerprint = await this.#fingerprintFile(absolutePath)
+		const fingerprint = await this.#fingerprintFile(absolutePath, retry)
 		const data = await this.#identifyFingerprint(fingerprint)
 		const sorted = await this.#pick(data.results, metadata)
 		if (!sorted?.[0]) {
@@ -172,8 +177,8 @@ class AcoustId {
 		return augmented
 	}
 
-	async #fingerprintFile (absolutePath: string) {
-		return execFPcalc(absolutePath)
+	async #fingerprintFile (absolutePath: string, retry?: number) {
+		return execFPcalc(absolutePath, retry)
 	}
 
 	async #fetch (body: `?${string}`) {

@@ -12,6 +12,7 @@ import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server
 import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 import { unlink } from "fs/promises"
+import log from "utils/logger"
 
 // TODO: handle multi-artist album (both when linking and creating)
 // TODO: maybe now disconnected album isn't multi-artist anymore?
@@ -33,7 +34,7 @@ const trackInputSchema = z.object({
 
 type Input = z.infer<typeof trackInputSchema>
 
-async function getTrack(input: {id: string}) {
+async function getTrack (input: { id: string }) {
 	const track = await prisma.track.findUnique({
 		where: { id: input.id },
 		select: {
@@ -42,25 +43,33 @@ async function getTrack(input: {id: string}) {
 			coverId: true,
 			position: true,
 			mbid: true,
-			album: {select: {
-				id: true,
-				name: true,
-			}},
-			artist: {select: {
-				id: true,
-				name: true,
-			}},
-			file: {select: {
-				path: true,
-				duration: true,
-			}},
-			userData: {select: {
-				playcount: true,
-				favorite: true,
-			}},
-			spotify: {select: {id: true}},
-			lastfm: {select: {id: true}},
-			audiodb: {select: {entityId: true}},
+			album: {
+				select: {
+					id: true,
+					name: true,
+				}
+			},
+			artist: {
+				select: {
+					id: true,
+					name: true,
+				}
+			},
+			file: {
+				select: {
+					path: true,
+					duration: true,
+				}
+			},
+			userData: {
+				select: {
+					playcount: true,
+					favorite: true,
+				}
+			},
+			spotify: { select: { id: true } },
+			lastfm: { select: { id: true } },
+			audiodb: { select: { entityId: true } },
 		}
 	})
 	if (!track) {
@@ -82,7 +91,7 @@ async function getTrack(input: {id: string}) {
 
 type Track = Awaited<ReturnType<typeof getTrack>>
 
-async function getCover(input: Input, track: Track) {
+async function getCover (input: Input, track: Track) {
 	if (input.coverId && track.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
@@ -98,7 +107,7 @@ async function getCover(input: Input, track: Track) {
 	}
 }
 
-async function getArtist(input: Input) {
+async function getArtist (input: Input) {
 	if (!input.artist?.id && !input.artist?.name) return
 	if (input.artist?.id) {
 		const artist = await prisma.artist.findUnique({
@@ -120,7 +129,7 @@ async function getArtist(input: Input) {
 	return artist ?? undefined
 }
 
-async function getAlbum(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+async function getAlbum (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
 	if (!input.album?.id && !input.album?.name) return
 	if (input.album?.id) {
 		const album = await prisma.album.findUnique({
@@ -143,7 +152,7 @@ async function getAlbum(input: Input, track: Track, artist: Awaited<ReturnType<t
 	return album ?? undefined
 }
 
-async function getName(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+async function getName (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
 	if (!input.name) return
 	// const artistName = artist?.name ?? input.artist?.name ?? track.artist?.name
 	// if (artistName) {
@@ -153,7 +162,7 @@ async function getName(input: Input, track: Track, artist: Awaited<ReturnType<ty
 	return input.name
 }
 
-async function checkNameConflict(
+async function checkNameConflict (
 	input: Input,
 	track: Track,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -178,7 +187,7 @@ async function checkNameConflict(
 	}
 }
 
-async function getFingerprinted(
+async function getFingerprinted (
 	input: Input,
 	track: Track,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -201,7 +210,24 @@ async function getFingerprinted(
 		album: album?.name || input.album?.name || track.album?.name || metadata.common.album,
 	}
 
-	const fingerprinted = await acoustId.identify(track.file.path, metadata)
+	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
+	let retry = 0
+	const retries = 10
+	while (!fingerprinted && retry < retries) {
+		try {
+			fingerprinted = await acoustId.identify(track.file.path, metadata, retry)
+		} catch (e) {
+			if (typeof e === "string") {
+				log("warn", "wait", "acoustid", e) // ERROR: Error decoding audio frame (Invalid data found when processing input)
+			} else {
+				console.error(e)
+			}
+			retry++
+			if (retry >= retries) break
+			log("warn", "wait", "acoustid", `could not fingerprint ${track.file.path}, trying again later`)
+			await new Promise(resolve => setTimeout(resolve, 2 ** retry * 100))
+		}
+	}
 	if (!fingerprinted || !fingerprinted.title) return null
 
 	const sameName = similarStrings(fingerprinted.title, metadata.common.title!)
@@ -239,7 +265,7 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	await checkNameConflict(input, track, name, linkArtist, linkAlbum)
 
 	// validate mbid (re-check acoustid w/ new data to see if we can obtain a new mbid)
-	const metadata = await parseFile(track.file.path, {duration: true})
+	const metadata = await parseFile(track.file.path, { duration: true })
 	const fingerprinted = await getFingerprinted(input, track, name, linkAlbum, linkArtist, metadata)
 
 	const data: Prisma.TrackUpdateArgs["data"] = {}
@@ -275,8 +301,8 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 				mbid: fingerprinted?.artists?.[0]?.id,
 				genres: {
 					connectOrCreate: cleanGenreList(
-						fingerprinted?.artists?.[0]?.genres?.map(({name}) => name) ?? []
-					).map(({name, simplified}) => ({
+						fingerprinted?.artists?.[0]?.genres?.map(({ name }) => name) ?? []
+					).map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -294,11 +320,11 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 
 	if (input.name || input.artist || input.album) {
 		data.lastfmDate = null
-		if (track.lastfm) data.lastfm = {delete: true}
+		if (track.lastfm) data.lastfm = { delete: true }
 		data.audiodbDate = null
-		if (track.audiodb) data.audiodb = {delete: true}
+		if (track.audiodb) data.audiodb = { delete: true }
 		data.spotifyDate = null
-		if (track.spotify) data.spotify = {delete: true}
+		if (track.spotify) data.spotify = { delete: true }
 	}
 
 	const newTrack = await prisma.$transaction(async (tx) => {
@@ -307,11 +333,13 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 			data,
 			select: {
 				id: true,
-				artist: {select: {id: true}},
-				album: {select: {
-					id: true,
-					artistId: true,
-				}},
+				artist: { select: { id: true } },
+				album: {
+					select: {
+						id: true,
+						artistId: true,
+					}
+				},
 			}
 		})
 
@@ -322,8 +350,8 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 					genres: {
 						connectOrCreate: cleanGenreList([
 							...(metadata.common.genre ?? []),
-							...(fingerprinted?.genres?.map(({name}) => name) ?? []),
-						]).map(({name, simplified}) => ({
+							...(fingerprinted?.genres?.map(({ name }) => name) ?? []),
+						]).map(({ name, simplified }) => ({
 							where: { simplified },
 							create: { name, simplified }
 						}))
@@ -346,8 +374,8 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 							year: metadata.common.year,
 							genres: {
 								connectOrCreate: cleanGenreList(
-									fingerprinted?.album?.genres?.map(({name}) => name) ?? []
-								).map(({name, simplified}) => ({
+									fingerprinted?.album?.genres?.map(({ name }) => name) ?? []
+								).map(({ name, simplified }) => ({
 									where: { simplified },
 									create: { name, simplified }
 								}))
@@ -356,65 +384,83 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 					}
 				},
 				select: {
-					album: {select: {
-						id: true,
-						artistId: true,
-					}},
+					album: {
+						select: {
+							id: true,
+							artistId: true,
+						}
+					},
 				}
 			})
 			newTrack.album = extraTrackData.album
 		}
-	
+
 		if (track.userData && data.artist) {
 			if (track.artist) {
 				await tx.artist.update({
 					where: { id: track.artist.id },
-					data: { userData: { update: {
-						favorite: { decrement: track.userData.favorite ? 1 : 0 },
-						playcount: { decrement: track.userData.playcount },
-					} } }
+					data: {
+						userData: {
+							update: {
+								favorite: { decrement: track.userData.favorite ? 1 : 0 },
+								playcount: { decrement: track.userData.playcount },
+							}
+						}
+					}
 				})
 			}
 			if (newTrack.artist) {
 				await tx.artist.update({
 					where: { id: newTrack.artist.id },
-					data: { userData: { upsert: {
-						update: {
-							favorite: { increment: track.userData.favorite ? 1 : 0 },
-							playcount: { increment: track.userData.playcount },
-						},
-						create: {
-							favorite: track.userData.favorite ? 1 : 0,
-							playcount: track.userData.playcount,
+					data: {
+						userData: {
+							upsert: {
+								update: {
+									favorite: { increment: track.userData.favorite ? 1 : 0 },
+									playcount: { increment: track.userData.playcount },
+								},
+								create: {
+									favorite: track.userData.favorite ? 1 : 0,
+									playcount: track.userData.playcount,
+								}
+							}
 						}
-					} } }
+					}
 				})
 			}
 		}
-	
+
 		if (track.userData && data.album) {
 			if (track.album) {
 				await tx.album.update({
 					where: { id: track.album.id },
-					data: { userData: { update: {
-						favorite: { decrement: track.userData.favorite ? 1 : 0 },
-						playcount: { decrement: track.userData.playcount },
-					} } }
+					data: {
+						userData: {
+							update: {
+								favorite: { decrement: track.userData.favorite ? 1 : 0 },
+								playcount: { decrement: track.userData.playcount },
+							}
+						}
+					}
 				})
 			}
 			if (newTrack.album) {
 				await tx.album.update({
 					where: { id: newTrack.album.id },
-					data: { userData: { upsert: {
-						update: {
-							favorite: { increment: track.userData.favorite ? 1 : 0 },
-							playcount: { increment: track.userData.playcount },
-						},
-						create: {
-							favorite: track.userData.favorite ? 1 : 0,
-							playcount: track.userData.playcount,
+					data: {
+						userData: {
+							upsert: {
+								update: {
+									favorite: { increment: track.userData.favorite ? 1 : 0 },
+									playcount: { increment: track.userData.playcount },
+								},
+								create: {
+									favorite: track.userData.favorite ? 1 : 0,
+									playcount: track.userData.playcount,
+								}
+							}
 						}
-					} } }
+					}
 				})
 			}
 		}
@@ -422,32 +468,32 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 		return newTrack
 	})
 
-	await computeTrackCover(track.id, {album: false, artist: false})
+	await computeTrackCover(track.id, { album: false, artist: false })
 	if (input.album && track.album) {
-		await computeAlbumCover(track.album.id, {tracks: false, artist: true})
+		await computeAlbumCover(track.album.id, { tracks: false, artist: true })
 	}
 	if (input.artist && track.artist) {
-		await computeArtistCover(track.artist.id, {album: false, tracks: false})
+		await computeArtistCover(track.artist.id, { album: false, tracks: false })
 	}
 
 	// ws invalidation of affected entities, new and old, and computed endpoints
-	socketServer.emit("invalidate", {type: "track", id: track.id})
-	if ((input.album || input.position) && track.album) socketServer.emit("invalidate", {type: "album", id: track.album.id})
+	socketServer.emit("invalidate", { type: "track", id: track.id })
+	if ((input.album || input.position) && track.album) socketServer.emit("invalidate", { type: "album", id: track.album.id })
 	if (input.album && newTrack.album) {
 		if (data.album?.disconnect) {
-			socketServer.emit("add", {type: "album", id: newTrack.album.id})
-			if (newTrack.album.artistId) socketServer.emit("invalidate", {type: "artist", id: newTrack.album.artistId})
+			socketServer.emit("add", { type: "album", id: newTrack.album.id })
+			if (newTrack.album.artistId) socketServer.emit("invalidate", { type: "artist", id: newTrack.album.artistId })
 		}
-		else socketServer.emit("invalidate", {type: "album", id: newTrack.album.id})
+		else socketServer.emit("invalidate", { type: "album", id: newTrack.album.id })
 	}
-	if ((input.artist || input.album) && track.artist) socketServer.emit("invalidate", {type: "artist", id: track.artist.id})
+	if ((input.artist || input.album) && track.artist) socketServer.emit("invalidate", { type: "artist", id: track.artist.id })
 	if (input.artist && newTrack.artist) {
-		if (data.artist?.create) socketServer.emit("add", {type: "artist", id: newTrack.artist.id})
-		else socketServer.emit("invalidate", {type: "artist", id: newTrack.artist.id})
+		if (data.artist?.create) socketServer.emit("add", { type: "artist", id: newTrack.artist.id })
+		else socketServer.emit("invalidate", { type: "artist", id: newTrack.artist.id })
 	}
-	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", {type: "likes"})
-	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", {type: "listen-count"})
-	
+	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", { type: "likes" })
+	if (track.userData && (input.artist || input.album)) socketServer.emit("metrics", { type: "listen-count" })
+
 
 	fileWatcher.scheduleCleanup()
 })

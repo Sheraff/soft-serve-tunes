@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import { prisma } from "server/db/client"
 import { fileWatcher } from "server/persistent/watcher"
-import createTrack from "server/db/createTrack"
+import createTrack, { tryAgainLater } from "server/db/createTrack"
 import listFilesFromDir from "server/db/listFilesFromDir"
 import log from "utils/logger"
 import { socketServer } from "utils/typedWs/server"
@@ -155,6 +155,7 @@ function act () {
 			loadingStatus.promise = null
 			log("ready", "ready", "fswatcher", "All files in the music directory have an entry in the database, all database entries without a file are removed")
 			fileWatcher.scheduleCleanup()
+			tryAgainLater()
 		})
 }
 
