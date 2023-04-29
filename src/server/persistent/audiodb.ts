@@ -8,12 +8,14 @@ import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
+import similarStrings from "utils/similarStrings"
 
 const audiodbArtistSchema = z.object({
 	artists:
 		z.array(z.object({
 			idArtist: z.string().transform(Number),
 			strArtist: z.string(),
+			strArtistAlternate: z.string().optional(),
 			intFormedYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
 			intBornYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
 			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
@@ -164,6 +166,11 @@ class AudioDb {
 
 		const audiodbArtists = audiodbArtistSchema.parse(artistsJson)
 
+		if (audiodbArtists.artists.length === 0) {
+			log("warn", "404", "audiodb", `Artist found for "${artist.name}" but no artist data was received`)
+			return
+		}
+
 		let audiodbArtist: typeof audiodbArtists["artists"][number] | undefined = undefined
 		if (audiodbArtists.artists.length === 1) {
 			audiodbArtist = audiodbArtists.artists[0]
@@ -174,7 +181,14 @@ class AudioDb {
 		}
 
 		if (!audiodbArtist) {
-			// TODO: use string distance?
+			log("warn", "102", "audiodb", `No exact Artist match for "${artist.name}", trying string similarity`)
+			const similar = audiodbArtists.artists.filter(a => similarStrings(artist.name, a.strArtist))
+			if (similar.length === 1) {
+				audiodbArtist = similar[0]
+			}
+		}
+
+		if (!audiodbArtist) {
 			log("warn", "409", "audiodb", `Multiple artists found for "${artist.name}"`)
 			return
 		}
@@ -187,6 +201,15 @@ class AudioDb {
 			"strArtistWideThumb",
 			"strArtistBanner",
 		])
+
+		audiodbArtist.strArtist = audiodbArtist.strArtistAlternate && !similarStrings(artist.name, audiodbArtist.strArtist)
+			? similarStrings(artist.name, audiodbArtist.strArtistAlternate)
+				? audiodbArtist.strArtistAlternate
+				: audiodbArtist.strArtist
+			: audiodbArtist.strArtist
+
+		delete audiodbArtist.strArtistAlternate
+
 		await retryable(async () => prisma.audioDbArtist.create({
 			data: {
 				entityId: id,
@@ -269,6 +292,11 @@ class AudioDb {
 
 		const audiodbAlbums = audiodbAlbumSchema.parse(albumsJson)
 
+		if (audiodbAlbums.album.length === 0) {
+			log("warn", "404", "audiodb", `Album found for "${album.name}" but no album data was received`)
+			return
+		}
+
 		let audiodbAlbum: typeof audiodbAlbums["album"][number] | undefined = undefined
 		if (audiodbAlbums.album.length === 1) {
 			audiodbAlbum = audiodbAlbums.album[0]
@@ -279,7 +307,14 @@ class AudioDb {
 		}
 
 		if (!audiodbAlbum) {
-			// TODO: use string distance?
+			log("warn", "102", "audiodb", `No exact Album match for "${album.name}", trying string similarity`)
+			const similar = audiodbAlbums.album.filter(a => similarStrings(album.name, a.strAlbum))
+			if (similar.length === 1) {
+				audiodbAlbum = similar[0]
+			}
+		}
+
+		if (!audiodbAlbum) {
 			log("warn", "409", "audiodb", `Multiple albums found for "${album.name}" by "${album.artist?.name}"`)
 			return
 		}
@@ -378,6 +413,11 @@ class AudioDb {
 
 		const audiodbTracks = audiodbTrackSchema.parse(tracksJson)
 
+		if (audiodbTracks.track.length === 0) {
+			log("warn", "404", "audiodb", `Track found for "${track.name}" but no track data was received`)
+			return
+		}
+
 		let audiodbTrack: typeof audiodbTracks["track"][number] | undefined = undefined
 		if (audiodbTracks.track.length === 1) {
 			audiodbTrack = audiodbTracks.track[0]
@@ -388,7 +428,14 @@ class AudioDb {
 		}
 
 		if (!audiodbTrack) {
-			// TODO: use string distance?
+			log("warn", "102", "audiodb", `No exact Track match for "${track.name}", trying string similarity`)
+			const similar = audiodbTracks.track.filter(a => similarStrings(track.name, a.strTrack))
+			if (similar.length === 1) {
+				audiodbTrack = similar[0]
+			}
+		}
+
+		if (!audiodbTrack) {
 			log("warn", "409", "audiodb", `Multiple tracks found for "${track.name}" in "${track.album?.name}" by "${track.artist?.name}"`)
 			return
 		}

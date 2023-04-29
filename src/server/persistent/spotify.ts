@@ -9,6 +9,7 @@ import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 import { socketServer } from "utils/typedWs/server"
+import similarStrings from "utils/similarStrings"
 
 const imageSchema = z.object({
 	url: z.string(),
@@ -403,27 +404,99 @@ class Spotify {
 					|| `track:${this.sanitize(track.name)}${artistName ? ` artist:${this.sanitize(artistName)}` : ""}${albumName ? ` album:${this.sanitize(albumName)}` : ""}`
 				log("info", "fetch", "spotify", `${fuzzySearch ? "fuzzy " : ""}search: ${search}`)
 				const trackData = await this.fetch(`search?type=track&q=${search}`)
-				let candidate = ("tracks" in trackData)
-					? trackData.tracks.items[0] // TODO: use string distance
-					: undefined
-				if (!candidate) {
-					if (artistName && albumName && typeof track.position === "number") {
+				let candidate: z.infer<typeof trackSearchSchema>["tracks"]["items"][number] | undefined
+				findCandidate: {
+					if (("tracks" in trackData) && trackData.tracks.items.length > 0) {
+						if (trackData.tracks.items.length === 1) {
+							candidate = trackData.tracks.items[0]!
+							break findCandidate
+						}
+						const similar = trackData.tracks.items.filter(item => similarStrings(track.name, item.name))
+						if (similar.length === 0) {
+							candidate = trackData.tracks.items[0]!
+							break findCandidate
+						}
+						if (similar.length === 1) {
+							candidate = similar[0]!
+							break findCandidate
+						}
+						if (track.album) {
+							const similarAlbum = similar.filter(item => similarStrings(track.album!.name, item.album.name))
+							if (similarAlbum.length === 1) {
+								candidate = similarAlbum[0]!
+								break findCandidate
+							}
+							if (similarAlbum.length === 0) {
+								candidate = similar[0]!
+								break findCandidate
+							}
+						}
+						if (track.artist) {
+							const similarArtist = similar.filter(item => item.artists[0] && similarStrings(track.artist!.name, item.artists[0].name))
+							if (similarArtist.length === 1) {
+								candidate = similarArtist[0]!
+								break findCandidate
+							}
+						}
+						if (track.artist && track.album) {
+							const similarArtistAlbum = similar.filter(item => item.artists[0] && similarStrings(track.artist!.name, item.artists[0].name) && similarStrings(track.album!.name, item.album.name))
+							if (similarArtistAlbum.length === 1) {
+								candidate = similarArtistAlbum[0]!
+								break findCandidate
+							}
+						}
+						if (typeof track.position === "number") {
+							candidate = similar.find(item => item.track_number === track.position)
+							if (candidate) {
+								break findCandidate
+							}
+						}
+						candidate = similar[0]!
+					} else if (artistName && albumName) {
 						const search = `artist:${this.sanitize(artistName)} album:${this.sanitize(albumName)}`
-						log("info", "fetch", "spotify", `fallback search: #${track.position} of ${search}`)
+						log("info", "fetch", "spotify", `fallback fuzzy search: ${search}`)
 						const albumData = await this.fetch(`search?type=track&q=${search}`)
-						if ("error" in albumData) {
+						if (("error" in albumData) || albumData.tracks.items.length === 0) {
 							log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
 							break trackCreate
 						}
-						candidate = albumData.tracks.items.find(item => item.track_number === track.position) // TODO: use string distance (and avoid basing choice on position)
-						if (!candidate) {
-							log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
-							break trackCreate
+						const similar = albumData.tracks.items.filter(item => similarStrings(track.name, item.name))
+						if (similar.length === 1) {
+							candidate = similar[0]!
+							break findCandidate
 						}
-					} else {
-						log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
-						break trackCreate
+						if (similar.length > 1) {
+							if (track.album) {
+								const similarAlbum = similar.filter(item => similarStrings(track.album!.name, item.album.name))
+								if (similarAlbum.length === 1) {
+									candidate = similarAlbum[0]!
+									break findCandidate
+								}
+							}
+							if (track.artist) {
+								const similarArtist = similar.filter(item => item.artists[0] && similarStrings(track.artist!.name, item.artists[0].name))
+								if (similarArtist.length === 1) {
+									candidate = similarArtist[0]!
+									break findCandidate
+								}
+							}
+							if (track.artist && track.album) {
+								const similarArtistAlbum = similar.filter(item => item.artists[0] && similarStrings(track.artist!.name, item.artists[0].name) && similarStrings(track.album!.name, item.album.name))
+								if (similarArtistAlbum.length === 1) {
+									candidate = similarArtistAlbum[0]!
+									break findCandidate
+								}
+							}
+						}
+						if (typeof track.position === "number") {
+							log("info", "fetch", "spotify", `fallback fuzzy search based on track position #${track.position}`)
+							candidate = albumData.tracks.items.find(item => item.track_number === track.position)
+						}
 					}
+				}
+				if (!candidate) {
+					log("warn", "404", "spotify", `could not find track "${track.name}" by ${artistName} in ${albumName}`)
+					break trackCreate
 				}
 				const [candidateArtist, ...featuring] = candidate.artists
 				const albumFeat = candidateArtist
