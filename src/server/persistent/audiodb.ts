@@ -15,7 +15,7 @@ const audiodbArtistSchema = z.object({
 		z.array(z.object({
 			idArtist: z.string().transform(Number),
 			strArtist: z.string(),
-			strArtistAlternate: z.string().optional(),
+			strArtistAlternate: z.string().nullable().optional(),
 			intFormedYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
 			intBornYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
 			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
