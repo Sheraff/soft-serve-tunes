@@ -93,7 +93,7 @@ model Playlist {
 model Image {
   id                     String          @id
   path                   String          @unique
-  // TODO: record image origin to re-download in case of corruption
+  origin                 String?
   mimetype               String
   palette                Json?
   track                  Track[]         @relation(name: "metaImage")

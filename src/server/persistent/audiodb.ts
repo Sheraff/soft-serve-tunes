@@ -522,9 +522,9 @@ async function keysAndInputToImageIds<
 	Result extends { [key in keyof Pick<Input, Key>]: string }
 > (input: Input, keys: AllKeys): Promise<Result> {
 	const imageIds = await Promise.allSettled(keys.map(async (key) => {
-		const url = input[key]
+		const url = input[key] as string | undefined
 		if (url) {
-			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url as string)
+			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url)
 			if (hash) {
 				const { id } = await prisma.image.upsert({
 					where: { id: hash },
@@ -534,6 +534,7 @@ async function keysAndInputToImageIds<
 						path,
 						mimetype,
 						palette,
+						origin: url,
 					}
 				})
 				return [key, id] as const

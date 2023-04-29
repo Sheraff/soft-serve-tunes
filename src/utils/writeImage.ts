@@ -9,7 +9,7 @@ import extractPaletteFromUint8 from "utils/paletteExtraction"
 import retryable from "./retryable"
 import { type Prisma } from "@prisma/client"
 
-export async function writeImage(buffer: Buffer, extension = "jpg", url?: string) {
+export async function writeImage (buffer: Buffer, extension = "jpg", url?: string) {
 	const hash = crypto.createHash("md5").update(buffer).digest("hex") as string & { 0: string, 1: string, 2: string, 3: string, 4: string, length: 32 }
 	const fileName = `${hash}${extension.startsWith(".") ? "" : "."}${extension}`
 	const imagePath = join(".meta", hash[0], hash[1], hash[2], fileName)
@@ -24,7 +24,7 @@ export async function writeImage(buffer: Buffer, extension = "jpg", url?: string
 			}
 			writeFile(fullPath, buffer, { flag: "wx" }, (error) => {
 				if (error && error.code !== "EEXIST") {
-					console.error(new Error(`Error writing image: ${extension}, ${url}`, {cause: error}))
+					console.error(new Error(`Error writing image: ${extension}, ${url}`, { cause: error }))
 				}
 			})
 		})
@@ -34,7 +34,7 @@ export async function writeImage(buffer: Buffer, extension = "jpg", url?: string
 				console.warn("Could not extract palette", extension, url)
 			}
 		} catch (error) {
-			console.error(new Error(`Error extracting palette: ${extension}, ${url}`, {cause: error}))
+			console.error(new Error(`Error extracting palette: ${extension}, ${url}`, { cause: error }))
 		}
 	}
 	return {
@@ -45,9 +45,9 @@ export async function writeImage(buffer: Buffer, extension = "jpg", url?: string
 	}
 }
 
-export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
-	(Awaited<ReturnType<typeof writeImage>> & {mimetype: string})
-	| {mimetype: "",hash: "",path: "",palette: undefined,exists: undefined}
+export async function fetchAndWriteImage (url: string, retries = 0): Promise<
+	(Awaited<ReturnType<typeof writeImage>> & { mimetype: string })
+	| { mimetype: "", hash: "", path: "", palette: undefined, exists: undefined }
 > {
 	if (url) {
 		let step = 0
@@ -70,7 +70,7 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 				...result,
 			}
 		} catch (e) {
-			console.error(new Error(`Could not fetch image @${url}. Failed at step ${step} (retry #${retries}). Will retry=${retries < 5}`, {cause: e}))
+			console.error(new Error(`Could not fetch image @${url}. Failed at step ${step} (retry #${retries}). Will retry=${retries < 5}`, { cause: e }))
 			if (retries < 5) {
 				await new Promise(resolve => setTimeout(resolve, Math.random() * 10 + 500 * (retries + 1) ** 2))
 				return fetchAndWriteImage(url, retries + 1)
@@ -86,7 +86,7 @@ export async function fetchAndWriteImage(url?: string, retries = 0): Promise<
 	}
 }
 
-export async function extractPalette(buffer: Buffer) {
+export async function extractPalette (buffer: Buffer) {
 	const image = sharp(buffer)
 	const metadata = await image.metadata()
 
@@ -99,7 +99,7 @@ export async function extractPalette(buffer: Buffer) {
 			height: Math.round(metadata.height * 0.9),
 		})
 		: image
-	
+
 	return start
 		.resize(300, 300, {
 			fit: "cover",

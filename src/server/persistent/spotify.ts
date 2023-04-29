@@ -779,6 +779,7 @@ class Spotify {
 											path,
 											mimetype,
 											palette,
+											origin: image.url,
 										}
 									}
 								}
@@ -828,6 +829,7 @@ class Spotify {
 												path,
 												mimetype,
 												palette,
+												origin: image.url,
 											}
 										}
 									},

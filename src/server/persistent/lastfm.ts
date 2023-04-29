@@ -571,7 +571,8 @@ class LastFM {
 		let coverId: string | null = null
 		const image = artistData.image.at(-1)?.["#text"]
 		if (image) {
-			const { hash, path, mimetype, palette } = await fetchAndWriteImage(lastfmImageToUrl(image))
+			const url = lastfmImageToUrl(image)
+			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url)
 			if (hash && palette && path) {
 				await retryable(async () => {
 					const { id } = await prisma.image.upsert({
@@ -582,6 +583,7 @@ class LastFM {
 							path,
 							mimetype,
 							palette,
+							origin: url
 						}
 					})
 					coverId = id
@@ -749,7 +751,8 @@ class LastFM {
 		let coverId: string | null = null
 		const image = albumData.image.at(-1)?.["#text"]
 		if (image) {
-			const { hash, path, mimetype, palette } = await fetchAndWriteImage(lastfmImageToUrl(image))
+			const url = lastfmImageToUrl(image)
+			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url)
 			if (hash && palette && path) {
 				await retryable(async () => {
 					const { id } = await prisma.image.upsert({
@@ -760,6 +763,7 @@ class LastFM {
 							path,
 							mimetype,
 							palette,
+							origin: url,
 						}
 					})
 					coverId = id
