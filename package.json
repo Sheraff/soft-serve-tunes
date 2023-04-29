@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "NODE_OPTIONS=--max_old_space_size=4096 next start",
+    "start": "NODE_OPTIONS=\"--max_old_space_size=4096 --dns-result-order=ipv4first\" next start",
     "lint": "next lint --fix",
     "check": "tsc --noEmit",
     "postinstall": "prisma generate",
