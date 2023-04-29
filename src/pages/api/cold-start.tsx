@@ -93,7 +93,6 @@ function act () {
 					}
 				}
 
-				let removed = false
 				// since we already listed all files in the library (`listFilesFromDir`),
 				// we can use that to remove files from the db that are no longer in the library
 				tracks: {
@@ -109,7 +108,6 @@ function act () {
 						cursor += chunkSize
 						for (const dbFile of dbFiles) {
 							if (!trackPaths.has(dbFile.path)) {
-								removed = true
 								await fileWatcher.removeFileFromDb(dbFile.path)
 							}
 						}
@@ -128,7 +126,6 @@ function act () {
 						cursor += chunkSize
 						for (const dbImage of dbImages) {
 							if (!imagePaths.has(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dbImage.path))) {
-								removed = true
 								await removeImageEntry(dbImage.id)
 							}
 						}
@@ -143,10 +140,6 @@ function act () {
 						}
 					}
 				})
-
-				if (removed || orphanTracks.length) {
-					fileWatcher.scheduleCleanup()
-				}
 			} catch (e) {
 				// catching error because lack of cleanup shouldn't prevent app from starting up
 				console.error(new Error("error depopulating database", { cause: e }))
@@ -161,6 +154,7 @@ function act () {
 			clearInterval(interval)
 			loadingStatus.promise = null
 			log("ready", "ready", "fswatcher", "All files in the music directory have an entry in the database, all database entries without a file are removed")
+			fileWatcher.scheduleCleanup()
 		})
 }
 
