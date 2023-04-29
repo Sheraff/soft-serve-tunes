@@ -15,8 +15,8 @@ const musicBrainzGenreSchema = z.object({
 })
 
 const textRepresentationSchema = z.object({
-	language: z.string(), // "eng" for english, "mul" for international
-	script: z.string(), // "Latn" for latin
+	language: z.string().nullable(), // "eng" for english, "mul" for international
+	script: z.string().nullable(), // "Latn" for latin
 })
 
 const musicBrainzReleaseGroupSchema = z.object({
@@ -150,8 +150,8 @@ export default class MusicBrainz {
 			return undefined
 		}
 		const schema = z.union([
+			MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[type],
 			musicBrainzErrorSchema,
-			MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[type]
 		])
 		const parsed = schema.parse(json)
 		if ("error" in parsed) {

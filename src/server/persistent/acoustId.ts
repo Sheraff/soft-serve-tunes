@@ -127,8 +127,8 @@ const acoustiIdLookupSchema = z.object({
 })
 
 type Locale = {
-	language: string
-	script: string
+	language: string | null
+	script: string | null
 }
 
 type Candidate = z.infer<typeof acoustIdRecordingSchema> & {
