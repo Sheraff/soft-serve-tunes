@@ -28,7 +28,7 @@ const musicBrainzArtistSchema = z.object({
 		primary: z.boolean().nullable(),
 		name: z.string(),
 		locale: z.string().nullable(),
-		type: z.enum(["Artist name", "Legal name"]).nullable(),
+		type: z.enum(["Artist name", "Legal name", "Search hint"]).nullable(),
 	})).optional(),
 })
 
