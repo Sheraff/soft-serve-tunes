@@ -299,7 +299,7 @@ model AudioDbAlbum {
   idArtist Int
   strAlbum String
   entityId String? @unique
-  entity   Album?  @relation(fields: [entityId], references: [id])
+  entity   Album?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
   strMusicBrainzID String?
   strDescriptionEN String?
@@ -336,7 +336,7 @@ model AudioDbTrack {
   idAlbum  Int
   strTrack String
   entityId String? @unique
-  entity   Track?  @relation(fields: [entityId], references: [id])
+  entity   Track?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
   intDuration      Int?
   genres           Genre[] @relation
