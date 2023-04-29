@@ -329,7 +329,7 @@ class AcoustId {
 		 * for a few of the top results.
 		 */
 		const confidentCandidates = candidates.sort((a, b) => b.score - a.score)
-		for (let i = 0; i < Math.min(2, confidentCandidates.length); i++) {
+		for (let i = 0; i < Math.min(3, confidentCandidates.length); i++) {
 			const candidate = confidentCandidates[i]
 			if (!candidate) continue
 			if (candidate.score <= 0.9) continue
