@@ -14,6 +14,7 @@ import log from "utils/logger"
 import retryable from "utils/retryable"
 import { computeTrackCover } from "./computeCover"
 import { socketServer } from "utils/typedWs/server"
+import similarStrings from "utils/similarStrings"
 
 type PrismaError = PrismaClientRustPanicError
 	| PrismaClientValidationError
@@ -21,13 +22,13 @@ type PrismaError = PrismaClientRustPanicError
 	| PrismaClientInitializationError
 	| PrismaClientUnknownRequestError
 
-export default async function createTrack(path: string, retries = 0): Promise<true | false | Track> {
+export default async function createTrack (path: string, retries = 0): Promise<true | false | Track> {
 	const stats = await stat(path)
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
-	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path }, select: {path: true, count: true}})
+	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path }, select: { path: true, count: true } })
 	if (acoustidRetry) {
-		await prisma.fileToCreate.delete(({where: {path}}))
+		await prisma.fileToCreate.delete(({ where: { path } }))
 	}
 	if (existingFile) {
 		if (path === existingFile.path) {
@@ -51,7 +52,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	}
 	let _metadata: IAudioMetadata | undefined
 	try {
-		_metadata = await parseFile(path, {duration: true})
+		_metadata = await parseFile(path, { duration: true })
 		if (!_metadata) {
 			throw new Error("No metadata")
 		}
@@ -121,7 +122,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return false
 		}
 	}
-	
+
 	try {
 		log("info", "info", "fswatcher", `adding new track from file ${relativePath}`)
 
@@ -133,7 +134,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				return metadata.common.title
 			return basename(path, extname(path))
 		})()
-	
+
 		const position = fingerprinted?.no ?? metadata.common.track.no ?? undefined
 
 		const selectedCover = selectCover(metadata.common.picture)
@@ -144,7 +145,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
 			if (fingerprinted?.artists?.[0]) {
 				const mainName = fingerprinted.artists[0].name
-				const correctedMainName = (await lastFm.correctArtist(mainName)) || mainName
+				const lastfmName = await lastFm.correctArtist(mainName)
+				const correctedMainName = lastfmName
+					? similarStrings(mainName, lastfmName)
+						? lastfmName
+						: mainName
+					: mainName
 				if (fingerprinted.album?.artists?.[0]) {
 					if (fingerprinted.album.artists[0].name !== mainName) {
 						return [correctedMainName, true]
@@ -155,22 +161,22 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			return getArtist(metadata.common)
 		})()
 
-		const feats: ({name: string, id?: string})[] = (() => {
+		const feats: ({ name: string, id?: string })[] = (() => {
 			if (fingerprinted?.artists) {
-				return fingerprinted.artists.slice(1).map(({name, id}) => ({name, id}))
+				return fingerprinted.artists.slice(1).map(({ name, id }) => ({ name, id }))
 			}
 			if (metadata.common.artists) {
-				return metadata.common.artists?.filter(artist => artist !== metadata.common.artist).map((name) => ({name}))
+				return metadata.common.artists?.filter(artist => artist !== metadata.common.artist).map((name) => ({ name }))
 			}
 			return []
 		})()
 
-		const correctedFeats: ({name: string, id?: string})[] = []
+		const correctedFeats: ({ name: string, id?: string })[] = []
 		for (const feat of feats) {
 			if (!feat.name) continue
 			const correctedFeat = await lastFm.correctArtist(feat.name)
 			if (correctedFeat) {
-				correctedFeats.push({name: correctedFeat, id: feat.id})
+				correctedFeats.push({ name: correctedFeat, id: feat.id })
 			} else if (fingerprinted?.artists) {
 				correctedFeats.push(feat)
 			}
@@ -188,11 +194,11 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 
 		const baseGenres = []
 		if (metadata.common.genre) baseGenres.push(...metadata.common.genre)
-		if (fingerprinted?.genres) baseGenres.push(...fingerprinted.genres.map(({name}) => name))
+		if (fingerprinted?.genres) baseGenres.push(...fingerprinted.genres.map(({ name }) => name))
 		const genres = cleanGenreList(baseGenres)
 
 		const baseArtistGenres = []
-		if (fingerprinted?.artists?.[0]?.genres) baseArtistGenres.push(...fingerprinted.artists[0].genres.map(({name}) => name))
+		if (fingerprinted?.artists?.[0]?.genres) baseArtistGenres.push(...fingerprinted.artists[0].genres.map(({ name }) => name))
 		const artistGenres = cleanGenreList(baseArtistGenres)
 
 		const track = await retryable(() => prisma.track.create({
@@ -247,7 +253,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 								simplified: simplifiedName(correctedArtist),
 								mbid: fingerprinted?.artists?.[0]?.id,
 								genres: {
-									connectOrCreate: artistGenres.map(({name, simplified}) => ({
+									connectOrCreate: artistGenres.map(({ name, simplified }) => ({
 										where: { simplified },
 										create: { name, simplified }
 									}))
@@ -269,7 +275,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 					}))
 				},
 				genres: {
-					connectOrCreate: genres.map(({name, simplified}) => ({
+					connectOrCreate: genres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -295,7 +301,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			}))
 		}
 
-		
+
 		// create album now that we have an artistId
 		let linkedAlbum: Awaited<ReturnType<typeof linkAlbum>> | null = null
 		if (correctedAlbum) {
@@ -303,12 +309,12 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				// avoid cases where an album is created in duplicates because a single (or a few) track was from a different artist
 				const mainArtistMbidCandidate = fingerprinted?.album?.artists?.[0]
 				if (mainArtistMbidCandidate && fingerprinted?.artists?.[0]?.id !== mainArtistMbidCandidate.id && !notArtistName(mainArtistMbidCandidate.name)) {
-					const featAsMainAlbumArtist = track.feats.find(({mbid}) => mbid === mainArtistMbidCandidate.id)
+					const featAsMainAlbumArtist = track.feats.find(({ mbid }) => mbid === mainArtistMbidCandidate.id)
 					if (featAsMainAlbumArtist?.id)
 						return featAsMainAlbumArtist.id
 					const existingMainAlbumArtist = await retryable(() => prisma.artist.findFirst({
-						where: {mbid: mainArtistMbidCandidate.id},
-						select: {id: true}
+						where: { mbid: mainArtistMbidCandidate.id },
+						select: { id: true }
 					}))
 					if (existingMainAlbumArtist)
 						return existingMainAlbumArtist.id
@@ -317,9 +323,9 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			})()
 
 			const baseAlbumGenres = []
-			if (fingerprinted?.album?.genres) baseAlbumGenres.push(...fingerprinted.album.genres.map(({name}) => name))
+			if (fingerprinted?.album?.genres) baseAlbumGenres.push(...fingerprinted.album.genres.map(({ name }) => name))
 			const albumGenres = cleanGenreList(baseAlbumGenres)
-			
+
 			linkedAlbum = await linkAlbum(track.id, {
 				name: correctedAlbum,
 				simplified: simplifiedName(correctedAlbum),
@@ -328,7 +334,7 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 				tracksCount: fingerprinted?.of ?? metadata.common.track.of ?? undefined,
 				mbid: fingerprinted?.album?.id,
 				genres: {
-					connectOrCreate: albumGenres.map(({name, simplified}) => ({
+					connectOrCreate: albumGenres.map(({ name, simplified }) => ({
 						where: { simplified },
 						create: { name, simplified }
 					}))
@@ -336,11 +342,11 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 			}, isMultiArtistAlbum)
 		}
 		log("event", "event", "fswatcher", `added ${relativePath}`)
-		await computeTrackCover(track.id, {album: true, artist: true})
-		socketServer.emit("add", {type: "track", id: track.id})
-		if (track.artistId) socketServer.emit("add", {type: "artist", id: track.artistId})
+		await computeTrackCover(track.id, { album: true, artist: true })
+		socketServer.emit("add", { type: "track", id: track.id })
+		if (track.artistId) socketServer.emit("add", { type: "artist", id: track.artistId })
 		const albumId = track.albumId ?? linkedAlbum?.albumId
-		if (albumId) socketServer.emit("add", {type: "album", id: albumId})
+		if (albumId) socketServer.emit("add", { type: "album", id: albumId })
 		await tryAgainLater()
 		return track
 	} catch (e) {
@@ -363,10 +369,10 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 }
 
 let retryTimeout: NodeJS.Timeout | null = null
-async function tryAgainLater(path?: string, count = -1) {
+async function tryAgainLater (path?: string, count = -1) {
 	if (retryTimeout) clearTimeout(retryTimeout)
 	if (path) {
-		await retryable(() => prisma.fileToCreate.create({data: {path, count: count + 1}}))
+		await retryable(() => prisma.fileToCreate.create({ data: { path, count: count + 1 } }))
 	}
 	const howManyLeft = await prisma.fileToCreate.count()
 	if (howManyLeft) {
@@ -381,7 +387,7 @@ async function tryAgainLater(path?: string, count = -1) {
 	}
 }
 
-export function isVariousArtists(name: string) {
+export function isVariousArtists (name: string) {
 	return [
 		"variousartists",
 		"various",
@@ -390,7 +396,7 @@ export function isVariousArtists(name: string) {
 	].includes(simplifiedName(name))
 }
 
-export function notArtistName(name: string) {
+export function notArtistName (name: string) {
 	return [
 		"",
 		"variousartists",
@@ -402,7 +408,7 @@ export function notArtistName(name: string) {
 	].includes(simplifiedName(name))
 }
 
-async function getArtist(common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
+async function getArtist (common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
 	const isVarious = common.albumartist
 		? isVariousArtists(common.albumartist)
 		: false
@@ -418,7 +424,7 @@ async function getArtist(common: ICommonTagsResult): Promise<[string | undefined
 	return [undefined, isVarious]
 }
 
-async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs["data"], isMultiArtistAlbum: boolean) {
+async function linkAlbum (id: string, create: Prisma.AlbumCreateArgs["data"], isMultiArtistAlbum: boolean) {
 	if (isMultiArtistAlbum) {
 		const existingAlbum = await retryable(() => prisma.album.findFirst({
 			where: {
@@ -435,13 +441,13 @@ async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs["data"], isM
 		}
 	}
 	if (create.artistId) {
-		const {simplified, artistId} = create
+		const { simplified, artistId } = create
 		return retryable(() => prisma.track.update({
 			where: { id },
 			data: {
 				album: {
 					connectOrCreate: {
-						where: {simplified_artistId: { simplified, artistId }},
+						where: { simplified_artistId: { simplified, artistId } },
 						create,
 					}
 				}
@@ -451,7 +457,7 @@ async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs["data"], isM
 	}
 	return retryable(() => prisma.track.update({
 		where: { id },
-		data: { album: { create }},
+		data: { album: { create } },
 		select: { albumId: true },
 	}))
 }

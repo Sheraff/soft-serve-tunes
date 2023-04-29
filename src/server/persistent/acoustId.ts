@@ -28,19 +28,19 @@ type FPcalcResult = {
 	duration: number
 }
 
-function execFPcalc(file: string): Promise<FPcalcResult> {
+function execFPcalc (file: string): Promise<FPcalcResult> {
 	return new Promise((resolve, reject) => {
 		// https://github.com/acoustid/chromaprint/blob/master/src/cmd/fpcalc.cpp
 		const cmd = spawn(join(process.cwd(), fpcalc), [file, "-json"])
 
 		let accuData = ""
 		cmd.stdout.on("data", (data) => {
-			accuData+=data
+			accuData += data
 		})
 
 		let accuErr = ""
 		cmd.stderr.on("data", (data) => {
-			accuErr+=data
+			accuErr += data
 		})
 
 		cmd.on("close", (code) => {
@@ -126,14 +126,14 @@ const acoustiIdLookupSchema = z.object({
 	}))
 })
 
-type Candidate = z.infer<typeof acoustIdRecordingSchema> & {score: number}
-type Result = Omit<Candidate, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>}
-type ValidatedResult = Result & {of?: number, no?: number}
-type AugmentedResult = Omit<ValidatedResult, "artists"> 
-	& {genres?: {name: string}[]}
+type Candidate = z.infer<typeof acoustIdRecordingSchema> & { score: number }
+type Result = Omit<Candidate, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> }
+type ValidatedResult = Result & { of?: number, no?: number }
+type AugmentedResult = Omit<ValidatedResult, "artists">
+	& { genres?: { name: string }[] }
 	& {
-		artists?: (Exclude<ValidatedResult["artists"], undefined>[number] & {genres?: {name: string}[]})[]
-		album?: Omit<Exclude<ValidatedResult["album"], undefined>, "artists"> & {genres?: {name: string}[]} & {artists?: (Exclude<Exclude<ValidatedResult["album"], undefined>["artists"], undefined>[number] & {genres?: {name: string}[]})[]}
+		artists?: (Exclude<ValidatedResult["artists"], undefined>[number] & { genres?: { name: string }[] })[]
+		album?: Omit<Exclude<ValidatedResult["album"], undefined>, "artists"> & { genres?: { name: string }[] } & { artists?: (Exclude<Exclude<ValidatedResult["album"], undefined>["artists"], undefined>[number] & { genres?: { name: string }[] })[] }
 	}
 
 class AcoustId {
@@ -147,12 +147,12 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify(absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">): Promise<AugmentedResult | null> {
+	async identify (absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath)
 		const data = await this.#identifyFingerprint(fingerprint)
 		const sorted = await this.#pick(data.results, metadata)
-		if(!sorted?.[0]) {
+		if (!sorted?.[0]) {
 			return null
 		}
 		const result = sorted[0]
@@ -162,12 +162,12 @@ class AcoustId {
 		return augmented
 	}
 
-	async #fingerprintFile(absolutePath: string) {
+	async #fingerprintFile (absolutePath: string) {
 		return execFPcalc(absolutePath)
 	}
 
-	async #fetch(body: `?${string}`) {
-		const stored = await prisma.acoustidStorage.findFirst({where: {search: body}})
+	async #fetch (body: `?${string}`) {
+		const stored = await prisma.acoustidStorage.findFirst({ where: { search: body } })
 		if (stored) {
 			try {
 				const data = JSON.parse(stored.result) as z.infer<typeof acoustiIdLookupSchema>
@@ -211,11 +211,11 @@ class AcoustId {
 				}
 			})
 		}
-		
+
 		return parsed
 	}
 
-	async #identifyFingerprint(fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
+	async #identifyFingerprint (fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
 		const searchParams = new URLSearchParams()
 		searchParams.append("client", env.ACOUST_ID_API_KEY)
 		searchParams.append("format", "json")
@@ -252,29 +252,29 @@ class AcoustId {
 		"undefined": 9,
 	}
 
-	#getTypeValue(type: string | undefined): number {
+	#getTypeValue (type: string | undefined): number {
 		if (!type) return AcoustId.TYPE_PRIORITY.undefined
 		if (this.#isTypeKey(type)) return AcoustId.TYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown TYPE_PRIORITY ${type}`)
 		return AcoustId.TYPE_PRIORITY.undefined
 	}
 
-	#isTypeKey(type: string): type is keyof typeof AcoustId.TYPE_PRIORITY {
+	#isTypeKey (type: string): type is keyof typeof AcoustId.TYPE_PRIORITY {
 		return AcoustId.TYPE_PRIORITY.hasOwnProperty(type)
 	}
-	
-	#getSubTypeValue(type: string | undefined): number {
+
+	#getSubTypeValue (type: string | undefined): number {
 		if (!type) return AcoustId.SUBTYPE_PRIORITY.undefined
 		if (this.#isSubTypeKey(type)) return AcoustId.SUBTYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown SUBTYPE_PRIORITY ${type}`)
 		return AcoustId.SUBTYPE_PRIORITY.undefined
 	}
 
-	#isSubTypeKey(type: string): type is keyof typeof AcoustId.SUBTYPE_PRIORITY {
+	#isSubTypeKey (type: string): type is keyof typeof AcoustId.SUBTYPE_PRIORITY {
 		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, "common" | "format">) {
+	async #pick (results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (results.length === 0) {
 			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
 			return null
@@ -289,15 +289,15 @@ class AcoustId {
 			...(metadata.common.artists || []),
 			...(metadata.common.albumartist || []),
 		].filter((name) => !notArtistName(name))
-		const maxScore = Math.max(...results.map(({score}) => score))
+		const maxScore = Math.max(...results.map(({ score }) => score))
 		if (maxScore < 0.8) {
 			log("warn", "404", "acoustid", `Fingerprint confidence too low (${maxScore}) for ${metaName}`)
 			console.log(results)
 			return null
 		}
 		const candidates = results
-			.filter(({score, recordings}) => (score > maxScore - 0.05) && recordings)
-			.flatMap(({score, recordings}) => recordings?.map((recording) => ({...recording, score}))) as Candidate[]
+			.filter(({ score, recordings }) => (score > maxScore - 0.05) && recordings)
+			.flatMap(({ score, recordings }) => recordings?.map((recording) => ({ ...recording, score }))) as Candidate[]
 
 		if (candidates.length === 0) {
 			log("warn", "404", "acoustid", `Fingerprint did not retrieve enough data for ${metaName}`)
@@ -355,25 +355,25 @@ class AcoustId {
 				if (candidate.score > 0.999 && delta < 20) return true
 				return false
 			})
-			: confidentCandidates.filter(({score}) => score > 0.9)
+			: confidentCandidates.filter(({ score }) => score > 0.9)
 
 		if (sameDurationRecordings.length === 0) {
 			log("warn", "404", "acoustid", `Musicbrainz fingerprint matches don't fit file metadata for ${metaName}`)
 			confidentCandidates.forEach(candidate => (
 				console.log({
 					...candidate,
-					releasegroups: candidate.releasegroups?.map(({title}) => title).join(" --- "),
-					artists: candidate.artists?.map(({name}) => name).join(" --- ")
+					releasegroups: candidate.releasegroups?.map(({ title }) => title).join(" --- "),
+					artists: candidate.artists?.map(({ name }) => name).join(" --- ")
 				})
 			))
 			return null
 		}
 		const albums = sameDurationRecordings.flatMap((recording) => {
-			const {releasegroups, ...rest} = recording
+			const { releasegroups, ...rest } = recording
 			if (!releasegroups || releasegroups.length === 0) {
 				return rest
 			}
-			return releasegroups.map((album) => ({...rest, album}))
+			return releasegroups.map((album) => ({ ...rest, album }))
 		}) as Result[]
 		albums.sort((a, b) => {
 			// prefer items w/ album info
@@ -404,14 +404,14 @@ class AcoustId {
 
 			// prefer tracks w/ an artist that matches file metadata
 			if (metaArtist && _aArtists && _bArtists) {
-				const aHasSimilarArtist = _aArtists.some(({name}) => similarStrings(metaArtist, name))
-				const bHasSimilarArtist = _bArtists.some(({name}) => similarStrings(metaArtist, name))
+				const aHasSimilarArtist = _aArtists.some(({ name }) => similarStrings(metaArtist, name))
+				const bHasSimilarArtist = _bArtists.some(({ name }) => similarStrings(metaArtist, name))
 				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
 				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
 			}
 			if (metaArtists.length && _aArtists && _bArtists) {
-				const aHasSimilarArtist = _aArtists.some(({name}) => metaArtists.some((meta) => similarStrings(meta, name)))
-				const bHasSimilarArtist = _bArtists.some(({name}) => metaArtists.some((meta) => similarStrings(meta, name)))
+				const aHasSimilarArtist = _aArtists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
+				const bHasSimilarArtist = _bArtists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
 				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
 				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
 			}
@@ -456,11 +456,11 @@ class AcoustId {
 
 			return 0
 		})
-		socketServer.emit("console", {message: albums})
+		socketServer.emit("console", { message: albums })
 		return albums
 	}
 
-	async #musicBrainzComplete(result: Candidate): Promise<Candidate> {
+	async #musicBrainzComplete (result: Candidate): Promise<Candidate> {
 		const data = await this.#musicBrainz.fetch("recording", result.id)
 		if (!data) return result
 		result.title = data.title
@@ -471,9 +471,9 @@ class AcoustId {
 			result.releasegroups!.unshift({
 				id: release["release-group"].id,
 				title: release["release-group"].title,
-				artists: release["release-group"]["artist-credit"].map(({artist}) => ({
+				artists: release["release-group"]["artist-credit"].map(({ artist }) => ({
 					id: artist.id,
-					name: artist.name,
+					name: this.#musicBrainz.preferredArtistName(artist),
 				})),
 				secondarytypes: release["release-group"]["secondary-types"],
 				type: release["release-group"]["primary-type"] || undefined,
@@ -485,7 +485,7 @@ class AcoustId {
 		data["artist-credit"].forEach(credit => {
 			result.artists!.unshift({
 				id: credit.artist.id,
-				name: credit.artist.name,
+				name: this.#musicBrainz.preferredArtistName(credit.artist),
 			})
 		})
 		if (data.length) {
@@ -495,14 +495,14 @@ class AcoustId {
 	}
 
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
-	async #musicBrainzValidation(result: AugmentedResult): Promise<AugmentedResult> {
+	async #musicBrainzValidation (result: AugmentedResult): Promise<AugmentedResult> {
 		{
 			const data = await this.#musicBrainz.fetch("recording", result.id)
 			if (data) {
-				const {title, releases, genres} = data
+				const { title, releases, genres } = data
 				result.title = title
-				const positions = releases.map(({media}) => media[0]!.tracks[0]!.position)
-				const trackCounts = releases.map(({media}) => media[0]!["track-count"])
+				const positions = releases.map(({ media }) => media[0]!.tracks[0]!.position)
+				const trackCounts = releases.map(({ media }) => media[0]!["track-count"])
 				if (positions.length && positions.every(value => value === positions[0]))
 					result.no = positions[0]
 				if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
@@ -513,7 +513,7 @@ class AcoustId {
 		if (result.album?.id) {
 			const data = await this.#musicBrainz.fetch("release-group", result.album.id)
 			if (data) {
-				const {title, genres} = data
+				const { title, genres } = data
 				if (title)
 					result.album!.title = title
 				result.album!.genres = genres
@@ -523,27 +523,27 @@ class AcoustId {
 			for (const artist of result.artists) {
 				const data = await this.#musicBrainz.fetch("artist", artist.id)
 				if (data) {
-					const {name, genres} = data
+					const name = this.#musicBrainz.preferredArtistName(data)
 					if (name)
 						artist.name = name
-					artist.genres = genres
+					artist.genres = data.genres
 				}
 			}
 		}
 		if (result.album?.artists?.[0]?.id) {
 			const data = await this.#musicBrainz.fetch("artist", result.album.artists[0].id)
 			if (data) {
-				const {name, genres} = data
+				const name = this.#musicBrainz.preferredArtistName(data)
 				if (name)
 					result.album!.artists![0]!.name = name
-				result.album!.artists![0]!.genres = genres
+				result.album!.artists![0]!.genres = data.genres
 			}
 		}
 		return result
 	}
 
 	// handle cases where there is a single track whose main artist is not that of the rest of the album
-	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & {album?: z.infer<typeof acoustIdReleasegroupSchema>} & {score: number}, metadata: Pick<IAudioMetadata, "common" | "format">) {
+	async #reorderArtist (result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> } & { score: number }, metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (!result.artists || result.artists.length <= 1) {
 			return
 		}
@@ -551,7 +551,7 @@ class AcoustId {
 			? result.album.artists[0]!.id
 			: undefined
 		if (fingerprintArtist) {
-			const index = result.artists.findIndex(({id}) => id === fingerprintArtist)
+			const index = result.artists.findIndex(({ id }) => id === fingerprintArtist)
 			if (index <= 0) return
 			const [main] = result.artists.splice(index, 1)
 			result.artists.unshift(main!)
@@ -561,7 +561,7 @@ class AcoustId {
 			? metadata.common.artist
 			: undefined
 		if (metaArtist) {
-			const index = result.artists.findIndex(({name}) => similarStrings(name, metaArtist))
+			const index = result.artists.findIndex(({ name }) => similarStrings(name, metaArtist))
 			if (index <= 0) return
 			const [main] = result.artists.splice(index, 1)
 			result.artists.unshift(main!)
