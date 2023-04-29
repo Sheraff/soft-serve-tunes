@@ -1,4 +1,5 @@
 import { access, stat, readdir } from "node:fs/promises"
+import { type Stats } from "node:fs"
 import { basename, extname, dirname, relative } from "node:path"
 import { IAudioMetadata, ICommonTagsResult, parseFile, selectCover } from "music-metadata"
 import { writeImage } from "utils/writeImage"
@@ -23,13 +24,22 @@ type PrismaError = PrismaClientRustPanicError
 	| PrismaClientUnknownRequestError
 
 export default async function createTrack (path: string, retries = 0): Promise<true | false | Track> {
-	const stats = await stat(path)
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
-	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
+
 	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path }, select: { path: true, count: true } })
 	if (acoustidRetry) {
 		await prisma.fileToCreate.delete(({ where: { path } }))
 	}
+
+	let stats: Stats
+	try {
+		stats = await stat(path)
+	} catch (error) {
+		log("error", "error", "fswatcher", `could not stat file ${relativePath}, it might have been removed while it was still being processed`)
+		return false
+	}
+
+	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
 	if (existingFile) {
 		if (path === existingFile.path) {
 			return true
