@@ -146,10 +146,8 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 			if (fingerprinted?.artists?.[0]) {
 				const mainName = fingerprinted.artists[0].name
 				const lastfmName = await lastFm.correctArtist(mainName)
-				const correctedMainName = lastfmName
-					? similarStrings(mainName, lastfmName)
-						? lastfmName
-						: mainName
+				const correctedMainName = lastfmName && similarStrings(mainName, lastfmName)
+					? lastfmName
 					: mainName
 				if (fingerprinted.album?.artists?.[0]) {
 					if (fingerprinted.album.artists[0].name !== mainName) {
@@ -174,7 +172,10 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 		const correctedFeats: ({ name: string, id?: string })[] = []
 		for (const feat of feats) {
 			if (!feat.name) continue
-			const correctedFeat = await lastFm.correctArtist(feat.name)
+			const lastfmName = await lastFm.correctArtist(feat.name)
+			const correctedFeat = lastfmName && similarStrings(feat.name, lastfmName)
+				? lastfmName
+				: feat.name
 			if (correctedFeat) {
 				correctedFeats.push({ name: correctedFeat, id: feat.id })
 			} else if (fingerprinted?.artists) {
@@ -184,8 +185,11 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 
 		const correctedTrack = await (async () => {
 			if (correctedArtist && name) {
-				const correctedName = await lastFm.correctTrack(correctedArtist, name)
-				return correctedName || name
+				const lastfmName = await lastFm.correctTrack(correctedArtist, name)
+				const correctedName = lastfmName && similarStrings(name, lastfmName)
+					? lastfmName
+					: name
+				return correctedName
 			}
 			return name
 		})()
