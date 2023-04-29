@@ -126,8 +126,18 @@ const acoustiIdLookupSchema = z.object({
 	}))
 })
 
-type Candidate = z.infer<typeof acoustIdRecordingSchema> & { score: number }
-type Result = Omit<Candidate, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> }
+type Locale = {
+	language: string
+	script: string
+}
+
+type Candidate = z.infer<typeof acoustIdRecordingSchema> & {
+	score: number
+	releasegroups?: (Exclude<z.infer<typeof acoustIdRecordingSchema>["releasegroups"], undefined>[number] & {
+		locale?: Locale
+	})[]
+}
+type Result = Omit<Candidate, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> & { locale?: Locale } }
 type ValidatedResult = Result & { of?: number, no?: number }
 type AugmentedResult = Omit<ValidatedResult, "artists">
 	& { genres?: { name: string }[] }
@@ -454,6 +464,21 @@ class AcoustId {
 				if (aNotArtist && !bNotArtist) return 1
 			}
 
+			// prefer english titles (or latin script titles)
+			const aLocale = a.album?.locale
+			const bLocale = b.album?.locale
+			if (aLocale && bLocale) {
+				if (aLocale.language !== bLocale.language) {
+					if (aLocale.language === "en" && bLocale.language !== "en") return -1
+					if (aLocale.language !== "en" && bLocale.language === "en") return 1
+				} else if (aLocale.language === "mul") {
+					if (aLocale.script !== bLocale.script) {
+						if (aLocale.script === "Latn" && bLocale.script !== "Latn") return -1
+						if (aLocale.script !== "Latn" && bLocale.script === "Latn") return 1
+					}
+				}
+			}
+
 			return 0
 		})
 		socketServer.emit("console", { message: albums })
@@ -473,10 +498,11 @@ class AcoustId {
 				title: release["release-group"].title,
 				artists: release["release-group"]["artist-credit"].map(({ artist }) => ({
 					id: artist.id,
-					name: this.#musicBrainz.preferredArtistName(artist),
+					name: this.#musicBrainz.preferredArtistName(artist) || artist.name,
 				})),
 				secondarytypes: release["release-group"]["secondary-types"],
 				type: release["release-group"]["primary-type"] || undefined,
+				locale: release["text-representation"],
 			})
 		})
 		if (!result.artists) {
@@ -485,7 +511,7 @@ class AcoustId {
 		data["artist-credit"].forEach(credit => {
 			result.artists!.unshift({
 				id: credit.artist.id,
-				name: this.#musicBrainz.preferredArtistName(credit.artist),
+				name: this.#musicBrainz.preferredArtistName(credit.artist) || credit.artist.name,
 			})
 		})
 		if (data.length) {
@@ -499,23 +525,23 @@ class AcoustId {
 		{
 			const data = await this.#musicBrainz.fetch("recording", result.id)
 			if (data) {
-				const { title, releases, genres } = data
-				result.title = title
-				const positions = releases.map(({ media }) => media[0]!.tracks[0]!.position)
-				const trackCounts = releases.map(({ media }) => media[0]!["track-count"])
+				const title = this.#musicBrainz.preferredTrackName(data)
+				if (title) result.title = title
+				const positions = data.releases.map(({ media }) => media[0]!.tracks[0]!.position)
+				const trackCounts = data.releases.map(({ media }) => media[0]!["track-count"])
 				if (positions.length && positions.every(value => value === positions[0]))
 					result.no = positions[0]
 				if (trackCounts.length && trackCounts.every(value => value === trackCounts[0]))
 					result.of = trackCounts[0]
-				result.genres = genres
+				result.genres = data.genres
 			}
 		}
 		if (result.album?.id) {
 			const data = await this.#musicBrainz.fetch("release-group", result.album.id)
 			if (data) {
-				const { title, genres } = data
-				if (title)
-					result.album!.title = title
+				const { genres } = data
+				const title = this.#musicBrainz.preferredAlbumName(data)
+				if (title) result.album!.title = title
 				result.album!.genres = genres
 			}
 		}
@@ -524,8 +550,7 @@ class AcoustId {
 				const data = await this.#musicBrainz.fetch("artist", artist.id)
 				if (data) {
 					const name = this.#musicBrainz.preferredArtistName(data)
-					if (name)
-						artist.name = name
+					if (name) artist.name = name
 					artist.genres = data.genres
 				}
 			}
@@ -534,8 +559,7 @@ class AcoustId {
 			const data = await this.#musicBrainz.fetch("artist", result.album.artists[0].id)
 			if (data) {
 				const name = this.#musicBrainz.preferredArtistName(data)
-				if (name)
-					result.album!.artists![0]!.name = name
+				if (name) result.album!.artists![0]!.name = name
 				result.album!.artists![0]!.genres = data.genres
 			}
 		}

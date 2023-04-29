@@ -14,10 +14,20 @@ const musicBrainzGenreSchema = z.object({
 	name: z.string()
 })
 
+const textRepresentationSchema = z.object({
+	language: z.string(), // "eng" for english, "mul" for international
+	script: z.string(), // "Latn" for latin
+})
+
 const musicBrainzReleaseGroupSchema = z.object({
 	id: z.string(),
 	title: z.string(),
 	genres: z.array(musicBrainzGenreSchema),
+	releases: z.array(z.object({
+		["text-representation"]: textRepresentationSchema,
+		date: z.coerce.date().optional(),
+		title: z.string(),
+	})),
 })
 
 const musicBrainzArtistSchema = z.object({
@@ -29,6 +39,7 @@ const musicBrainzArtistSchema = z.object({
 		name: z.string(),
 		locale: z.string().nullable(),
 		type: z.enum(["Artist name", "Legal name", "Search hint"]).nullable(),
+		ended: z.boolean().nullable(),
 	})).optional(),
 })
 
@@ -39,10 +50,12 @@ const musicBrainzRecordingSchema = z.object({
 	releases: z.array(z.object({
 		media: z.array(z.object({
 			tracks: z.array(z.object({
-				position: z.number()
+				position: z.number(),
+				title: z.string(),
 			})).length(1),
 			"track-count": z.number(),
 		})).length(1),
+		"text-representation": textRepresentationSchema,
 		"release-group": z.object({
 			id: z.string(),
 			title: z.string(),
@@ -51,6 +64,7 @@ const musicBrainzRecordingSchema = z.object({
 			"artist-credit": z.array(z.object({
 				artist: musicBrainzArtistSchema,
 			})),
+			"first-release-date": z.coerce.date().optional(),
 		}),
 	})),
 	"artist-credit": z.array(z.object({
@@ -127,7 +141,7 @@ export default class MusicBrainz {
 		if (type === "recording") {
 			params.set("inc", "releases+media+genres+artist-credits+release-groups+aliases")
 		} else if (type === "release-group") {
-			params.set("inc", "genres")
+			params.set("inc", "genres+releases")
 		} else if (type === "artist") {
 			params.set("inc", "genres+aliases")
 		}
@@ -152,107 +166,111 @@ export default class MusicBrainz {
 		if (!artist.aliases) {
 			return artist.name
 		}
-		const primaryAliases = artist.aliases.filter(alias => alias.primary)
-		if (primaryAliases.length === 0) {
-			return artist.name
-		}
-		if (primaryAliases.length === 1) {
+
+		// super confident
+		const primaryAliases = artist.aliases.filter(alias => alias.primary && alias.type === "Artist name" && alias.ended !== true && alias.locale === "en")
+		if (primaryAliases.length > 0) {
 			return primaryAliases[0]!.name
 		}
-		const artistAliases = primaryAliases.filter(alias => alias.type === "Artist name")
-		if (artistAliases.length === 0) {
+
+		// still acceptable current name
+		const mainNameLatinCharCount = countLatinCharacters(artist.name)
+		if (mainNameLatinCharCount > 2) {
 			return artist.name
 		}
-		if (artistAliases.length === 1) {
-			return artistAliases[0]!.name
-		}
-		const englishAliases = artistAliases.filter(alias => alias.locale === "en")
-		if (englishAliases.length === 1) {
-			return englishAliases[0]!.name
-		}
-		if (englishAliases.length > 1) {
-			return artist.name
-		}
-		const frenchAliases = artistAliases.filter(alias => alias.locale === "fr")
-		if (frenchAliases.length === 1) {
-			return frenchAliases[0]!.name
-		}
-		if (frenchAliases.length > 1) {
-			return artist.name
-		}
-		const latinAliases = artistAliases.filter(alias => alias.locale && LATIN_ALPHABET_LOCALES.has(alias.locale))
+
+		// all possible options remaining
+		const latinAliases = artist.aliases.filter(alias =>
+			countLatinCharacters(alias.name) > 0
+			&& (alias.type === "Artist name" || alias.type === null)
+		)
 		if (latinAliases.length === 0) {
 			return artist.name
 		}
-		if (latinAliases.length === 1) {
-			return latinAliases[0]!.name
+		const latinBest = latinAliases.filter(alias =>
+			alias.primary
+			&& alias.type === "Artist name"
+			&& alias.ended !== true
+		)
+		if (latinBest.length > 0) {
+			return latinBest[0]!.name
 		}
-		const sortedByLocale = latinAliases.sort((a, b) => {
-			const aLocale = LATIN_ALPHABET_LOCALES.get(a.locale!)!
-			const bLocale = LATIN_ALPHABET_LOCALES.get(b.locale!)!
-			return aLocale - bLocale
+		const latinSecondary = latinAliases.filter(alias => alias.ended !== true)
+		if (latinSecondary.length > 0) {
+			return latinSecondary[0]!.name
+		}
+		const latinOldNames = latinAliases.filter(alias => alias.primary)
+		if (latinOldNames.length > 0) {
+			return latinOldNames[0]!.name
+		}
+		const lastResort = latinAliases.filter(alias => alias.primary !== false && alias.type === "Artist name")
+		if (lastResort.length > 0) {
+			return lastResort[0]!.name
+		}
+		return artist.name
+	}
+
+	preferredTrackName (recording: z.infer<typeof musicBrainzRecordingSchema>): string {
+		if (recording.releases.length === 0) {
+			return recording.title
+		}
+		const releasesWithTrackTitle = recording.releases.filter(release => release.media[0]?.tracks[0]?.title)
+		if (releasesWithTrackTitle.length < 2) {
+			return recording.title
+		}
+		const latinReleases = releasesWithTrackTitle.filter(release => release["text-representation"].script === "Latn")
+		if (latinReleases.length === 1) {
+			return latinReleases[0]!.media[0]!.tracks[0]!.title
+		}
+		if (latinReleases.length === 0) {
+			return recording.title
+		}
+		const englishReleases = latinReleases.filter(release => release["text-representation"].language === "eng")
+		if (englishReleases.length === 1) {
+			return englishReleases[0]!.media[0]!.tracks[0]!.title
+		}
+		latinReleases.sort((a, b) => {
+			const aDate = a["release-group"]["first-release-date"]
+			const bDate = b["release-group"]["first-release-date"]
+			if (aDate && !bDate) return -1
+			if (!aDate && bDate) return 1
+			if (!aDate && !bDate) return 0
+			return +aDate! - +bDate!
 		})
-		return sortedByLocale[0]!.name
+		return latinReleases[0]!.media[0]!.tracks[0]!.title
+	}
+
+	preferredAlbumName (releaseGroup: z.infer<typeof musicBrainzReleaseGroupSchema>): string {
+		if (releaseGroup.releases.length === 0) {
+			return releaseGroup.title
+		}
+		const latinReleases = releaseGroup.releases.filter(release => release["text-representation"].script === "Latn")
+		if (latinReleases.length === 1) {
+			return latinReleases[0]!.title
+		}
+		if (latinReleases.length === 0) {
+			return releaseGroup.title
+		}
+		const englishReleases = latinReleases.filter(release => release["text-representation"].language === "eng")
+		if (englishReleases.length === 1) {
+			return englishReleases[0]!.title
+		}
+		latinReleases.sort((a, b) => {
+			if (a.date && !b.date) return -1
+			if (!a.date && b.date) return 1
+			if (!a.date && !b.date) return 0
+			return +a.date! - +b.date!
+		})
+		return latinReleases[0]!.title
 	}
 }
 
-const LATIN_ALPHABET_LOCALES = new Map([
-	["en", 0],
-	["fr", 1],
-	["de", 2],
-	["es", 3],
-	["it", 4],
-	["pt", 5],
-	["nl", 6],
-	["sv", 7],
-	["da", 8],
-	["no", 9],
-	["fi", 10],
-	["is", 11],
-	["hu", 12],
-	["pl", 13],
-	["cs", 14],
-	["sk", 15],
-	["sl", 16],
-	["hr", 17],
-	["ro", 18],
-	["tr", 19],
-	["lt", 20],
-	["lv", 21],
-	["et", 22],
-	["el", 23],
-	["bg", 24],
-	["ru", 25],
-	["uk", 26],
-	["be", 27],
-	["sr", 28],
-	["mk", 29],
-	["sq", 30],
-	["hy", 31],
-	["ka", 32],
-	["he", 33],
-	["ar", 34],
-	["fa", 35],
-	["ur", 36],
-	["hi", 37],
-	["bn", 38],
-	["pa", 39],
-	["gu", 40],
-	["ta", 41],
-	["te", 42],
-	["kn", 43],
-	["ml", 44],
-	["si", 45],
-	["th", 46],
-	["lo", 47],
-	["my", 48],
-	["ka", 49],
-	["ja", 50],
-	["zh", 51],
-	["ko", 52],
-	["vi", 53],
-	["id", 54],
-	["ms", 55],
-	["fil", 56],
-	["jv", 57],
-])
+function countLatinCharacters (str: string): number {
+	let count = 0
+	for (const char of str) {
+		if (char.match(/[a-z]/i)) {
+			count++
+		}
+	}
+	return count
+}
