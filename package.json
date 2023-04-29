@@ -20,7 +20,8 @@
     "db": "prisma format && prisma generate && prisma db push",
     "format": "prisma format",
     "spawn": "pm2 start npm --time --name soft-serve-tunes -- start",
-    "wake": "curl http://localhost:3000/api/cold-start -I"
+    "wake": "curl http://localhost:3000/api/cold-start -I",
+    "studio": "prisma studio"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.6",
