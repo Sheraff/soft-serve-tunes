@@ -1,15 +1,21 @@
 import os from "node:os"
 
-import { getServerAuthSession } from "server/common/get-server-auth-session"
 import type { NextApiRequest, NextApiResponse } from "next"
-import { getCsrfHash } from "server/csrfAuth"
-import { getCsrfToken } from "next-auth/react"
+import getServerAuth from "server/common/server-auth"
+import { registerClient } from "server/common/localAuth"
 
 export default async function ip (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
-		return res.status(401).json({ error: "authentication required" })
+	if (!await getServerAuth(req, res)) {
+		return
 	}
+
+	const registrationId = registerClient(req)
+	if (!registrationId) {
+		res.setHeader("Critical-CH", "sec-ch-dpr, sec-ch-viewport-width")
+		res.status(409).json({ error: "client and server are on different local networks" })
+		return
+	}
+
 	const interfaces = os.networkInterfaces()
 	const addresses = []
 	for (const k in interfaces) {
@@ -22,10 +28,15 @@ export default async function ip (req: NextApiRequest, res: NextApiResponse) {
 		}
 	}
 
-	console.log("from /ip", req.query.token)
+	// TODO: do a better job at selecting the address? (prefer eth)
+	const address = addresses[0]
+	if (!address) {
+		res.status(500).json({ error: "no local network address found" })
+		return
+	}
 
-	const csrfToken = await getCsrfToken({ req })
-	const hash = getCsrfHash(csrfToken)
+	const host = `${address}:3000`
 
-	res.status(200).json({ addresses, hash })
+	// res.setHeader("Set-Cookie", `local-client-id=${registrationId}; Path=/; HttpOnly; SameSite=None; Secure`)
+	res.status(200).json({ host, registrationId })
 }

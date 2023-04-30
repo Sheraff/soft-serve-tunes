@@ -1,12 +1,10 @@
 import { type inferAsyncReturnType } from "@trpc/server"
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next"
-import { type Session } from "next-auth"
-
-import { getServerAuthSession } from "../common/get-server-auth-session"
 import { prisma } from "../db/client"
+import { isAuthed } from "server/common/server-auth"
 
 type CreateContextOptions = {
-  session: Session | null
+  isAuthed: () => Promise<boolean | object>
 }
 
 /** Use this helper for:
@@ -16,7 +14,7 @@ type CreateContextOptions = {
  **/
 export const createContextInner = async (opts: CreateContextOptions) => {
   return {
-    session: opts.session,
+    isAuthed: opts.isAuthed,
     prisma,
   }
 }
@@ -28,11 +26,8 @@ export const createContextInner = async (opts: CreateContextOptions) => {
 export const createContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts
 
-  // Get the session from the server using the getServerSession wrapper function
-  const session = await getServerAuthSession({ req, res })
-
   return await createContextInner({
-    session,
+    isAuthed: () => isAuthed(req, res),
   })
 }
 

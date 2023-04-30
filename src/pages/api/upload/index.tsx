@@ -13,12 +13,11 @@ import { isVariousArtists, notArtistName } from "server/db/createTrack"
 import { prisma } from "server/db/client"
 import { acoustId } from "server/persistent/acoustId"
 import { socketServer } from "utils/typedWs/server"
-import { getServerAuthSession } from "server/common/get-server-auth-session"
+import getServerAuth from "server/common/server-auth"
 
 export default async function upload (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
-		return res.status(401).json({ error: "authentication required" })
+	if (!await getServerAuth(req, res)) {
+		return
 	}
 
 	const form = new formidable.IncomingForm({

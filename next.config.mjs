@@ -37,6 +37,10 @@ export default defineNextConfig({
           {
             key: 'Accept-CH',
             value: 'Sec-CH-DPR, Sec-CH-Viewport-Width, Downlink',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           }
         ],
       },

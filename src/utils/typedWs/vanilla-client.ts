@@ -9,8 +9,8 @@ type Subscription<K extends keyof Router> = (params: {
 	onError?: (error: Event) => void
 }) => void
 
-function makeSubscription<K extends keyof Router>(prop: K): Subscription<K> {
-	return ({onData, onError}) => {
+function makeSubscription<K extends keyof Router> (prop: K): Subscription<K> {
+	return ({ onData, onError }) => {
 		const controller = new AbortController()
 		wsClient.target.addEventListener(prop, (event) => {
 			if (!(event instanceof CustomEvent)) return
@@ -31,15 +31,20 @@ function makeSubscription<K extends keyof Router>(prop: K): Subscription<K> {
 	}
 }
 
+export const workerSocketController = {
+	switchToLocalSocket: wsClient.switchToLocalSocket.bind(wsClient),
+	switchToRemoteSocket: wsClient.switchToRemoteSocket.bind(wsClient),
+}
+
 export const workerSocketClient = new Proxy({}, {
-	get<K extends keyof Router>(_: any, prop: K) {
+	get<K extends keyof Router> (_: any, prop: K) {
 		const subscribe = makeSubscription(prop)
 		return {
 			subscribe
 		}
 	}
 }) as {
-	[K in keyof Router]: {
-		subscribe: Subscription<K>
+		[K in keyof Router]: {
+			subscribe: Subscription<K>
+		}
 	}
-}

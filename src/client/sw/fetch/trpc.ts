@@ -2,6 +2,7 @@
 import { AllRoutesString, keyStringToArray } from "utils/trpc"
 import trpcRevalidation from "../messages/trpcRevalidation"
 import { CACHES } from "../utils/constants"
+import swFetch from "client/sw/network/swFetch"
 
 function trpcUrlToCacheKeys (url: URL) {
 	const [, , , parts] = url.pathname.split("/")
@@ -81,7 +82,7 @@ async function trpcUrlToCacheValues (request: Request, url: URL, allowNetwork = 
 		const fetchUrl = new URL(`/api/trpc/${fetchEndpoints}`, self.location.origin)
 		fetchUrl.searchParams.set("batch", "1")
 		fetchUrl.searchParams.set("input", JSON.stringify(fetchInput))
-		const fetchResponse = await fetch(fetchUrl)
+		const fetchResponse = await swFetch(fetchUrl)
 		if (fetchResponse.status === 200 || fetchResponse.status === 207) {
 			handleTrpcFetchResponse(fetchResponse.clone(), fetchUrl)
 			const fetchData = await fetchResponse.json()
@@ -153,7 +154,7 @@ export function handleTrpcFetchResponse (response: Response, url: URL) {
 }
 
 function fetchFromServer (request: Request, url: URL) {
-	return fetch(request)
+	return swFetch(request)
 		.then(response => {
 			if (response.status === 200 || response.status === 207) {
 				const cacheResponse = response.clone()

@@ -4,7 +4,6 @@ import { trpc } from "utils/trpc"
 import { useQueryClient, hashQueryKey, focusManager } from "@tanstack/react-query"
 import { socketClient } from "utils/typedWs/react-client"
 import { env } from "env/client.mjs"
-import { getCsrfToken } from "next-auth/react"
 
 export default function WatcherSocket () {
 	const trpcClient = trpc.useContext()
@@ -38,7 +37,8 @@ export default function WatcherSocket () {
 	useEffect(() => {
 		if (!("serviceWorker" in navigator)) return
 		let focused = true
-		const unsubscribe = focusManager.subscribe(async () => {
+		let active = true
+		const onFocusChange = async () => {
 			const newFocused = focusManager.isFocused()
 			if (focused === newFocused) return
 			focused = newFocused
@@ -46,10 +46,21 @@ export default function WatcherSocket () {
 			const target = registration.active
 			if (!target) return
 			const type = focused ? "sw-app-focus" : "sw-app-blur"
-			const token = await getCsrfToken()
-			target.postMessage({ type, payload: { token } })
-		})
-		return unsubscribe
+			if (!active) return
+			target.postMessage({
+				type,
+				payload: {
+					dpr: window.devicePixelRatio,
+					viewport: window.innerWidth,
+				}
+			})
+		}
+		const unsubscribe = focusManager.subscribe(onFocusChange)
+		onFocusChange()
+		return () => {
+			active = false
+			unsubscribe()
+		}
 	}, [])
 
 	// maintain up-to-date query cache

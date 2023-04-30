@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { getServerAuthSession } from "server/common/get-server-auth-session"
+import getServerAuth from "server/common/server-auth"
 import { prisma } from "server/db/client"
 
 async function modify (id: string) {
@@ -58,9 +58,8 @@ async function act () {
 }
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
-		return res.status(401).json({ error: "authentication required" })
+	if (!await getServerAuth(req, res)) {
+		return
 	}
 	act()
 	return res.status(200).end()

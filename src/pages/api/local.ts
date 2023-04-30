@@ -1,14 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import csrfAuth from "server/csrfAuth"
+import { getKnownClient } from "server/common/localAuth"
 
 export default async function local (req: NextApiRequest, res: NextApiResponse) {
-	res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000')
-	res.setHeader('Access-Control-Allow-Credentials', 'true')
-	console.log("from /local", req.query.token)
-	const isAuthed = csrfAuth(req.query.token, res)
-	console.log("isAuthed", isAuthed)
-	console.log("got ping")
-	console.log(req.url)
-	console.log(req.cookies)
-	res.status(200).json({ message: "yes" })
+	const id = req.query.registrationId
+	if (typeof id !== "string") {
+		res.status(400).json({ error: "registrationId is required" })
+		return
+	}
+	if (req.method === "OPTIONS") {
+		res.status(200).end()
+		return
+	}
+	const client = getKnownClient(req, id)
+	if (!client) {
+		res.status(404).json({ error: "registration not found" })
+		return
+	}
+	res.setHeader("Access-Control-Allow-Origin", `http://${client.host}`)
+	res.setHeader("Set-Cookie", `local-client-id=${id}; Path=/; HttpOnly; SameSite=Lax;`)
+	res.status(204).end()
 }

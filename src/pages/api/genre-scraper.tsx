@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { getServerAuthSession } from "server/common/get-server-auth-session"
+import getServerAuth from "server/common/server-auth"
 import { prisma } from "server/db/client"
 import { cleanGenreList } from "utils/sanitizeString"
 
@@ -13,9 +13,8 @@ const MB_GENRE_HIERARCHY = {
 } as const
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
-		return res.status(401).json({ error: "authentication required" })
+	if (!await getServerAuth(req, res)) {
+		return
 	}
 	const origin = await fetch("https://musicbrainz.org/genres")
 	const indexData = await origin.text()
