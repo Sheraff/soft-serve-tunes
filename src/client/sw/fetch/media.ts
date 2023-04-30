@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { getLocalHost } from "client/local-net/getLocalHost"
 import { CACHES } from "../utils/constants"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
@@ -72,20 +73,6 @@ function resolveCurrentMediaStream () {
 	}, 1_000)
 }
 
-let lastLocalHostCheck = 0
-
-async function getLocalHost () {
-	const now = Date.now()
-	if (now - lastLocalHostCheck < 30_000) return
-	lastLocalHostCheck = now
-	const remoteResponse = await fetch("/api/ip")
-	if (!remoteResponse.ok) return
-	const { host } = await remoteResponse.json() as { host: string }
-	const localResponse = await fetch(`http://${host}/api/local/ping`, { method: "HEAD" })
-	if (!localResponse.ok) return
-	return host
-}
-
 let localHost: string | undefined
 
 async function fetchLocalOrRemote (request: Request) {
@@ -93,7 +80,7 @@ async function fetchLocalOrRemote (request: Request) {
 		localHost = await getLocalHost()
 	}
 	if (localHost) {
-		const response = await fetch(request.url.replace(location.origin, `http://${localHost}`), {
+		const response = await fetch(request.url.replace(location.origin, localHost), {
 			headers: request.headers,
 		})
 		if (!response.ok) {
@@ -114,7 +101,12 @@ async function fetchFromServer (event: FetchEvent, request: Request) {
 				if (!buffer.byteLength) return
 				const range = response.headers.get("Content-Range")
 				const contentType = response.headers.get("Content-Type")
-				if (!range) return console.warn("SW: abort caching range", event.request.url)
+				if (!range) {
+					console.log("response headers")
+					console.log(...response.headers.keys())
+					response.headers.forEach((value, key) => console.log(key, value))
+					return console.warn("SW: abort caching range", event.request.url)
+				}
 				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
 				if (!parsed) return console.warn("SW: malformed 206 headers", event.request.url)
 				const [, _start, _end, _total] = parsed
