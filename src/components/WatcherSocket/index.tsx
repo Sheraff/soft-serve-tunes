@@ -4,6 +4,7 @@ import { trpc } from "utils/trpc"
 import { useQueryClient, hashQueryKey, focusManager } from "@tanstack/react-query"
 import { socketClient } from "utils/typedWs/react-client"
 import { env } from "env/client.mjs"
+import { getCsrfToken } from "next-auth/react"
 
 export default function WatcherSocket () {
 	const trpcClient = trpc.useContext()
@@ -45,7 +46,8 @@ export default function WatcherSocket () {
 			const target = registration.active
 			if (!target) return
 			const type = focused ? "sw-app-focus" : "sw-app-blur"
-			target.postMessage({ type })
+			const token = await getCsrfToken()
+			target.postMessage({ type, payload: { token } })
 		})
 		return unsubscribe
 	}, [])

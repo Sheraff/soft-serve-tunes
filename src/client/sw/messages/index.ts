@@ -38,9 +38,23 @@ export default function onMessage (event: ExtendableMessageEvent) {
 			return retryPostOnOnline()
 		case "sw-app-blur":
 			return cleanupCache()
-		case "sw-app-focus":
-			return pauseCacheCleanup()
+		case "sw-app-focus": {
+			getServerIp(event.data.payload)
+			pauseCacheCleanup()
+			return
+		}
 		default:
 			console.error(new Error(`SW: unknown message type: ${event.data.type}`))
 	}
 }
+
+async function getServerIp ({ token }: { token: string }) {
+	const response = await fetch(`/api/ip?token=${token}`)
+	const data = await response.json()
+	console.log(data)
+	const test = await fetch(`http://${data.addresses[0]}:3000/api/local?token=${token}|${data.hash}`)
+	console.log(test)
+	const foo = await test.json()
+	console.log(foo)
+}
+
