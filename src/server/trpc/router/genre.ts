@@ -19,33 +19,27 @@ const miniature = publicProcedure.input(z.object({
       COUNT(*)::int as "tracksCount"
     FROM (
       WITH RECURSIVE sub_rec_genre AS(
-        SELECT * FROM "public"."Genre"
+        SELECT * FROM public."Genre"
           WHERE id = ${input.id}
         UNION ALL
         SELECT sub.*
           FROM sub_rec_genre as sup
-        INNER JOIN (
-            SELECT "A" as supId, "B" as subId
-            FROM "public"."_LinkedGenre"
-          ) as foo
-          ON sup.id = foo.supId
-        INNER JOIN "public"."Genre" as sub
-          ON foo.subId = sub.id
+        INNER JOIN public."_LinkedGenre" as link
+          ON sup.id = link."A"
+        INNER JOIN public."Genre" as sub
+          ON link."B" = sub.id
       )
-      SELECT DISTINCT ON(trackId)
+      SELECT DISTINCT ON(tracks.id)
         tracks."artistId" as id
       FROM sub_rec_genre
-      INNER JOIN (
-          SELECT "A" as genreId, "B" as trackId
-          FROM "public"."_GenreToTrack"
-        ) as foo
-        ON sub_rec_genre.id = foo.genreId
-      INNER JOIN "public"."Track" as tracks
-        ON foo.trackId = tracks.id
+      INNER JOIN public."_GenreToTrack" as link
+        ON sub_rec_genre.id = link."A"
+      INNER JOIN public."Track" as tracks
+        ON link."B" = tracks.id
       ORDER BY
-        trackId
+        tracks.id
     ) as track_list
-    INNER JOIN "public"."Artist" as artists
+    INNER JOIN public."Artist" as artists
       ON track_list.id = artists.id
     GROUP BY
       artists."coverId"
@@ -90,20 +84,17 @@ const get = publicProcedure.input(z.object({
 
   const rawTracks = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS(
-      SELECT * FROM "public"."Genre"
+      SELECT * FROM public."Genre"
         WHERE id = ${input.id}
       UNION ALL
       SELECT sub.*
         FROM sub_rec_genre as sup
-      INNER JOIN (
-          SELECT "A" as supId, "B" as subId
-          FROM "public"."_LinkedGenre"
-        ) as foo
-        ON sup.id = foo.supId
-      INNER JOIN "public"."Genre" as sub
-        ON foo.subId = sub.id
+      INNER JOIN public."_LinkedGenre" as link
+        ON sup.id = link."A"
+      INNER JOIN public."Genre" as sub
+        ON link."B" = sub.id
     )
-    SELECT DISTINCT ON(trackId)
+    SELECT DISTINCT ON(tracks.id)
       tracks.id as id,
       tracks.name as name,
       tracks."artistId" as "artistId",
@@ -111,19 +102,16 @@ const get = publicProcedure.input(z.object({
       artists.name as "artistName",
       albums.name as "albumName"
     FROM sub_rec_genre
-    INNER JOIN (
-        SELECT "A" as genreId, "B" as trackId
-        FROM "public"."_GenreToTrack"
-      ) as foo
-      ON sub_rec_genre.id = foo.genreId
-    INNER JOIN "public"."Track" as tracks
-      ON foo.trackId = tracks.id
-    INNER JOIN "public"."Artist" as artists
+    INNER JOIN public."_GenreToTrack" as link
+      ON sub_rec_genre.id = link."A"
+    INNER JOIN public."Track" as tracks
+      ON link."B" = tracks.id
+    INNER JOIN public."Artist" as artists
       ON tracks."artistId" = artists.id
-    INNER JOIN "public"."Album" as albums
+    INNER JOIN public."Album" as albums
       ON tracks."albumId" = albums.id
     ORDER BY
-      trackId
+      tracks.id
     ;
   ` as {
     id: string
@@ -161,18 +149,15 @@ const get = publicProcedure.input(z.object({
 const searchable = publicProcedure.query(async ({ ctx }) => {
   return await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, id as base_id, name as base_name FROM "public"."Genre"
+      SELECT *, id as base_id, name as base_name FROM public."Genre"
         WHERE id = public."Genre".id
       UNION ALL
       SELECT sub.*, sup.base_id, sup.base_name
         FROM sub_rec_genre as sup
-      INNER JOIN (
-          SELECT "A" as supId, "B" as subId
-          FROM "public"."_LinkedGenre"
-        ) as foo
-        ON sup.id = foo.supId
-      INNER JOIN "public"."Genre" as sub
-        ON foo.subId = sub.id
+      INNER JOIN public."_LinkedGenre" as link
+        ON sup.id = link."A"
+      INNER JOIN public."Genre" as sub
+        ON link."B" = sub.id
     )
     SELECT DISTINCT
       sub_rec_genre.base_id as id,
@@ -184,6 +169,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
       ON genreToTrack."B" = public."Track".id
     ORDER BY
       name ASC
+    ;
   ` as {
     id: string
     name: string
@@ -193,18 +179,15 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
 const mostFav = publicProcedure.query(async ({ ctx }) => {
   const mostLiked = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, 0 as depth, id as base_id, name as base_name FROM "public"."Genre"
+      SELECT *, 0 as depth, id as base_id, name as base_name FROM public."Genre"
         WHERE id = public."Genre".id
       UNION ALL
       SELECT sub.*, sup.depth + 1, sup.base_id, sup.base_name
         FROM sub_rec_genre as sup
-      INNER JOIN (
-          SELECT "A" as supId, "B" as subId
-          FROM "public"."_LinkedGenre"
-        ) as foo
-        ON sup.id = foo.supId
-      INNER JOIN "public"."Genre" as sub
-        ON foo.subId = sub.id
+      INNER JOIN public."_LinkedGenre" as link
+        ON sup.id = link."A"
+      INNER JOIN public."Genre" as sub
+        ON link."B" = sub.id
     ),
     ordered_sub_rec_genre AS (
       SELECT
