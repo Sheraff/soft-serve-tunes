@@ -235,10 +235,18 @@ async function recursiveNonEmpty (ids: string[], genreSet?: Set<string>): Promis
   return recursiveNonEmpty(nextIds, genreSet)
 }
 
-const miniatureTest = publicProcedure.input(z.object({
+const miniature = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
-  const data = await ctx.prisma.$queryRaw`
+  const meta = await ctx.prisma.genre.findUnique({
+    where: { id: input.id },
+    select: {
+      name: true,
+      id: true,
+    }
+  })
+  if (!meta) return null
+  const tracks = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS(
       SELECT *, 0 as depth FROM "public"."Genre"
         WHERE id = ${input.id}
@@ -253,7 +261,13 @@ const miniatureTest = publicProcedure.input(z.object({
       INNER JOIN "public"."Genre" as sub
         ON foo.subId = sub.id
     )
-    SELECT DISTINCT ON(trackId) * FROM sub_rec_genre
+    SELECT DISTINCT ON(trackId)
+      tracks.id,
+      tracks.name,
+      tracks."artistId" as "artistId",
+      tracks."albumId" as "albumId",
+      depth
+    FROM sub_rec_genre
     INNER JOIN (
         SELECT "A" as genreId, "B" as trackId
         FROM "public"."_GenreToTrack"
@@ -263,62 +277,23 @@ const miniatureTest = publicProcedure.input(z.object({
       ON foo.trackId = tracks.id
     ORDER BY
       trackId,
-      sub_rec_genre.depth,
-      sub_rec_genre.id
+      sub_rec_genre.depth
     ;
-  `
-  /*
-  gives an array like below
-  need to rename some columns:
-   - id should be that of track,
-   - name should be that of track
+  ` as {
+    id: string
+    name: string
+    artistId: string
+    albumId: string
+    depth: number
+  }[]
 
-  to use in "GenreList", we should have a separate query for the data of the genre itself
-
-  {
-    "id": "clb2rxt3g008yy48umcm4acbj",
-    "name": "If It Hadn't Been for Love",
-    "simplified": "ifithadn'tbeenforlove",
-    "depth": 0,
-    "genreid": "clb2rxt3j009vy48udtg6b4yz",
-    "trackid": "clb2rxt3g008yy48umcm4acbj",
-    "mbid": "4f5c4119-7b91-4bb4-b45e-febc22838818",
-    "artistId": "clb2rxfgf0003y48u2e0aa9ag",
-    "albumId": "clb2rxfiy0017y48u6veat1bz",
-    "position": 6,
-    "createdAt": "2022-11-29T22:11:51.052Z",
-    "year": null,
-    "metaImageId": null,
-    "lastfmDate": "2023-04-25T20:47:07.739Z",
-    "spotifyDate": "2023-04-25T20:47:05.253Z",
-    "audiodbDate": "2022-12-03T17:50:27.389Z",
-    "coverId": "8d59d80b1f0c7c8b9c91e9053971db98",
-    "coverLocked": false,
-    "metaPosition": null
-  }
-  */
-  return data
-})
-
-const miniature = publicProcedure.input(z.object({
-  id: z.string(),
-})).query(async ({ input, ctx }) => {
-  const meta = await ctx.prisma.genre.findUnique({
-    where: { id: input.id },
-    select: {
-      name: true,
-      id: true,
-    }
-  })
-  if (!meta) return meta
-  const data = await recursiveSubGenres([input.id], { select: { id: true, artistId: true } })
-
-  const artistCountMap = data.tracks.reduce((map, track) => {
+  const artistCountMap = tracks.reduce<Record<string, number>>((map, track) => {
     if (track.artistId)
-      map.set(track.artistId, (map.get(track.artistId) || 0) + 1)
+      map[track.artistId] = (map[track.artistId] ?? 0) + 1
     return map
-  }, new Map<string, number>())
-  const threeTopArtists = [...artistCountMap.entries()]
+  }, {})
+
+  const threeTopArtists = Object.entries(artistCountMap)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([id]) => id)
@@ -329,10 +304,14 @@ const miniature = publicProcedure.input(z.object({
     distinct: ["coverId"]
   })
 
-  const extended = extendFromRecursive(meta, data, false)
+
   return {
-    ...extended,
+    ...meta,
+    tracks,
     artists,
+    _count: {
+      tracks: tracks.length,
+    }
   }
 })
 
@@ -443,5 +422,4 @@ export const genreRouter = router({
   get,
   searchable,
   mostFav,
-  miniatureTest,
 })
