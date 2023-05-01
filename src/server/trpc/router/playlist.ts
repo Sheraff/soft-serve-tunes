@@ -8,25 +8,7 @@ import { prisma } from "server/db/client"
 import retryable from "utils/retryable"
 import generateUniqueName from "utils/generateUniqueName"
 import log from "utils/logger"
-import { type Prisma } from "@prisma/client"
 import { socketServer } from "utils/typedWs/server"
-
-const trackSelect = {
-  id: true,
-  name: true,
-  artist: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-  album: {
-    select: {
-      id: true,
-      name: true,
-    },
-  }
-} satisfies Prisma.TrackSelect
 
 async function getResolve (id: string) {
   const result = await prisma.playlist.findUnique({
@@ -82,17 +64,9 @@ const generate = protectedProcedure.input(z.object({
     trait: zTrackTraits,
     value: z.string(),
   })),
-})).query(async ({ input, ctx }) => {
+})).query(async ({ input }) => {
   if (input.type === "by-multi-traits") {
-    const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
-    const ids = spotifyTracks.map((t) => t.trackId)
-    console.log("track.findMany from /trpc/playlist > generate multi traits")
-    const tracks = await ctx.prisma.track.findMany({
-      where: { id: { in: ids } },
-      select: trackSelect,
-    })
-    tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
-    return tracks
+    return getSpotifyTracksByMultiTraitsWithTarget(input.traits, 15)
   }
 })
 
@@ -128,25 +102,17 @@ const more = protectedProcedure.input(
       log("error", "empty", "trpc", "No traits found")
       return []
     }
-    const ids: string[] = []
+    const tracks: Awaited<ReturnType<typeof getSpotifyTracksByMultiTraitsWithTarget>> = []
     const count = 15
     let offset = 0
     do {
-      const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(traits, count, offset)
-      if (spotifyTracks.length === 0) {
+      const more = await getSpotifyTracksByMultiTraitsWithTarget(traits, count, offset)
+      if (more.length === 0) {
         break
       }
-      offset += spotifyTracks.length
-      const newIds = spotifyTracks
-        .map((t) => t.trackId)
-        .filter((id) => !ids.includes(id) && !input.trackIds.includes(id))
-      ids.push(...newIds)
-    } while (ids.length < count)
-    const tracks = await ctx.prisma.track.findMany({
-      where: { id: { in: ids.slice(0, count) } },
-      select: trackSelect,
-    })
-    tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+      offset += more.length
+      tracks.push(...more)
+    } while (tracks.length < count)
     return tracks
   }
 })
