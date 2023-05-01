@@ -100,14 +100,14 @@ const get = publicProcedure.input(z.object({
       tracks."albumId" as "albumId",
       artists.name as "artistName",
       albums.name as "albumName"
-    FROM sub_rec_genre
+    FROM public."Track" as tracks
     INNER JOIN public."_GenreToTrack" as link
-      ON sub_rec_genre.id = link."A"
-    INNER JOIN public."Track" as tracks
-      ON link."B" = tracks.id
-    INNER JOIN public."Artist" as artists
+      ON tracks.id = link."B"
+    INNER JOIN sub_rec_genre
+      ON link."A" = sub_rec_genre.id
+    LEFT JOIN public."Artist" as artists
       ON tracks."artistId" = artists.id
-    INNER JOIN public."Album" as albums
+    LEFT JOIN public."Album" as albums
       ON tracks."albumId" = albums.id
     ORDER BY
       tracks.id
