@@ -21,6 +21,17 @@
 	padding: 0 8px 0 7px;
 }
 
+.main > :nth-child(1) { order: var(--item-order-1, 1); }
+.main > :nth-child(2) { order: var(--item-order-2, 2); }
+.main > :nth-child(3) { order: var(--item-order-3, 3); }
+.main > :nth-child(4) { order: var(--item-order-4, 4); }
+.main > :nth-child(5) { order: var(--item-order-5, 5); }
+.main > :nth-child(6) { order: var(--item-order-6, 6); }
+.main > :nth-child(7) { order: var(--item-order-7, 7); }
+.main > :nth-child(8) { order: var(--item-order-8, 8); }
+.main > :nth-child(9) { order: var(--item-order-9, 9); }
+.main > :nth-child(10) { order: var(--item-order-10, 10); }
+
 .scrollable .main {
 	width: fit-content;
 	flex-wrap: nowrap;
