@@ -159,54 +159,35 @@ const get = publicProcedure.input(z.object({
 })
 
 const searchable = publicProcedure.query(async ({ ctx }) => {
-  const rawGenres = await ctx.prisma.genre.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      _count: {
-        select: {
-          tracks: true,
-        }
-      },
-      supgenres: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
-
-  const nonEmptyGenreSet = new Set<string>()
-  const genreMap = new Map(rawGenres.map((genre) => [genre.id, genre]))
-  let size: number | undefined
-  while (size !== (size = genreMap.size)) {
-    for (const [id, genre] of genreMap) {
-      if (!genre._count.tracks) continue
-      nonEmptyGenreSet.add(id)
-      if (!genre.supgenres.length) {
-        genreMap.delete(id)
-        continue
-      }
-      for (const supgenre of genre.supgenres) {
-        const sup = genreMap.get(supgenre.id)
-        if (!sup) continue
-        sup._count.tracks += 1
-      }
-      genreMap.delete(id)
-    }
-  }
-
-  const genres = rawGenres.reduce((acc, genre) => {
-    if (nonEmptyGenreSet.has(genre.id))
-      acc.push({ id: genre.id, name: genre.name })
-    return acc
-  }, [] as {
+  return await ctx.prisma.$queryRaw`
+    WITH RECURSIVE sub_rec_genre AS (
+      SELECT *, id as base_id, name as base_name FROM "public"."Genre"
+        WHERE id = public."Genre".id
+      UNION ALL
+      SELECT sub.*, sup.base_id, sup.base_name
+        FROM sub_rec_genre as sup
+      INNER JOIN (
+          SELECT "A" as supId, "B" as subId
+          FROM "public"."_LinkedGenre"
+        ) as foo
+        ON sup.id = foo.supId
+      INNER JOIN "public"."Genre" as sub
+        ON foo.subId = sub.id
+    )
+    SELECT DISTINCT
+      sub_rec_genre.base_id as id,
+      sub_rec_genre.base_name as name
+    FROM sub_rec_genre
+    INNER JOIN public."_GenreToTrack" as genreToTrack
+      ON sub_rec_genre.id = genreToTrack."A"
+    INNER JOIN public."Track"
+      ON genreToTrack."B" = public."Track".id
+    ORDER BY
+      name ASC
+  ` as {
     id: string
     name: string
-  }[])
-
-  return genres
+  }[]
 })
 
 const mostFav = publicProcedure.query(async ({ ctx }) => {
