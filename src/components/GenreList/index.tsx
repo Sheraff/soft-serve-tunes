@@ -226,14 +226,14 @@ function ResizingContainer ({
 			if (children.length < 2) return
 			const rects = children.map(child => child.getBoundingClientRect())
 			const lines = new Set(rects.map(({ y }) => y)).size
-			const itemSpacing = rects[1]!.x - rects[0]!.x
+			const itemSpacing = rects[1]!.left - rects[0]!.right
 			const placed = new Set([0])
 			const order = [0]
 			let x = rects[0]!.width + itemSpacing
 			let newLines = 1
 			while (order.length < children.length) {
 				const remaining = availableWidth - x
-				const found = rects.findIndex(({ width }, i) => width < remaining && !placed.has(i))
+				const found = rects.findIndex(({ width }, i) => width <= remaining && !placed.has(i))
 				if (found === -1) {
 					const next = rects.findIndex((_, i) => !placed.has(i))
 					x = 0
@@ -246,6 +246,12 @@ function ResizingContainer ({
 					x += rects[found]!.width + itemSpacing
 					order.push(found)
 					placed.add(found)
+					if (x >= availableWidth) {
+						x = 0
+						if (order.length < children.length) {
+							newLines += 1
+						}
+					}
 				}
 			}
 			if (newLines === lines) {
