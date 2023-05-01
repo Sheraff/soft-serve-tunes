@@ -237,9 +237,11 @@ function ResizingContainer ({
 				if (found === -1) {
 					const next = rects.findIndex((_, i) => !placed.has(i))
 					x = 0
-					newLines += 1
 					order.push(next)
 					placed.add(next)
+					if (order.length < children.length) {
+						newLines += 1
+					}
 				} else {
 					x += rects[found]!.width + itemSpacing
 					order.push(found)
