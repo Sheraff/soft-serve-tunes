@@ -1,6 +1,5 @@
 import { router, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
-import { type Prisma } from "@prisma/client"
 
 const miniature = publicProcedure.input(z.object({
   id: z.string(),
