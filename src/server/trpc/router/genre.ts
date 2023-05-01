@@ -10,6 +10,85 @@ const nonEmptyGenreWhere: Exclude<Prisma.GenreFindManyArgs["where"], undefined> 
   ]
 }
 
+/*
+
+==== SINGLE QUERY TO GET ALL SUBGENRES ====
+
+WITH RECURSIVE sub_rec_genre AS(
+  SELECT *, 0 as depth FROM "public"."Genre"
+    WHERE id = 'clb2rxfiy0018y48uiibdisk0'
+  UNION ALL
+  SELECT sub.*, sup.depth + 1
+    FROM sub_rec_genre as sup
+  INNER JOIN "public"."_LinkedGenre" as foo
+    ON sup.id = foo."A"
+  INNER JOIN "public"."Genre" as sub
+    ON foo."B" = sub.id
+)
+SELECT * FROM sub_rec_genre;
+
+
+
+==== SINGLE QUERY TO GET ALL TRACKS FROM GENRE LIST ====
+SELECT * FROM "public"."Genre" as genres
+INNER JOIN "public"."_GenreToTrack" as foo
+  ON genres.id = foo."A"
+INNER JOIN "public"."Track" as tracks
+  ON foo."B" = tracks.id
+WHERE genres.id = 'clb2rxfiy0018y48uiibdisk0' OR genres.id = 'clb2s002l02a2y48uxvfbl1tx';
+
+
+==== COMBINE BOTH ====
+
+WITH RECURSIVE sub_rec_genre AS(
+  SELECT *, 0 as depth FROM "public"."Genre"
+    WHERE id = 'clb2rxfiy0018y48uiibdisk0'
+  UNION ALL
+  SELECT sub.*, sup.depth + 1
+    FROM sub_rec_genre as sup
+  INNER JOIN "public"."_LinkedGenre" as foo
+    ON sup.id = foo."A"
+  INNER JOIN "public"."Genre" as sub
+    ON foo."B" = sub.id
+)
+SELECT * FROM sub_rec_genre
+INNER JOIN "public"."_GenreToTrack" as foo
+  ON sub_rec_genre.id = foo."A"
+INNER JOIN "public"."Track" as tracks
+  ON foo."B" = tracks.id
+;
+
+
+==== DISTINCT TRACKS (& GENRE ?) (prefer minimum depth) ====
+
+WITH RECURSIVE sub_rec_genre AS(
+  SELECT *, 0 as depth FROM "public"."Genre"
+    WHERE id = 'clb2rxfiy0018y48uiibdisk0'
+  UNION ALL
+  SELECT sub.*, sup.depth + 1
+    FROM sub_rec_genre as sup
+  INNER JOIN (SELECT "A" as supId, "B" as subId FROM "public"."_LinkedGenre") as foo
+    ON sup.id = foo.supId
+  INNER JOIN "public"."Genre" as sub
+    ON foo.subId = sub.id
+)
+SELECT DISTINCT ON(trackId) * FROM sub_rec_genre
+INNER JOIN (
+    SELECT "A" as genreId, "B" as trackId
+    FROM "public"."_GenreToTrack"
+  ) as foo
+  ON sub_rec_genre.id = foo.genreId
+INNER JOIN "public"."Track" as tracks
+  ON foo.trackId = tracks.id
+ORDER BY
+  trackId,
+  sub_rec_genre.depth,
+  sub_rec_genre.id
+;
+
+
+*/
+
 export async function recursiveSubGenres<
   TrackArgs extends Prisma.TrackFindManyArgs & { select: { id: true } } = { select: { id: true } },
 > (
@@ -156,6 +235,71 @@ async function recursiveNonEmpty (ids: string[], genreSet?: Set<string>): Promis
   return recursiveNonEmpty(nextIds, genreSet)
 }
 
+const miniatureTest = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input, ctx }) => {
+  const data = await ctx.prisma.$queryRaw`
+    WITH RECURSIVE sub_rec_genre AS(
+      SELECT *, 0 as depth FROM "public"."Genre"
+        WHERE id = ${input.id}
+      UNION ALL
+      SELECT sub.*, sup.depth + 1
+        FROM sub_rec_genre as sup
+      INNER JOIN (
+          SELECT "A" as supId, "B" as subId
+          FROM "public"."_LinkedGenre"
+        ) as foo
+        ON sup.id = foo.supId
+      INNER JOIN "public"."Genre" as sub
+        ON foo.subId = sub.id
+    )
+    SELECT DISTINCT ON(trackId) * FROM sub_rec_genre
+    INNER JOIN (
+        SELECT "A" as genreId, "B" as trackId
+        FROM "public"."_GenreToTrack"
+      ) as foo
+      ON sub_rec_genre.id = foo.genreId
+    INNER JOIN "public"."Track" as tracks
+      ON foo.trackId = tracks.id
+    ORDER BY
+      trackId,
+      sub_rec_genre.depth,
+      sub_rec_genre.id
+    ;
+  `
+  /*
+  gives an array like below
+  need to rename some columns:
+   - id should be that of track,
+   - name should be that of track
+
+  to use in "GenreList", we should have a separate query for the data of the genre itself
+
+  {
+    "id": "clb2rxt3g008yy48umcm4acbj",
+    "name": "If It Hadn't Been for Love",
+    "simplified": "ifithadn'tbeenforlove",
+    "depth": 0,
+    "genreid": "clb2rxt3j009vy48udtg6b4yz",
+    "trackid": "clb2rxt3g008yy48umcm4acbj",
+    "mbid": "4f5c4119-7b91-4bb4-b45e-febc22838818",
+    "artistId": "clb2rxfgf0003y48u2e0aa9ag",
+    "albumId": "clb2rxfiy0017y48u6veat1bz",
+    "position": 6,
+    "createdAt": "2022-11-29T22:11:51.052Z",
+    "year": null,
+    "metaImageId": null,
+    "lastfmDate": "2023-04-25T20:47:07.739Z",
+    "spotifyDate": "2023-04-25T20:47:05.253Z",
+    "audiodbDate": "2022-12-03T17:50:27.389Z",
+    "coverId": "8d59d80b1f0c7c8b9c91e9053971db98",
+    "coverLocked": false,
+    "metaPosition": null
+  }
+  */
+  return data
+})
+
 const miniature = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input, ctx }) => {
@@ -299,4 +443,5 @@ export const genreRouter = router({
   get,
   searchable,
   mostFav,
+  miniatureTest,
 })

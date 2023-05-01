@@ -42,6 +42,12 @@ function GenreItem ({
 		}
 	})
 
+	trpc.genre.miniatureTest.useQuery({ id: genre.id }, {
+		onSuccess (data) {
+			console.log(data)
+		}
+	})
+
 	const item = useRef<HTMLButtonElement>(null)
 	const onLong = () => {
 		navigator.vibrate(1)
