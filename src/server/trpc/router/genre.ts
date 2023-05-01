@@ -246,71 +246,57 @@ const miniature = publicProcedure.input(z.object({
     }
   })
   if (!meta) return null
-  const tracks = await ctx.prisma.$queryRaw`
-    WITH RECURSIVE sub_rec_genre AS(
-      SELECT *, 0 as depth FROM "public"."Genre"
-        WHERE id = ${input.id}
-      UNION ALL
-      SELECT sub.*, sup.depth + 1
-        FROM sub_rec_genre as sup
+  const artists = await ctx.prisma.$queryRaw`
+    SELECT
+      artists."coverId" as "coverId",
+      COUNT(*)::int as "tracksCount"
+    FROM (
+      WITH RECURSIVE sub_rec_genre AS(
+        SELECT *, 0 as depth FROM "public"."Genre"
+          WHERE id = ${input.id}
+        UNION ALL
+        SELECT sub.*, sup.depth + 1
+          FROM sub_rec_genre as sup
+        INNER JOIN (
+            SELECT "A" as supId, "B" as subId
+            FROM "public"."_LinkedGenre"
+          ) as foo
+          ON sup.id = foo.supId
+        INNER JOIN "public"."Genre" as sub
+          ON foo.subId = sub.id
+      )
+      SELECT DISTINCT ON(trackId)
+        tracks."artistId" as id
+      FROM sub_rec_genre
       INNER JOIN (
-          SELECT "A" as supId, "B" as subId
-          FROM "public"."_LinkedGenre"
+          SELECT "A" as genreId, "B" as trackId
+          FROM "public"."_GenreToTrack"
         ) as foo
-        ON sup.id = foo.supId
-      INNER JOIN "public"."Genre" as sub
-        ON foo.subId = sub.id
-    )
-    SELECT DISTINCT ON(trackId)
-      tracks.id,
-      tracks.name,
-      tracks."artistId" as "artistId",
-      tracks."albumId" as "albumId",
-      depth
-    FROM sub_rec_genre
-    INNER JOIN (
-        SELECT "A" as genreId, "B" as trackId
-        FROM "public"."_GenreToTrack"
-      ) as foo
-      ON sub_rec_genre.id = foo.genreId
-    INNER JOIN "public"."Track" as tracks
-      ON foo.trackId = tracks.id
+        ON sub_rec_genre.id = foo.genreId
+      INNER JOIN "public"."Track" as tracks
+        ON foo.trackId = tracks.id
+      ORDER BY
+        trackId
+    ) as track_list
+    INNER JOIN "public"."Artist" as artists
+      ON track_list.id = artists.id
+    GROUP BY
+      artists."coverId"
     ORDER BY
-      trackId,
-      sub_rec_genre.depth
+      "tracksCount" DESC
     ;
   ` as {
-    id: string
-    name: string
-    artistId: string
-    albumId: string
-    depth: number
+    coverId: string
+    tracksCount: number
   }[]
 
-  const artistCountMap = tracks.reduce<Record<string, number>>((map, track) => {
-    if (track.artistId)
-      map[track.artistId] = (map[track.artistId] ?? 0) + 1
-    return map
-  }, {})
-
-  const threeTopArtists = Object.entries(artistCountMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([id]) => id)
-
-  const artists = await ctx.prisma.artist.findMany({
-    where: { id: { in: threeTopArtists } },
-    select: { coverId: true },
-    distinct: ["coverId"]
-  })
-
+  const count = artists.reduce((acc, artist) => acc + artist.tracksCount, 0)
 
   return {
     ...meta,
-    tracks,
-    artists,
+    artists: artists.slice(0, 3),
     _count: {
-      tracks: tracks.length,
+      tracks: count,
     }
   }
 })

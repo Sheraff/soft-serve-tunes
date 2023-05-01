@@ -40,9 +40,6 @@ function GenreItem ({
 			if (!data?.artists) return data
 			return { ...data, artists: data.artists.filter(({ coverId }) => coverId).reverse() }
 		},
-		onSuccess (data) {
-			console.log(data)
-		}
 	})
 
 	const item = useRef<HTMLButtonElement>(null)
