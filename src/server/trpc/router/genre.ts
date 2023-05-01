@@ -217,7 +217,7 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
       SELECT DISTINCT ON (liked_tracks.id, base_id)
         ordered_sub_rec_genre.base_id as base_genre,
         ordered_sub_rec_genre.name as name,
-        1 / POWER(min_depth::float, 2.5) as score
+        1 / POWER(min_depth::float, 1.6) as score
       FROM ordered_sub_rec_genre
       INNER JOIN liked_tracks
         ON ordered_sub_rec_genre.id = liked_tracks.genre_id

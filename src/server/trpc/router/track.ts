@@ -205,7 +205,7 @@ export async function getSpotifyTracksByMultiTraitsWithTarget (
     value: number | string
   }[],
   count: number,
-  offset = 0,
+  excludeIds: string[] = [],
 ) {
   const tracks = await prisma.$queryRawUnsafe<{
     id: string
@@ -244,9 +244,12 @@ export async function getSpotifyTracksByMultiTraitsWithTarget (
     INNER JOIN spotify_list ON spotify_list."trackId" = tracks.id
     LEFT JOIN public."Artist" artists ON artists.id = tracks."artistId"
     LEFT JOIN public."Album" albums ON albums.id = tracks."albumId"
+    ${excludeIds.length
+      ? `WHERE tracks.id NOT IN (${excludeIds.map((id) => `'${id}'`).join(", ")})`
+      : ""
+    }
     ORDER BY score DESC
     LIMIT ${count}
-    OFFSET ${offset}
     ;
   `)
 

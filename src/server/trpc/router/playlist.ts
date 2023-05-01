@@ -90,30 +90,17 @@ const more = protectedProcedure.input(
       },
     })
     const entries = Object.entries(features._avg) as [keyof typeof features["_avg"], number | null][]
-    const traits = entries.reduce<
-      Parameters<typeof getSpotifyTracksByMultiTraitsWithTarget>[0]
-    >((traits, [trait, value]) => {
+    const traits = entries.reduce((traits, [trait, value]) => {
       if (value !== null) {
         traits.push({ trait, value })
       }
       return traits
-    }, [])
+    }, [] as Parameters<typeof getSpotifyTracksByMultiTraitsWithTarget>[0])
     if (traits.length === 0) {
       log("error", "empty", "trpc", "No traits found")
       return []
     }
-    const tracks: Awaited<ReturnType<typeof getSpotifyTracksByMultiTraitsWithTarget>> = []
-    const count = 15
-    let offset = 0
-    do {
-      const more = await getSpotifyTracksByMultiTraitsWithTarget(traits, count, offset)
-      if (more.length === 0) {
-        break
-      }
-      offset += more.length
-      tracks.push(...more)
-    } while (tracks.length < count)
-    return tracks
+    return await getSpotifyTracksByMultiTraitsWithTarget(traits, 15, input.trackIds)
   }
 })
 
