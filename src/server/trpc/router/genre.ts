@@ -178,7 +178,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
 const mostFav = publicProcedure.query(async ({ ctx }) => {
   const mostLiked = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, 0 as depth, id as base_id, name as base_name FROM public."Genre"
+      SELECT *, 1 as depth, id as base_id, name as base_name FROM public."Genre"
         WHERE id = public."Genre".id
       UNION ALL
       SELECT sub.*, sup.depth + 1, sup.base_id, sup.base_name
@@ -217,20 +217,40 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
       SELECT DISTINCT ON (liked_tracks.id, base_id)
         ordered_sub_rec_genre.base_id as base_genre,
         ordered_sub_rec_genre.name as name,
-        1 / (POWER(min_depth::float, 2) + 1) as score
+        1 / POWER(min_depth::float, 2.5) as score
       FROM ordered_sub_rec_genre
       INNER JOIN liked_tracks
         ON ordered_sub_rec_genre.id = liked_tracks.genre_id
+    ),
+    scoring_list AS (
+      SELECT
+        base_genre as id,
+        name,
+        COUNT(*) as likes, -- how many liked tracks are in this genre (or any of its subgenres)
+        SUM(maxi_list.score) as score_sum -- weighted score to avoid "big super-genres" having an unfair advantage
+      FROM maxi_list
+      GROUP BY
+        maxi_list.base_genre,
+        maxi_list.name
+    ),
+    counting_list AS (
+      SELECT
+        base_id as id,
+        COUNT(*) as genre_count
+      FROM sub_rec_genre
+      GROUP BY
+        sub_rec_genre.base_id
     )
     SELECT
-      base_genre as id,
-      name,
-      COUNT(*) as likes, -- how many liked tracks are in this genre (or any of its subgenres)
-      SUM(maxi_list.score) / COUNT(*)::float as score -- weighted score to avoid "big super-genres" having an unfair advantage (used to be COUNT(*)::float ** 2)
-    FROM maxi_list
-    GROUP BY
-      maxi_list.base_genre,
-      maxi_list.name
+      scoring_list.id as id,
+      scoring_list.name as name,
+      scoring_list.likes as likes,
+      -- scoring_list.score_sum as raw_score,
+      -- counting_list.genre_count as genre_count,
+      scoring_list.score_sum / pow(counting_list.genre_count, 1.5) as score
+    FROM scoring_list
+    INNER JOIN counting_list
+      ON scoring_list.id = counting_list.id
     ORDER BY
       score DESC,
       likes DESC
