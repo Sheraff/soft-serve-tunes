@@ -148,8 +148,8 @@ const get = publicProcedure.input(z.object({
 const searchable = publicProcedure.query(async ({ ctx }) => {
   return await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, id as base_id, name as base_name FROM public."Genre"
-        WHERE id = public."Genre".id
+      SELECT *, id as base_id, name as base_name
+        FROM public."Genre"
       UNION ALL
       SELECT sub.*, sup.base_id, sup.base_name
         FROM sub_rec_genre as sup
@@ -178,8 +178,8 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
 const mostFav = publicProcedure.query(async ({ ctx }) => {
   const mostLiked = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, 1 as depth, id as base_id, name as base_name FROM public."Genre"
-        WHERE id = public."Genre".id
+      SELECT *, 1 as depth, id as base_id, name as base_name
+        FROM public."Genre"
       UNION ALL
       SELECT sub.*, sup.depth + 1, sup.base_id, sup.base_name
         FROM sub_rec_genre as sup
