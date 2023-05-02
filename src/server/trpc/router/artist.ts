@@ -3,7 +3,7 @@ import { z } from "zod"
 import { lastFm } from "server/persistent/lastfm"
 import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
-import { Prisma } from "@prisma/client"
+import { type Prisma } from "@prisma/client"
 import { computeArtistCover } from "server/db/computeCover"
 
 const LISTS_SIZE = 30
