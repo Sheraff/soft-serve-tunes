@@ -11,6 +11,7 @@ export default function WatcherSocket () {
 
 	// revalidate common "big list" queries when app starts
 	useEffect(() => {
+		setTimeout(() => {
 		revalidateSwCache(["track", "searchable"])
 		revalidateSwCache(["artist", "searchable"])
 		revalidateSwCache(["album", "searchable"])
@@ -22,6 +23,7 @@ export default function WatcherSocket () {
 		revalidateSwCache(["album", "mostRecentListen"])
 		revalidateSwCache(["album", "mostRecentAdd"])
 		revalidateSwCache(["genre", "mostFav"])
+		}, 5_000)
 	}, [])
 
 	// allow server to log on client console

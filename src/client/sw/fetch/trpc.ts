@@ -104,14 +104,18 @@ async function trpcUrlToCacheValues (request: Request, url: URL, allowNetwork = 
 					endpoints: typeof endpoints,
 					input: { [key: number]: { json: any } }
 				})
-				rest.endpoints.forEach((endpoint, i) => {
-					trpcRevalidation({ key: keyStringToArray(endpoint), params: rest.input[i]!.json }, false)
-				})
+				setTimeout(() => {
+					rest.endpoints.forEach((endpoint, i) => {
+						trpcRevalidation({ key: keyStringToArray(endpoint), params: rest.input[i]!.json })
+					})
+				}, 1_000)
 			})
 		}
 	} else {
 		// fetch from server to refresh SW cache, no requested endpoint was missing from cache so request them all
-		fetchFromServer(request, url)
+		setTimeout(() => {
+			fetchFromServer(request, url)
+		}, 1_000)
 	}
 	return formatBatchResponses(cacheResponses, endpoints)
 }
