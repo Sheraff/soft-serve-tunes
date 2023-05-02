@@ -74,14 +74,23 @@ function isEquivalentItem<
 ) {
 	if (a.key[0] !== b.key[0]) return false
 	if (a.key[1] !== b.key[1]) return false
-	if (a.params === b.params) return true
-	if (a.params === undefined || b.params === undefined) return false
-	const aKeys = Object.keys(a.params)
-	const bKeys = Object.keys(b.params)
+	return deepEqualParams(a.params, b.params)
+}
+
+function deepEqualParams (
+	a: unknown,
+	b: unknown
+) {
+	if (a === b) return true
+	if (a === undefined || b === undefined) return false
+	if (a === null || b === null) return false
+	if (typeof a !== "object" || typeof b !== "object") return false
+	const aKeys = Object.keys(a)
+	const bKeys = Object.keys(b)
 	if (aKeys.length !== bKeys.length) return false
 	for (let i = 0; i < aKeys.length; i++) {
 		const key = aKeys[i]!
-		if (a.params[key] !== b.params[key]) return false
+		if (!deepEqualParams((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false
 	}
 	return true
 }
