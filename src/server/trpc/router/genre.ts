@@ -20,9 +20,10 @@ const miniature = publicProcedure.input(z.object({
       WITH RECURSIVE sub_rec_genre AS(
         SELECT * FROM public."Genre"
           WHERE id = ${input.id}
-        UNION ALL
+        UNION ALL -- test removing ALL (see other comment)
         SELECT sub.*
           FROM sub_rec_genre as sup
+          -- should add a WHERE clause to prevent infinite recursion (https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE:~:text=7.8.2.2.%C2%A0Cycle%20Detection)
         INNER JOIN public."_LinkedGenre" as link
           ON sup.id = link."A"
         INNER JOIN public."Genre" as sub
@@ -85,7 +86,7 @@ const get = publicProcedure.input(z.object({
     WITH RECURSIVE sub_rec_genre AS(
       SELECT * FROM public."Genre"
         WHERE id = ${input.id}
-      UNION ALL
+      UNION ALL -- test removing ALL (see other comment)
       SELECT sub.*
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
@@ -150,7 +151,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
     WITH RECURSIVE sub_rec_genre AS (
       SELECT *, id as base_id, name as base_name
         FROM public."Genre"
-      UNION ALL
+      UNION ALL -- test without "ALL" (might remove duplicates)
       SELECT sub.*, sup.base_id, sup.base_name
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
