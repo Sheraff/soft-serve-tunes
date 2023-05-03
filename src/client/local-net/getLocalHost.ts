@@ -7,6 +7,7 @@ export async function getLocalHost () {
 	const now = Date.now()
 	if (now - lastLocalHostCheck < 30_000) return
 	lastLocalHostCheck = now
+
 	const remoteResponse = await fetch("/api/ip")
 	if (!remoteResponse.ok) return
 	const { host } = await remoteResponse.json() as { host: string }

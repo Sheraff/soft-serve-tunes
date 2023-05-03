@@ -21,7 +21,7 @@ export default async function upload (req: NextApiRequest, res: NextApiResponse)
 	if (!isLocal && !(await getServerAuthSession({ req, res }))) {
 		return res.status(401).json({ error: "authentication required" })
 	}
-	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_HOST)
+	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
 
 	const form = new formidable.IncomingForm({
 		multiples: true,

@@ -13,18 +13,15 @@ export default async function ip (req: NextApiRequest, res: NextApiResponse) {
 
 	const interfaces = os.networkInterfaces()
 	const addresses = []
-	let addressesLog = ""
 	for (const k in interfaces) {
 		const _interface = interfaces[k]!
 		for (const k2 in _interface) {
 			const address = _interface[k2]!
 			if (address.family === 'IPv4' && !address.internal) {
-				addressesLog += `${k}->${k2}   ${address.address} ${address.family} ${address.internal}\n`
 				addresses.push(address.address)
 			}
 		}
 	}
-	console.log(addressesLog)
 
 	// TODO: do a better job at selecting the address? (prefer eth)
 	const address = addresses[0]
@@ -33,6 +30,8 @@ export default async function ip (req: NextApiRequest, res: NextApiResponse) {
 		return
 	}
 
-	const host = `http://${address}:${env.SERVER_PORT}`
+	const host = env.NEXT_PUBLIC_ENV === "development"
+		? `http://${address}:3000`
+		: `https://${address}`
 	res.status(200).json({ host })
 }

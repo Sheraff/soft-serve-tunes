@@ -8,6 +8,6 @@ export default async function local (req: NextApiRequest, res: NextApiResponse) 
 		res.status(401).json({ error: "reserved for intranet access" })
 		return
 	}
-	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_HOST)
+	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
 	res.status(204).end()
 }

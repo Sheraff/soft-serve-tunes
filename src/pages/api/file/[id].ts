@@ -13,7 +13,7 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   if (!isLocal && !(await getServerAuthSession({ req, res }))) {
     return res.status(401).json({ error: "authentication required" })
   }
-  res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_HOST)
+  res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
   res.setHeader("Access-Control-Expose-Headers", "Content-Range")
 
   const { id } = req.query

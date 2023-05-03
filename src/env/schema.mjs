@@ -6,7 +6,6 @@ import { z } from "zod"
  * This way you can ensure the app isn't built with invalid env vars.
  */
 export const serverSchema = z.object({
-  SERVER_PORT: z.string(),
   DATABASE_URL: z.string().url(),
   NODE_ENV: z.enum(["development", "test", "production"]),
   NEXTAUTH_SECRET: z.string(),
@@ -50,7 +49,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_WEBSOCKET_URL: z.string(),
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
   NEXT_PUBLIC_ENV: z.enum(["development", "test", "production"]),
-  NEXT_PUBLIC_HOST: z.string().url(),
+  NEXT_PUBLIC_INTERNET_HOST: z.string().url(),
 })
 
 /**
@@ -64,5 +63,5 @@ export const clientEnv = {
   NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
   NEXT_PUBLIC_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_HOST: process.env.NEXT_PUBLIC_HOST,
+  NEXT_PUBLIC_INTERNET_HOST: process.env.NEXT_PUBLIC_INTERNET_HOST,
 }
