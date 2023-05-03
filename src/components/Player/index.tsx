@@ -7,7 +7,6 @@ import PrevIcon from "icons/skip_previous.svg"
 import NextIcon from "icons/skip_next.svg"
 import PauseIcon from "icons/pause.svg"
 import PlayIcon from "icons/play_arrow.svg"
-import OfflineIcon from "icons/wifi_off.svg"
 import SlidingText from "./SlidingText"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import GlobalPalette from "./GlobalPalette"
@@ -186,14 +185,7 @@ export default memo(function Player () {
 					<ShuffleButton />
 				</Suspense>
 				<button onClick={playPrev} disabled={!hasPrevNext}><PrevIcon /></button>
-				<>
-					{(online || cached) && (
-						<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
-					)}
-					{(!online && !cached) && (
-						<OfflineIcon />
-					)}
-				</>
+				<button onClick={togglePlay} disabled={!item}>{playing ? <PauseIcon /> : <PlayIcon />}</button>
 				<button onClick={playNext} disabled={!hasPrevNext}><NextIcon /></button>
 				<Suspense fallback={<button><RepeatIcon /></button>}>
 					<RepeatButton />

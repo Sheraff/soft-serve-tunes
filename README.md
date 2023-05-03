@@ -9,6 +9,10 @@ https://user-images.githubusercontent.com/1325721/212537689-021062ec-f67c-4b37-8
 
 ------
 
+## If anyone ever uses this repo...
+
+...You should tell me so I can plan accordingly! Because I'm not writing any data migration scripts (for server database, for client indexedDB, for service-worker cache) and I do the changes manually, but that's not very practical for anyone else but me. So if you have the project running and try to update it after some changes, stuff might break.
+
 ## Commands
 
 | command         | description                                                                                                                                                                                       |

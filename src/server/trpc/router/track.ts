@@ -199,27 +199,72 @@ const like = protectedProcedure.input(z.object({
   return track
 })
 
-export function getSpotifyTracksByMultiTraitsWithTarget (
+export async function getSpotifyTracksByMultiTraitsWithTarget (
   traits: {
     trait: z.infer<typeof zTrackTraits>,
     value: number | string
   }[],
   count: number,
-  offset = 0,
+  excludeIds: string[] = [],
 ) {
-  return prisma.$queryRawUnsafe(`
-    SELECT
-      "public"."SpotifyTrack"."trackId",
-      ${traits.map((t) => `"public"."SpotifyTrack"."${t.trait}" as ${t.trait}`).join(",")},
-      (0 - ${traits.map((t) => `ABS(${t.value}-${t.trait})`).join("-")}) as score
-    FROM "public"."SpotifyTrack"
-    WHERE (
-      "public"."SpotifyTrack"."durationMs" > 30000
-      AND ${traits.map((t) => `${t.trait} IS NOT NULL AND ${t.trait} <> 0`).join(" AND ")}
-      AND ${traits.map((t) => `ABS(${t.value}-${t.trait}) < 0.5`).join(" AND ")}
+  const tracks = await prisma.$queryRawUnsafe<{
+    id: string
+    name: string
+    score: number
+    artistId: string | null
+    artistName: string | null
+    albumId: string | null
+    albumName: string | null
+  }[]>(`
+    WITH spotify_list AS (
+      SELECT
+        public."SpotifyTrack"."trackId",
+        (0 - ${traits.map((t) => `ABS(${t.value} - public."SpotifyTrack"."${t.trait}")`).join(" - ")})::float as score
+      FROM public."SpotifyTrack"
+      WHERE (
+        public."SpotifyTrack"."durationMs" > 30000
+        AND ${traits.map((t) => `
+          public."SpotifyTrack"."${t.trait}" IS NOT NULL
+          AND public."SpotifyTrack"."${t.trait}" <> 0
+        `).join(" AND ")}
+        AND ${traits.map((t) => `
+          ABS(${t.value} - public."SpotifyTrack"."${t.trait}") < 0.5
+        `).join(" AND ")}
+      )
     )
-    ORDER BY score DESC LIMIT ${count} OFFSET ${offset}
-  `) as unknown as { trackId: string }[]
+    SELECT
+      tracks.id as id,
+      tracks.name as name,
+      artists.id as "artistId",
+      artists.name as "artistName",
+      albums.id as "albumId",
+      albums.name as "albumName",
+      spotify_list.score as score
+    FROM public."Track" tracks
+    INNER JOIN spotify_list ON spotify_list."trackId" = tracks.id
+    LEFT JOIN public."Artist" artists ON artists.id = tracks."artistId"
+    LEFT JOIN public."Album" albums ON albums.id = tracks."albumId"
+    ${excludeIds.length
+      ? `WHERE tracks.id NOT IN (${excludeIds.map((id) => `'${id}'`).join(", ")})`
+      : ""
+    }
+    ORDER BY score DESC
+    LIMIT ${count}
+    ;
+  `)
+
+  return tracks.map((track) => ({
+    id: track.id,
+    name: track.name,
+    artist: track.artistId ? {
+      id: track.artistId,
+      name: track.artistName!,
+    } : null,
+    album: track.albumId ? {
+      id: track.albumId,
+      name: track.albumName!,
+    } : null,
+  }))
 }
 
 const byMultiTraits = protectedProcedure.input(z.object({
@@ -227,15 +272,8 @@ const byMultiTraits = protectedProcedure.input(z.object({
     trait: zTrackTraits,
     value: z.string(),
   })),
-})).query(async ({ input, ctx }) => {
-  const spotifyTracks = await getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
-  const ids = spotifyTracks.map((t) => t.trackId)
-  console.log("track.findMany from /trpc/track > multiTrait")
-  const tracks = await ctx.prisma.track.findMany({
-    where: { id: { in: ids } },
-  })
-  tracks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
-  return tracks
+})).query(async ({ input }) => {
+  return getSpotifyTracksByMultiTraitsWithTarget(input.traits, 6)
 })
 
 export const trackRouter = router({

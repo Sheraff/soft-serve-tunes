@@ -1,6 +1,6 @@
 import { showHome } from "components/AppContext"
 import styles from "./index.module.css"
-import { type CSSProperties, startTransition, useDeferredValue, useRef } from "react"
+import { type CSSProperties, startTransition, useDeferredValue, useRef, ReactNode, useEffect, useState } from "react"
 import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import PlaylistIcon from "icons/queue_music.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
@@ -39,7 +39,7 @@ function GenreItem ({
 		select (data) {
 			if (!data?.artists) return data
 			return { ...data, artists: data.artists.filter(({ coverId }) => coverId).reverse() }
-		}
+		},
 	})
 
 	const item = useRef<HTMLButtonElement>(null)
@@ -158,7 +158,7 @@ export default function GenreList ({
 
 	if (!virtualized) {
 		return (
-			<ul className={styles.main}>
+			<ResizingContainer className={styles.main}>
 				{genres.map(genre => (
 					<li key={genre.id} className={styles.item}>
 						<GenreItem
@@ -170,7 +170,7 @@ export default function GenreList ({
 						/>
 					</li>
 				))}
-			</ul>
+			</ResizingContainer>
 		)
 	}
 
@@ -204,5 +204,73 @@ export default function GenreList ({
 				</ul>
 			</div>
 		</div>
+	)
+}
+
+function ResizingContainer ({
+	children,
+	className,
+}: {
+	children: ReactNode[]
+	className?: string
+}) {
+	const ref = useRef<HTMLUListElement>(null)
+	const [order, setOrder] = useState<number[]>([])
+	useEffect(() => {
+		if (!ref.current) return
+		const element = ref.current
+		const resizeObserver = new ResizeObserver(([entry]) => {
+			if (!entry) return
+			const availableWidth = entry.contentRect.width
+			const children = Array.from(element.children)
+			if (children.length < 2) return
+			const rects = children.map(child => child.getBoundingClientRect())
+			const lines = new Set(rects.map(({ y }) => y)).size
+			const itemSpacing = rects[1]!.left - rects[0]!.right
+			const placed = new Set([0])
+			const order = [0]
+			let x = rects[0]!.width + itemSpacing
+			let newLines = 1
+			while (order.length < children.length) {
+				const remaining = availableWidth - x
+				const found = rects.findIndex(({ width }, i) => width <= remaining && !placed.has(i))
+				if (found === -1) {
+					const next = rects.findIndex((_, i) => !placed.has(i))
+					x = 0
+					order.push(next)
+					placed.add(next)
+					if (order.length < children.length) {
+						newLines += 1
+					}
+				} else {
+					x += rects[found]!.width + itemSpacing
+					order.push(found)
+					placed.add(found)
+					if (x >= availableWidth) {
+						x = 0
+						if (order.length < children.length) {
+							newLines += 1
+						}
+					}
+				}
+			}
+			if (newLines === lines) {
+				return
+			}
+			setOrder(order)
+		})
+		resizeObserver.observe(element)
+		return () => {
+			resizeObserver.disconnect()
+		}
+	}, [])
+	return (
+		<ul
+			ref={ref}
+			className={className}
+			style={Object.fromEntries(order.map((index, i) => [`--item-order-${index + 1}`, i + 1]))}
+		>
+			{children}
+		</ul>
 	)
 }
