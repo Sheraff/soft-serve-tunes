@@ -23,6 +23,9 @@ export default async function upload (req: NextApiRequest, res: NextApiResponse)
 	}
 	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
 	if (req.method === "OPTIONS") {
+		if (isLocal) {
+			res.setHeader("Access-Control-Allow-Private-Network", "true")
+		}
 		return res.status(200).end()
 	}
 
