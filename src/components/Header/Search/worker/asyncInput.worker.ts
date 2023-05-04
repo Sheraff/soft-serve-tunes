@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 import longestCommonSubstring from "./lcs"
 import damLev from "./damLev"
 
