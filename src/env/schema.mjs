@@ -50,6 +50,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: z.number(),
   NEXT_PUBLIC_ENV: z.enum(["development", "test", "production"]),
   NEXT_PUBLIC_INTERNET_HOST: z.string().url(),
+  NEXT_PUBLIC_INTRANET_HOST: z.string().url().optional(),
 })
 
 /**
@@ -64,4 +65,5 @@ export const clientEnv = {
   NEXT_PUBLIC_UPLOAD_CHUNK_SIZE: Number(process.env.NEXT_PUBLIC_UPLOAD_CHUNK_SIZE) || 30,
   NEXT_PUBLIC_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_INTERNET_HOST: process.env.NEXT_PUBLIC_INTERNET_HOST,
+  NEXT_PUBLIC_INTRANET_HOST: process.env.NEXT_PUBLIC_INTRANET_HOST,
 }

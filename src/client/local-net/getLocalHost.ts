@@ -8,15 +8,13 @@ export async function getLocalHost () {
 	if (now - lastLocalHostCheck < 30_000) return
 	lastLocalHostCheck = now
 
-	const remoteResponse = await fetch("/api/ip")
-	if (!remoteResponse.ok) return
-	const { host } = await remoteResponse.json() as { host: string }
-	const localResponse = await fetch(`${host}/api/local/ping`, { method: "HEAD" })
+	const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
 	if (!localResponse.ok) return
-	return host
+	return env.NEXT_PUBLIC_INTRANET_HOST
 }
 
 function canConnectLocally () {
+	if (!env.NEXT_PUBLIC_INTRANET_HOST) return false
 	if (env.NEXT_PUBLIC_ENV === "development") return true
 	const connection = (navigator as unknown as { connection: { type: string | undefined } }).connection.type
 	return connection === "wifi"
