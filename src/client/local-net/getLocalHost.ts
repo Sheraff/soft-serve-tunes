@@ -8,14 +8,8 @@ export async function getLocalHost () {
 	if (now - lastLocalHostCheck < 30_000) return
 	lastLocalHostCheck = now
 
-	const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`)//, { method: "HEAD" })
+	const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
 	if (!localResponse.ok) {
-		try {
-			const data = await localResponse.json()
-			console.error(data)
-		} catch (error) {
-			console.error(error)
-		}
 		return
 	}
 	return env.NEXT_PUBLIC_INTRANET_HOST
