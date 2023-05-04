@@ -13,7 +13,7 @@ import {
   computeArtistCover,
 } from "server/db/computeCover"
 import { COVER_SIZES } from "utils/getCoverUrl"
-import { getServerAuthSession } from "server/common/get-server-auth-session"
+import getServerAuth from "server/common/server-auth"
 
 // @ts-expect-error -- declaring a global for persisting the instance, but not a global type
 const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
@@ -23,9 +23,8 @@ globalThis.sharpQueue = queue
 const runningTransforms = new Set<string>()
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerAuthSession({ req, res })
-  if (!session) {
-    return res.status(401).json({ error: "authentication required" })
+  if (!await getServerAuth(req, res)) {
+    return
   }
 
   const { id, ...search } = req.query
@@ -150,8 +149,7 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
   }
 
   res
-    .setHeader("Vary", "sec-ch-dpr, sec-ch-viewport-width")
-    .setHeader("Critical-CH", "sec-ch-dpr, sec-ch-viewport-width")
+    // .setHeader("Vary", "sec-ch-dpr, sec-ch-viewport-width") // I don't think we need to vary because a client is supposed to always request the same size
     .setHeader("Content-Type", "image/avif")
     .setHeader("Cache-Control", "max-age=604800, stale-while-revalidate=31536000") // keep for 1 week, revalidate 1 year
     .setHeader("ETag", etag)

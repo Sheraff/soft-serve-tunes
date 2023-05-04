@@ -39,7 +39,8 @@ export default function WatcherSocket () {
 	useEffect(() => {
 		if (!("serviceWorker" in navigator)) return
 		let focused = true
-		const unsubscribe = focusManager.subscribe(async () => {
+		let active = true
+		const onFocusChange = async () => {
 			const newFocused = focusManager.isFocused()
 			if (focused === newFocused) return
 			focused = newFocused
@@ -47,9 +48,21 @@ export default function WatcherSocket () {
 			const target = registration.active
 			if (!target) return
 			const type = focused ? "sw-app-focus" : "sw-app-blur"
-			target.postMessage({ type })
-		})
-		return unsubscribe
+			if (!active) return
+			target.postMessage({
+				type,
+				payload: {
+					dpr: window.devicePixelRatio,
+					viewport: window.innerWidth,
+				}
+			})
+		}
+		const unsubscribe = focusManager.subscribe(onFocusChange)
+		onFocusChange()
+		return () => {
+			active = false
+			unsubscribe()
+		}
 	}, [])
 
 	// maintain up-to-date query cache

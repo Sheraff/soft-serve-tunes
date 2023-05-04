@@ -15,6 +15,7 @@ export default class SocketClient<
 	#onFocus: () => void
 	#onMessage: <K extends Route>(event: MessageEvent<any>) => void
 	#serverStateListeners: Set<(online: boolean) => void> = new Set()
+	#socketUrl = env.NEXT_PUBLIC_WEBSOCKET_URL
 
 	constructor() {
 		if (ssr) {
@@ -77,7 +78,7 @@ export default class SocketClient<
 			return
 		}
 
-		const socket = new WebSocket(env.NEXT_PUBLIC_WEBSOCKET_URL)
+		const socket = new WebSocket(this.#socketUrl)
 		socket.addEventListener("message", this.#onMessage)
 
 		socket.onopen = () => {
@@ -115,6 +116,18 @@ export default class SocketClient<
 		}
 
 		this.socket = socket
+	}
+
+	switchToLocalSocket (host: string) {
+		this.#socketUrl = `ws://${host}`
+		this.#backOff = 1
+		this.socket?.close()
+	}
+
+	switchToRemoteSocket () {
+		this.#socketUrl = env.NEXT_PUBLIC_WEBSOCKET_URL
+		this.#backOff = 1
+		this.socket?.close()
 	}
 
 	#retryOnFocus () {

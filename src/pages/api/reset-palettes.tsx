@@ -4,7 +4,7 @@ import { join } from "path"
 import { prisma } from "server/db/client"
 import { env } from "env/server.mjs"
 import { extractPalette } from "utils/writeImage"
-import { getServerAuthSession } from "server/common/get-server-auth-session"
+import getServerAuth from "server/common/server-auth"
 
 async function redoImagePalette (image: { id: string, path: string }) {
 	const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path)
@@ -44,9 +44,8 @@ async function act () {
 }
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
-		return res.status(401).json({ error: "authentication required" })
+	if (!await getServerAuth(req, res)) {
+		return
 	}
 	act()
 	return res.status(200).end()

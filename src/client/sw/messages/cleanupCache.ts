@@ -2,6 +2,7 @@
 import { type BuildProcedure } from "@trpc/server"
 import { type AppRouter, type RouteKey } from "utils/trpc"
 import { CACHES } from "../utils/constants"
+import swFetch from "client/sw/network/swFetch"
 
 export const listOfAllGetRoutes: {
 	readonly [K in RouteKey]: {
@@ -141,7 +142,7 @@ async function cleanupNextCache () {
 		const key = keys[index]!
 
 		try {
-			const ping = await fetch(key.url, { method: "HEAD" })
+			const ping = await swFetch(key.url, { method: "HEAD" })
 			if (!cleanupActive) return
 			if (ping.status !== 404) continue
 			await cache.delete(key)

@@ -7,6 +7,7 @@ import { messageCheckPlaylistCache, messageListPlaylistCache } from "./cachedPla
 import { messageCheckGenreCache, messageListGenreCache } from "./cachedGenre"
 import trpcRevalidation from "./trpcRevalidation"
 import { cleanupCache, pauseCacheCleanup } from "./cleanupCache"
+import { getServerIp } from "client/sw/network/localClient"
 
 export default function onMessage (event: ExtendableMessageEvent) {
 	switch (event.data.type) {
@@ -38,9 +39,13 @@ export default function onMessage (event: ExtendableMessageEvent) {
 			return retryPostOnOnline()
 		case "sw-app-blur":
 			return cleanupCache()
-		case "sw-app-focus":
-			return pauseCacheCleanup()
+		case "sw-app-focus": {
+			getServerIp(event.data.payload)
+			pauseCacheCleanup()
+			return
+		}
 		default:
 			console.error(new Error(`SW: unknown message type: ${event.data.type}`))
 	}
 }
+

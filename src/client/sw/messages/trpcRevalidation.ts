@@ -3,6 +3,7 @@ import { type AllRoutes, type AllInputs, type RouterInputs, keyArrayToString } f
 import { workerSocketClient } from "utils/typedWs/vanilla-client"
 import { handleTrpcFetchResponse } from "../fetch/trpc"
 import { deserialize } from "superjson"
+import swFetch from "client/sw/network/swFetch"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
 const batch: {
@@ -42,7 +43,7 @@ function processBatch () {
 	url.searchParams.set("batch", "1")
 	url.searchParams.set("input", JSON.stringify(input))
 
-	fetch(url).then(async response => {
+	swFetch(url).then(async response => {
 		if (response.status === 200 || response.status === 207) {
 			const data = await handleTrpcFetchResponse(response, url)
 			const clients = await self.clients.matchAll()
