@@ -15,6 +15,9 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   }
   res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
   res.setHeader("Access-Control-Expose-Headers", "Content-Range")
+  if (req.method === "OPTIONS") {
+    return res.status(200).end()
+  }
 
   const { id } = req.query
   if (!id || Array.isArray(id)) {

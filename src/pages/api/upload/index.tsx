@@ -22,6 +22,9 @@ export default async function upload (req: NextApiRequest, res: NextApiResponse)
 		return res.status(401).json({ error: "authentication required" })
 	}
 	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
+	if (req.method === "OPTIONS") {
+		return res.status(200).end()
+	}
 
 	const form = new formidable.IncomingForm({
 		multiples: true,
