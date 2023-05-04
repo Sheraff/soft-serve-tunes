@@ -87,7 +87,10 @@ async function fetchLocalOrRemote (request: Request) {
 			if (response.ok) {
 				return response
 			}
-		} catch { }
+			console.error(new Error(`SW: local host ${localHost} responded with ${response.status} while fetching ${request.url}`))
+		} catch (error) {
+			console.error(new Error(`SW: previously reachable local host ${localHost} is now unreachable while fetching ${request.url}`, { cause: error }))
+		}
 		localHost = undefined
 	}
 	return fetch(request)
@@ -96,16 +99,16 @@ async function fetchLocalOrRemote (request: Request) {
 async function fetchFromServer (event: FetchEvent, request: Request) {
 	const response = await fetchLocalOrRemote(request)
 	if (response.status === 206) {
-		response.clone()
-			.arrayBuffer()
+		const clone = response.clone()
+		clone.arrayBuffer()
 			.then((buffer) => {
 				if (!buffer.byteLength) return
-				const range = response.headers.get("Content-Range")
-				const contentType = response.headers.get("Content-Type")
+				const range = clone.headers.get("Content-Range")
+				const contentType = clone.headers.get("Content-Type")
 				if (!range) {
 					console.log("response headers")
-					console.log(...response.headers.keys())
-					response.headers.forEach((value, key) => console.log(key, value))
+					console.log(...clone.headers.keys())
+					clone.headers.forEach((value, key) => console.log(key, value))
 					return console.warn("SW: abort caching range", event.request.url)
 				}
 				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
@@ -125,8 +128,8 @@ async function fetchFromServer (event: FetchEvent, request: Request) {
 					resolveCurrentMediaStream()
 			})
 	} else if (response.status === 200) {
-		const cacheResponse = response.clone()
-		cacheMediaResponse(event.request.url, cacheResponse)
+		const clone = response.clone()
+		cacheMediaResponse(event.request.url, clone)
 	}
 	return response
 }

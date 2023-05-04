@@ -11,10 +11,12 @@ export async function getLocalHost () {
 	try {
 		const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
 		if (!localResponse.ok) {
+			console.error(new Error(`SW: local host ${env.NEXT_PUBLIC_INTRANET_HOST} not available (${localResponse.status})`))
 			return
 		}
 		return env.NEXT_PUBLIC_INTRANET_HOST
-	} catch {
+	} catch (error) {
+		console.error(new Error(`SW: Trying to ping local host ${env.NEXT_PUBLIC_INTRANET_HOST} resulted in an error`, { cause: error }))
 		return
 	}
 }
