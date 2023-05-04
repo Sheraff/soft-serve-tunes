@@ -82,7 +82,7 @@ async function fetchLocalOrRemote (request: Request) {
 	if (localHost) {
 		try {
 			const response = await fetch(request.url.replace(location.origin, localHost), {
-				headers: request.headers,
+				headers: new Headers(request.headers),
 			})
 			if (response.ok) {
 				return response
