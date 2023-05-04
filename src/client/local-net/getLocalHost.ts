@@ -8,11 +8,15 @@ export async function getLocalHost () {
 	if (now - lastLocalHostCheck < 30_000) return
 	lastLocalHostCheck = now
 
-	const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
-	if (!localResponse.ok) {
+	try {
+		const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
+		if (!localResponse.ok) {
+			return
+		}
+		return env.NEXT_PUBLIC_INTRANET_HOST
+	} catch {
 		return
 	}
-	return env.NEXT_PUBLIC_INTRANET_HOST
 }
 
 function canConnectLocally () {

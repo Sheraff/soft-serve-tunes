@@ -80,14 +80,15 @@ async function fetchLocalOrRemote (request: Request) {
 		localHost = await getLocalHost()
 	}
 	if (localHost) {
-		const response = await fetch(request.url.replace(location.origin, localHost), {
-			headers: request.headers,
-		})
-		if (!response.ok) {
-			localHost = undefined
-			return fetch(request)
-		}
-		return response
+		try {
+			const response = await fetch(request.url.replace(location.origin, localHost), {
+				headers: request.headers,
+			})
+			if (response.ok) {
+				return response
+			}
+		} catch { }
+		localHost = undefined
 	}
 	return fetch(request)
 }

@@ -6,7 +6,11 @@ export default async function local (req: NextApiRequest, res: NextApiResponse) 
 	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
 	const isLocal = getLocalNetworkAuth(req)
 	if (!isLocal) {
-		res.status(401).json({ error: "reserved for intranet access", ip: req.socket.remoteAddress })
+		if (req.method === "GET") {
+			res.status(401).json({ error: "reserved for intranet access", ip: req.socket.remoteAddress })
+		} else {
+			res.status(401).end()
+		}
 		return
 	}
 	res.status(204).end()
