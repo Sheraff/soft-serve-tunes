@@ -15,7 +15,6 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   }
   res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
   res.setHeader("Access-Control-Expose-Headers", "Content-Range")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
   if (req.method === "OPTIONS") {
     if (isLocal) {
       res.setHeader("Access-Control-Allow-Private-Network", "true")

@@ -87,10 +87,7 @@ async function fetchLocalOrRemote (request: Request) {
 			if (response.ok) {
 				return response
 			}
-			console.error(new Error(`SW: local host ${localHost} responded with ${response.status} while fetching ${request.url}`))
-		} catch (error) {
-			console.error(new Error(`SW: previously reachable local host ${localHost} is now unreachable while fetching ${request.url}`, { cause: error }))
-		}
+		} catch { }
 		localHost = undefined
 	}
 	return fetch(request)
@@ -105,12 +102,7 @@ async function fetchFromServer (event: FetchEvent, request: Request) {
 				if (!buffer.byteLength) return
 				const range = clone.headers.get("Content-Range")
 				const contentType = clone.headers.get("Content-Type")
-				if (!range) {
-					console.log("response headers")
-					console.log(...clone.headers.keys())
-					clone.headers.forEach((value, key) => console.log(key, value))
-					return console.warn("SW: abort caching range", event.request.url)
-				}
+				if (!range) return console.warn("SW: abort caching range", event.request.url)
 				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
 				if (!parsed) return console.warn("SW: malformed 206 headers", event.request.url)
 				const [, _start, _end, _total] = parsed
