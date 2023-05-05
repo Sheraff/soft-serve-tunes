@@ -392,22 +392,12 @@ class AcoustId {
 		}) as Result[]
 		albums.sort((a, b) => {
 			// prefer items w/ album info
-			const aAlbum = a.album
-			const bAlbum = b.album
-			if (aAlbum && !bAlbum) return -1
-			if (!aAlbum && bAlbum) return 1
-			if (!aAlbum && !bAlbum) return 0
-			const _aAlbum = aAlbum as Exclude<typeof aAlbum, undefined>
-			const _bAlbum = bAlbum as Exclude<typeof bAlbum, undefined>
+			if (a.album && !b.album) return -1
+			if (!a.album && b.album) return 1
 
 			// prefer items w/ artist info
-			const aArtists = a.artists
-			const bArtists = b.artists
-			if (aArtists && !bArtists) return -1
-			if (!aArtists && bArtists) return 1
-			if (!aArtists && !bArtists) return 0
-			const _aArtists = aArtists as Exclude<typeof aArtists, undefined>
-			const _bArtists = bArtists as Exclude<typeof bArtists, undefined>
+			if (a.artists && !b.artists) return -1
+			if (!a.artists && b.artists) return 1
 
 			// prefer tracks w/ a title that matches file metadata
 			if (metaName && a.title && b.title) { // `.title` will always be defined
@@ -418,68 +408,71 @@ class AcoustId {
 			}
 
 			// prefer tracks w/ an artist that matches file metadata
-			if (metaArtist && _aArtists && _bArtists) {
-				const aHasSimilarArtist = _aArtists.some(({ name }) => similarStrings(metaArtist, name))
-				const bHasSimilarArtist = _bArtists.some(({ name }) => similarStrings(metaArtist, name))
+			if (metaArtist && a.artists && b.artists) {
+				const aHasSimilarArtist = a.artists.some(({ name }) => similarStrings(metaArtist, name))
+				const bHasSimilarArtist = b.artists.some(({ name }) => similarStrings(metaArtist, name))
 				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
 				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
 			}
-			if (metaArtists.length && _aArtists && _bArtists) {
-				const aHasSimilarArtist = _aArtists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
-				const bHasSimilarArtist = _bArtists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
+			if (metaArtists.length && a.artists && b.artists) {
+				const aHasSimilarArtist = a.artists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
+				const bHasSimilarArtist = b.artists.some(({ name }) => metaArtists.some((meta) => similarStrings(meta, name)))
 				if (aHasSimilarArtist && !bHasSimilarArtist) return -1
 				if (!aHasSimilarArtist && bHasSimilarArtist) return 1
 			}
 
-			// prefer albums w/ a title that matches file metadata
-			if (metaAlbum && _aAlbum.title && _bAlbum.title) {
-				const aIsSimilarAlbum = similarStrings(metaAlbum, _aAlbum.title)
-				const bIsSimilarAlbum = similarStrings(metaAlbum, _bAlbum.title)
-				if (aIsSimilarAlbum && !bIsSimilarAlbum) return -1
-				if (!aIsSimilarAlbum && bIsSimilarAlbum) return 1
-			}
-
-			// sort by increasing album.type score
-			if (_aAlbum.type && !_bAlbum.type) return -1
-			if (!_aAlbum.type && _bAlbum.type) return 1
-			if (_aAlbum.type !== _bAlbum.type) {
-				const aScore = this.#getTypeValue(_aAlbum.type)
-				const bScore = this.#getTypeValue(_bAlbum.type)
-				return aScore - bScore
-			}
-
-			// sort by increasing album.secondarytypes score
-			const aSubTypes = _aAlbum.secondarytypes || []
-			const bSubTypes = _bAlbum.secondarytypes || []
-			if (aSubTypes.length !== 0 || bSubTypes.length !== 0) {
-				if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
-				const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
-				const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
-				if (aSubTypesScore !== bSubTypesScore) {
-					return aSubTypesScore - bSubTypesScore
+			if (a.album && b.album) {
+				// prefer albums w/ a title that matches file metadata
+				if (metaAlbum && a.album.title && b.album.title) {
+					const aIsSimilarAlbum = similarStrings(metaAlbum, a.album.title)
+					const bIsSimilarAlbum = similarStrings(metaAlbum, b.album.title)
+					if (aIsSimilarAlbum && !bIsSimilarAlbum) return -1
+					if (!aIsSimilarAlbum && bIsSimilarAlbum) return 1
 				}
-			}
 
-			// avoid "non artists" if confident enough
-			// if neither album is a "Compilation", prefer the one with an actual artist name
-			if (!aSubTypes.includes("Compilation") && !bSubTypes.includes("Compilation") && _aAlbum.artists?.[0] && _bAlbum.artists?.[0]) {
-				const aNotArtist = notArtistName(_aAlbum.artists[0].name)
-				const bNotArtist = notArtistName(_bAlbum.artists[0].name)
-				if (!aNotArtist && bNotArtist) return -1
-				if (aNotArtist && !bNotArtist) return 1
-			}
+				// sort by increasing album.type score
+				if (a.album.type && !b.album.type) return -1
+				if (!a.album.type && b.album.type) return 1
+				if (a.album.type !== b.album.type) {
+					const aScore = this.#getTypeValue(a.album.type)
+					const bScore = this.#getTypeValue(b.album.type)
+					return aScore - bScore
+				}
 
-			// prefer english titles (or latin script titles)
-			const aLocale = a.album?.locale
-			const bLocale = b.album?.locale
-			if (aLocale && bLocale) {
-				if (aLocale.language !== bLocale.language) {
-					if (aLocale.language === "en" && bLocale.language !== "en") return -1
-					if (aLocale.language !== "en" && bLocale.language === "en") return 1
-				} else if (aLocale.language === "mul") {
-					if (aLocale.script !== bLocale.script) {
-						if (aLocale.script === "Latn" && bLocale.script !== "Latn") return -1
-						if (aLocale.script !== "Latn" && bLocale.script === "Latn") return 1
+				const aSubTypes = a.album.secondarytypes || []
+				const bSubTypes = b.album.secondarytypes || []
+
+				// sort by increasing album.secondarytypes score
+				if (aSubTypes.length !== 0 || bSubTypes.length !== 0) {
+					if (aSubTypes.length !== bSubTypes.length) return aSubTypes.length - bSubTypes.length
+					const aSubTypesScore = aSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
+					const bSubTypesScore = bSubTypes.reduce((sum, type) => sum + this.#getSubTypeValue(type), 0)
+					if (aSubTypesScore !== bSubTypesScore) {
+						return aSubTypesScore - bSubTypesScore
+					}
+				}
+
+				// avoid "non artists" if confident enough
+				// if neither album is a "Compilation", prefer the one with an actual artist name
+				if (!aSubTypes.includes("Compilation") && !bSubTypes.includes("Compilation") && a.album.artists?.[0] && b.album.artists?.[0]) {
+					const aNotArtist = notArtistName(a.album.artists[0].name)
+					const bNotArtist = notArtistName(b.album.artists[0].name)
+					if (!aNotArtist && bNotArtist) return -1
+					if (aNotArtist && !bNotArtist) return 1
+				}
+
+				// prefer english titles (or latin script titles)
+				const aLocale = a.album.locale
+				const bLocale = b.album.locale
+				if (aLocale && bLocale) {
+					if (aLocale.language !== bLocale.language) {
+						if (aLocale.language === "eng" && bLocale.language !== "eng") return -1
+						if (aLocale.language !== "eng" && bLocale.language === "eng") return 1
+					} else if (aLocale.language === "mul") {
+						if (aLocale.script !== bLocale.script) {
+							if (aLocale.script === "Latn" && bLocale.script !== "Latn") return -1
+							if (aLocale.script !== "Latn" && bLocale.script === "Latn") return 1
+						}
 					}
 				}
 			}
