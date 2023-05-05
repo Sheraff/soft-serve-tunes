@@ -64,33 +64,40 @@ export default function EditAlbum ({
 
 	const artistInput = useRef<HTMLInputElement>(null)
 	const { data: artistsRaw } = trpc.artist.searchable.useQuery()
-	const _artists = useAsyncInputStringDistance(artistInput, 10, artistsRaw || defaultArray)
-	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
+	const artists = useAsyncInputStringDistance({
+		inputRef: artistInput,
+		dataList: artistsRaw || defaultArray,
+		select (list) {
+			const base = list.length === 0 ? artistsRaw || defaultArray : list
+			if (!artistSimplified) return base.slice(0, 10)
+			return base
+				.sort((a, b) => {
+					const aName = simplifiedName(a.name) === artistSimplified
+					const bName = simplifiedName(b.name) === artistSimplified
+					if (aName !== bName) {
+						if (aName) {
+							return -1
+						}
+						return 1
+					}
+					const aIsInAlbums = albums.some(album => album?.artist?.id === a.id)
+					const bIsInAlbums = albums.some(album => album?.artist?.id === b.id)
+					if (aIsInAlbums && !bIsInAlbums) {
+						return -1
+					} else if (!aIsInAlbums && bIsInAlbums) {
+						return 1
+					}
+					return 0
+				})
+				.slice(0, 10)
+		}
+	})
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
 		artistInput.current!.value = name ?? ""
 		artistInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => { setArtistInputName(artistAggregate.value) }, [setArtistInputName, artistAggregate.value])
-	artists.sort((a, b) => {
-		if (!artistSimplified) return 0
-		const aName = simplifiedName(a.name) === artistSimplified
-		const bName = simplifiedName(b.name) === artistSimplified
-		if (aName !== bName) {
-			if (aName) {
-				return -1
-			}
-			return 1
-		}
-		const aIsInAlbums = albums.some(album => album?.artist?.id === a.id)
-		const bIsInAlbums = albums.some(album => album?.artist?.id === b.id)
-		if (aIsInAlbums && !bIsInAlbums) {
-			return -1
-		} else if (!aIsInAlbums && bIsInAlbums) {
-			return 1
-		}
-		return 0
-	})
 	const exactArtist = Boolean(artistSimplified && artists[0] && artistSimplified === simplifiedName(artists[0].name))
 
 	const coverInput = useRef<HTMLInputElement>(null)
@@ -224,7 +231,7 @@ export default function EditAlbum ({
 					<div className={styles.full}>
 						<ArtistList
 							lines={1}
-							artists={artists.slice(0, 10)}
+							artists={artists}
 							selected={exactArtist ? artists[0]!.id : undefined}
 							selectable={false}
 							onClick={(artist) => {

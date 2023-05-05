@@ -6,7 +6,6 @@ import ModifIcon from "icons/edit_square.svg"
 import AssignIcon from "icons/link.svg"
 import CreateIcon from "icons/add_circle.svg"
 import styles from "../Entities/index.module.css"
-import { type Prisma } from "@prisma/client"
 import useAsyncInputStringDistance from "components/Header/Search/useAsyncInputFilter"
 import ArtistList from "components/ArtistList"
 import { simplifiedName } from "utils/sanitizeString"
@@ -89,8 +88,43 @@ export default function EditTrack ({
 
 	const artistInput = useRef<HTMLInputElement>(null)
 	const { data: artistsRaw } = trpc.artist.searchable.useQuery()
-	const _artists = useAsyncInputStringDistance(artistInput, 10, artistsRaw || defaultArray)
-	const artists = _artists.length === 0 ? artistsRaw || defaultArray : _artists
+	const artists = useAsyncInputStringDistance({
+		inputRef: artistInput,
+		dataList: artistsRaw || defaultArray,
+		select (list) {
+			const base = list.length === 0 ? artistsRaw || defaultArray : list
+			if (!albumSimplified && !artistSimplified) return base.slice(0, 10)
+			return list
+				.sort((a, b) => {
+					const aName = simplifiedName(a.name) === artistSimplified
+					const bName = simplifiedName(b.name) === artistSimplified
+					if (aName === bName) {
+						const aArtist = a.albums?.some(album => simplifiedName(album.name) === albumSimplified)
+						const bArtist = b.albums?.some(album => simplifiedName(album.name) === albumSimplified)
+						if (aArtist && bArtist) {
+							return 0
+						} else if (aArtist) {
+							return -1
+						} else if (bArtist) {
+							return 1
+						}
+					} else if (aName) {
+						return -1
+					} else if (bName) {
+						return 1
+					}
+					const aIsInTracks = tracks.some(track => track?.artist?.id === a.id)
+					const bIsInTracks = tracks.some(track => track?.artist?.id === b.id)
+					if (aIsInTracks && !bIsInTracks) {
+						return -1
+					} else if (!aIsInTracks && bIsInTracks) {
+						return 1
+					}
+					return 0
+				})
+				.slice(0, 10)
+		}
+	})
 	const setArtistInputName = useCallback((name: string | undefined) => {
 		setArtistState(name)
 		artistInput.current!.value = name ?? ""
@@ -98,34 +132,6 @@ export default function EditTrack ({
 		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [])
 	useEffect(() => { setArtistInputName(artistAggregate.value) }, [setArtistInputName, artistAggregate.value])
-	artists.sort((a, b) => {
-		if (!albumSimplified && !artistSimplified) return 0
-		const aName = simplifiedName(a.name) === artistSimplified
-		const bName = simplifiedName(b.name) === artistSimplified
-		if (aName === bName) {
-			const aArtist = a.albums?.some(album => simplifiedName(album.name) === albumSimplified)
-			const bArtist = b.albums?.some(album => simplifiedName(album.name) === albumSimplified)
-			if (aArtist && bArtist) {
-				return 0
-			} else if (aArtist) {
-				return -1
-			} else if (bArtist) {
-				return 1
-			}
-		} else if (aName) {
-			return -1
-		} else if (bName) {
-			return 1
-		}
-		const aIsInTracks = tracks.some(track => track?.artist?.id === a.id)
-		const bIsInTracks = tracks.some(track => track?.artist?.id === b.id)
-		if (aIsInTracks && !bIsInTracks) {
-			return -1
-		} else if (!aIsInTracks && bIsInTracks) {
-			return 1
-		}
-		return 0
-	})
 	const exactArtist = Boolean(artistSimplified && artists[0] && artistSimplified === simplifiedName(artists[0].name))
 
 	const albumInput = useRef<HTMLInputElement>(null)
@@ -145,8 +151,46 @@ export default function EditTrack ({
 			},
 		} as HTMLInputElement
 	}, [])
-	const __albums = useAsyncInputStringDistance(fakeAlbumInput, 10, albumsRaw || defaultArray, ["name", "artists"])
-	const _albums = __albums.length === 0 ? albumsRaw || defaultArray : __albums
+	const _albums = useAsyncInputStringDistance({
+		inputRef: fakeAlbumInput,
+		dataList: albumsRaw || defaultArray,
+		keys: ["name", "artists"],
+		select (list) {
+			const base = list.length === 0 ? albumsRaw || defaultArray : list
+			if (!albumSimplified && !artistSimplified) return base.slice(0, 10)
+			return base
+				.sort((a, b) => {
+					// if an album has exact title and artist, put it first. If an album has exact title, put it second
+					if (!albumSimplified && !artistSimplified) return 0
+					const aName = simplifiedName(a.name) === albumSimplified
+					const bName = simplifiedName(b.name) === albumSimplified
+					if (aName === bName) {
+						const aArtist = a.artists?.some(artist => simplifiedName(artist) === artistSimplified)
+						const bArtist = b.artists?.some(artist => simplifiedName(artist) === artistSimplified)
+						if (aArtist && bArtist) {
+							return 0
+						} else if (aArtist) {
+							return -1
+						} else if (bArtist) {
+							return 1
+						}
+					} else if (aName) {
+						return -1
+					} else if (bName) {
+						return 1
+					}
+					const aIsInTracks = tracks.some(track => track?.album?.id === a.id)
+					const bIsInTracks = tracks.some(track => track?.album?.id === b.id)
+					if (aIsInTracks && !bIsInTracks) {
+						return -1
+					} else if (!aIsInTracks && bIsInTracks) {
+						return 1
+					}
+					return 0
+				})
+				.slice(0, 10)
+		}
+	})
 	const albums = useDeferredValue(_albums)
 	const setAlbumInputName = useCallback((name: string | undefined, artistName?: string) => {
 		albumInput.current!.value = name ?? ""
@@ -155,35 +199,6 @@ export default function EditTrack ({
 		albumInput.current!.dispatchEvent(new Event("input"))
 	}, [setArtistInputName])
 	useEffect(() => { setAlbumInputName(albumAggregate.value) }, [setAlbumInputName, albumAggregate.value])
-	albums.sort((a, b) => {
-		// if an album has exact title and artist, put it first. If an album has exact title, put it second
-		if (!albumSimplified && !artistSimplified) return 0
-		const aName = simplifiedName(a.name) === albumSimplified
-		const bName = simplifiedName(b.name) === albumSimplified
-		if (aName === bName) {
-			const aArtist = a.artists?.some(artist => simplifiedName(artist) === artistSimplified)
-			const bArtist = b.artists?.some(artist => simplifiedName(artist) === artistSimplified)
-			if (aArtist && bArtist) {
-				return 0
-			} else if (aArtist) {
-				return -1
-			} else if (bArtist) {
-				return 1
-			}
-		} else if (aName) {
-			return -1
-		} else if (bName) {
-			return 1
-		}
-		const aIsInTracks = tracks.some(track => track?.album?.id === a.id)
-		const bIsInTracks = tracks.some(track => track?.album?.id === b.id)
-		if (aIsInTracks && !bIsInTracks) {
-			return -1
-		} else if (!aIsInTracks && bIsInTracks) {
-			return 1
-		}
-		return 0
-	})
 	const exactAlbum = Boolean(albumSimplified && albums[0] && albumSimplified === simplifiedName(albums[0].name))
 
 	const coverInput = useRef<HTMLInputElement>(null)
@@ -349,7 +364,7 @@ export default function EditTrack ({
 						<AlbumList
 							lines={1}
 							scrollable
-							albums={albums.slice(0, 10)}
+							albums={albums}
 							selected={exactAlbum ? albums[0]!.id : undefined}
 							onClick={album => {
 								navigator.vibrate(1)
@@ -378,7 +393,7 @@ export default function EditTrack ({
 					<div className={styles.full}>
 						<ArtistList
 							lines={1}
-							artists={artists.slice(0, 10)}
+							artists={artists}
 							selected={exactArtist ? artists[0]!.id : undefined}
 							onClick={(artist) => {
 								navigator.vibrate(1)

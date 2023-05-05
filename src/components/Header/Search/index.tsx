@@ -39,7 +39,11 @@ const ArtistSearch = forwardRef(function _ArtistSearch ({
 	const { data: artistsRaw } = offline
 		? useCachedArtistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
 		: trpc.artist.searchable.useQuery()
-	const artists = useAsyncInputStringDistance(input, 45, artistsRaw || defaultArray)
+	const artists = useAsyncInputStringDistance({
+		inputRef: input,
+		size: 45,
+		dataList: artistsRaw || defaultArray,
+	})
 
 	return (
 		<div>
@@ -67,7 +71,12 @@ const AlbumSearch = forwardRef(function _AlbumSearch ({
 	const { data: albumsRaw } = offline
 		? useCachedAlbumList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
 		: trpc.album.searchable.useQuery()
-	const _albums = useAsyncInputStringDistance(input, 44, albumsRaw || defaultArray, ["name", "artists"])
+	const _albums = useAsyncInputStringDistance({
+		inputRef: input,
+		size: 44,
+		dataList: albumsRaw || defaultArray,
+		keys: ["name", "artists"],
+	})
 	const deferredAlbums = useDeferredValue(_albums)
 	const albums = deferredAlbums.length === 0 ? _albums : deferredAlbums
 
@@ -98,7 +107,11 @@ function GenreSearch ({
 	const { data: genresRaw } = offline
 		? useCachedGenreList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
 		: trpc.genre.searchable.useQuery()
-	const _genres = useAsyncInputStringDistance(input, 12, genresRaw || defaultArray)
+	const _genres = useAsyncInputStringDistance({
+		inputRef: input,
+		size: 12,
+		dataList: genresRaw || defaultArray,
+	})
 	const genres = useDeferredValue(_genres)
 
 	if (!genres.length) return null
@@ -127,7 +140,12 @@ function PlaylistSearch ({
 	const { data: playlistsRaw } = offline
 		? useCachedPlaylistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
 		: trpc.playlist.searchable.useQuery()
-	const _playlists = useAsyncInputStringDistance(input, 3, playlistsRaw || defaultArray, ["name", "artists"])
+	const _playlists = useAsyncInputStringDistance({
+		inputRef: input,
+		size: 3,
+		dataList: playlistsRaw || defaultArray,
+		keys: ["name", "artists"],
+	})
 	const playlists = useDeferredValue(_playlists)
 
 	if (!playlists.length) return null
@@ -156,7 +174,12 @@ function TrackSearch ({
 	const { data: tracksRaw } = offline
 		? useCachedTrackList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
 		: trpc.track.searchable.useQuery()
-	const _tracks = useAsyncInputStringDistance(input, 12, tracksRaw || defaultArray, ["name", "artist.name", "album.name"])
+	const _tracks = useAsyncInputStringDistance({
+		inputRef: input,
+		size: 12,
+		dataList: tracksRaw || defaultArray,
+		keys: ["name", "artist.name", "album.name"],
+	})
 	const tracks = useDeferredValue(_tracks)
 
 	if (!tracks.length) return null

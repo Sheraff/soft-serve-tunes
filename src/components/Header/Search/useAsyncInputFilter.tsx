@@ -19,14 +19,27 @@ function getIn (obj: Obj | string, [key, ...path]: string[]): string {
 	return getIn(next, path)
 }
 
-export default function useAsyncInputStringDistance<T extends MinimumWorkerDataObject> (
+export default function useAsyncInputStringDistance<
+	T extends MinimumWorkerDataObject,
+	TSelected = T[],
+> ({
+	inputRef,
+	size = Infinity,
+	dataList,
+	keys = ["name"],
+	select,
+}: {
 	inputRef: RefObject<HTMLInputElement>,
-	size: number,
+	size?: number,
 	dataList: T[],
-	keys: string[] = ["name"],
-): T[] {
+	keys?: string[],
+	select?: (list: T[]) => TSelected,
+}): TSelected {
 	const worker = useRef<Worker | null>(null)
-	const [list, setList] = useState<T[]>([])
+	const [list, setList] = useState<TSelected>(() => select
+		? select([])
+		: [] as unknown as TSelected
+	)
 
 	// use namedObjects to pass less data to/from worker, use `namedObjects.id`to map back to `dataList` index
 	const namedObjects = useMemo(() =>
@@ -40,6 +53,10 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 	// use these 2 refs to avoid making calls to worker for an input value that isn't current
 	const isWorking = useRef(false)
 	const nextValue = useRef<string | null>(null)
+
+	// these refs to avoid re-running useEffects
+	const selectRef = useRef(select)
+	selectRef.current = select
 
 	useEffect(() => {
 		const { current: inputMemo } = inputRef
@@ -70,7 +87,10 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 					for (let i = 0; i < data.list.length; i++) {
 						newList.push(dataList[data.list[i]!]!)
 					}
-					setList(newList)
+					if (selectRef.current)
+						setList(selectRef.current(newList))
+					else
+						setList(newList as unknown as TSelected)
 				})
 			}
 		}
@@ -100,7 +120,10 @@ export default function useAsyncInputStringDistance<T extends MinimumWorkerDataO
 				}
 			} else if (!value) {
 				startTransition(() => {
-					setList([])
+					if (selectRef.current)
+						setList(selectRef.current([]))
+					else
+						setList([] as unknown as TSelected)
 				})
 			}
 			lastInputValue = value
