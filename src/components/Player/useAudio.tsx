@@ -126,12 +126,6 @@ export default function useAudio (audio: RefObject<HTMLAudioElement>) {
 					_setPlayedSeconds(playedSeconds + delta)
 				}
 				currentPlayedSectionStart = currentTime
-				// TODO: below is temporary, if we still don't have android notifications with a progress track, we can remove it
-				navigator.mediaSession.setPositionState({
-					duration: element.duration,
-					playbackRate: element.playbackRate,
-					position: element.currentTime,
-				})
 			}
 		}
 
