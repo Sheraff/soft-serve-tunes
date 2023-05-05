@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "^18.12.0",
-    "npm": "^8.19.2"
+    "node": "^20.1.0",
+    "npm": "^9.6.4"
   },
   "os": [
     "darwin",
@@ -51,7 +51,7 @@
   "devDependencies": {
     "@svgr/webpack": "^7.0.0",
     "@types/formidable": "^2.0.5",
-    "@types/node": "18.16.2",
+    "@types/node": "20.0.0",
     "@types/react": "18.2.5",
     "@types/react-dom": "18.2.4",
     "@types/titlecase": "^1.1.0",
