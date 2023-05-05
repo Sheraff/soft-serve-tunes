@@ -21,5 +21,5 @@ function canConnectLocally () {
 	if (!env.NEXT_PUBLIC_INTRANET_HOST) return false
 	if (env.NEXT_PUBLIC_ENV === "development") return true
 	const connection = (navigator as unknown as { connection: { type: string | undefined } }).connection.type
-	return connection === "wifi"
+	return !connection || connection === "wifi"
 }
