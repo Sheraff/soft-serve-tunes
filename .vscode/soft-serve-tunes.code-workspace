@@ -7,8 +7,8 @@
 	"settings": {
 		"cSpell.words": [
 			"acoust",
-			"acoustid",
 			"acousticness",
+			"acoustid",
 			"ALAC",
 			"audiodb",
 			"autocorrect",
@@ -23,6 +23,7 @@
 			"isrc",
 			"Itunes",
 			"lastfm",
+			"letsencrypt",
 			"matroska",
 			"mbid",
 			"musicbrainz",

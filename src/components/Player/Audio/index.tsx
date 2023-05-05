@@ -27,6 +27,7 @@ const Audio = forwardRef(function Audio (_, ref: ForwardedRef<HTMLAudioElement>)
 			autoPlay={autoplay.useValue()}
 			playsInline
 			src={item?.id && `/api/file/${item.id}`}
+			crossOrigin="use-credentials"
 		/>
 	)
 })

@@ -1,9 +1,10 @@
+import { getLocalHost } from "client/local-net/getLocalHost"
 import { env } from "env/client.mjs"
 import retryable from "utils/retryable"
 
-function upload(formData: FormData, onProgress: (progress: number) => void) {
+async function upload (formData: FormData, onProgress: (progress: number) => void) {
+	const host = await getLocalHost()
 	const request = new XMLHttpRequest()
-
 	request.upload.addEventListener("progress", (e) => {
 		if (e.lengthComputable) {
 			const progress = e.loaded / e.total
@@ -14,12 +15,16 @@ function upload(formData: FormData, onProgress: (progress: number) => void) {
 	})
 	const promise = new Promise<void>((resolve, reject) => {
 		const controller = new AbortController()
-		request.addEventListener("load", () => { controller.abort(), resolve() }, {signal: controller.signal})
-		request.addEventListener("error", () => { controller.abort(), reject() }, {signal: controller.signal})
-		request.addEventListener("abort", () => { controller.abort(), reject() }, {signal: controller.signal})
-		request.addEventListener("timeout", () => { controller.abort(), reject() }, {signal: controller.signal})
+		request.addEventListener("load", () => { controller.abort(), resolve() }, { signal: controller.signal })
+		request.addEventListener("error", () => { controller.abort(), reject() }, { signal: controller.signal })
+		request.addEventListener("abort", () => { controller.abort(), reject() }, { signal: controller.signal })
+		request.addEventListener("timeout", () => { controller.abort(), reject() }, { signal: controller.signal })
 	})
-	request.open("POST", "/api/upload")
+	if (host) {
+		request.open("POST", `${host}/api/upload`)
+	} else {
+		request.open("POST", "/api/upload")
+	}
 	request.timeout = 3 * 60_000
 	request.send(formData)
 	return promise
@@ -33,9 +38,9 @@ const queuedUploads: {
 	total: 0,
 }
 
-export default async function uploadLoop<T extends FileSystemFileEntry | File>(
+export default async function uploadLoop<T extends FileSystemFileEntry | File> (
 	list: T[],
-	parse: (item: T) => Promise<({size: number, file: File, path: string} | undefined)>,
+	parse: (item: T) => Promise<({ size: number, file: File, path: string } | undefined)>,
 	onProgress: (p: number) => void
 ) {
 	const beforeCount = queuedUploads.total
@@ -85,7 +90,7 @@ export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 				lastBatchStartIndex = i + 1
 			}
 		}
-	} catch {}
+	} catch { }
 	(resolve as unknown as () => void)()
 	if (queuedUploads.promise === promise) {
 		queuedUploads.promise = null

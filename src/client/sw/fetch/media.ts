@@ -1,34 +1,35 @@
 /// <reference lib="webworker" />
+import { getLocalHost } from "client/local-net/getLocalHost"
 import { CACHES } from "../utils/constants"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
-async function cacheMediaResponse(url: string, response: Response) {
+async function cacheMediaResponse (url: string, response: Response) {
 	const cache = await caches.open(CACHES.media)
 	await cache.put(url, response)
 	const clients = await self.clients.matchAll()
 	clients.forEach((client) =>
-		client.postMessage({type: "sw-notify-when-track-cached", payload: {url}})
+		client.postMessage({ type: "sw-notify-when-track-cached", payload: { url } })
 	)
 }
 
 const currentMediaStream: {
 	ranges: {
-	  [start: number]: {
-		 end: number
-		 buffer: ArrayBuffer
-		 total: number
-	  } | undefined
+		[start: number]: {
+			end: number
+			buffer: ArrayBuffer
+			total: number
+		} | undefined
 	}
 	type: string
 	url: string
-  } = {
+} = {
 	ranges: {},
 	type: "",
 	url: "",
 }
 
-function resolveCurrentMediaStream() {
-	const {ranges, url, type} = currentMediaStream
+function resolveCurrentMediaStream () {
+	const { ranges, url, type } = currentMediaStream
 	if (!url) return
 	if (!ranges[0]) return
 	const length = ranges[0].total
@@ -72,15 +73,35 @@ function resolveCurrentMediaStream() {
 	}, 1_000)
 }
 
-async function fetchFromServer(event: FetchEvent, request: Request) {
-	const response = await fetch(request)
+let localHost: string | undefined
+
+async function fetchLocalOrRemote (request: Request) {
+	if (!localHost) {
+		localHost = await getLocalHost()
+	}
+	if (localHost) {
+		try {
+			const response = await fetch(request.url.replace(location.origin, localHost), {
+				headers: request.headers,
+			})
+			if (response.ok) {
+				return response
+			}
+		} catch { }
+		localHost = undefined
+	}
+	return fetch(request)
+}
+
+async function fetchFromServer (event: FetchEvent, request: Request) {
+	const response = await fetchLocalOrRemote(request)
 	if (response.status === 206) {
-		response.clone()
-			.arrayBuffer()
+		const clone = response.clone()
+		clone.arrayBuffer()
 			.then((buffer) => {
 				if (!buffer.byteLength) return
-				const range = response.headers.get("Content-Range")
-				const contentType = response.headers.get("Content-Type")
+				const range = clone.headers.get("Content-Range")
+				const contentType = clone.headers.get("Content-Type")
 				if (!range) return console.warn("SW: abort caching range", event.request.url)
 				const parsed = range.match(/^bytes (\d+)-(\d+)\/(\d+)/)
 				if (!parsed) return console.warn("SW: malformed 206 headers", event.request.url)
@@ -99,13 +120,13 @@ async function fetchFromServer(event: FetchEvent, request: Request) {
 					resolveCurrentMediaStream()
 			})
 	} else if (response.status === 200) {
-		const cacheResponse = response.clone()
-		cacheMediaResponse(event.request.url, cacheResponse)
+		const clone = response.clone()
+		cacheMediaResponse(event.request.url, clone)
 	}
 	return response
 }
 
-async function fetchFromCache(event: FetchEvent, request: Request) {
+async function fetchFromCache (event: FetchEvent, request: Request) {
 	const response = await caches.match(event.request.url, {
 		ignoreVary: true,
 		ignoreSearch: true,
@@ -121,7 +142,7 @@ async function fetchFromCache(event: FetchEvent, request: Request) {
 	const parsed = range.match(/^bytes\=(\d+)-(\d*)/)
 	if (!parsed) {
 		console.warn("SW: malformed request")
-		return new Response("", {status: 400})
+		return new Response("", { status: 400 })
 	}
 	// still respond with a 206 byte range when bytePointer === 0
 	// because if we respond with a full 200, <audio> isn't seekable
@@ -146,7 +167,7 @@ async function fetchFromCache(event: FetchEvent, request: Request) {
 	return result
 }
 
-export default function mediaFetch(event: FetchEvent, request: Request) {
+export default function mediaFetch (event: FetchEvent, request: Request) {
 	if (event.request.url !== currentMediaStream.url) {
 		resolveCurrentMediaStream()
 		currentMediaStream.ranges = {}

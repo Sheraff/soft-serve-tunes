@@ -42,7 +42,7 @@ https://user-images.githubusercontent.com/1325721/212537689-021062ec-f67c-4b37-8
 
 ## Deploy to raspberry
 
-### update raspbian 
+### update raspbian
 - need an arm64 OS, as prisma doesn't work on 32bits systems https://www.raspberrypi.com/software/
 - need musl for "sharp" image processing: `sudo apt install musl:arm64`
 
@@ -167,6 +167,66 @@ sudo nano /boot/config.txt
 ```
 add `dtoverlay=disable-wifi` to the config, under `[all]`
 
+### Intranet streaming
+If you want to stream directly server-to-device without going through the internet *when both
+are on the same network*, you need to setup a few more things:
+- Create a DNS A record that resolves to the static IP assigned to the raspberry pi server
+- Generate a certificate by using a DNS challenge (since the domain cannot be accessed outside of
+your network, certificate authority can only access the DNS record): 
+https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-certificate-using-dns-validation-with-acme-dns-certbot-on-ubuntu-18-04
+  ```sh
+  wget https://github.com/joohoi/acme-dns-certbot-joohoi/raw/master/acme-dns-auth.py
+  chmod +x acme-dns-auth.py
+  nano acme-dns-auth.py # change the shebang to use python3 instead of python
+  sudo mv acme-dns-auth.py /etc/letsencrypt/ # where letsencrypt can find it
+  sudo certbot certonly --manual --manual-auth-hook /etc/letsencrypt/acme-dns-auth.py --preferred-challenges dns --debug-challenges -d local.my-domain.com
+  # certbot will prompt you to go and register a CNAME DNS redirection from your domain
+  # to theirs, so they can verify that you do own the domain, do that, and check that it
+  # is correctly registered with `dig _acme-challenge.local.my-domain.com`
+  sudo certbot renew --dry-run # make sure the new cert is included in the auto-renew rotation
+  ```
+- enable apache proxy with new local host and newly generated certificates (in a .conf file inside /etc/apache2/sites-enabled)
+  ```
+  <VirtualHost *:443>
+        ProxyPreserveHost On
+        ProxyRequests Off
+        # name doesn't matter (unless self-signed certificate wasn't wildcard but on a specific domain)
+        ServerName foobar.com
+        ServerAlias *
+
+        RewriteEngine On
+        RewriteCond %{HTTP:Upgrade} =websocket [NC]
+        RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
+        RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+        RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
+
+        ProxyPass / http://localhost:3000/
+        ProxyPassReverse / http://localhost:3000/
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # self signed
+        SSLCertificateFile /etc/letsencrypt/live/local.my-domain.com/fullchain.pem
+        SSLCertificateKeyFile /etc/letsencrypt/live/local.my-domain.com/privkey.pem
+        Include /etc/letsencrypt/options-ssl-apache.conf
+  </VirtualHost>
+  ```
+- not necessary, but you might also want to force http connections to upgrade to https
+  ```
+  # in the *:80 VirtualHost
+  RewriteCond %{SERVER_NAME} =local.my-domain.com
+  RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+  ```
+- restart apache
+  ```sh
+  systemctl restart apache2
+  ```
+- add the local host to .env file
+  ```
+  NEXT_PUBLIC_INTRANET_HOST=https://local.my-domain.com
+  ```
+
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
 ```
@@ -176,7 +236,11 @@ add `dtoverlay=disable-wifi` to the config, under `[all]`
 
    # added by certbot
    RewriteEngine on
-   RewriteCond %{SERVER_NAME} =rpi.florianpellet.com
+   RewriteCond %{SERVER_NAME} =my-domain.com
+   RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+
+   # if we want intranet streaming
+   RewriteCond %{SERVER_NAME} =local.my-domain.com
    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
 </VirtualHost>
 ```
@@ -188,7 +252,7 @@ add `dtoverlay=disable-wifi` to the config, under `[all]`
 
       ProxyPreserveHost On
       ProxyRequests Off
-      ServerName rpi.florianpellet.com
+      ServerName my-domain.com
 
       RewriteEngine On
       RewriteCond %{HTTP:Upgrade} =websocket [NC]
@@ -203,9 +267,35 @@ add `dtoverlay=disable-wifi` to the config, under `[all]`
       CustomLog ${APACHE_LOG_DIR}/access.log combined
 
       # certbot
-      ServerName rpi.florianpellet.com
-      SSLCertificateFile /etc/letsencrypt/live/rpi.florianpellet.com/fullchain.pem
-      SSLCertificateKeyFile /etc/letsencrypt/live/rpi.florianpellet.com/privkey.pem
+      ServerName my-domain.com
+      SSLCertificateFile /etc/letsencrypt/live/my-domain.com/fullchain.pem
+      SSLCertificateKeyFile /etc/letsencrypt/live/my-domain.com/privkey.pem
       Include /etc/letsencrypt/options-ssl-apache.conf
+   </VirtualHost>
+
+   # if we want intranet streaming
+   <VirtualHost *:443>
+        ProxyPreserveHost On
+        ProxyRequests Off
+        # name doesn't matter (unless self-signed certificate wasn't wildcard but on a specific domain)
+        ServerName foobar.com
+        ServerAlias *
+
+        RewriteEngine On
+        RewriteCond %{HTTP:Upgrade} =websocket [NC]
+        RewriteRule /(.*)           ws://localhost:3001/$1 [P,L]
+        RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+        RewriteRule /(.*)           http://localhost:3000/$1 [P,L]
+
+        ProxyPass / http://localhost:3000/
+        ProxyPassReverse / http://localhost:3000/
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # self signed
+        SSLCertificateFile /etc/letsencrypt/live/local.my-domain.com/fullchain.pem
+        SSLCertificateKeyFile /etc/letsencrypt/live/local.my-domain.com/privkey.pem
+        Include /etc/letsencrypt/options-ssl-apache.conf
    </VirtualHost>
 </IfModule>

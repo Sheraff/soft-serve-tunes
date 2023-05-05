@@ -14,11 +14,19 @@ import { prisma } from "server/db/client"
 import { acoustId } from "server/persistent/acoustId"
 import { socketServer } from "utils/typedWs/server"
 import { getServerAuthSession } from "server/common/get-server-auth-session"
+import { getLocalNetworkAuth } from "server/common/local-auth"
 
 export default async function upload (req: NextApiRequest, res: NextApiResponse) {
-	const session = await getServerAuthSession({ req, res })
-	if (!session) {
+	const isLocal = getLocalNetworkAuth(req)
+	if (!isLocal && !(await getServerAuthSession({ req, res }))) {
 		return res.status(401).json({ error: "authentication required" })
+	}
+	res.setHeader("Access-Control-Allow-Origin", env.NEXT_PUBLIC_INTERNET_HOST)
+	if (req.method === "OPTIONS") {
+		if (isLocal) {
+			res.setHeader("Access-Control-Allow-Private-Network", "true")
+		}
+		return res.status(200).end()
 	}
 
 	const form = new formidable.IncomingForm({
