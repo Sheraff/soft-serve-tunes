@@ -216,6 +216,7 @@ async function getFingerprinted (
 	while (!fingerprinted && retry < retries) {
 		try {
 			fingerprinted = await acoustId.identify(track.file.path, metadata, retry)
+			break
 		} catch (e) {
 			if (typeof e === "string") {
 				log("warn", "wait", "acoustid", e) // ERROR: Error decoding audio frame (Invalid data found when processing input)
