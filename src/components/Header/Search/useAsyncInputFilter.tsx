@@ -44,7 +44,7 @@ export default function useAsyncInputStringDistance<
 	// use namedObjects to pass less data to/from worker, use `namedObjects.id`to map back to `dataList` index
 	const namedObjects = useMemo(() =>
 		dataList.map((item, id) => ({
-			name: keys.map(key => getIn(item, key.split("."))).join(" "),
+			name: keys.map(key => getIn(item, key.split("."))).join(" ").toLowerCase(),
 			id,
 		})),
 		[dataList, ...keys]
@@ -81,7 +81,7 @@ export default function useAsyncInputStringDistance<
 			} else {
 				isWorking.current = false
 			}
-			if (inputMemo.value === data.input) {
+			if (inputMemo.value.toLowerCase() === data.input) {
 				startTransition(() => {
 					const newList = [] as T[] // might not actually be `T` if dataList has changed since then
 					for (let i = 0; i < data.list.length; i++) {
@@ -109,7 +109,7 @@ export default function useAsyncInputStringDistance<
 		worker.current.postMessage({ type: "list", list: namedObjects, size })
 		let lastInputValue: string
 		const onInput = () => {
-			const value = inputMemo.value.trim()
+			const value = inputMemo.value.trim().toLowerCase()
 			if (worker.current && value) {
 				if (lastInputValue === value) return
 				if (!isWorking.current) {
