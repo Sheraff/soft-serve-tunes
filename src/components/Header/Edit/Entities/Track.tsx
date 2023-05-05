@@ -213,7 +213,7 @@ export default function EditTrack ({
 	const isArtistModified = Boolean(artistSimplified && (!artistAggregate.value || artistSimplified !== simplifiedName(artistAggregate.value)))
 	const isCoverModified = Boolean(coverState && coverState !== coverAggregate.value)
 	const isSingleTrack = tracks.length === 1
-	const isNameModified = isSingleTrack && Boolean(nameState && (!tracks[0]?.name || simplifiedName(nameState) !== simplifiedName(tracks[0].name)))
+	const isNameModified = isSingleTrack && Boolean(nameState && (!tracks[0]?.name || nameState !== tracks[0].name))
 	const isPositionModified = isSingleTrack && Boolean(positionState !== null && positionState !== tracks[0]?.position)
 
 	const { mutateAsync: updateTrack } = trpc.edit.track.modify.useMutation()

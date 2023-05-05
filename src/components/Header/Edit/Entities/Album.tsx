@@ -111,7 +111,7 @@ export default function EditAlbum ({
 	const isArtistModified = Boolean(artistSimplified && (!artistAggregate.value || artistSimplified !== simplifiedName(artistAggregate.value)))
 	const isCoverModified = Boolean(coverState && coverState !== coverAggregate.value)
 	const isSingleAlbum = albums.length === 1
-	const isNameModified = isSingleAlbum && Boolean(nameState && (!albums[0]?.name || simplifiedName(nameState) !== simplifiedName(albums[0].name)))
+	const isNameModified = isSingleAlbum && Boolean(nameState && (!albums[0]?.name || nameState !== albums[0].name))
 
 	const { mutateAsync: updateAlbum } = trpc.edit.album.modify.useMutation()
 	const { mutateAsync: validateAlbum } = trpc.edit.album.validate.useMutation({ retry: 0 })
