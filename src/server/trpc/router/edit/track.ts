@@ -108,7 +108,6 @@ async function getCover (input: Input, track: Track) {
 }
 
 async function getArtist (input: Input) {
-	if (!input.artist?.id && !input.artist?.name) return
 	if (input.artist?.id) {
 		const artist = await prisma.artist.findUnique({
 			where: { id: input.artist.id },
@@ -120,17 +119,18 @@ async function getArtist (input: Input) {
 		})
 		return artist
 	}
-	const artist = await prisma.artist.findFirst({
-		where: {
-			simplified: simplifiedName(input.artist.name),
-		},
-		select: { id: true, name: true },
-	})
-	return artist ?? undefined
+	if (input.artist?.name) {
+		const artist = await prisma.artist.findFirst({
+			where: {
+				simplified: simplifiedName(input.artist.name),
+			},
+			select: { id: true, name: true },
+		})
+		return artist ?? undefined
+	}
 }
 
 async function getAlbum (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
-	if (!input.album?.id && !input.album?.name) return
 	if (input.album?.id) {
 		const album = await prisma.album.findUnique({
 			where: { id: input.album.id },
@@ -142,14 +142,17 @@ async function getAlbum (input: Input, track: Track, artist: Awaited<ReturnType<
 		})
 		return album
 	}
-	const album = await prisma.album.findFirst({
-		where: {
-			simplified: simplifiedName(input.album.name),
-			artistId: artist?.id ?? track.artist?.id,
-		},
-		select: { id: true, name: true },
-	})
-	return album ?? undefined
+	// the second condition here is for the following case: we changed the artist name, and the new artist has an album of the same name
+	if (input.album?.name || (artist && track.album?.name)) {
+		const album = await prisma.album.findFirst({
+			where: {
+				simplified: simplifiedName(input.album?.name || track.album!.name),
+				artistId: artist?.id ?? track.artist?.id,
+			},
+			select: { id: true, name: true },
+		})
+		return album ?? undefined
+	}
 }
 
 async function getName (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
