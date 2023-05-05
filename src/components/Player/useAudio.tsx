@@ -3,7 +3,7 @@ import { trpc } from "utils/trpc"
 
 type TimeVector = [number, number, number]
 
- function secondsToTimeVector(seconds: number): TimeVector {
+function secondsToTimeVector (seconds: number): TimeVector {
 	const restSeconds = seconds % 60
 	const minutes = (seconds - restSeconds) / 60
 	const restMinutes = minutes % 60
@@ -12,34 +12,34 @@ type TimeVector = [number, number, number]
 	return floatVector.map(Math.floor) as TimeVector
 }
 
-function arrayToTimeDisplayString(array: number[]) {
+function arrayToTimeDisplayString (array: number[]) {
 	return array
 		.map((num) => num.toString().padStart(2, "0"))
 		.join(":")
 }
 
-function pairOfTimeVectorsToPairOfDisplayStrings(vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
+function pairOfTimeVectorsToPairOfDisplayStrings (vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
 	if (vectors[0][0] === 0 && vectors[1][0] === 0) {
 		return vectors.map((vec) => arrayToTimeDisplayString([vec[1], vec[2]])) as [string, string, string]
 	}
 	return vectors.map(arrayToTimeDisplayString) as [string, string, string]
 }
 
-export default function useAudio(audio: RefObject<HTMLAudioElement>) {
+export default function useAudio (audio: RefObject<HTMLAudioElement>) {
 	const [seconds, setSeconds] = useState(0) // current time
 	const [totalSeconds, setTotalSeconds] = useState(0) // total time of source
 	const [playing, setPlaying] = useState(false) // follows state of DOM node
 	const [loading, setLoading] = useState(true)
 	const remainingSeconds = totalSeconds - seconds
-	
+
 	const [displayCurrentTime, displayTotalTime, displayRemainingTime] = useMemo(() => {
 		const currentTimeVector = secondsToTimeVector(seconds)
 		const totalTimeVector = secondsToTimeVector(totalSeconds)
 		const remainingTimeVector = secondsToTimeVector(remainingSeconds)
 		return pairOfTimeVectorsToPairOfDisplayStrings([currentTimeVector, totalTimeVector, remainingTimeVector])
 	}, [seconds, totalSeconds, remainingSeconds])
-	
-	const {mutate} = trpc.track.playcount.useMutation()
+
+	const { mutate } = trpc.track.playcount.useMutation()
 
 	useEffect(() => {
 		const element = audio.current
@@ -68,7 +68,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 			playedSeconds = s
 			const newConsideredPlayed = Boolean(playedSeconds > 45 || (totalSeconds && playedSeconds / totalSeconds > 0.4))
 			if (!consideredPlayed && newConsideredPlayed && currentId) {
-				mutate({id: currentId})
+				mutate({ id: currentId })
 			}
 			consideredPlayed = newConsideredPlayed
 		}
@@ -80,7 +80,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 				setPlaying(p)
 			}
 		}
-		
+
 		let loading = true
 		const _setLoading = (l: boolean) => {
 			loading = l
@@ -106,7 +106,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 
 		const onDuration = () => {
-			const {duration, src} = element
+			const { duration, src } = element
 			if (!Number.isNaN(duration) && (src === currentSrc)) {
 				_setTotalSeconds(duration)
 				navigator.mediaSession.setPositionState({
@@ -118,7 +118,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 
 		const onTimeUpdate = () => {
-			const {currentTime, src} = element
+			const { currentTime, src } = element
 			if (!Number.isNaN(currentTime) && (src === currentSrc)) {
 				_setSeconds(currentTime)
 				if (!loading) {
@@ -126,6 +126,12 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 					_setPlayedSeconds(playedSeconds + delta)
 				}
 				currentPlayedSectionStart = currentTime
+				// TODO: below is temporary, if we still don't have android notifications with a progress track, we can remove it
+				navigator.mediaSession.setPositionState({
+					duration: element.duration,
+					playbackRate: element.playbackRate,
+					position: element.currentTime,
+				})
 			}
 		}
 
@@ -172,7 +178,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 
 		// watch for "src" attribute change
 		const observer = new MutationObserver(() => {
-			const {src} = element
+			const { src } = element
 			if (src !== currentSrc) {
 				currentSrc = src
 				currentPlayedSectionStart = 0
@@ -189,17 +195,17 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		})
 
 		const controller = new AbortController()
-		element.addEventListener("durationchange", onDuration, {signal: controller.signal})
-		element.addEventListener("timeupdate", onTimeUpdate, {signal: controller.signal})
-		element.addEventListener("play", onPlay, {signal: controller.signal})
-		element.addEventListener("ended", onEnded, {signal: controller.signal})
-		element.addEventListener("pause", onPause, {signal: controller.signal})
-		element.addEventListener("stalled", onStalled, {signal: controller.signal})
-		element.addEventListener("waiting", onWaiting, {signal: controller.signal})
-		element.addEventListener("playing", onPlaying, {signal: controller.signal})
-		element.addEventListener("seeking", onStalled, {signal: controller.signal})
-		element.addEventListener("seeked", onUnStalled, {signal: controller.signal})
-		document.addEventListener("visibilitychange", onVisibilityChange, {signal: controller.signal})
+		element.addEventListener("durationchange", onDuration, { signal: controller.signal })
+		element.addEventListener("timeupdate", onTimeUpdate, { signal: controller.signal })
+		element.addEventListener("play", onPlay, { signal: controller.signal })
+		element.addEventListener("ended", onEnded, { signal: controller.signal })
+		element.addEventListener("pause", onPause, { signal: controller.signal })
+		element.addEventListener("stalled", onStalled, { signal: controller.signal })
+		element.addEventListener("waiting", onWaiting, { signal: controller.signal })
+		element.addEventListener("playing", onPlaying, { signal: controller.signal })
+		element.addEventListener("seeking", onStalled, { signal: controller.signal })
+		element.addEventListener("seeked", onUnStalled, { signal: controller.signal })
+		document.addEventListener("visibilitychange", onVisibilityChange, { signal: controller.signal })
 
 		return () => {
 			observer.disconnect()
@@ -207,7 +213,7 @@ export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 		}
 	}, [audio, mutate])
 
-	const progress = Boolean(seconds && totalSeconds) 
+	const progress = Boolean(seconds && totalSeconds)
 		? seconds / totalSeconds
 		: 0
 
