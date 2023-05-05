@@ -18,16 +18,17 @@ const miniature = publicProcedure.input(z.object({
       COUNT(*)::int as "tracksCount"
     FROM (
       WITH RECURSIVE sub_rec_genre AS(
-        SELECT * FROM public."Genre"
+        SELECT id, ARRAY[id] as path
+          FROM public."Genre"
           WHERE id = ${input.id}
-        UNION ALL -- test removing ALL (see other comment)
-        SELECT sub.*
+        UNION ALL
+        SELECT sub.id, path || sub.id
           FROM sub_rec_genre as sup
-          -- should add a WHERE clause to prevent infinite recursion (https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE:~:text=7.8.2.2.%C2%A0Cycle%20Detection)
         INNER JOIN public."_LinkedGenre" as link
           ON sup.id = link."A"
         INNER JOIN public."Genre" as sub
           ON link."B" = sub.id
+        WHERE NOT sub.id = ANY(path)
       )
       SELECT DISTINCT ON(tracks.id)
         tracks."artistId" as id
@@ -39,7 +40,7 @@ const miniature = publicProcedure.input(z.object({
       ORDER BY
         tracks.id
     ) as track_list
-    INNER JOIN public."Artist" as artists
+    LEFT JOIN public."Artist" as artists
       ON track_list.id = artists.id
     GROUP BY
       artists."coverId"
@@ -47,15 +48,23 @@ const miniature = publicProcedure.input(z.object({
       "tracksCount" DESC
     ;
   ` as {
-    coverId: string
+    coverId: string | null
     tracksCount: number
   }[]
 
   const count = artists.reduce((acc, artist) => acc + artist.tracksCount, 0)
+  const firstArtistsWithCover: { coverId: string }[] = []
+  for (let i = 0; i < artists.length; i++) {
+    const artist = artists[i]!
+    if (artist.coverId) {
+      firstArtistsWithCover.push({ coverId: artist.coverId })
+      if (firstArtistsWithCover.length === 3) break
+    }
+  }
 
   return {
     ...meta,
-    artists: artists.slice(0, 3),
+    artists: firstArtistsWithCover,
     _count: {
       tracks: count,
     }
@@ -84,15 +93,17 @@ const get = publicProcedure.input(z.object({
 
   const rawTracks = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS(
-      SELECT * FROM public."Genre"
+      SELECT id, ARRAY[id] as path
+        FROM public."Genre"
         WHERE id = ${input.id}
-      UNION ALL -- test removing ALL (see other comment)
-      SELECT sub.*
+      UNION ALL
+      SELECT sub.id, path || sub.id
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
         ON sup.id = link."A"
       INNER JOIN public."Genre" as sub
         ON link."B" = sub.id
+      WHERE NOT sub.id = ANY(path)
     )
     SELECT DISTINCT ON(tracks.id)
       tracks.id as id,
@@ -110,8 +121,6 @@ const get = publicProcedure.input(z.object({
       ON tracks."artistId" = artists.id
     LEFT JOIN public."Album" as albums
       ON tracks."albumId" = albums.id
-    ORDER BY
-      tracks.id
     ;
   ` as {
     id: string
@@ -149,26 +158,27 @@ const get = publicProcedure.input(z.object({
 const searchable = publicProcedure.query(async ({ ctx }) => {
   return await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, id as base_id, name as base_name
+      SELECT id, name, id as base_id, name as base_name, ARRAY[id] as path
         FROM public."Genre"
-      UNION ALL -- test without "ALL" (might remove duplicates)
-      SELECT sub.*, sup.base_id, sup.base_name
+      UNION ALL
+      SELECT sub.id, sub.name, sup.base_id, sup.base_name, path || sub.id
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
         ON sup.id = link."A"
       INNER JOIN public."Genre" as sub
         ON link."B" = sub.id
+      WHERE NOT sub.id = ANY(path)
     )
-    SELECT DISTINCT
+    SELECT DISTINCT ON(sub_rec_genre.base_id)
       sub_rec_genre.base_id as id,
       sub_rec_genre.base_name as name
     FROM sub_rec_genre
-    INNER JOIN public."_GenreToTrack" as genreToTrack
-      ON sub_rec_genre.id = genreToTrack."A"
-    INNER JOIN public."Track"
-      ON genreToTrack."B" = public."Track".id
-    ORDER BY
-      name ASC
+    WHERE EXISTS (
+      SELECT 1
+      FROM public."_GenreToTrack" as genreToTrack
+      WHERE sub_rec_genre.id = genreToTrack."A"
+        OR sub_rec_genre.base_id = genreToTrack."A" -- I don't know if this OR is needed
+    )
     ;
   ` as {
     id: string
@@ -179,15 +189,16 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
 const mostFav = publicProcedure.query(async ({ ctx }) => {
   const mostLiked = await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT *, 1 as depth, id as base_id, name as base_name
+      SELECT id, 1 as depth, id as base_id, name as base_name, ARRAY[id] as path
         FROM public."Genre"
       UNION ALL
-      SELECT sub.*, sup.depth + 1, sup.base_id, sup.base_name
+      SELECT sub.id, sup.depth + 1, sup.base_id, sup.base_name, path || sub.id
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
         ON sup.id = link."A"
       INNER JOIN public."Genre" as sub
         ON link."B" = sub.id
+      WHERE NOT sub.id = ANY(path)
     ),
     ordered_sub_rec_genre AS (
       SELECT
@@ -218,7 +229,7 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
       SELECT DISTINCT ON (liked_tracks.id, base_id)
         ordered_sub_rec_genre.base_id as base_genre,
         ordered_sub_rec_genre.name as name,
-        1 / POWER(min_depth::float, 1.6) as score
+        1 / (min_depth::float ^ 1.6) as score
       FROM ordered_sub_rec_genre
       INNER JOIN liked_tracks
         ON ordered_sub_rec_genre.id = liked_tracks.genre_id
@@ -248,7 +259,7 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
       scoring_list.likes as likes,
       -- scoring_list.score_sum as raw_score,
       -- counting_list.genre_count as genre_count,
-      scoring_list.score_sum / pow(counting_list.genre_count, 1.5) as score
+      scoring_list.score_sum / (counting_list.genre_count::float ^ 1.5) as score
     FROM scoring_list
     INNER JOIN counting_list
       ON scoring_list.id = counting_list.id
