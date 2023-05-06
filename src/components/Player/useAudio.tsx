@@ -8,21 +8,40 @@ function secondsToTimeVector (seconds: number): TimeVector {
 	const minutes = (seconds - restSeconds) / 60
 	const restMinutes = minutes % 60
 	const hours = (minutes - restMinutes) / 60
-	const floatVector = [hours, restMinutes, restSeconds] as const
-	return floatVector.map(Math.floor) as TimeVector
+	const floatVector = [
+		Math.floor(hours),
+		Math.floor(restMinutes),
+		Math.floor(restSeconds)
+	] as TimeVector
+	return floatVector
 }
 
-function arrayToTimeDisplayString (array: number[]) {
-	return array
-		.map((num) => num.toString().padStart(2, "0"))
-		.join(":")
+function arrayToTimeDisplayString (a: number, b: number, c?: number): string {
+	let string =
+		a.toString().padStart(2, "0")
+		+ ":"
+		+ b.toString().padStart(2, "0")
+	if (c !== undefined) {
+		string += ":" + c.toString().padStart(2, "0")
+	}
+	return string
 }
 
+/**
+ * WARN: this will mutate the input array
+ */
 function pairOfTimeVectorsToPairOfDisplayStrings (vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
 	if (vectors[0][0] === 0 && vectors[1][0] === 0) {
-		return vectors.map((vec) => arrayToTimeDisplayString([vec[1], vec[2]])) as [string, string, string]
+		for (let i = 0; i < vectors.length; i++) {
+			vectors[i] = arrayToTimeDisplayString(vectors[i]![1], vectors[i]![2]) as unknown as TimeVector // this `as` is a lie
+		}
+	} else {
+		for (let i = 0; i < vectors.length; i++) {
+			vectors[i] = arrayToTimeDisplayString(...vectors[i]!) as unknown as TimeVector // this `as` is a lie
+		}
 	}
-	return vectors.map(arrayToTimeDisplayString) as [string, string, string]
+
+	return vectors as unknown as [string, string, string]
 }
 
 export default function useAudio (audio: RefObject<HTMLAudioElement>) {
