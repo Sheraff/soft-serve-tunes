@@ -158,16 +158,14 @@ const get = publicProcedure.input(z.object({
 const searchable = publicProcedure.query(async ({ ctx }) => {
   return await ctx.prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS (
-      SELECT id, name, id as base_id, name as base_name, ARRAY[id] as path
+      SELECT id, id as base_id, name as base_name, ARRAY[id] as path
         FROM public."Genre"
       UNION ALL
-      SELECT sub.id, sub.name, sup.base_id, sup.base_name, path || sub.id
+      SELECT link."B", sup.base_id, sup.base_name, path || link."B"
         FROM sub_rec_genre as sup
       INNER JOIN public."_LinkedGenre" as link
         ON sup.id = link."A"
-      INNER JOIN public."Genre" as sub
-        ON link."B" = sub.id
-      WHERE NOT sub.id = ANY(path)
+      WHERE NOT link."B" = ANY(path)
     )
     SELECT DISTINCT ON(sub_rec_genre.base_id)
       sub_rec_genre.base_id as id,
