@@ -262,19 +262,16 @@ const LIST_COMPONENTS = {
 
 type TabKey = keyof typeof LIST_COMPONENTS
 
-export const libraryTab = suspensePersistedState<TabKey>("libraryTab", "Artists")
+const libraryTab = suspensePersistedState<TabKey>("libraryTab", "Artists")
 
 function InnerLibrary ({
-	tab,
-	setTab,
 	cache,
 	setCache,
 }: {
-	tab: TabKey
-	setTab: (tab: TabKey) => void
 	cache: boolean
 	setCache: (cache: boolean) => void
 }) {
+	const [tab, setTab] = libraryTab.useState()
 	const { component, useQuery, useCache } = LIST_COMPONENTS[tab]
 	const { data = [], isLoading } = (cache ? useCache : useQuery)()
 	return (
@@ -321,7 +318,6 @@ export default forwardRef(function Library ({
 	z: number
 	open: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
-	const [tab, setTab] = libraryTab.useState()
 	const [cache, setCache] = useState(false)
 	return (
 		<div
@@ -334,8 +330,6 @@ export default forwardRef(function Library ({
 		>
 			<InnerLibrary
 				key={String(cache)}
-				tab={tab}
-				setTab={setTab}
 				cache={cache}
 				setCache={setCache}
 			/>
