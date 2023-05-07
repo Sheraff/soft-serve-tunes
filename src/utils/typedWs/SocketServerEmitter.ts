@@ -25,17 +25,30 @@ export default class SocketServerEmitter<
 			port: env.WEBSOCKET_SERVER_PORT,
 			// noServer: true,
 		})
+
+		// close web socket on process exit (has been a pain since... node 20? vscode 1.78?)
+		const signalHandler = this.#signalHandler.bind(this)
+		process.on('SIGINT', signalHandler)
+		process.on('SIGTERM', signalHandler)
+		process.on('SIGQUIT', signalHandler)
+
 		this.#initSocket()
 	}
 
-	#send(type: string, payload?: unknown) {
-		const message = JSON.stringify({type, payload})
+	#signalHandler (signal: NodeJS.Signals) {
+		if (this.#server) {
+			this.#server.close()
+		}
+	}
+
+	#send (type: string, payload?: unknown) {
+		const message = JSON.stringify({ type, payload })
 		this.#server.clients.forEach((ws) => {
 			ws.send(message)
 		})
 	}
 
-	#initSocket() {
+	#initSocket () {
 		this.#server.on("connection", (ws) => {
 			// ping
 			this.#alive.set(ws, true)
@@ -51,7 +64,7 @@ export default class SocketServerEmitter<
 			})
 
 			Object.entries(this.#initialMap).forEach(([type, payload]) => {
-				ws.send(JSON.stringify({type, payload}))
+				ws.send(JSON.stringify({ type, payload }))
 			})
 		})
 		this.#server.on("error", (error) => {
@@ -76,12 +89,12 @@ export default class SocketServerEmitter<
 		})
 	}
 
-	emit<K extends Route>(event: K, data: Parameters<Router[K]>[0]) {
+	emit<K extends Route> (event: K, data: Parameters<Router[K]>[0]) {
 		return this.#emitter.emit(event, data)
 	}
 
 	#initialMap: Record<Route, ReturnType<Router[Route]>> = {} as any
-	onConnection<K extends Route>(event: K, data: Parameters<Router[K]>[0]) {
+	onConnection<K extends Route> (event: K, data: Parameters<Router[K]>[0]) {
 		return this.#send(event, data)
 	}
 }
