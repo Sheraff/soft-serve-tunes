@@ -1,5 +1,6 @@
 import { router, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
+import { prisma } from "server/db/client"
 
 const miniature = publicProcedure.input(z.object({
   id: z.string(),
@@ -71,31 +72,93 @@ const miniature = publicProcedure.input(z.object({
   }
 })
 
-const get = publicProcedure.input(z.object({
-  id: z.string(),
-})).query(async ({ input, ctx }) => {
-  const meta = await ctx.prisma.genre.findUnique({
-    where: { id: input.id },
-    select: {
-      id: true,
-      name: true,
-      // subgenres: {
-      //   where: ???,
-      //   select: { id: true, name: true },
-      // },
-      // supgenres: {
-      //   where: ???,
-      //   select: { id: true, name: true },
-      // },
-    },
-  })
-  if (!meta) return null
+/**
+ * Returns first children genres (first sub-genre of each branch to have a track)
+ */
+function getSubGenres (id: string) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    ),
+    subgenres AS (
+      SELECT id, name, ARRAY[id] as path, FALSE as has_track
+      FROM public."Genre"
+      WHERE id = ${id}
+      UNION ALL
+      SELECT g.id, g.name, path || g.id, EXISTS (
+          SELECT 1
+          FROM with_track wt
+          WHERE wt.id = g.id
+        )
+      FROM subgenres AS parent
+      INNER JOIN public."_LinkedGenre" lg ON lg."A" = parent.id
+      INNER JOIN public."Genre" g ON g.id = lg."B"
+      WHERE NOT parent.has_track AND NOT g.id = ANY(parent.path)
+    )
+    SELECT DISTINCT ON(sg.id)
+      sg.id,
+      sg.name
+    FROM subgenres sg
+    WHERE sg.has_track
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+  }[]>
+}
 
-  const rawTracks = await ctx.prisma.$queryRaw`
+/**
+ * Returns first parent genres (first super-genre of each branch to have a track)
+ */
+function getSupGenres (id: string) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    ),
+    supgenres AS (
+      SELECT id, name, ARRAY[id] as path, FALSE as has_track
+      FROM public."Genre"
+      WHERE id = 'clb2ourva0298yqkujnm440mn'
+      UNION ALL
+      SELECT g.id, g.name, path || g.id, EXISTS (
+          SELECT 1
+          FROM with_track wt
+          WHERE wt.id = g.id
+        )
+      FROM supgenres AS child
+      INNER JOIN public."_LinkedGenre" lg ON lg."B" = child.id
+      INNER JOIN public."Genre" g ON g.id = lg."A"
+      WHERE NOT child.has_track AND NOT g.id = ANY(child.path)
+    )
+    SELECT DISTINCT ON(sg.id)
+      sg.id,
+      sg.name
+    FROM supgenres sg
+    WHERE sg.has_track
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+  }[]>
+}
+
+/**
+ * Returns tracks of genre and all subgenres
+ */
+function getGenreTracks (id: string) {
+  return prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS(
       SELECT id, ARRAY[id] as path
         FROM public."Genre"
-        WHERE id = ${input.id}
+        WHERE id = ${id}
       UNION ALL
       SELECT sub.id, path || sub.id
         FROM sub_rec_genre as sup
@@ -122,33 +185,58 @@ const get = publicProcedure.input(z.object({
     LEFT JOIN public."Album" as albums
       ON tracks."albumId" = albums.id
     ;
-  ` as {
+  ` as Promise<{
     id: string
     name: string
     artistId: string | null
     albumId: string | null
     artistName: string | null
     albumName: string | null
-  }[]
+  }[]>
+}
 
-  const tracks = rawTracks.map((track) => ({
-    id: track.id,
-    name: track.name,
-    artist: track.artistId
-      ? {
-        id: track.artistId!,
-        name: track.artistName!,
-      } : null,
-    album: track.albumId
-      ? {
-        id: track.albumId!,
-        name: track.albumName!,
-      } : null,
-  }))
+const get = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input, ctx }) => {
+  const meta = await ctx.prisma.genre.findUnique({
+    where: { id: input.id },
+    select: {
+      id: true,
+      name: true,
+    },
+  })
+  if (!meta) return null
+
+  const [
+    subGenres,
+    supGenres,
+    tracks,
+  ] = await Promise.all([
+    getSubGenres(input.id),
+    getSupGenres(input.id),
+    getGenreTracks(input.id).then(
+      (tracks) => tracks.map((track) => ({
+        id: track.id,
+        name: track.name,
+        artist: track.artistId
+          ? {
+            id: track.artistId!,
+            name: track.artistName!,
+          } : null,
+        album: track.albumId
+          ? {
+            id: track.albumId!,
+            name: track.albumName!,
+          } : null,
+      }))
+    ),
+  ])
 
   return {
     ...meta,
     tracks,
+    subGenres,
+    supGenres,
     _count: {
       tracks: tracks.length,
     }
