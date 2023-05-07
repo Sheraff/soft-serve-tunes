@@ -214,13 +214,13 @@ const mostFav = publicProcedure.query(async ({ ctx }) => {
     ),
     liked_tracks AS (
       SELECT
-        public."Track".id as id,
+        tracks.id as id,
         genreToTrack."A" as genre_id
-      FROM public."Track"
-      INNER JOIN public."UserTrack" as userTracks
-        ON public."Track".id = userTracks.id
+      FROM public."UserTrack" as userTracks
+      INNER JOIN public."Track" as tracks
+        ON tracks.id = userTracks.id
       INNER JOIN public."_GenreToTrack" as genreToTrack
-        ON public."Track".id = genreToTrack."B"
+        ON tracks.id = genreToTrack."B"
       WHERE userTracks.favorite = true
     ),
     maxi_list AS (

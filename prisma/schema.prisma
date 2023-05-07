@@ -68,6 +68,9 @@ model UserTrack {
   playcount  Int       @default(0)
   favorite   Boolean   @default(false)
   lastListen DateTime?
+
+  @@index([lastListen])
+  @@index([favorite])
 }
 
 model PlaylistEntry {
