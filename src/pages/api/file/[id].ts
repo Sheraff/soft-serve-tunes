@@ -40,21 +40,16 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   const range = req.headers.range
   // allow 200 response if no `range: byte=0-` is specified
   if (range === undefined) {
-    const buffer = await readFile(file.path)
-    res.writeHead(200, {
-      "Content-Type": `audio/${file.container}`,
-      "Content-Length": file.size,
-      "Cache-Control": "public, max-age=31536000",
-    })
-    res.write(buffer)
-    log("info", "200", `File request was sent in full (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
-    return res.end()
+    return respondWithFullFile(res, file)
   }
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {
     log("error", "416", `File request for range is out of bounds (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
     return res.status(416).json({ error: "Invalid range" })
+  }
+  if (isLocal && start === 0) {
+    return respondWithFullFile(res, file)
   }
   const end = partials[1]
     ? Number(partials[1])
@@ -86,6 +81,25 @@ function byteOffsetFromRangeString (range?: string) {
     return [0]
   }
   return range.replace(/bytes=/, "").split("-")
+}
+
+async function respondWithFullFile (
+  res: NextApiResponse,
+  file: {
+    path: string
+    size: number
+    container: string
+  }
+) {
+  const buffer = await readFile(file.path)
+  res.writeHead(200, {
+    "Content-Type": `audio/${file.container}`,
+    "Content-Length": file.size,
+    "Cache-Control": "public, max-age=31536000",
+  })
+  res.write(buffer)
+  log("info", "200", `File request was sent in full (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
+  return res.end()
 }
 
 export const config = {
