@@ -129,7 +129,7 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
   ` as {
     id: string
     name: string
-    artistName: string
+    artistName: string | null
     modifiedAt: string
   }[]
 
@@ -144,13 +144,15 @@ const searchable = publicProcedure.query(async ({ ctx }) => {
   for (let i = 0; i < test.length; i++) {
     const entry = test[i]!
     if (entry.id === lastPlaylist) {
-      current!.artists.push(entry.artistName)
+      if (entry.artistName)
+        current!.artists.push(entry.artistName)
     } else {
       lastPlaylist = entry.id
+      const artists = entry.artistName ? [entry.artistName] : []
       current = {
         id: lastPlaylist,
         name: entry.name,
-        artists: [entry.artistName]
+        artists,
       }
       final.push(current)
     }
