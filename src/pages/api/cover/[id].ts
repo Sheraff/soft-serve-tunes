@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { type ReadStream, createReadStream } from "node:fs"
+import { cpus } from "node:os"
 import { join } from "node:path"
 import { env } from "env/server.mjs"
 import { prisma } from "server/db/client"
 import sharp from "sharp"
 import { stat, unlink } from "node:fs/promises"
 import log from "utils/logger"
-import Queue from "utils/Queue"
 import {
   computeAlbumCover,
   computeTrackCover,
@@ -15,12 +15,8 @@ import {
 import { COVER_SIZES } from "utils/getCoverUrl"
 import { getServerAuthSession } from "server/common/get-server-auth-session"
 
-// @ts-expect-error -- declaring a global for persisting the instance, but not a global type
-const queue = (globalThis.sharpQueue || new Queue(0)) as InstanceType<typeof Queue>
-// @ts-expect-error -- see above
-globalThis.sharpQueue = queue
-
 const runningTransforms = new Set<string>()
+const concurrency = Math.max(1, cpus().length - 2)
 
 export default async function cover (req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerAuthSession({ req, res })
@@ -88,7 +84,6 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
     }
     const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
     try {
-      await queue.next()
       const stats = await stat(originalFilePath)
 
       if (stats.size === 0) {
@@ -96,6 +91,7 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
       }
 
       log("event", "gen", "sharp", `${width}x${width} cover ${cover.path}`)
+      sharp.concurrency(concurrency)
       const transformStream = sharp(originalFilePath)
         .resize(width, width, {
           fit: "cover",
@@ -103,8 +99,8 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
           fastShrinkOnLoad: false,
         })
         .toFormat("avif", {
-          effort: 6,
-          quality: 75,
+          effort: 3,
+          quality: 85,
         })
 
       // store

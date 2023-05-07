@@ -11,9 +11,9 @@
     "linux"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "UV_THREADPOOL_SIZE=2 next dev",
     "build": "next build",
-    "start": "NODE_OPTIONS=\"--max_old_space_size=4096 --dns-result-order=ipv4first\" next start",
+    "start": "UV_THREADPOOL_SIZE=2 NODE_OPTIONS=\"--max_old_space_size=4096 --dns-result-order=ipv4first\" next start",
     "lint": "next lint --fix",
     "check": "tsc --noEmit",
     "postinstall": "prisma generate",
