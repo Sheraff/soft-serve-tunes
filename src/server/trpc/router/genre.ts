@@ -14,7 +14,8 @@ const miniature = publicProcedure.input(z.object({
   if (!meta) return null
   const artists = await ctx.prisma.$queryRaw`
     SELECT
-      artists."coverId" as "coverId",
+      covers.id as "coverId",
+      covers.blur as "coverBlur",
       COUNT(*)::int as "tracksCount"
     FROM (
       WITH RECURSIVE sub_rec_genre AS(
@@ -42,22 +43,29 @@ const miniature = publicProcedure.input(z.object({
     ) as track_list
     LEFT JOIN public."Artist" as artists
       ON track_list.id = artists.id
+    INNER JOIN public."Image" as covers
+      ON artists."coverId" = covers.id
     GROUP BY
-      artists."coverId"
+      covers.id,
+      covers.blur
     ORDER BY
       "tracksCount" DESC
     ;
   ` as {
     coverId: string | null
+    coverBlur: string | null
     tracksCount: number
   }[]
 
   const count = artists.reduce((acc, artist) => acc + artist.tracksCount, 0)
-  const firstArtistsWithCover: { coverId: string }[] = []
+  const firstArtistsWithCover: {
+    id: string
+    blur: string | null | undefined
+  }[] = []
   for (let i = 0; i < artists.length; i++) {
     const artist = artists[i]!
     if (artist.coverId) {
-      firstArtistsWithCover.push({ coverId: artist.coverId })
+      firstArtistsWithCover.push({ id: artist.coverId, blur: artist.coverBlur })
       if (firstArtistsWithCover.length === 3) break
     }
   }

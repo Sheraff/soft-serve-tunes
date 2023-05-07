@@ -16,6 +16,7 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedGenre } from "client/sw/useSWCached"
+import Image from "atoms/Image"
 
 type GenreListItem = {
 	id: string
@@ -38,7 +39,7 @@ function GenreItem ({
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
 		select (data) {
 			if (!data?.artists) return data
-			return { ...data, artists: data.artists.filter(({ coverId }) => coverId).reverse() }
+			return { ...data, artists: data.artists.slice().reverse() }
 		},
 	})
 
@@ -95,12 +96,12 @@ function GenreItem ({
 			)}
 			{data?.artists && data.artists.length > 0 && (
 				<div className={styles.artists} style={{ "--extra": data.artists.length - 1 } as CSSProperties}>
-					{data.artists.map(({ coverId }) => (
-						<img
-							key={coverId}
+					{data.artists.map((cover) => (
+						<Image
+							key={cover.id}
 							className={styles.cover}
-							alt=""
-							src={getCoverUrl(coverId, "mini")}
+							cover={cover}
+							size="mini"
 						/>
 					))}
 				</div>

@@ -77,6 +77,8 @@
 }
 .preview {
 	z-index: 1;
+	background-image: var(--blur);
+	background-size: cover;
 }
 
 .head {

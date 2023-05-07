@@ -28,7 +28,7 @@ export default forwardRef(function PanelView ({
 	z,
 	rect,
 	description,
-	coverId,
+	cover,
 	coverPalette,
 	coverElement,
 	infos,
@@ -49,7 +49,10 @@ export default forwardRef(function PanelView ({
 		src?: string,
 	}
 	description?: string | null
-	coverId?: string
+	cover?: {
+		id: string
+		blur?: string | null | undefined
+	} | null | undefined
 	coverPalette?: Prisma.JsonValue
 	coverElement?: ReactElement
 	infos: ReactNode[]
@@ -121,12 +124,15 @@ export default forwardRef(function PanelView ({
 					className={classNames(styles.img, styles.preview)}
 					src={initialImageSrc.current}
 					alt=""
+					style={{
+						'--blur': cover?.blur ? `url("${cover.blur}")` : undefined,
+					} as CSSProperties}
 				/>
 			)}
-			{!coverElement && coverId && (
+			{!coverElement && cover && (
 				<img
 					className={styles.img}
-					src={getCoverUrl(coverId, "full")}
+					src={getCoverUrl(cover.id, "full")}
 					alt=""
 					decoding={initialImageSrc.current ? "async" : undefined}
 				/>
@@ -134,7 +140,7 @@ export default forwardRef(function PanelView ({
 			{coverElement && (
 				cloneElement(coverElement, { className: styles.img })
 			)}
-			{!initialImageSrc.current && !coverId && !coverElement && (
+			{!initialImageSrc.current && !cover && !coverElement && (
 				<div className={styles.img} />
 			)}
 			<div className={styles.head}>

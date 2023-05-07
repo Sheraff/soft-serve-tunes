@@ -152,9 +152,9 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 		const position = fingerprinted?.no ?? metadata.common.track.no ?? undefined
 
 		const selectedCover = selectCover(metadata.common.picture)
-		const { hash, path: imagePath, palette } = selectedCover && selectedCover.data.byteLength
+		const { hash, path: imagePath, palette, blur } = selectedCover && selectedCover.data.byteLength
 			? await writeImage(Buffer.from(selectedCover.data), selectedCover.format.split("/")[1], `from createTrack ${name}`)
-			: { hash: "", path: "", palette: undefined }
+			: { hash: "", path: "", palette: undefined, blur: undefined }
 
 		const [correctedArtist, isMultiArtistAlbum] = await (async () => {
 			if (fingerprinted?.artists?.[0]) {
@@ -256,6 +256,7 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 								path: imagePath,
 								mimetype: metadata.common.picture?.[0]?.format ?? "image/*",
 								palette,
+								blur,
 							}
 						}
 					}

@@ -12,6 +12,7 @@ import useIsOnline from "utils/typedWs/useIsOnline"
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
 import pluralize from "utils/pluralize"
+import Image from "atoms/Image"
 
 type AlbumListItem = {
 	id: string
@@ -83,9 +84,9 @@ function AlbumItem ({
 			}}
 		>
 			{!isEmpty && (
-				<img
-					src={src}
-					alt=""
+				<Image
+					cover={data?.cover}
+					size="half"
 				/>
 			)}
 			<p className={classNames(styles.span, {

@@ -1,0 +1,4 @@
+.img {
+	background-image: var(--blur);
+	background-size: cover;
+}
