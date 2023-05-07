@@ -13,7 +13,6 @@ import { editOverlay, editOverlaySetter } from "components/AppContext/editOverla
 import { autoplay, playAudio } from "components/Player/Audio"
 import classNames from "classnames"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { getCoverUrl } from "utils/getCoverUrl"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedGenre } from "client/sw/useSWCached"
 import Image from "atoms/Image"

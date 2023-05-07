@@ -6,7 +6,6 @@ import useLongPress from "components/AlbumList/useLongPress"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import OfflineIcon from "icons/wifi_off.svg"
-import { getCoverUrl } from "utils/getCoverUrl"
 import Image from "atoms/Image"
 
 export function BasePastSearchItem ({

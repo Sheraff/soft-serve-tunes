@@ -34,7 +34,6 @@ import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedTrack } from "client/sw/useSWCached"
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual"
 import { autoplay, playAudio } from "components/Player/Audio"
-import { getCoverUrl } from "utils/getCoverUrl"
 import Image from "atoms/Image"
 
 const emptyFunction = () => { }
