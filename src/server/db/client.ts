@@ -18,3 +18,8 @@ export const prisma =
 if (env.NODE_ENV !== "production") {
   global.prisma = prisma
 }
+
+const signalHandler = () => prisma.$disconnect()
+process.on('SIGINT', signalHandler)
+process.on('SIGTERM', signalHandler)
+process.on('SIGQUIT', signalHandler)
