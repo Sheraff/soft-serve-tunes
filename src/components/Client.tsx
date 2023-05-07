@@ -2,14 +2,15 @@ import { useSession, type getProviders } from "next-auth/react"
 import { startTransition, Suspense, useEffect } from "react"
 import AudioTest from "components/AudioTest"
 import WatcherSocket from "components/WatcherSocket"
-import SignIn from "components/SignIn"
+import SignIn, { ERROR_MESSAGES } from "components/SignIn"
 import { AppState } from "components/AppContext"
 import suspensePersistedState from "client/db/suspensePersistedState"
 import useIsOnline from "utils/typedWs/useIsOnline"
+import { useSearchParams } from "next/navigation"
 
 const allowOfflineLogin = suspensePersistedState<boolean>("allowOfflineLogin", false)
 
-export default function AuthCore({
+export default function AuthCore ({
 	providers,
 	ssrLoggedIn,
 	ready,
@@ -19,8 +20,10 @@ export default function AuthCore({
 	ready: boolean
 }) {
 	const { data: session } = useSession()
+	const searchParams = useSearchParams()
+	const error = searchParams.get("error") as keyof typeof ERROR_MESSAGES | null
 
-	const onlineLoggedInState = Boolean(ssrLoggedIn || session || !providers)
+	const onlineLoggedInState = Boolean(!error && (ssrLoggedIn || session || !providers))
 	const [offlineLoggedInState, setOfflineLoggedIn] = allowOfflineLogin.useState()
 	const isOnline = useIsOnline()
 	useEffect(() => {
@@ -45,7 +48,10 @@ export default function AuthCore({
 				</>
 			)}
 			{!loggedIn && isOnline && (
-				<SignIn providers={providers!} />
+				<SignIn
+					providers={providers!}
+					error={error}
+				/>
 			)}
 		</>
 	)

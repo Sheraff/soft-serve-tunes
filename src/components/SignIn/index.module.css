@@ -7,6 +7,14 @@
 	padding: 20px;
 }
 
+.error {
+	margin-top: 16px;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
 .credits {
 	margin-top: 16px;
 	font-size: 12px;

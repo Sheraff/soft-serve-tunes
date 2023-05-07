@@ -12,7 +12,7 @@ import log from "utils/logger"
 export const authOptions: NextAuthOptions = {
 	// Include user.id on session
 	callbacks: {
-		async signIn({user, account}) {
+		async signIn ({ user, account }) {
 			const allowed = env.ALLOWED_USERS.some(
 				([provider, email]) => account && account.provider === provider && user.email === email
 			)
@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
 			}
 			return allowed
 		},
-		session({ session, user }) {
+		session ({ session, user }) {
 			if (session.user) {
 				session.user.id = user.id
 			}
@@ -48,6 +48,10 @@ export const authOptions: NextAuthOptions = {
 			clientSecret: env.GITHUB_CLIENT_SECRET,
 		})
 	],
+	pages: {
+		signIn: '/',
+		error: '/',
+	}
 }
 
 export default NextAuth(authOptions)
