@@ -111,42 +111,52 @@ const get = publicProcedure.input(z.object({
 })
 
 const searchable = publicProcedure.query(async ({ ctx }) => {
-  const playlists = await ctx.prisma.playlist.findMany({
-    select: {
-      id: true,
-      name: true,
-      modifiedAt: true,
-      tracks: {
-        select: {
-          track: {
-            select: {
-              artist: {
-                select: {
-                  name: true,
-                },
-              },
-            }
-          }
-        }
+  const test = await ctx.prisma.$queryRaw`
+    SELECT DISTINCT ON(p.id, a.id, p."modifiedAt")
+      p.id,
+      p.name,
+      a.name as artistName,
+      p."modifiedAt"
+    FROM public."Playlist" as p
+    LEFT JOIN public."PlaylistEntry" as pe
+      ON pe."playlistId" = p.id
+    LEFT JOIN public."Track" as t
+      ON t.id = pe."trackId"
+    LEFT JOIN public."Artist" as a
+      ON a.id = t."artistId"
+    ORDER BY p."modifiedAt" DESC
+    ;
+  ` as {
+    id: string
+    name: string
+    artistName: string
+    modifiedAt: string
+  }[]
+
+  const final: {
+    id: string
+    name: string
+    artists: string[]
+  }[] = []
+  let lastPlaylist: string | undefined
+  let current: typeof final[number] | undefined
+
+  for (let i = 0; i < test.length; i++) {
+    const entry = test[i]!
+    if (entry.id === lastPlaylist) {
+      current!.artists.push(entry.artistName)
+    } else {
+      lastPlaylist = entry.id
+      current = {
+        id: lastPlaylist,
+        name: entry.name,
+        artists: [entry.artistName]
       }
-    },
-    orderBy: {
-      modifiedAt: "desc"
-    },
-  })
-  const result = playlists.map(playlist => {
-    const artists = new Set<string | undefined>()
-    playlist.tracks.forEach(track => {
-      artists.add(track.track.artist?.name)
-    })
-    artists.delete(undefined)
-    return {
-      id: playlist.id,
-      name: playlist.name,
-      artists: Array.from(artists) as string[],
+      final.push(current)
     }
-  })
-  return result
+  }
+
+  return final
 })
 
 const save = protectedProcedure.input(z.object({
