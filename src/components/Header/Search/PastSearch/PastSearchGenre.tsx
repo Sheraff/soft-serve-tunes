@@ -1,5 +1,5 @@
 import { trpc } from "utils/trpc"
-import { showHome } from "components/AppContext"
+import { openPanel, showHome } from "components/AppContext"
 import styles from "./index.module.css"
 import pluralize from "utils/pluralize"
 import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
@@ -21,23 +21,9 @@ export function PastSearchGenre ({
 	const available = forceAvailable || online || cached
 
 	const { data: entity } = trpc.genre.miniature.useQuery({ id }, { onSettled: (data) => onSettled?.(!!data) })
-	const trpcClient = trpc.useContext()
 	const onClick = () => {
 		_onClick?.()
-		if (!available) return
-		trpcClient.genre.get.fetch({ id }).then((data) => {
-			if (!data) return
-			startTransition(() => {
-				const playlist = getPlaylist()
-				setPlaylist(data.name, data.tracks)
-				if (playlist?.current && playlist.current === data.tracks[0]?.id) {
-					playAudio()
-				} else {
-					autoplay.setState(true)
-				}
-				showHome("home")
-			})
-		})
+		openPanel("genre", { id, name: entity?.name })
 	}
 
 	const info = []

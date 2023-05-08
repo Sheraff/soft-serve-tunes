@@ -1,5 +1,6 @@
 import { router, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
+import { prisma } from "server/db/client"
 
 const miniature = publicProcedure.input(z.object({
   id: z.string(),
@@ -79,31 +80,125 @@ const miniature = publicProcedure.input(z.object({
   }
 })
 
-const get = publicProcedure.input(z.object({
-  id: z.string(),
-})).query(async ({ input, ctx }) => {
-  const meta = await ctx.prisma.genre.findUnique({
-    where: { id: input.id },
-    select: {
-      id: true,
-      name: true,
-      // subgenres: {
-      //   where: ???,
-      //   select: { id: true, name: true },
-      // },
-      // supgenres: {
-      //   where: ???,
-      //   select: { id: true, name: true },
-      // },
-    },
-  })
-  if (!meta) return null
+/**
+ * Returns first children genres (first sub-genre of each branch to have a track)
+ */
+function getSubGenres (id: string) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    ),
+    subgenres AS (
+      SELECT id, name, ARRAY[id] as path, FALSE as has_track
+      FROM public."Genre"
+      WHERE id = ${id}
+      UNION ALL
+      SELECT g.id, g.name, path || g.id, EXISTS (
+          SELECT 1
+          FROM with_track wt
+          WHERE wt.id = g.id
+        )
+      FROM subgenres AS parent
+      INNER JOIN public."_LinkedGenre" lg ON lg."A" = parent.id
+      INNER JOIN public."Genre" g ON g.id = lg."B"
+      WHERE NOT parent.has_track AND NOT g.id = ANY(parent.path)
+    )
+    SELECT DISTINCT ON(sg.id)
+      sg.id,
+      sg.name
+    FROM subgenres sg
+    WHERE sg.has_track
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+  }[]>
+}
 
-  const rawTracks = await ctx.prisma.$queryRaw`
+/**
+ * Returns first parent genres (first super-genre of each branch to have a track)
+ */
+function getSupGenres (id: string) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    ),
+    supgenres AS (
+      SELECT id, name, ARRAY[id] as path, FALSE as has_track
+      FROM public."Genre"
+      WHERE id = ${id}
+      UNION ALL
+      SELECT g.id, g.name, path || g.id, EXISTS (
+          SELECT 1
+          FROM with_track wt
+          WHERE wt.id = g.id
+        )
+      FROM supgenres AS child
+      INNER JOIN public."_LinkedGenre" lg ON lg."B" = child.id
+      INNER JOIN public."Genre" g ON g.id = lg."A"
+      WHERE NOT child.has_track AND NOT g.id = ANY(child.path)
+    )
+    SELECT DISTINCT ON(sg.id)
+      sg.id,
+      sg.name
+    FROM supgenres sg
+    WHERE sg.has_track
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+  }[]>
+}
+
+/**
+ * Returns zero-depth genres (only if they have a track) of tracks associated to this genre
+ */
+function getRelatedGenres (id: string, limit: number = 7) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    )
+    SELECT
+      wt.id,
+      wt.name,
+      COUNT(*)::int as count
+    FROM public."Genre" g
+    INNER JOIN public."_GenreToTrack" gtt ON gtt."A" = g.id -- tracks related to input genre
+    INNER JOIN public."_GenreToTrack" gtt2 ON gtt2."B" = gtt."B" -- genres related to tracks from input genre
+    INNER JOIN with_track wt ON wt.id = gtt2."A"
+    WHERE g.id = ${id} AND wt.id <> g.id
+    GROUP BY wt.id, wt.name
+    ORDER BY count DESC
+    LIMIT ${limit}
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+    count: number
+  }[]>
+}
+
+/**
+ * Returns tracks of genre and all subgenres
+ */
+function getGenreTracks (id: string) {
+  return prisma.$queryRaw`
     WITH RECURSIVE sub_rec_genre AS(
       SELECT id, ARRAY[id] as path
         FROM public."Genre"
-        WHERE id = ${input.id}
+        WHERE id = ${id}
       UNION ALL
       SELECT sub.id, path || sub.id
         FROM sub_rec_genre as sup
@@ -130,33 +225,109 @@ const get = publicProcedure.input(z.object({
     LEFT JOIN public."Album" as albums
       ON tracks."albumId" = albums.id
     ;
-  ` as {
+  ` as Promise<{
     id: string
     name: string
     artistId: string | null
     albumId: string | null
     artistName: string | null
     albumName: string | null
-  }[]
+  }[]>
+}
 
-  const tracks = rawTracks.map((track) => ({
-    id: track.id,
-    name: track.name,
-    artist: track.artistId
-      ? {
-        id: track.artistId!,
-        name: track.artistName!,
-      } : null,
-    album: track.albumId
-      ? {
-        id: track.albumId!,
-        name: track.albumName!,
-      } : null,
-  }))
+const get = publicProcedure.input(z.object({
+  id: z.string(),
+})).query(async ({ input, ctx }) => {
+  const meta = await ctx.prisma.genre.findUnique({
+    where: { id: input.id },
+    select: {
+      id: true,
+      name: true,
+    },
+  })
+  if (!meta) return null
+
+  const [
+    subGenres,
+    supGenres,
+    tracks,
+  ] = await Promise.all([
+    getSubGenres(input.id),
+    getSupGenres(input.id),
+    getGenreTracks(input.id).then(
+      (tracks) => tracks.map((track) => ({
+        id: track.id,
+        name: track.name,
+        artist: track.artistId
+          ? {
+            id: track.artistId!,
+            name: track.artistName!,
+          } : null,
+        album: track.albumId
+          ? {
+            id: track.albumId!,
+            name: track.albumName!,
+          } : null,
+      }))
+    ),
+  ])
+
+  const relatedGenres = subGenres.length === 0 && supGenres.length === 0
+    ? await getRelatedGenres(input.id).then(genres => genres.map(genre => ({
+      id: genre.id,
+      name: genre.name,
+    })))
+    : []
+
+  const albumSet = new Map<string, number>()
+  const albums: { id: string, name: string }[] = []
+  const artistSet = new Map<string, number>()
+  const artists: { id: string, name: string }[] = []
+  const orphanTracks: { id: string, name: string }[] = []
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i]!
+    if (track.album) {
+      if (!albumSet.has(track.album.id)) {
+        albums.push(track.album)
+      }
+      albumSet.set(track.album.id, (albumSet.get(track.album.id) || 0) + 1)
+    }
+    if (track.artist) {
+      if (!artistSet.has(track.artist.id)) {
+        artists.push(track.artist)
+      }
+      artistSet.set(track.artist.id, (artistSet.get(track.artist.id) || 0) + 1)
+    }
+    if (!track.album && !track.artist) {
+      orphanTracks.push(track)
+    }
+  }
+  albums.sort((a, b) => albumSet.get(b.id)! - albumSet.get(a.id)!)
+  artists.sort((a, b) => artistSet.get(b.id)! - artistSet.get(a.id)!)
+
+  const palette = artists.length > 0
+    ? await prisma.artist.findUnique({
+      where: { id: artists[0]!.id },
+      select: {
+        cover: {
+          select: {
+            palette: true,
+          },
+        }
+      }
+    })
+    : null
 
   return {
     ...meta,
+    palette: palette?.cover?.palette ?? null,
     tracks,
+    orphanTracks,
+    albums,
+    artists,
+    subGenres,
+    supGenres,
+    relatedGenres,
     _count: {
       tracks: tracks.length,
     }

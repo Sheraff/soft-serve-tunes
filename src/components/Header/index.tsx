@@ -14,6 +14,7 @@ import { type CSSProperties, memo, useRef, Suspense } from "react"
 import ArtistView from "./Artist"
 import AlbumView from "./Album"
 import PlaylistView from "./Playlist"
+import GenreView from "./Genre"
 import EditOverlay from "./Edit"
 import Library from "./Library"
 import SearchIcon from "icons/search.svg"
@@ -31,6 +32,7 @@ const PANEL_COMPONENTS = {
 	artist: ArtistView,
 	album: AlbumView,
 	playlist: PlaylistView,
+	genre: GenreView,
 } as const
 
 const SinglePane = memo(function BasePane ({
