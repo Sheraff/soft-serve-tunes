@@ -8,6 +8,9 @@ import SectionTitle from "atoms/SectionTitle"
 import TrackList, { useVirtualTracks } from "components/TrackList"
 import styles from "./index.module.css"
 import GenreGraph from "components/Header/Genre/GenreGraph"
+import AlbumList from "components/AlbumList"
+import ArtistList from "components/ArtistList"
+import { shuffle } from "components/Player"
 
 export default forwardRef(function GenreView ({
 	open,
@@ -36,12 +39,12 @@ export default forwardRef(function GenreView ({
 		keepPreviousData: true,
 	})
 
-	console.log(id, name)
-	console.log(data)
-
 	const onClickPlay = () => {
 		if (!data) return
 		startTransition(() => {
+			if (!shuffle.getValue()) {
+				shuffle.setState(true)
+			}
 			const playlist = getPlaylist()
 			setPlaylist(data.name, data.tracks)
 			if (playlist?.current && playlist.current === data.tracks[0]?.id) {
@@ -52,6 +55,25 @@ export default forwardRef(function GenreView ({
 			showHome("home")
 		})
 	}
+
+	const { albums, artists } = useDeferredValue(data) || {}
+	const loading = useDeferredValue(isLoading)
+	const children = (
+		<>
+			{useMemo(() => artists && Boolean(artists.length) && (
+				<>
+					<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
+					<ArtistList artists={artists} loading={loading} lines={1} />
+				</>
+			), [artists, loading])}
+			{useMemo(() => albums && Boolean(albums.length) && (
+				<>
+					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
+					<AlbumList albums={albums} loading={loading} scrollable lines={1} />
+				</>
+			), [albums, loading])}
+		</>
+	)
 
 	const coverElement = (
 		<GenreGraph
@@ -81,7 +103,7 @@ export default forwardRef(function GenreView ({
 			animationName={""}
 			isTop={isTop}
 		>
-			{"content"}
+			{children}
 		</Panel>
 	)
 })

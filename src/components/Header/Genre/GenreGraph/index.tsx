@@ -132,8 +132,6 @@ export default function GenreGraph ({
 		}
 	}, [genre])
 
-	console.log(graphPaths)
-
 	if (!genre) return null
 	const noTop = !genre.supGenres.length
 	const noBottom = !genre.subGenres.length

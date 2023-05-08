@@ -1,6 +1,7 @@
 .main {
 	position: relative;
 	z-index: 7;
+	pointer-events: none;
 	display: grid;
 	grid-template-rows: auto auto auto;
 	grid-template-areas:
@@ -32,6 +33,7 @@
 
 .item {
 	width: max-content;
+	pointer-events: all;
 }
 
 .top {
