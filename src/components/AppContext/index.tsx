@@ -53,10 +53,7 @@ type GenrePanel = {
 		id: string
 		name?: string
 		open: "open" | "close" | "force-open" | "force-close"
-		rect?: {
-			top: number
-			left: number
-		}
+		rect?: undefined
 	}
 }
 

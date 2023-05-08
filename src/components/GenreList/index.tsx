@@ -57,13 +57,12 @@ export function GenreItem ({
 	const { data: cached } = useCachedGenre({ id: genre.id, enabled: !online && !forceAvailable })
 	const available = forceAvailable || online || cached
 
-	const trpcClient = trpc.useContext()
 	return (
 		<button
 			ref={item}
 			className={styles.button}
 			type="button"
-			onClick={(event) => {
+			onClick={() => {
 				if (onLong && editOverlay.getValue().type === "genre") {
 					onLong()
 					return
@@ -74,13 +73,10 @@ export function GenreItem ({
 					return
 				}
 				genre && onSelect?.(genre)
-				const element = event.currentTarget
-				const { top, left } = element.getBoundingClientRect()
 				startTransition(() => {
 					openPanel("genre", {
 						id: genre.id,
 						name: data?.name || genre.name,
-						rect: { top, left }
 					})
 				})
 			}}
