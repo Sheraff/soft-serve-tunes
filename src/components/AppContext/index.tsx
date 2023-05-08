@@ -46,11 +46,22 @@ type PlaylistPanel = {
 		}
 	}
 }
+type GenrePanel = {
+	type: "genre"
+	key: string
+	value: {
+		id: string
+		name?: string
+		open: "open" | "close" | "force-open" | "force-close"
+		rect?: undefined
+	}
+}
 
 type Panel =
 	| ArtistPanel
 	| AlbumPanel
 	| PlaylistPanel
+	| GenrePanel
 
 export const panelStack = globalState<Panel[]>(
 	"panelStack",

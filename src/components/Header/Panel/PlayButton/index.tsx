@@ -6,7 +6,33 @@ import { showHome } from "components/AppContext"
 import { shuffle } from "components/Player"
 import ShuffleIcon from "icons/shuffle.svg"
 
-export default function PlayButton ({
+function BasePlayButton ({
+	onClick,
+	className,
+}: {
+	onClick: () => void
+	className: string
+}) {
+	return (
+		<div className={className}>
+			<button
+				className={styles.main}
+				type="button"
+				onClick={() => {
+					navigator.vibrate(1)
+					startTransition(() => {
+						onClick()
+						showHome("home")
+					})
+				}}
+			>
+				<PlayIcon />
+			</button>
+		</div>
+	)
+}
+
+function MultiPlayButton ({
 	onClick,
 	className,
 	children,
@@ -61,4 +87,19 @@ export default function PlayButton ({
 			)}
 		</div>
 	)
+}
+
+export default function PlayButton ({
+	onClick,
+	longPressPlay,
+	className,
+	children,
+}: {
+	onClick: () => void
+	longPressPlay?: boolean
+	className: string
+	children?: ReactElement | ReactFragment
+}) {
+	if (longPressPlay) return <MultiPlayButton onClick={onClick} className={className} children={children} />
+	else return <BasePlayButton onClick={onClick} className={className} />
 }

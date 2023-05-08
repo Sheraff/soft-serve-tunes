@@ -52,6 +52,7 @@
 	height: calc(100% + 50vw);
 	z-index: -1;
 	background: linear-gradient(to top, var(--palette-bg-main) calc(100% - 50vw - 24px), transparent 100%);
+	pointer-events: none;
 }
 .main[data-open="true"][data-bubble="true"] .head {
 	animation: bubble-fade 650ms ease;
@@ -93,6 +94,14 @@
 	z-index: 4;
 	will-change: opacity;
 	padding-bottom: 10px;
+}
+
+.noOverlay .head {
+	margin-top: 0;
+}
+.noOverlay .head::before {
+	height: calc(100% + 56px);
+	background: linear-gradient(to top, var(--palette-bg-main) calc(100% - 56px - 24px), transparent 100%);
 }
 
 .info {

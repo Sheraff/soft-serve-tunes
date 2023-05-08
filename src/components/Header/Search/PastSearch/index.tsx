@@ -13,21 +13,23 @@ const PAST_SEARCH_COMPONENTS = {
 	track: PastSearchTrack,
 }
 
-export default function PastSearch({
+export default function PastSearch ({
 	id,
 	type,
 }: {
 	id: string
 	type: keyof typeof PAST_SEARCH_COMPONENTS
 }) {
-	const {mutate: deletePastSearch} = useRemoveFromPastSearches()
+	const { mutate: deletePastSearch } = useRemoveFromPastSearches()
 	const onSettled = (data: boolean) => {
 		if (data) return
-		deletePastSearch({id})
+		deletePastSearch({ id })
 	}
-	const {mutate: onSelect} = usePastSearchesMutation()
+	const { mutate: onSelect } = usePastSearchesMutation()
 	const onClick = () => {
-		onSelect({id, type})
+		setTimeout(() => {
+			onSelect({ id, type })
+		}, 1_000)
 	}
 	const Component = PAST_SEARCH_COMPONENTS[type]
 	return <Component id={id} onSettled={onSettled} onClick={onClick} />
