@@ -75,7 +75,7 @@ export default forwardRef(function GenreView ({
 		})
 	}
 
-	const { albums, artists } = useDeferredValue(data) || {}
+	const { albums, artists, orphanTracks } = useDeferredValue(data) || {}
 	const loading = useDeferredValue(isLoading)
 	const children = (
 		<>
@@ -91,6 +91,12 @@ export default forwardRef(function GenreView ({
 					<AlbumList albums={albums} loading={loading} scrollable lines={1} />
 				</>
 			), [albums, loading])}
+			{useMemo(() => orphanTracks && Boolean(orphanTracks.length) && (
+				<>
+					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
+					<TrackList tracks={orphanTracks} />
+				</>
+			), [orphanTracks])}
 		</>
 	)
 

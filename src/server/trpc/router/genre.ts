@@ -275,6 +275,7 @@ const get = publicProcedure.input(z.object({
   const albums: { id: string, name: string }[] = []
   const artistSet = new Map<string, number>()
   const artists: { id: string, name: string }[] = []
+  const orphanTracks: { id: string, name: string }[] = []
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i]!
     if (track.album) {
@@ -288,6 +289,9 @@ const get = publicProcedure.input(z.object({
         artists.push(track.artist)
       }
       artistSet.set(track.artist.id, (artistSet.get(track.artist.id) || 0) + 1)
+    }
+    if (!track.album && !track.artist) {
+      orphanTracks.push(track)
     }
   }
   albums.sort((a, b) => albumSet.get(b.id)! - albumSet.get(a.id)!)
@@ -310,6 +314,7 @@ const get = publicProcedure.input(z.object({
     ...meta,
     palette: palette?.cover?.palette ?? null,
     tracks,
+    orphanTracks,
     albums,
     artists,
     subGenres,
