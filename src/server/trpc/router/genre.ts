@@ -271,24 +271,44 @@ const get = publicProcedure.input(z.object({
     })))
     : []
 
-  const albumSet = new Set<string>()
+  const albumSet = new Map<string, number>()
   const albums: { id: string, name: string }[] = []
-  const artistSet = new Set<string>()
+  const artistSet = new Map<string, number>()
   const artists: { id: string, name: string }[] = []
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i]!
-    if (track.album && !albumSet.has(track.album.id)) {
-      albumSet.add(track.album.id)
-      albums.push(track.album)
+    if (track.album) {
+      if (!albumSet.has(track.album.id)) {
+        albums.push(track.album)
+      }
+      albumSet.set(track.album.id, (albumSet.get(track.album.id) || 0) + 1)
     }
-    if (track.artist && !artistSet.has(track.artist.id)) {
-      artistSet.add(track.artist.id)
-      artists.push(track.artist)
+    if (track.artist) {
+      if (!artistSet.has(track.artist.id)) {
+        artists.push(track.artist)
+      }
+      artistSet.set(track.artist.id, (artistSet.get(track.artist.id) || 0) + 1)
     }
   }
+  albums.sort((a, b) => albumSet.get(b.id)! - albumSet.get(a.id)!)
+  artists.sort((a, b) => artistSet.get(b.id)! - artistSet.get(a.id)!)
+
+  const palette = artists.length > 0
+    ? await prisma.artist.findUnique({
+      where: { id: artists[0]!.id },
+      select: {
+        cover: {
+          select: {
+            palette: true,
+          },
+        }
+      }
+    })
+    : null
 
   return {
     ...meta,
+    palette: palette?.cover?.palette ?? null,
     tracks,
     albums,
     artists,

@@ -96,7 +96,7 @@ export default forwardRef(function GenreView ({
 			// description={data?.audiodb?.strDescriptionEN}
 			// coverId={data?.cover?.id}
 			coverElement={coverElement}
-			// coverPalette={data?.cover?.palette}
+			coverPalette={data?.palette}
 			infos={[]}
 			title={data?.name ?? name}
 			onClickPlay={onClickPlay}
