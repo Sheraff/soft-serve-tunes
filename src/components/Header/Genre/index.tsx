@@ -44,8 +44,16 @@ export default forwardRef(function GenreView ({
 	useEffect(() => {
 		if (!data) return
 		const timeoutId = setTimeout(() => {
-			data.supGenres.forEach(genre => client.genre.get.prefetch({ id: genre.id }))
-			data.subGenres.forEach(genre => client.genre.get.prefetch({ id: genre.id }))
+			data.supGenres.forEach(async (genre) => {
+				const data = await client.genre.get.fetch({ id: genre.id })
+				data?.supGenres.forEach(genre => client.genre.miniature.prefetch({ id: genre.id }))
+				data?.subGenres.forEach(genre => client.genre.miniature.prefetch({ id: genre.id }))
+			})
+			data.subGenres.forEach(async (genre) => {
+				const data = await client.genre.get.fetch({ id: genre.id })
+				data?.supGenres.forEach(genre => client.genre.miniature.prefetch({ id: genre.id }))
+				data?.subGenres.forEach(genre => client.genre.miniature.prefetch({ id: genre.id }))
+			})
 		}, 1_000)
 		return () => clearTimeout(timeoutId)
 	}, [data])
