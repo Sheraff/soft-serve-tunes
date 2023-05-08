@@ -187,9 +187,8 @@ export default function GenreGraph ({
 		}
 	}, [genre])
 
-	if (!genre) return null
-	const noTop = !genre.supGenres.length
-	const noBottom = !genre.subGenres.length
+	const noTop = !genre?.supGenres.length
+	const noBottom = !genre?.subGenres.length
 	return (
 		<div
 			ref={main}
@@ -235,11 +234,11 @@ export default function GenreGraph ({
 			)}
 			<div className={styles.middle}>
 				<div
-					key={genre.id}
+					key={genre?.id ?? id}
 					data-graph="main"
-					data-id={genre.id}
+					data-id={genre?.id ?? id}
 					className={classNames(styles.item, {
-						[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+						[styles.noFade]: !memoPosition.current || ((genre?.id ?? id) in memoPosition.current)
 					})}
 				>
 					<div>

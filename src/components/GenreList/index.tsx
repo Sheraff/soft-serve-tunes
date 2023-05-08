@@ -17,7 +17,7 @@ import { useCachedGenre } from "client/sw/useSWCached"
 
 type GenreListItem = {
 	id: string
-	name: string
+	name?: string
 }
 
 export function GenreItem ({
