@@ -96,6 +96,14 @@
 	padding-bottom: 10px;
 }
 
+.noOverlay .head {
+	margin-top: 0;
+}
+.noOverlay .head::before {
+	height: calc(100% + 56px);
+	background: linear-gradient(to top, var(--palette-bg-main) calc(100% - 56px - 24px), transparent 100%);
+}
+
 .info {
 	padding: 0 0 0 8px;
 }

@@ -1,6 +1,5 @@
 .main {
 	position: relative;
-	z-index: 7;
 	pointer-events: none;
 	display: grid;
 	grid-template-rows: auto auto auto;
@@ -8,10 +7,18 @@
 		"top"
 		"middle"
 		"bottom";
-	height: 100vw;
-	padding: max(24px, env(safe-area-inset-top)) 8px 8px;
+	height: calc(100vw - 48px);
+	padding: max(8px, env(safe-area-inset-top)) 8px 8px;
 	gap: 48px;
 	align-content: center;
+
+	/* parallax */
+	top: -50vh !important;
+	z-index: 2;
+	transform-origin: center top 0;
+	transform: translateZ(-1px) scale(2);
+	grid-area: 1 / 1 / 2 / 2;
+	contain: paint style layout;
 }
 
 .noTop {

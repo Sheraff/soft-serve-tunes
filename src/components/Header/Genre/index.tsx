@@ -1,16 +1,17 @@
 import { type ForwardedRef, forwardRef, startTransition, useMemo, useDeferredValue, useRef, useImperativeHandle, useEffect, useState } from "react"
 import Panel from "../Panel"
-import { openPanel, showHome } from "components/AppContext"
+import { showHome } from "components/AppContext"
 import { trpc } from "utils/trpc"
 import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
 import { autoplay, playAudio } from "components/Player/Audio"
 import SectionTitle from "atoms/SectionTitle"
-import TrackList, { useVirtualTracks } from "components/TrackList"
+import TrackList from "components/TrackList"
 import styles from "./index.module.css"
 import GenreGraph from "components/Header/Genre/GenreGraph"
 import AlbumList from "components/AlbumList"
 import ArtistList from "components/ArtistList"
 import { shuffle } from "components/Player"
+import usePlaylistDescription from "components/NowPlaying/Cover/usePlaylistDescription"
 
 export default forwardRef(function GenreView ({
 	open,
@@ -75,28 +76,29 @@ export default forwardRef(function GenreView ({
 		})
 	}
 
-	const { albums, artists, orphanTracks } = useDeferredValue(data) || {}
+	const { albums, artists, orphanTracks, tracks, id: deferredId } = useDeferredValue(data) || {}
 	const loading = useDeferredValue(isLoading)
 	const children = (
 		<>
-			{useMemo(() => artists && Boolean(artists.length) && (
+			<hr className={styles.hr} />
+			{artists && Boolean(artists.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
-					<ArtistList artists={artists} loading={loading} lines={1} />
+					<ArtistList key={deferredId} artists={artists} loading={loading} lines={artists.length >= 9 ? 3 : 1} />
 				</>
-			), [artists, loading])}
-			{useMemo(() => albums && Boolean(albums.length) && (
+			)}
+			{albums && Boolean(albums.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
-					<AlbumList albums={albums} loading={loading} scrollable lines={1} />
+					<AlbumList key={deferredId} albums={albums} loading={loading} scrollable lines={albums.length >= 4 ? 2 : 1} />
 				</>
-			), [albums, loading])}
-			{useMemo(() => orphanTracks && Boolean(orphanTracks.length) && (
+			)}
+			{orphanTracks && Boolean(orphanTracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
 					<TrackList tracks={orphanTracks} />
 				</>
-			), [orphanTracks])}
+			)}
 		</>
 	)
 
@@ -109,10 +111,14 @@ export default forwardRef(function GenreView ({
 		/>
 	)
 
+	const description = usePlaylistDescription({
+		artistData: artists ?? [],
+		length: tracks?.length,
+	})
+	const infos = [description]
+
 	const parent = useRef<HTMLDivElement>(null)
-
 	useImperativeHandle(ref, () => parent.current!)
-
 	return (
 		<Panel
 			ref={parent}
@@ -120,14 +126,15 @@ export default forwardRef(function GenreView ({
 			z={z}
 			rect={rect}
 			// description={data?.audiodb?.strDescriptionEN}
-			// coverId={data?.cover?.id}
 			coverElement={coverElement}
 			coverPalette={data?.palette}
-			infos={[]}
+			infos={infos}
 			title={data?.name ?? name}
 			onClickPlay={onClickPlay}
 			animationName={""}
 			isTop={isTop}
+			overlay={false}
+			longPressPlay={false}
 		>
 			{children}
 		</Panel>

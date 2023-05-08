@@ -38,6 +38,8 @@ export default forwardRef(function PanelView ({
 	animationName,
 	isTop,
 	buttons,
+	overlay = true,
+	longPressPlay = true,
 }: {
 	open: boolean
 	z: number
@@ -59,6 +61,8 @@ export default forwardRef(function PanelView ({
 	animationName: string
 	isTop: boolean
 	buttons?: ReactElement | ReactFragment
+	overlay?: boolean
+	longPressPlay?: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const open = useDeferredValue(_open)
 
@@ -100,7 +104,9 @@ export default forwardRef(function PanelView ({
 
 	return (
 		<div
-			className={styles.main}
+			className={classNames(styles.main, {
+				[styles.noOverlay]: !overlay,
+			})}
 			data-open={open}
 			data-bubble={initialPositionRef.current !== null}
 			ref={main}
@@ -173,6 +179,7 @@ export default forwardRef(function PanelView ({
 				<PlayButton
 					onClick={onClickPlay}
 					className={styles.play}
+					longPressPlay={longPressPlay}
 				>
 					{buttons}
 				</PlayButton>
