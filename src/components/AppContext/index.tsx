@@ -46,11 +46,25 @@ type PlaylistPanel = {
 		}
 	}
 }
+type GenrePanel = {
+	type: "genre"
+	key: string
+	value: {
+		id: string
+		name?: string
+		open: "open" | "close" | "force-open" | "force-close"
+		rect?: {
+			top: number
+			left: number
+		}
+	}
+}
 
 type Panel =
 	| ArtistPanel
 	| AlbumPanel
 	| PlaylistPanel
+	| GenrePanel
 
 export const panelStack = globalState<Panel[]>(
 	"panelStack",
@@ -67,7 +81,7 @@ export function openPanel<P extends Panel> (
 ) {
 	panelStack.setState(prev => {
 		// const clean = prev.filter(({value: {id}}) => id !== value.id)
-		const clean = prev.filter((panel) => panel.type !== type)
+		const clean = prev.filter((panel, i) => i === prev.length - 1 || panel.type !== type)
 		const keyPrefix = clean.length > 0 ? clean.at(-1)!.key : "root"
 		return [
 			...clean,

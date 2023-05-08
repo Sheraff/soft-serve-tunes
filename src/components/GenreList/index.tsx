@@ -1,16 +1,14 @@
-import { showHome } from "components/AppContext"
+import { openPanel } from "components/AppContext"
 import styles from "./index.module.css"
-import { type CSSProperties, startTransition, useDeferredValue, useRef, ReactNode, useEffect, useState } from "react"
-import { getPlaylist, setPlaylist } from "client/db/useMakePlaylist"
+import { type CSSProperties, startTransition, useDeferredValue, useRef, type ReactNode, useEffect, useState } from "react"
 import PlaylistIcon from "icons/queue_music.svg"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import OfflineIcon from "icons/wifi_off.svg"
-import { trpc } from "utils/trpc"
+import { type RouterOutputs, trpc } from "utils/trpc"
 import pluralize from "utils/pluralize"
 import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
-import { autoplay, playAudio } from "components/Player/Audio"
 import classNames from "classnames"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
@@ -22,15 +20,17 @@ type GenreListItem = {
 	name: string
 }
 
-function GenreItem ({
+export function GenreItem ({
 	genre,
 	onSelect,
+	onClick,
 	selected,
 	isSelection,
 	forceAvailable,
 }: {
 	genre: GenreListItem
 	onSelect?: (genre: GenreListItem) => void
+	onClick?: (genre: Exclude<RouterOutputs["genre"]["miniature"], null>) => void
 	selected?: boolean
 	isSelection: boolean
 	forceAvailable?: boolean
@@ -63,25 +63,24 @@ function GenreItem ({
 			ref={item}
 			className={styles.button}
 			type="button"
-			onClick={() => {
+			onClick={(event) => {
 				if (onLong && editOverlay.getValue().type === "genre") {
 					onLong()
 					return
 				}
 				navigator.vibrate(1)
+				if (onClick) {
+					data && onClick(data)
+					return
+				}
 				genre && onSelect?.(genre)
-				if (!available) return
-				trpcClient.genre.get.fetch({ id: genre.id }).then((data) => {
-					if (!data) return
-					startTransition(() => {
-						const playlist = getPlaylist()
-						setPlaylist(genre.name, data.tracks)
-						if (playlist?.current && playlist.current === data.tracks[0]?.id) {
-							playAudio()
-						} else {
-							autoplay.setState(true)
-						}
-						showHome("home")
+				const element = event.currentTarget
+				const { top, left } = element.getBoundingClientRect()
+				startTransition(() => {
+					openPanel("genre", {
+						id: genre.id,
+						name: data?.name || genre.name,
+						rect: { top, left }
 					})
 				})
 			}}

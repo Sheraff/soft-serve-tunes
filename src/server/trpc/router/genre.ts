@@ -126,7 +126,7 @@ function getSupGenres (id: string) {
     supgenres AS (
       SELECT id, name, ARRAY[id] as path, FALSE as has_track
       FROM public."Genre"
-      WHERE id = 'clb2ourva0298yqkujnm440mn'
+      WHERE id = ${id}
       UNION ALL
       SELECT g.id, g.name, path || g.id, EXISTS (
           SELECT 1
@@ -147,6 +147,38 @@ function getSupGenres (id: string) {
   ` as Promise<{
     id: string
     name: string
+  }[]>
+}
+
+/**
+ * Returns zero-depth genres (only if they have a track) of tracks associated to this genre
+ */
+function getRelatedGenres (id: string, limit: number = 5) {
+  return prisma.$queryRaw`
+    WITH RECURSIVE with_track AS (
+      SELECT DISTINCT ON(g.id)
+        g.id,
+        g.name
+      FROM public."Genre" g
+      INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+    )
+    SELECT
+      wt.id,
+      wt.name,
+      COUNT(*)::int as count
+    FROM public."Genre" g
+    INNER JOIN public."_GenreToTrack" gtt ON gtt."A" = g.id -- tracks related to input genre
+    INNER JOIN public."_GenreToTrack" gtt2 ON gtt2."B" = gtt."B" -- genres related to tracks from input genre
+    INNER JOIN with_track wt ON wt.id = gtt2."A"
+    WHERE g.id = ${id} AND wt.id <> g.id
+    GROUP BY wt.id, wt.name
+    ORDER BY count DESC
+    LIMIT ${limit}
+    ;
+  ` as Promise<{
+    id: string
+    name: string
+    count: number
   }[]>
 }
 
@@ -232,11 +264,37 @@ const get = publicProcedure.input(z.object({
     ),
   ])
 
+  const relatedGenres = subGenres.length === 0 && supGenres.length === 0
+    ? await getRelatedGenres(input.id).then(genres => genres.map(genre => ({
+      id: genre.id,
+      name: genre.name,
+    })))
+    : []
+
+  const albumSet = new Set<string>()
+  const albums: { id: string, name: string }[] = []
+  const artistSet = new Set<string>()
+  const artists: { id: string, name: string }[] = []
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i]!
+    if (track.album && !albumSet.has(track.album.id)) {
+      albumSet.add(track.album.id)
+      albums.push(track.album)
+    }
+    if (track.artist && !artistSet.has(track.artist.id)) {
+      artistSet.add(track.artist.id)
+      artists.push(track.artist)
+    }
+  }
+
   return {
     ...meta,
     tracks,
+    albums,
+    artists,
     subGenres,
     supGenres,
+    relatedGenres,
     _count: {
       tracks: tracks.length,
     }
