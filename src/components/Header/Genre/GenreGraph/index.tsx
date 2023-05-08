@@ -1,7 +1,8 @@
 import { GenreItem } from "components/GenreList"
 import styles from "./index.module.css"
-import { type CSSProperties, useRef, useState, useLayoutEffect, startTransition } from "react"
+import { type CSSProperties, useRef, useState, useLayoutEffect, startTransition, useDeferredValue } from "react"
 import classNames from "classnames"
+import { editOverlay } from "components/AppContext/editOverlay"
 
 export default function GenreGraph ({
 	id,
@@ -30,6 +31,10 @@ export default function GenreGraph ({
 	} | null
 }) {
 	const isHorizontal = !genre?.relatedGenres?.length
+
+	const _editViewState = editOverlay.useValue()
+	const editViewState = useDeferredValue(_editViewState)
+	const isSelection = editViewState.type === "genre"
 
 	const main = useRef<HTMLDivElement>(null)
 	const [graphPaths, setGraphPaths] = useState<{
@@ -189,6 +194,7 @@ export default function GenreGraph ({
 
 	const noTop = !genre?.supGenres.length
 	const noBottom = !genre?.subGenres.length
+	const displayGenre = genre || { id, name }
 	return (
 		<div
 			ref={main}
@@ -224,8 +230,9 @@ export default function GenreGraph ({
 							<div>
 								<GenreItem
 									genre={genre}
-									isSelection={false}
 									onClick={onClickGenre}
+									isSelection={isSelection}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
 								/>
 							</div>
 						</div>
@@ -234,18 +241,19 @@ export default function GenreGraph ({
 			)}
 			<div className={styles.middle}>
 				<div
-					key={genre?.id ?? id}
+					key={displayGenre.id}
 					data-graph="main"
-					data-id={genre?.id ?? id}
+					data-id={displayGenre.id}
 					className={classNames(styles.item, {
-						[styles.noFade]: !memoPosition.current || ((genre?.id ?? id) in memoPosition.current)
+						[styles.noFade]: !memoPosition.current || ((displayGenre.id) in memoPosition.current)
 					})}
 				>
 					<div>
 						<GenreItem
-							genre={genre || { id, name }}
-							isSelection={false}
+							genre={displayGenre}
 							onClick={() => { }}
+							isSelection={isSelection}
+							selected={isSelection && editViewState.selection.some(({ id }) => id === (displayGenre.id))}
 						/>
 					</div>
 				</div>
@@ -264,8 +272,9 @@ export default function GenreGraph ({
 							<div>
 								<GenreItem
 									genre={genre}
-									isSelection={false}
 									onClick={onClickGenre}
+									isSelection={isSelection}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
 								/>
 							</div>
 						</div>
