@@ -99,8 +99,8 @@ export default async function cover (req: NextApiRequest, res: NextApiResponse) 
           fastShrinkOnLoad: false,
         })
         .toFormat("avif", {
-          effort: 3,
-          quality: 85,
+          effort: 4,
+          quality: 50,
         })
 
       // store
