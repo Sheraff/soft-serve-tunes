@@ -1,4 +1,4 @@
-import { type ForwardedRef, forwardRef, startTransition, useMemo, useDeferredValue, useRef, useImperativeHandle } from "react"
+import { type ForwardedRef, forwardRef, startTransition, useMemo, useDeferredValue, useRef, useImperativeHandle, useEffect, useState } from "react"
 import Panel from "../Panel"
 import { openPanel, showHome } from "components/AppContext"
 import { trpc } from "utils/trpc"
@@ -14,7 +14,7 @@ import { shuffle } from "components/Player"
 
 export default forwardRef(function GenreView ({
 	open,
-	id,
+	id: initialId,
 	z,
 	rect,
 	name,
@@ -33,11 +33,22 @@ export default forwardRef(function GenreView ({
 	name?: string
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
+	const [id, setId] = useState(initialId)
 	const enabled = Boolean(id && open)
 	const { data, isLoading } = trpc.genre.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
+
+	const client = trpc.useContext()
+	useEffect(() => {
+		if (!data) return
+		const timeoutId = setTimeout(() => {
+			data.supGenres.forEach(genre => client.genre.get.prefetch({ id: genre.id }))
+			data.subGenres.forEach(genre => client.genre.get.prefetch({ id: genre.id }))
+		}, 1_000)
+		return () => clearTimeout(timeoutId)
+	}, [data])
 
 	const onClickPlay = () => {
 		if (!data) return
@@ -80,6 +91,7 @@ export default forwardRef(function GenreView ({
 			id={id}
 			name={name}
 			genre={data}
+			setId={setId}
 		/>
 	)
 

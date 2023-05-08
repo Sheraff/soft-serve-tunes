@@ -1,14 +1,16 @@
 import { GenreItem } from "components/GenreList"
 import styles from "./index.module.css"
-import { useEffect, useRef, useState } from "react"
+import { type CSSProperties, useRef, useState, useLayoutEffect, startTransition } from "react"
 import classNames from "classnames"
 
 export default function GenreGraph ({
 	id,
+	setId,
 	name,
 	genre,
 }: {
 	id: string
+	setId: (id: string) => void
 	name?: string
 	genre?: {
 		id: string
@@ -32,12 +34,35 @@ export default function GenreGraph ({
 	const main = useRef<HTMLDivElement>(null)
 	const [graphPaths, setGraphPaths] = useState<{
 		viewBox: string
-		paths: string[]
+		paths: {
+			from: string,
+			to: string,
+			d: string,
+		}[]
 	}>({
 		viewBox: "",
 		paths: [],
 	})
-	useEffect(() => {
+	const memoPosition = useRef<null | Record<string, { x: number, y: number }>>()
+	const onClickGenre = ({ id }: { id: string }) => {
+		const current = main.current!.querySelector(`[data-id="${genre!.id}"]`)!.getBoundingClientRect()
+		const next = main.current!.querySelector(`[data-id="${id}"]`)!.getBoundingClientRect()
+		memoPosition.current = {
+			[genre!.id]: {
+				x: current.left,
+				y: current.top,
+			},
+			[id]: {
+				x: next.left,
+				y: next.top,
+			},
+		}
+		startTransition(() => {
+			setId(id)
+		})
+	}
+
+	useLayoutEffect(() => {
 		const parent = main.current
 		if (!parent) return
 		let prevSupCount = 0
@@ -47,27 +72,49 @@ export default function GenreGraph ({
 		let prevSubPositions: { x: number, y: number }[] = []
 
 		const computePaths = (viewBox: string) => {
-			const paths: string[] = []
 			if (!prevMainPosition) {
-				setGraphPaths({ viewBox, paths })
+				startTransition(() => {
+					setGraphPaths({ viewBox, paths: [] })
+				})
 				return
 			}
+			const paths: {
+				from: string,
+				to: string,
+				d: string,
+			}[] = []
 			const main = prevMainPosition
 			for (let i = 0; i < prevSupCount; i++) {
 				const sup = prevSupPositions[i]!
-				paths.push(`
-					M ${sup.x},${sup.y}
-					C ${sup.x},${sup.y + 16} ${main.x},${main.top - 16} ${main.x},${main.top}
-				`)
+				const mid = (main.top - sup.y) / 2
+				const d = `M ${sup.x},${sup.y - 4} C ${sup.x},${sup.y + mid} ${main.x},${main.top - mid} ${main.x},${main.top + 4}`
+				const from = genre!.supGenres[i]!.id
+				const to = genre!.id
+				paths.push({ from, to, d })
+				if (memoPosition.current && (from in memoPosition.current) && (to in memoPosition.current)) {
+					const path = parent.querySelector(`[data-from="${from}"][data-to="${to}"], [data-from="${to}"][data-to="${from}"]`) as HTMLElement | null
+					if (path) {
+						path.style.setProperty('d', `path('${d}')`)
+					}
+				}
 			}
 			for (let i = 0; i < prevSubCount; i++) {
 				const sub = prevSubPositions[i]!
-				paths.push(`
-					M ${sub.x},${sub.y}
-					C ${sub.x},${sub.y - 16} ${main.x},${main.bottom + 16} ${main.x},${main.bottom}
-				`)
+				const mid = (sub.y - main.bottom) / 2
+				const d = `M ${main.x},${main.bottom - 4} C ${main.x},${main.bottom + mid} ${sub.x},${sub.y - mid} ${sub.x},${sub.y + 4}`
+				const from = genre!.id
+				const to = genre!.subGenres[i]!.id
+				paths.push({ from, to, d })
+				if (memoPosition.current && (from in memoPosition.current) && (to in memoPosition.current)) {
+					const path = parent.querySelector(`[data-from="${from}"][data-to="${to}"], [data-from="${to}"][data-to="${from}"]`) as HTMLElement | null
+					if (path) {
+						path.style.setProperty('d', `path('${d}')`)
+					}
+				}
 			}
-			setGraphPaths({ viewBox, paths })
+			startTransition(() => {
+				setGraphPaths({ viewBox, paths })
+			})
 		}
 
 		const onChange = () => {
@@ -127,6 +174,14 @@ export default function GenreGraph ({
 			subtree: true,
 		})
 		onChange()
+
+		if (memoPosition.current) for (const [id, pos] of Object.entries(memoPosition.current)) {
+			const element = parent.querySelector(`[data-id="${id}"]`)! as HTMLElement
+			const rect = element.getBoundingClientRect()
+			element.style.setProperty('--x', `${pos.x - rect.left}px`)
+			element.style.setProperty('--y', `${pos.y - rect.top}px`)
+		}
+
 		return () => {
 			mutationObserver.disconnect()
 		}
@@ -147,10 +202,12 @@ export default function GenreGraph ({
 				className={styles.svg}
 				viewBox={graphPaths.viewBox || undefined}
 			>
-				{graphPaths.paths.map((path, i) => (
+				{graphPaths.paths.map((path) => (
 					<path
-						key={i}
-						d={path}
+						key={path.from + path.to}
+						data-from={path.from}
+						data-to={path.to}
+						style={{ 'd': `path('${path.d}')` } as CSSProperties}
 					/>
 				))}
 			</svg>
@@ -160,26 +217,38 @@ export default function GenreGraph ({
 						<div
 							key={genre.id}
 							data-graph="sup"
-							className={styles.item}
+							data-id={genre.id}
+							className={classNames(styles.item, {
+								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+							})}
 						>
-							<GenreItem
-								genre={genre}
-								isSelection={false}
-							/>
+							<div>
+								<GenreItem
+									genre={genre}
+									isSelection={false}
+									onClick={onClickGenre}
+								/>
+							</div>
 						</div>
 					))}
 				</div>
 			)}
 			<div className={styles.middle}>
 				<div
+					key={genre.id}
 					data-graph="main"
-					className={styles.item}
+					data-id={genre.id}
+					className={classNames(styles.item, {
+						[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+					})}
 				>
-					<GenreItem
-						genre={genre || { id, name }}
-						isSelection={false}
-						onClick={() => { }}
-					/>
+					<div>
+						<GenreItem
+							genre={genre || { id, name }}
+							isSelection={false}
+							onClick={() => { }}
+						/>
+					</div>
 				</div>
 			</div>
 			{!noBottom && (
@@ -188,12 +257,18 @@ export default function GenreGraph ({
 						<div
 							key={genre.id}
 							data-graph="sub"
-							className={styles.item}
+							data-id={genre.id}
+							className={classNames(styles.item, {
+								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+							})}
 						>
-							<GenreItem
-								genre={genre}
-								isSelection={false}
-							/>
+							<div>
+								<GenreItem
+									genre={genre}
+									isSelection={false}
+									onClick={onClickGenre}
+								/>
+							</div>
 						</div>
 					))}
 				</div>

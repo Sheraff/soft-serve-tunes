@@ -9,7 +9,9 @@
 		"middle"
 		"bottom";
 	height: 100vw;
-	padding: max(16px, env(safe-area-inset-top)) 8px 8px;
+	padding: max(24px, env(safe-area-inset-top)) 8px 8px;
+	gap: 48px;
+	align-content: center;
 }
 
 .noTop {
@@ -34,33 +36,44 @@
 .item {
 	width: max-content;
 	pointer-events: all;
+	animation: fade-in 400ms 250ms both;
+}
+
+.noFade {
+	animation: none;
+}
+
+.item>div {
+	animation: move 500ms both;
+	transform: translate(var(--x, 0), var(--y, 40px));
+}
+
+.top,
+.middle,
+.bottom {
+	display: flex;
+	align-items: center;
+}
+
+.top,
+.bottom {
+	justify-content: space-evenly;
+	flex-wrap: wrap;
+	align-content: center;
+	gap: 12px;
 }
 
 .top {
 	grid-area: top;
-	display: flex;
-	justify-content: space-evenly;
-	align-items: center;
-	flex-wrap: wrap;
-	align-content: center;
-	gap: 16px;
 }
 
 .middle {
 	grid-area: middle;
-	display: flex;
 	justify-content: center;
-	align-items: center;
 }
 
 .bottom {
 	grid-area: bottom;
-	display: flex;
-	justify-content: space-evenly;
-	align-items: center;
-	flex-wrap: wrap;
-	align-content: center;
-	gap: 16px;
 }
 
 .svg {
@@ -76,4 +89,22 @@
 	fill: none;
 	stroke: currentColor;
 	stroke-width: 2px;
+	transition: d 500ms;
+	animation: fade-in 450ms 350ms both;
+}
+
+@keyframes move {
+	100% {
+		transform: translate(0, 0);
+	}
+}
+
+@keyframes fade-in {
+	0% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
 }
