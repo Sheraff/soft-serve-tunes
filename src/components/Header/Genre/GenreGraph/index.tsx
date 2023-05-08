@@ -30,13 +30,17 @@ export default memo(function GenreGraph ({
 		}[]
 	} | null
 }) {
-	const isHorizontal = !genre?.relatedGenres?.length
+	const main = useRef<HTMLDivElement>(null)
 
+	// fallback layout when genre is not part of the graph
+	const isHorizontal = genre && Boolean(genre?.relatedGenres?.length)
+
+	// long press to edit
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = editViewState.type === "genre"
 
-	const main = useRef<HTMLDivElement>(null)
+	// svg paths for graph
 	const [graphPaths, setGraphPaths] = useState<{
 		viewBox: string
 		paths: {
@@ -46,37 +50,51 @@ export default memo(function GenreGraph ({
 		}[]
 	} | null>(null)
 
+	// ref to avoid animating on "first render" (except that it takes a few renders to get the graph paths)
 	const firstRenderRef = useRef<boolean>(false)
 	const isInitialRender = !firstRenderRef.current
 	firstRenderRef.current = Boolean(genre && graphPaths)
 
+	// remember element positions to animate between them
 	const memoPosition = useRef<null | Record<string, { x: number, y: number }>>()
 	const onClickGenre = ({ id }: { id: string }) => {
 		const current = main.current!.querySelector(`[data-id="${genre!.id}"]`)!.getBoundingClientRect()
-		const next = main.current!.querySelector(`[data-id="${id}"]`)!.getBoundingClientRect()
 		memoPosition.current = {
 			[genre!.id]: {
 				x: current.left,
 				y: current.top,
 			},
-			[id]: {
+		}
+		if (isHorizontal) {
+			for (const side of genre!.relatedGenres) {
+				const current = main.current!.querySelector(`[data-id="${side.id}"]`)!.getBoundingClientRect()
+				memoPosition.current[side.id] = {
+					x: current.left,
+					y: current.top,
+				}
+			}
+		} else {
+			const next = main.current!.querySelector(`[data-id="${id}"]`)!.getBoundingClientRect()
+			memoPosition.current[id] = {
 				x: next.left,
 				y: next.top,
-			},
+			}
 		}
 		startTransition(() => {
 			setId(id)
 		})
 	}
 
+	// animation + svg math
 	useLayoutEffect(() => {
 		const parent = main.current
 		if (!parent) return
 		let prevSupCount = 0
 		let prevSubCount = 0
 		let prevSupPositions: { x: number, y: number }[] = []
-		let prevMainPosition: { x: number, top: number, bottom: number } | null = null
+		let prevMainPosition: { x: number, top: number, bottom: number, right: number } | null = null
 		let prevSubPositions: { x: number, y: number }[] = []
+		let prevSidePositions: { x: number, y: number }[] = []
 
 		const computePaths = (viewBox: string) => {
 			if (!prevMainPosition) {
@@ -119,6 +137,13 @@ export default memo(function GenreGraph ({
 					}
 				}
 			}
+			for (let i = 0; i < prevSidePositions.length; i++) {
+				const side = prevSidePositions[i]!
+				const mid = (side.x - main.right) / 2
+				const mainY = (main.top + main.bottom) / 2
+				const d = `M ${main.right - 4},${mainY} C ${main.right + mid},${mainY} ${side.x - mid},${side.y} ${side.x + 4},${side.y}`
+				paths.push({ from: genre!.id, to: genre!.relatedGenres[i]!.id, d })
+			}
 			startTransition(() => {
 				setGraphPaths({ viewBox, paths })
 			})
@@ -130,6 +155,7 @@ export default memo(function GenreGraph ({
 			const supElements = parent.querySelectorAll("[data-graph=sup]")
 			const mainElement = parent.querySelector("[data-graph=main]")
 			const subElements = parent.querySelectorAll("[data-graph=sub]")
+			const sideElements = parent.querySelectorAll("[data-graph=side]")
 
 			if (prevSupCount !== supElements.length) changed = true
 			if (prevSubCount !== subElements.length) changed = true
@@ -153,10 +179,12 @@ export default memo(function GenreGraph ({
 				x: mainRect.left + mainRect.width / 2 - reference.left,
 				top: mainRect.top - reference.top,
 				bottom: mainRect.bottom - reference.top,
+				right: mainRect.right - reference.left,
 			}
 			if (prevMainPosition?.x !== mainPosition?.x) changed = true
 			if (prevMainPosition?.top !== mainPosition?.top) changed = true
 			if (prevMainPosition?.bottom !== mainPosition?.bottom) changed = true
+			if (prevMainPosition?.right !== mainPosition?.right) changed = true
 			prevMainPosition = mainPosition
 
 			const subPositions = Array.from(subElements).map((element, i) => {
@@ -171,6 +199,18 @@ export default memo(function GenreGraph ({
 			})
 			prevSubPositions = subPositions
 
+			const sidePositions = Array.from(sideElements).map((element, i) => {
+				const rect = element.getBoundingClientRect()
+				const pos = {
+					x: rect.left - reference.left,
+					y: rect.top + rect.height / 2 - reference.top,
+				}
+				if (prevSidePositions[i]?.x !== pos.x) changed = true
+				if (prevSidePositions[i]?.y !== pos.y) changed = true
+				return pos
+			})
+			prevSidePositions = sidePositions
+
 			if (!changed) return
 			computePaths(`0 0 ${reference.width} ${reference.height}`)
 		}
@@ -183,7 +223,8 @@ export default memo(function GenreGraph ({
 		onChange()
 
 		if (memoPosition.current) for (const [id, pos] of Object.entries(memoPosition.current)) {
-			const element = parent.querySelector(`[data-id="${id}"]`)! as HTMLElement
+			const element = parent.querySelector(`[data-id="${id}"]`) as HTMLElement | null
+			if (!element) continue
 			const rect = element.getBoundingClientRect()
 			element.style.setProperty('--x', `${pos.x - rect.left}px`)
 			element.style.setProperty('--y', `${pos.y - rect.top}px`)
@@ -204,6 +245,7 @@ export default memo(function GenreGraph ({
 				[styles.noTop]: noTop,
 				[styles.noBottom]: noBottom,
 				[styles.noAnim]: isInitialRender,
+				[styles.horizontal]: isHorizontal,
 			})}
 		>
 			<svg
@@ -227,7 +269,7 @@ export default memo(function GenreGraph ({
 							data-graph="sup"
 							data-id={genre.id}
 							className={classNames(styles.item, {
-								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current),
 							})}
 						>
 							<div>
@@ -248,7 +290,7 @@ export default memo(function GenreGraph ({
 					data-graph="main"
 					data-id={displayGenre.id}
 					className={classNames(styles.item, {
-						[styles.noFade]: !memoPosition.current || ((displayGenre.id) in memoPosition.current)
+						[styles.noFade]: !memoPosition.current || ((displayGenre.id) in memoPosition.current),
 					})}
 				>
 					<div>
@@ -269,7 +311,7 @@ export default memo(function GenreGraph ({
 							data-graph="sub"
 							data-id={genre.id}
 							className={classNames(styles.item, {
-								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current)
+								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current),
 							})}
 						>
 							<div>
@@ -278,6 +320,29 @@ export default memo(function GenreGraph ({
 									onClick={onClickGenre}
 									isSelection={isSelection}
 									selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
+								/>
+							</div>
+						</div>
+					))}
+				</div>
+			)}
+			{isHorizontal && (
+				<div className={styles.side}>
+					{genre.relatedGenres.map(g => (
+						<div
+							key={genre.id + g.id}
+							data-graph="side"
+							data-id={g.id}
+							className={classNames(styles.item, {
+								[styles.noFade]: !memoPosition.current || (g.id in memoPosition.current),
+							})}
+						>
+							<div>
+								<GenreItem
+									genre={g}
+									onClick={onClickGenre}
+									isSelection={isSelection}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === g.id)}
 								/>
 							</div>
 						</div>

@@ -35,9 +35,15 @@
 		"middle";
 }
 
-.noTop.noBottom {
+.noTop.noBottom:not(.horizontal) {
 	grid-template-rows: auto;
 	grid-template-areas: "middle";
+}
+
+.horizontal {
+	grid-template-rows: auto;
+	grid-template-areas: "middle side";
+	grid-template-columns: 1fr 1fr;
 }
 
 .item {
@@ -48,14 +54,13 @@
 .noAnim .item {
 	animation: none;
 }
-
 .noFade {
 	animation: none;
 }
 
 .item>div {
 	animation: move 500ms both;
-	transform: translate(var(--x, 0), var(--y, 40px));
+	transform: translate(var(--x, 0px), var(--y, 40px));
 }
 .noAnim .item>div {
 	animation: none;
@@ -88,6 +93,15 @@
 
 .bottom {
 	grid-area: bottom;
+}
+
+.horizontal .side {
+	grid-area: side;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .svg {

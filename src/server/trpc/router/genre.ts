@@ -153,7 +153,7 @@ function getSupGenres (id: string) {
 /**
  * Returns zero-depth genres (only if they have a track) of tracks associated to this genre
  */
-function getRelatedGenres (id: string, limit: number = 5) {
+function getRelatedGenres (id: string, limit: number = 7) {
   return prisma.$queryRaw`
     WITH RECURSIVE with_track AS (
       SELECT DISTINCT ON(g.id)
