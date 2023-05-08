@@ -1,10 +1,10 @@
 import { GenreItem } from "components/GenreList"
 import styles from "./index.module.css"
-import { type CSSProperties, useRef, useState, useLayoutEffect, startTransition, useDeferredValue } from "react"
+import { type CSSProperties, useRef, useState, useLayoutEffect, startTransition, useDeferredValue, memo } from "react"
 import classNames from "classnames"
 import { editOverlay } from "components/AppContext/editOverlay"
 
-export default function GenreGraph ({
+export default memo(function GenreGraph ({
 	id,
 	setId,
 	name,
@@ -44,10 +44,12 @@ export default function GenreGraph ({
 			to: string,
 			d: string,
 		}[]
-	}>({
-		viewBox: "",
-		paths: [],
-	})
+	} | null>(null)
+
+	const firstRenderRef = useRef<boolean>(false)
+	const isInitialRender = !firstRenderRef.current
+	firstRenderRef.current = Boolean(genre && graphPaths)
+
 	const memoPosition = useRef<null | Record<string, { x: number, y: number }>>()
 	const onClickGenre = ({ id }: { id: string }) => {
 		const current = main.current!.querySelector(`[data-id="${genre!.id}"]`)!.getBoundingClientRect()
@@ -201,13 +203,14 @@ export default function GenreGraph ({
 			className={classNames(styles.main, {
 				[styles.noTop]: noTop,
 				[styles.noBottom]: noBottom,
+				[styles.noAnim]: isInitialRender,
 			})}
 		>
 			<svg
 				className={styles.svg}
-				viewBox={graphPaths.viewBox || undefined}
+				viewBox={graphPaths?.viewBox || undefined}
 			>
-				{graphPaths.paths.map((path) => (
+				{graphPaths?.paths.map((path) => (
 					<path
 						key={path.from + path.to}
 						data-from={path.from}
@@ -283,4 +286,4 @@ export default function GenreGraph ({
 			)}
 		</div>
 	)
-}
+})

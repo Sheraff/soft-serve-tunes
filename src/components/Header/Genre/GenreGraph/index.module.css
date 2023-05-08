@@ -45,6 +45,9 @@
 	pointer-events: all;
 	animation: fade-in 400ms 250ms both;
 }
+.noAnim .item {
+	animation: none;
+}
 
 .noFade {
 	animation: none;
@@ -53,6 +56,10 @@
 .item>div {
 	animation: move 500ms both;
 	transform: translate(var(--x, 0), var(--y, 40px));
+}
+.noAnim .item>div {
+	animation: none;
+	transform: none;
 }
 
 .top,
@@ -98,6 +105,9 @@
 	stroke-width: 2px;
 	transition: d 500ms;
 	animation: fade-in 450ms 350ms both;
+}
+.noAnim .svg path {
+	animation: none;
 }
 
 @keyframes move {
