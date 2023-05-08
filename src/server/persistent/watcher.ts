@@ -31,6 +31,8 @@ class MyWatcher {
 		this.init()
 	}
 
+	// close watcher on process exit signal
+
 	async init () {
 		if (this.watcher) {
 			log("info", "wait", "fswatcher", "restarting...")
