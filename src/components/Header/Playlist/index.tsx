@@ -33,7 +33,7 @@ export default forwardRef(function PlaylistView ({
 	isTop: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const enabled = Boolean(id && open)
-	const { data: _data } = trpc.playlist.get.useQuery({ id }, {
+	const { data: _data, isLoading } = trpc.playlist.get.useQuery({ id }, {
 		enabled,
 		keepPreviousData: true,
 	})
@@ -81,6 +81,7 @@ export default forwardRef(function PlaylistView ({
 		parent,
 		orderable: true,
 		virtual: true,
+		loading: isLoading,
 	})
 
 	const onReorder = useCallback((from: number, to: number) =>

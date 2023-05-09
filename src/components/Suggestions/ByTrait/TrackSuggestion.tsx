@@ -25,7 +25,7 @@ export default function TracksByTraitSuggestion () {
 	const [preferredOptions, setPreferredTracks] = preferredTrackList.useState()
 	const onSelect = addNewTraitByOption(setPreferredTracks)
 	const makePlaylist = useMakePlaylist()
-	const { data: tracks = [] } = trpc.track.byMultiTraits.useQuery({ traits: preferredOptions }, {
+	const { data: tracks = [], isLoading } = trpc.track.byMultiTraits.useQuery({ traits: preferredOptions }, {
 		keepPreviousData: true,
 	})
 	const title = useMemo(() => titleFromSelectedOptions(preferredOptions, "tracks"), [preferredOptions])
@@ -68,7 +68,7 @@ export default function TracksByTraitSuggestion () {
 			}}>
 				<PillChoice options={options} onSelect={onSelect} current={currentOptions} />
 			</Dialog>
-			<TrackList tracks={tracks} />
+			<TrackList tracks={tracks} loading={isLoading} />
 		</>
 	)
 }

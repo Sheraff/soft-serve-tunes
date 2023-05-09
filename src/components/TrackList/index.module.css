@@ -1,6 +1,20 @@
 .main {
 
 }
+.loading::before,
+.loading::after {
+	content: "";
+	display: block;
+	height: 48px;
+	width: 48px;
+	margin: 8px;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
+}
+.loading::after {
+	margin-top: 16px;
+}
+
 .item {
 	width: 100%;
 }

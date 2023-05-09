@@ -8,10 +8,10 @@ import uniqueNameFromName from "./uniqueNameFromName"
 /**
  * @description Rename playlist, either locally or remotely
  */
-export function useRenamePlaylist() {
+export function useRenamePlaylist () {
 	const trpcClient = trpc.useContext()
 	const queryClient = useQueryClient()
-	const {mutateAsync} = trpc.playlist.modify.useMutation()
+	const { mutateAsync } = trpc.playlist.modify.useMutation()
 
 	return useCallback(
 		/**
@@ -19,27 +19,27 @@ export function useRenamePlaylist() {
 		 * @param id if no ID is provided, the local playlist will be renamed
 		 */
 		async (name: string, id: Playlist["id"] = null) => {
-		const playlist = queryClient.getQueryData<Playlist>(["playlist"])
+			const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 
-		const uniqueName = await uniqueNameFromName(trpcClient, name, id)
-		
-		const isLocal = isLocalFromPlaylistAndId(playlist, id)
-		if (isLocal) {
-			queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({...a, name: uniqueName}) : a)
-		}
+			const uniqueName = await uniqueNameFromName(trpcClient, name, id)
 
-		// if no ID was passed, and the local playlist isn't saved remotely (no id), nothing more to do
-		if (!id) {
-			return
-		}
-
-		trpcClient.playlist.get.setData({id}, (a) => a ? ({...a, name: uniqueName}) : null)
-		await mutateAsync({
-			id,
-			type: "rename",
-			params: {
-				name: uniqueName
+			const isLocal = isLocalFromPlaylistAndId(playlist, id)
+			if (isLocal) {
+				queryClient.setQueryData<Playlist>(["playlist"], (a) => a ? ({ ...a, name: uniqueName }) : a)
 			}
-		})
-	}, [trpcClient, queryClient, mutateAsync])
+
+			// if no ID was passed, and the local playlist isn't saved remotely (no id), nothing more to do
+			if (!id) {
+				return
+			}
+
+			trpcClient.playlist.get.setData({ id }, (a) => a ? ({ ...a, name: uniqueName }) : undefined)
+			await mutateAsync({
+				id,
+				type: "rename",
+				params: {
+					name: uniqueName
+				}
+			})
+		}, [trpcClient, queryClient, mutateAsync])
 }

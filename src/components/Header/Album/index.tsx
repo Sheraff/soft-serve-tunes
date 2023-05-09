@@ -119,9 +119,9 @@ export default forwardRef(function AlbumView ({
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
-					<TrackList tracks={tracks} />
+					<TrackList tracks={tracks} loading={loading} />
 				</>
-			), [tracks])}
+			), [tracks, loading])}
 		</>
 	)
 

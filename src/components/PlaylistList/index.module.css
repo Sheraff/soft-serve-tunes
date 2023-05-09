@@ -1,5 +1,20 @@
 .list {}
 
+.loading::before,
+.loading::after {
+	content: '';
+	display: block;
+	height: 96px;
+	width: 100%;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
+	border-top: solid 1px var(--palette-bg-main);
+	border-bottom: solid 1px var(--palette-bg-main);
+}
+.loading::after {
+	border-top: 0;
+}
+
 .item {
 	position: relative;
 	z-index: 0;

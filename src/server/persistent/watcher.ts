@@ -364,27 +364,6 @@ class MyWatcher {
 			socketServer.emit("remove", { type: "playlist", id: playlist.id })
 		}
 
-		// TODO: remove after next deployment, audiodb now cascades deletes
-		const orphanedAudiodbTracks = await prisma.audioDbTrack.findMany({
-			where: { entityId: null },
-			select: { idTrack: true, strTrack: true },
-		})
-		await prisma.audioDbTrack.deleteMany({
-			where: { idTrack: { in: orphanedAudiodbTracks.map(track => track.idTrack) } }
-		})
-		for (const track of orphanedAudiodbTracks) {
-			log("event", "event", "fswatcher", `remove audiodb track ${track.strTrack} because it wasn't linked to any tracks anymore`)
-		}
-		const orphanedAudiodbAlbums = await prisma.audioDbAlbum.findMany({
-			where: { entityId: null },
-		})
-		await prisma.audioDbAlbum.deleteMany({
-			where: { idAlbum: { in: orphanedAudiodbAlbums.map(album => album.idAlbum) } }
-		})
-		for (const album of orphanedAudiodbAlbums) {
-			log("event", "event", "fswatcher", `remove audiodb album ${album.strAlbum} because it wasn't linked to any albums anymore`)
-		}
-
 		// Spotify doesn't cascade deletes, so we have to do it ourselves
 		const orphanedSpotifyAlbums = await prisma.spotifyAlbum.findMany({
 			where: { albumId: null, tracks: { none: {} } },

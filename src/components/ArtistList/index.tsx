@@ -133,7 +133,6 @@ export default forwardRef(function ArtistList ({
 		count: artists.length,
 		horizontal: true,
 		overscan: lines,
-		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 3 && index % 3 !== 0) return 0

@@ -19,7 +19,7 @@
 }
 .virtualized {
 	column-gap: 0px;
-	padding: 0px;
+	padding-right: 0px;
 }
 .main:not(.lines-1) {
 	padding-right: calc(var(--side) / 2 + 8px);
@@ -51,7 +51,16 @@
 .loading.lines-3 {
 	height: calc((var(--side) + 26.5px) * 3);
 }
-
+.loading::before,
+.loading::after {
+	content: "";
+	height: var(--side);
+	width: var(--side);
+	border-radius: 50%;
+	margin-right: 8px;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
+}
 
 .button {
 	width: 100%;

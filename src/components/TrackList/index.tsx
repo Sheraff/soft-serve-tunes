@@ -227,14 +227,16 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 	orderable,
 	tracks,
 	exposeScrollFn,
+	loading,
 }: {
 	virtual?: boolean
 	parent: RefObject<HTMLElement>
 	orderable?: boolean
 	tracks: T
 	exposeScrollFn?: boolean
+	loading?: boolean
 }) {
-	const deferredTracks = useDeferredValue(tracks)
+	const [deferredTracks, deferredLoading] = useDeferredValue([tracks, loading])
 
 	const forceInsertVirtualDragItem = useRef<number | null>(null)
 	const forwardOverScan = 1 //2 // numbers to use without innerWidth offsets
@@ -294,6 +296,7 @@ export function useVirtualTracks<T extends { id: string }[]> ({
 			? rowVirtualizer.getTotalSize
 			: undefined,
 		tracks: deferredTracks,
+		loading: deferredLoading,
 		orderable,
 		forceInsertVirtualDragItem,
 	}
@@ -314,6 +317,7 @@ export default function TrackList ({
 	forceInsertVirtualDragItem,
 	virtualTop,
 	forceAvailable = false,
+	loading,
 }: {
 	tracks: TrackListItem[]
 	current?: string
@@ -329,6 +333,7 @@ export default function TrackList ({
 	forceInsertVirtualDragItem?: MutableRefObject<number | null>
 	virtualTop?: number
 	forceAvailable?: boolean
+	loading?: boolean
 }) {
 	const ref = useRef<HTMLUListElement>(null)
 	const callbacks = useRef<DragCallbacks>({
@@ -371,7 +376,7 @@ export default function TrackList ({
 			<AddToPlaylist item={itemToAdd} setItem={setItemToAdd} />
 			<ul
 				ref={orderable ? ref : undefined}
-				className={styles.main}
+				className={classNames(styles.main, { [styles.loading]: loading })}
 				style={getParentHeight && {
 					minHeight: `${getParentHeight()}px`,
 				}}

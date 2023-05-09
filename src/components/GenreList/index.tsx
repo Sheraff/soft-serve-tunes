@@ -134,7 +134,6 @@ export default function GenreList ({
 	loading?: boolean
 	forceAvailable?: boolean
 }) {
-
 	const _editViewState = editOverlay.useValue()
 	const editViewState = useDeferredValue(_editViewState)
 	const isSelection = editViewState.type === "genre"
@@ -145,7 +144,6 @@ export default function GenreList ({
 		count: genres.length,
 		horizontal: true,
 		overscan: 1,
-		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: () => 125,
 		getItemKey: (index) => genres[index]!.id,
@@ -153,7 +151,9 @@ export default function GenreList ({
 
 	if (!virtualized) {
 		return (
-			<ResizingContainer className={styles.main}>
+			<ResizingContainer className={classNames(styles.main, {
+				[styles.loading]: loading,
+			})}>
 				{genres.map(genre => (
 					<li key={genre.id} className={styles.item}>
 						<GenreItem

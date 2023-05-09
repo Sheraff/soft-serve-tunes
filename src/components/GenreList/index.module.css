@@ -31,16 +31,35 @@
 .main > :nth-child(8) { order: var(--item-order-8, 8); }
 .main > :nth-child(9) { order: var(--item-order-9, 9); }
 .main > :nth-child(10) { order: var(--item-order-10, 10); }
+.main > :nth-child(11) { order: var(--item-order-11, 11); }
+.main > :nth-child(12) { order: var(--item-order-12, 12); }
+.main > :nth-child(13) { order: var(--item-order-13, 13); }
+.main > :nth-child(14) { order: var(--item-order-14, 14); }
+.main > :nth-child(15) { order: var(--item-order-15, 15); }
 
 .scrollable .main {
 	width: fit-content;
 	flex-wrap: nowrap;
 	column-gap: 0;
-	padding: 0px;
+	padding-right: 0;
 }
-
 .scrollable.loading .main {
 	height: 36px;
+}
+
+.loading .main::before,
+.loading .main::after,
+.main.loading::before,
+.main.loading::after {
+	content: "";
+	height: 36px;
+	width: 100px;
+	border-radius: 4px;
+	border-top-left-radius: 18px;
+	border-bottom-left-radius: 18px;
+	margin-right: 6px;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
 }
 
 .item {

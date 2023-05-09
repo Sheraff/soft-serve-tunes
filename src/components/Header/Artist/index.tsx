@@ -127,15 +127,15 @@ export default forwardRef(function ArtistView ({
 			{useMemo(() => tracks && Boolean(tracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
-					<TrackList tracks={tracks} />
+					<TrackList tracks={tracks} loading={loading} />
 				</>
-			), [tracks])}
+			), [tracks, loading])}
 			{useMemo(() => playlists && Boolean(playlists.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Playlists</SectionTitle>
-					<PlaylistList playlists={playlists} />
+					<PlaylistList playlists={playlists} loading={loading} />
 				</>
-			), [playlists])}
+			), [playlists, loading])}
 		</>
 	)
 

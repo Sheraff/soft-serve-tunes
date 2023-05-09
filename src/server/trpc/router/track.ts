@@ -7,6 +7,7 @@ import log from "utils/logger"
 import retryable from "utils/retryable"
 import { socketServer } from "utils/typedWs/server"
 import { prisma } from "server/db/client"
+import { TRPCError } from "@trpc/server"
 
 export const zTrackTraits = z.union([
   z.literal("danceability"),
@@ -19,7 +20,6 @@ export const zTrackTraits = z.union([
 ])
 
 const searchable = publicProcedure.query(({ ctx }) => {
-  console.log("track.findMany from /trpc/track > searchable")
   return ctx.prisma.track.findMany({
     select: {
       id: true,
@@ -58,8 +58,7 @@ const miniature = publicProcedure.input(z.object({
     }
   })
   if (!track) {
-    log("error", "404", "trpc", `track.miniature looked for unknown track by id ${input.id}`)
-    return null
+    throw new TRPCError({ code: "NOT_FOUND", message: `track.miniature looked for unknown track by id ${input.id}` })
   }
 
   lastFm.findTrack(input.id)
@@ -78,8 +77,7 @@ const playcount = protectedProcedure.input(z.object({
     select: { albumId: true, artistId: true, name: true },
   }))
   if (!track) {
-    log("error", "404", "trpc", `could not find track ${input.id} for playcount increase`)
-    return
+    throw new TRPCError({ code: "NOT_FOUND", message: `could not find track ${input.id} for playcount increase` })
   }
 
   await ctx.prisma.$transaction([
@@ -140,13 +138,14 @@ const like = protectedProcedure.input(z.object({
     where: { id: input.id },
     select: { albumId: true, artistId: true, name: true },
   }))
-  if (!track) {
-    log("error", "404", "trpc", `could not find track ${input.id} for like ${input.toggle}`)
-    return
-  }
 
   const kind = input.toggle ? "increment" : "decrement"
   const init = input.toggle ? 1 : 0
+
+  if (!track) {
+    throw new TRPCError({ code: "NOT_FOUND", message: `could not find track ${input.id} for like ${kind}` })
+  }
+
   const { albumId, artistId } = track
   await ctx.prisma.$transaction([
     ctx.prisma.track.update({
