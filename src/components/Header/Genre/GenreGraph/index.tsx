@@ -264,21 +264,21 @@ export default memo(function GenreGraph ({
 			</svg>
 			{!noTop && (
 				<div className={styles.top}>
-					{genre.supGenres.map(genre => (
+					{genre.supGenres.map(g => (
 						<div
-							key={genre.id}
+							key={genre.id + g.id}
 							data-graph="sup"
-							data-id={genre.id}
+							data-id={g.id}
 							className={classNames(styles.item, {
-								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current),
+								[styles.noFade]: !memoPosition.current || (g.id in memoPosition.current),
 							})}
 						>
 							<div>
 								<GenreItem
-									genre={genre}
+									genre={g}
 									onClick={onClickGenre}
 									isSelection={isSelection}
-									selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === g.id)}
 								/>
 							</div>
 						</div>
@@ -306,21 +306,21 @@ export default memo(function GenreGraph ({
 			</div>
 			{!noBottom && (
 				<div className={styles.bottom}>
-					{genre.subGenres.map(genre => (
+					{genre.subGenres.map(g => (
 						<div
-							key={genre.id}
+							key={genre.id + g.id}
 							data-graph="sub"
-							data-id={genre.id}
+							data-id={g.id}
 							className={classNames(styles.item, {
-								[styles.noFade]: !memoPosition.current || (genre.id in memoPosition.current),
+								[styles.noFade]: !memoPosition.current || (g.id in memoPosition.current),
 							})}
 						>
 							<div>
 								<GenreItem
-									genre={genre}
+									genre={g}
 									onClick={onClickGenre}
 									isSelection={isSelection}
-									selected={isSelection && editViewState.selection.some(({ id }) => id === genre.id)}
+									selected={isSelection && editViewState.selection.some(({ id }) => id === g.id)}
 								/>
 							</div>
 						</div>
