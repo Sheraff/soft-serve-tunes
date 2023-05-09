@@ -41,11 +41,25 @@
 	width: fit-content;
 	flex-wrap: nowrap;
 	column-gap: 0;
-	padding: 0px;
+	padding-right: 0;
 }
-
 .scrollable.loading .main {
 	height: 36px;
+}
+
+.loading .main::before,
+.loading .main::after,
+.main.loading::before,
+.main.loading::after {
+	content: "";
+	height: 36px;
+	width: 100px;
+	border-radius: 4px;
+	border-top-left-radius: 18px;
+	border-bottom-left-radius: 18px;
+	margin-right: 6px;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
 }
 
 .item {

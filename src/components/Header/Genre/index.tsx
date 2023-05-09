@@ -103,7 +103,7 @@ export default forwardRef(function GenreView ({
 			{orphanTracks && Boolean(orphanTracks.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Tracks</SectionTitle>
-					<TrackList tracks={orphanTracks} />
+					<TrackList tracks={orphanTracks} loading={loading} />
 				</>
 			)}
 		</>

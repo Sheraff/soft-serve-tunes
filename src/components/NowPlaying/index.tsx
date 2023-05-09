@@ -10,7 +10,7 @@ import { shuffle } from "components/Player"
 
 export default memo(function NowPlaying () {
 	const isShuffle = shuffle.useValue()
-	const { data } = usePlaylist({
+	const { data, isLoading } = usePlaylist({
 		select (playlist) {
 			if (!isShuffle) return playlist
 			const tracks = playlist.order.map((id) => playlist.tracks.find((track) => track.id === id)!)
@@ -25,6 +25,7 @@ export default memo(function NowPlaying () {
 		orderable: true,
 		virtual: true,
 		exposeScrollFn: true,
+		loading: isLoading,
 	})
 
 	const { tracks } = trackListProps

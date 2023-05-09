@@ -61,13 +61,15 @@ export default function PlaylistList ({
 	playlists,
 	onSelect,
 	forceAvailable = false,
+	loading,
 }: {
 	playlists: { id: string, name: string }[]
 	onSelect?: Parameters<typeof PlaylistItem>[0]["onSelect"]
 	forceAvailable?: boolean
+	loading?: boolean
 }) {
 	return (
-		<ul className={styles.list}>
+		<ul className={classNames(styles.list, { [styles.loading]: loading })}>
 			{playlists.map((playlist) => (
 				<li key={playlist.id}>
 					<PlaylistItem

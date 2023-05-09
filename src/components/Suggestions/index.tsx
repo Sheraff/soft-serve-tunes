@@ -9,6 +9,7 @@ import { trpc } from "utils/trpc"
 import AlbumsByTraitSuggestion from "./ByTrait/AlbumSuggestion"
 import TracksByTraitSuggestion from "./ByTrait/TrackSuggestion"
 import styles from "./index.module.css"
+import TrackList from "components/TrackList"
 
 export default memo(function Suggestions () {
 
@@ -20,8 +21,8 @@ export default memo(function Suggestions () {
 	const { data: albumFavs = [], isLoading: albumFavsLoading } = trpc.album.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
 	const { data: albumRecent = [], isLoading: albumRecentLoading } = trpc.album.mostRecentListen.useQuery(undefined, { enabled, keepPreviousData: true })
 	const { data: albumNewest = [], isLoading: albumNewestLoading } = trpc.album.mostRecentAdd.useQuery(undefined, { enabled, keepPreviousData: true })
-	const { data: genreFavs = [] } = trpc.genre.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
-	const { data: playlists = [] } = trpc.playlist.searchable.useQuery(undefined, {
+	const { data: genreFavs = [], isLoading: genreLoading } = trpc.genre.mostFav.useQuery(undefined, { enabled, keepPreviousData: true })
+	const { data: playlists = [], isLoading: playlistLoading } = trpc.playlist.searchable.useQuery(undefined, {
 		enabled,
 		keepPreviousData: true,
 		select (playlists) {
@@ -48,7 +49,7 @@ export default memo(function Suggestions () {
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Favorite genres</SectionTitle>
-					<GenreList genres={genreFavs} />
+					<GenreList genres={genreFavs} loading={genreLoading} />
 				</div>
 				<div className={styles.section}>
 					<SectionTitle>Recently listened albums</SectionTitle>
@@ -61,11 +62,16 @@ export default memo(function Suggestions () {
 				{playlists.length > 0 && (
 					<div className={styles.section}>
 						<SectionTitle>Recent playlists</SectionTitle>
-						<PlaylistList playlists={playlists} />
+						<PlaylistList playlists={playlists} loading={playlistLoading} />
 					</div>
 				)}
 				<div className={styles.section}>
-					<Suspense>
+					<Suspense fallback={
+						<>
+							<SectionTitle> </SectionTitle>
+							<TrackList tracks={[]} loading />
+						</>
+					}>
 						<TracksByTraitSuggestion />
 					</Suspense>
 				</div>

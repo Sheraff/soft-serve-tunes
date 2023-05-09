@@ -30,6 +30,16 @@
 .loading.scrollable.lines-2 {
 	height: calc(var(--side) * 2 + 8px);
 }
+.loading::before,
+.loading::after {
+	content: "";
+	height: var(--side);
+	width: var(--side);
+	border-radius: 4px;
+	margin-right: 8px;
+	background-color: var(--palette-primary);
+	opacity: 0.1;
+}
 
 .item {
 	width: var(--side);
