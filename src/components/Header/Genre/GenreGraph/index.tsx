@@ -58,26 +58,15 @@ export default memo(function GenreGraph ({
 	// remember element positions to animate between them
 	const memoPosition = useRef<null | Record<string, { x: number, y: number }>>()
 	const onClickGenre = ({ id }: { id: string }) => {
-		const current = main.current!.querySelector(`[data-id="${genre!.id}"]`)!.getBoundingClientRect()
-		memoPosition.current = {
-			[genre!.id]: {
-				x: current.left,
-				y: current.top,
-			},
-		}
-		if (isHorizontal) {
-			for (const side of genre!.relatedGenres) {
-				const current = main.current!.querySelector(`[data-id="${side.id}"]`)!.getBoundingClientRect()
-				memoPosition.current[side.id] = {
-					x: current.left,
-					y: current.top,
-				}
-			}
-		} else {
-			const next = main.current!.querySelector(`[data-id="${id}"]`)!.getBoundingClientRect()
+		memoPosition.current = {}
+		const all = Array.from(main.current!.querySelectorAll("[data-id]")) as HTMLElement[]
+		for (const element of all) {
+			const id = element.dataset.id
+			if (!id) continue
+			const rect = element.getBoundingClientRect()
 			memoPosition.current[id] = {
-				x: next.left,
-				y: next.top,
+				x: rect.left,
+				y: rect.top,
 			}
 		}
 		startTransition(() => {
