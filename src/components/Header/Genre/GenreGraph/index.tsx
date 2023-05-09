@@ -82,6 +82,18 @@ export default memo(function GenreGraph ({
 		}
 		startTransition(() => {
 			setId(id)
+			setGraphPaths(graphPaths => {
+				if (!graphPaths) return null
+				const current = graphPaths.paths.find(path => (path.to === id && path.from === genre!.id) || (path.from === id && path.to === genre!.id))
+				if (!current) return {
+					viewBox: graphPaths.viewBox,
+					paths: [],
+				}
+				return {
+					viewBox: graphPaths.viewBox,
+					paths: [current],
+				}
+			})
 		})
 	}
 

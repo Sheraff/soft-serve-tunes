@@ -78,19 +78,26 @@ export default forwardRef(function GenreView ({
 
 	const { albums, artists, orphanTracks, tracks, id: deferredId } = useDeferredValue(data) || {}
 	const loading = useDeferredValue(isLoading)
+	const artistListRef = useRef<HTMLDivElement>(null)
+	const albumListRef = useRef<HTMLDivElement>(null)
+	useEffect(() => {
+		if (!data) return
+		if (artistListRef.current) artistListRef.current.scrollTo(0, 0)
+		if (albumListRef.current) albumListRef.current.scrollTo(0, 0)
+	}, [data])
 	const children = (
 		<>
 			<hr className={styles.hr} />
 			{artists && Boolean(artists.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Artists</SectionTitle>
-					<ArtistList key={deferredId} artists={artists} loading={loading} lines={artists.length >= 9 ? 3 : 1} />
+					<ArtistList ref={artistListRef} artists={artists} loading={loading} lines={artists.length >= 9 ? 3 : 1} />
 				</>
 			)}
 			{albums && Boolean(albums.length) && (
 				<>
 					<SectionTitle className={styles.sectionTitle}>Albums</SectionTitle>
-					<AlbumList key={deferredId} albums={albums} loading={loading} scrollable lines={albums.length >= 4 ? 2 : 1} />
+					<AlbumList ref={albumListRef} albums={albums} loading={loading} scrollable lines={albums.length >= 4 ? 2 : 1} />
 				</>
 			)}
 			{orphanTracks && Boolean(orphanTracks.length) && (
