@@ -31,6 +31,11 @@
 .main > :nth-child(8) { order: var(--item-order-8, 8); }
 .main > :nth-child(9) { order: var(--item-order-9, 9); }
 .main > :nth-child(10) { order: var(--item-order-10, 10); }
+.main > :nth-child(11) { order: var(--item-order-11, 11); }
+.main > :nth-child(12) { order: var(--item-order-12, 12); }
+.main > :nth-child(13) { order: var(--item-order-13, 13); }
+.main > :nth-child(14) { order: var(--item-order-14, 14); }
+.main > :nth-child(15) { order: var(--item-order-15, 15); }
 
 .scrollable .main {
 	width: fit-content;
