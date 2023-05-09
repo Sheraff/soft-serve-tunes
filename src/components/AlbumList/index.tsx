@@ -133,7 +133,6 @@ export default forwardRef(function AlbumList ({
 		count: albums.length,
 		horizontal: true,
 		overscan: lines,
-		paddingStart: 8,
 		getScrollElement: () => main.current,
 		estimateSize: (index) => {
 			if (lines === 2 && index % 2 !== 0) return 0

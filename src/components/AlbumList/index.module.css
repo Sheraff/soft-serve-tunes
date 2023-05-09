@@ -21,7 +21,7 @@
 }
 .virtualized {
 	column-gap: 0px;
-	padding: 0px;
+	padding-right: 0px;
 }
 
 .loading {
