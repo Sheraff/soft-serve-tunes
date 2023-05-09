@@ -7,6 +7,7 @@ type DistanceObject = {
 	lcs: number
 	levenshtein: number
 	start: boolean
+	equal: boolean
 }
 
 type NamedInterface = {
@@ -49,10 +50,12 @@ function classify (_input: string, _candidate: string): DistanceObject {
 	const lcsDistanceNormalized = (inputMax - longestCommonSubstring(input, candidate).length) / inputMax
 	const levenshteinDistanceNormalized = damLev(input, candidate) / maxLength
 	const start = candidate.startsWith(input)
+	const equal = input === candidate
 	return {
 		lcs: lcsDistanceNormalized,
 		levenshtein: levenshteinDistanceNormalized,
-		start
+		start,
+		equal,
 	}
 }
 
@@ -80,6 +83,15 @@ function handleInput ({ input }: { input: string }) {
 		const bName = bItem.name
 		const a = getDistances(input, aName)
 		const b = getDistances(input, bName)
+		if (a.equal && !b.equal) {
+			return -1
+		}
+		if (!a.equal && b.equal) {
+			return 1
+		}
+		if (a.equal && b.equal) {
+			return 0
+		}
 		if (a.lcs !== b.lcs) {
 			return a.lcs - b.lcs
 		}
