@@ -1,6 +1,7 @@
 import { router, publicProcedure } from "server/trpc/trpc"
 import { z } from "zod"
 import { prisma } from "server/db/client"
+import { TRPCError } from "@trpc/server"
 
 const miniature = publicProcedure.input(z.object({
   id: z.string(),
@@ -12,7 +13,8 @@ const miniature = publicProcedure.input(z.object({
       id: true,
     }
   })
-  if (!meta) return null
+  if (!meta)
+    throw new TRPCError({ code: "NOT_FOUND", message: `Genre not found by id ${input.id}` })
   const artists = await ctx.prisma.$queryRaw`
     SELECT
       artists."coverId" as "coverId",
@@ -237,7 +239,8 @@ const get = publicProcedure.input(z.object({
       name: true,
     },
   })
-  if (!meta) return null
+  if (!meta)
+    throw new TRPCError({ code: "NOT_FOUND", message: `Genre not found by id ${input.id}` })
 
   const [
     subGenres,

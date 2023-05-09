@@ -48,10 +48,15 @@ export default function AddToPlaylist ({
 		onSelect()
 
 		const trackIds = items.map((item) => item.id)
-		const data = (await getMore({
-			type: "by-similar-tracks",
-			trackIds,
-		})) || []
+		let data: Exclude<Awaited<ReturnType<typeof getMore>>, undefined>
+		try {
+			data = (await getMore({
+				type: "by-similar-tracks",
+				trackIds,
+			})) ?? []
+		} catch {
+			data = []
+		}
 
 		let name: string
 		naming: if (trackIds.length === 1) {

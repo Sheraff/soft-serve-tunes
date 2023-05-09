@@ -5,6 +5,7 @@ import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 import { type Prisma } from "@prisma/client"
 import { computeArtistCover } from "server/db/computeCover"
+import { TRPCError } from "@trpc/server"
 
 const LISTS_SIZE = 30
 
@@ -81,7 +82,7 @@ const miniature = publicProcedure.input(z.object({
     lastFm.findArtist(input.id)
     audioDb.fetchArtist(input.id)
   } else {
-    log("error", "404", "trpc", `artist.miniature looked for unknown artist by id ${input.id}`)
+    throw new TRPCError({ code: "NOT_FOUND", message: `artist.miniature looked for unknown artist by id ${input.id}` })
   }
 
   return artist
@@ -141,8 +142,7 @@ const get = publicProcedure.input(z.object({
   })
 
   if (!artist) {
-    log("error", "404", "trpc", `artist.get looked for unknown artist by id ${input.id}`)
-    return artist
+    throw new TRPCError({ code: "NOT_FOUND", message: `artist.get looked for unknown artist by id ${input.id}` })
   }
 
   // extra albums not directly by this artist

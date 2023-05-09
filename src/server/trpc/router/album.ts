@@ -5,6 +5,7 @@ import { audioDb } from "server/persistent/audiodb"
 import log from "utils/logger"
 import { zTrackTraits } from "./track"
 import { prisma } from "server/db/client"
+import { TRPCError } from "@trpc/server"
 
 const LISTS_SIZE = 30
 
@@ -70,7 +71,7 @@ const miniature = publicProcedure.input(z.object({
     lastFm.findAlbum(input.id)
     audioDb.fetchAlbum(input.id)
   } else {
-    log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
+    throw new TRPCError({ code: "NOT_FOUND", message: `album.miniature looked for unknown album by id ${input.id}` })
   }
 
   return album
@@ -151,8 +152,7 @@ const get = publicProcedure.input(z.object({
   })
 
   if (!album) {
-    log("error", "404", "trpc", `album.miniature looked for unknown album by id ${input.id}`)
-    return album
+    throw new TRPCError({ code: "NOT_FOUND", message: `album.get looked for unknown album by id ${input.id}` })
   }
 
   const genres: { id: string, name: string }[] = []

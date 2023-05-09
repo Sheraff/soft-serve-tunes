@@ -65,7 +65,7 @@ function useDeletePlaylist ({
 		startTransition(() => {
 			deletePlaylistMutation({ id }, {
 				onSuccess () {
-					trpcClient.playlist.get.setData({ id }, null)
+					trpcClient.playlist.get.setData({ id }, undefined)
 					onPlaylistSaved(null, null)
 					conditions++
 					onEnd()

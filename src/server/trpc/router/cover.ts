@@ -5,28 +5,31 @@ import { join } from "node:path"
 import { env } from "env/server.mjs"
 import sharp from "sharp"
 import { prisma } from "server/db/client"
+import { TRPCError } from "@trpc/server"
 
-async function coverData(id: string) {
-    const cover = await prisma.image.findUnique({
-      where: {id},
-      select: {id: true, palette: true, path: true},
-    })
-    if (!cover) return
-    
-    const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
-    const metadata = await sharp(fullPath).metadata()
-    return {
-      id: cover.id,
-      palette: cover.palette,
-      width: metadata.width,
-      height: metadata.height,
-    }
+async function coverData (id: string) {
+  const cover = await prisma.image.findUnique({
+    where: { id },
+    select: { id: true, palette: true, path: true },
+  })
+  if (!cover) return
+
+  const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, cover.path)
+  const metadata = await sharp(fullPath).metadata()
+  return {
+    id: cover.id,
+    palette: cover.palette,
+    width: metadata.width,
+    height: metadata.height,
+  }
 }
 
 const byId = publicProcedure.input(z.object({
   id: z.string(),
 })).query(async ({ input }) => {
   const data = await coverData(input.id)
+  if (!data)
+    throw new TRPCError({ code: "NOT_FOUND", message: `Cover not found by id ${input.id}` })
   return data
 })
 
@@ -35,10 +38,10 @@ const fromTracks = publicProcedure.input(z.object({
 })).query(async ({ input, ctx }) => {
   const covers = new Set<string>()
   for (const id of input.ids) {
-    const trackCovers = await listTrackCovers(id, {album: true})
+    const trackCovers = await listTrackCovers(id, { album: true })
     trackCovers.forEach((c) => covers.add(c))
   }
-  
+
   const results: Exclude<Awaited<ReturnType<typeof coverData>>, undefined>[] = []
   for (const id of covers) {
     const data = await coverData(id)
@@ -55,7 +58,7 @@ const fromAlbums = publicProcedure.input(z.object({
 })).query(async ({ input }) => {
   const covers = new Set<string>()
   for (const id of input.ids) {
-    const albumCovers = await listAlbumCovers(id, {tracks: true})
+    const albumCovers = await listAlbumCovers(id, { tracks: true })
     albumCovers.forEach((c) => covers.add(c))
   }
 

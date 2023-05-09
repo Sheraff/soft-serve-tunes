@@ -44,7 +44,7 @@ async function getResolve (id: string) {
     }
   })
   if (!result) {
-    return result
+    throw new TRPCError({ code: "NOT_FOUND", message: `Playlist not found by id ${id}` })
   }
   const tracks = result.tracks.map(({ track }) => track)
   const { artists, albums } = extractPlaylistCredits(tracks)
