@@ -181,7 +181,6 @@ const get = publicProcedure.input(z.object({
   })
 
   // extra tracks, not in albums
-  console.log("track.findMany from /trpc/artist")
   const tracks = await ctx.prisma.track.findMany({
     where: {
       OR: [

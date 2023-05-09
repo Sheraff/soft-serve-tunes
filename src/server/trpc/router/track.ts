@@ -19,7 +19,6 @@ export const zTrackTraits = z.union([
 ])
 
 const searchable = publicProcedure.query(({ ctx }) => {
-  console.log("track.findMany from /trpc/track > searchable")
   return ctx.prisma.track.findMany({
     select: {
       id: true,
