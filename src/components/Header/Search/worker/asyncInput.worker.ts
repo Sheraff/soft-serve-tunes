@@ -64,8 +64,9 @@ function getLevenshtein(cleanInput: string, memo: DistObj): number {
 let latestInput: string
 async function handleInput({ input }: { input: string }) {
 	latestInput = input
-	await new Promise(resolve => setTimeout(resolve, 0))
+	await Promise.resolve()
 	if (latestInput !== input) return
+
 	const cleanInput = cleanupString(input)
 	const empty = undefined
 	const list = dataList
@@ -107,7 +108,7 @@ async function handleInput({ input }: { input: string }) {
 			return aLevenshtein - bLevenshtein
 		})
 
-	await new Promise(resolve => setTimeout(resolve, 0))
+	await Promise.resolve()
 	if (latestInput !== input) return
 	const max = Math.min(list.length, requestedSize)
 	const res = new Uint16Array(max)
