@@ -2,8 +2,8 @@ import { getLocalHost } from "client/local-net/getLocalHost"
 import { env } from "env/client.mjs"
 import retryable from "utils/retryable"
 
-async function upload (formData: FormData, onProgress: (progress: number) => void) {
-	const host = await getLocalHost()
+async function upload(formData: FormData, onProgress: (progress: number) => void) {
+	const host = await getLocalHost(true)
 	const request = new XMLHttpRequest()
 	request.upload.addEventListener("progress", (e) => {
 		if (e.lengthComputable) {
@@ -38,7 +38,7 @@ const queuedUploads: {
 	total: 0,
 }
 
-export default async function uploadLoop<T extends FileSystemFileEntry | File> (
+export default async function uploadLoop<T extends FileSystemFileEntry | File>(
 	list: T[],
 	parse: (item: T) => Promise<({ size: number, file: File, path: string } | undefined)>,
 	onProgress: (p: number) => void
