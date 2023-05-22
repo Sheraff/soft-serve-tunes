@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type RefObject, useMemo, startTransition } from "react"
+import { useRef, useState, useEffect, type RefObject, useMemo } from "react"
 
 type MinimumWorkerDataObject = { name: string }
 
@@ -6,7 +6,7 @@ type Obj = {
 	[key: string]: Obj | string | Obj[] | string[]
 }
 
-function getIn (obj: Obj | string, [key, ...path]: string[]): string {
+function getIn(obj: Obj | string, [key, ...path]: string[]): string {
 	if (typeof obj === "string")
 		return obj
 	if (!key)
@@ -22,7 +22,7 @@ function getIn (obj: Obj | string, [key, ...path]: string[]): string {
 export default function useAsyncInputStringDistance<
 	T extends MinimumWorkerDataObject,
 	TSelected = T[],
-> ({
+>({
 	inputRef,
 	size = Infinity,
 	dataList,
@@ -50,10 +50,6 @@ export default function useAsyncInputStringDistance<
 		[dataList, ...keys]
 	)
 
-	// use these 2 refs to avoid making calls to worker for an input value that isn't current
-	const isWorking = useRef(false)
-	const nextValue = useRef<string | null>(null)
-
 	// these refs to avoid re-running useEffects
 	const selectRef = useRef(select)
 	selectRef.current = select
@@ -75,28 +71,19 @@ export default function useAsyncInputStringDistance<
 				input: string
 			}
 		}) => {
-			if (nextValue.current && worker.current) {
-				worker.current.postMessage({ type: "input", input: nextValue.current })
-				nextValue.current = null
-			} else {
-				isWorking.current = false
-			}
-			if (inputMemo.value.toLowerCase() === data.input) {
-				startTransition(() => {
-					const newList = [] as T[] // might not actually be `T` if dataList has changed since then
-					for (let i = 0; i < data.list.length; i++) {
-						newList.push(dataList[data.list[i]!]!)
-					}
-					if (selectRef.current)
-						setList(selectRef.current(newList))
-					else
-						setList(newList as unknown as TSelected)
-				})
+			if (inputMemo.value.toLowerCase().startsWith(data.input)) {
+				const newList = [] as T[] // might not actually be `T` if dataList has changed since then
+				for (let i = 0; i < data.list.length; i++) {
+					newList.push(dataList[data.list[i]!]!)
+				}
+				if (selectRef.current)
+					setList(selectRef.current(newList))
+				else
+					setList(newList as unknown as TSelected)
 			}
 		}
 		workerMemo.addEventListener("message", onMessage)
 		return () => {
-			isWorking.current = false
 			workerMemo.removeEventListener("message", onMessage)
 			workerMemo.terminate()
 		}
@@ -112,19 +99,12 @@ export default function useAsyncInputStringDistance<
 			const value = inputMemo.value.trim().toLowerCase()
 			if (worker.current && value) {
 				if (lastInputValue === value) return
-				if (!isWorking.current) {
-					worker.current.postMessage({ type: "input", input: value })
-					isWorking.current = true
-				} else {
-					nextValue.current = value
-				}
+				worker.current.postMessage({ type: "input", input: value })
 			} else if (!value) {
-				startTransition(() => {
-					if (selectRef.current)
-						setList(selectRef.current([]))
-					else
-						setList([] as unknown as TSelected)
-				})
+				if (selectRef.current)
+					setList(selectRef.current([]))
+				else
+					setList([] as unknown as TSelected)
 			}
 			lastInputValue = value
 		}

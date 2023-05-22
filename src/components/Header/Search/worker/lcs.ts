@@ -1,5 +1,5 @@
 // https://github.com/trekhleb/javascript-algorithms/blob/master/src/algorithms/string/longest-common-substring/longestCommonSubstring.js
-export default function longestCommonSubstring (string1: string, string2: string): string {
+export default function longestCommonSubstring(string1: string, string2: string): string {
 	// Convert strings to arrays to treat unicode symbols length correctly.
 	// For example:
 	// '𐌵'.length === 2
@@ -9,8 +9,9 @@ export default function longestCommonSubstring (string1: string, string2: string
 
 	// Init the matrix of all substring lengths to use Dynamic Programming approach.
 	const substringMatrix: (number | null)[][] = Array(s2.length + 1)
-		.fill(null)
-		.map(() => Array(s1.length + 1).fill(null))
+	for (let i = 0; i < substringMatrix.length; i++) {
+		substringMatrix[i] = Array(s1.length + 1)
+	}
 
 	// Fill the first row and first column with zeros to provide initial values.
 	for (let columnIndex = 0; columnIndex <= s1.length; columnIndex += 1) {
