@@ -27,14 +27,16 @@ import {
 
 const defaultArray = [] as never[]
 
-const ArtistSearch = forwardRef(function _ArtistSearch ({
+const ArtistSearch = forwardRef(function _ArtistSearch({
 	input,
 	onSelect,
 	offline,
+	hidden,
 }: {
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "artist", id: string }) => void
 	offline: boolean
+	hidden: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const { data: artistsRaw } = offline
 		? useCachedArtistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
@@ -44,6 +46,8 @@ const ArtistSearch = forwardRef(function _ArtistSearch ({
 		size: 45,
 		dataList: artistsRaw || defaultArray,
 	})
+
+	if (hidden) return null
 
 	return (
 		<div>
@@ -59,14 +63,16 @@ const ArtistSearch = forwardRef(function _ArtistSearch ({
 	)
 })
 
-const AlbumSearch = forwardRef(function _AlbumSearch ({
+const AlbumSearch = forwardRef(function _AlbumSearch({
 	input,
 	onSelect,
 	offline,
+	hidden,
 }: {
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "album", id: string }) => void
 	offline: boolean
+	hidden: boolean
 }, ref: ForwardedRef<HTMLDivElement>) {
 	const { data: albumsRaw } = offline
 		? useCachedAlbumList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
@@ -79,6 +85,8 @@ const AlbumSearch = forwardRef(function _AlbumSearch ({
 	})
 	const deferredAlbums = useDeferredValue(_albums)
 	const albums = deferredAlbums.length === 0 ? _albums : deferredAlbums
+
+	if (hidden) return null
 
 	return (
 		<div>
@@ -95,14 +103,16 @@ const AlbumSearch = forwardRef(function _AlbumSearch ({
 	)
 })
 
-function GenreSearch ({
+function GenreSearch({
 	input,
 	onSelect,
-	offline
+	offline,
+	hidden,
 }: {
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "genre", id: string }) => void
 	offline: boolean
+	hidden: boolean
 }) {
 	const { data: genresRaw } = offline
 		? useCachedGenreList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
@@ -114,7 +124,7 @@ function GenreSearch ({
 	})
 	const genres = useDeferredValue(_genres)
 
-	if (!genres.length) return null
+	if (hidden || !genres.length) return null
 
 	return (
 		<div>
@@ -128,14 +138,16 @@ function GenreSearch ({
 	)
 }
 
-function PlaylistSearch ({
+function PlaylistSearch({
 	input,
 	onSelect,
-	offline
+	offline,
+	hidden,
 }: {
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "playlist", id: string }) => void
 	offline: boolean
+	hidden: boolean
 }) {
 	const { data: playlistsRaw } = offline
 		? useCachedPlaylistList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
@@ -148,7 +160,7 @@ function PlaylistSearch ({
 	})
 	const playlists = useDeferredValue(_playlists)
 
-	if (!playlists.length) return null
+	if (hidden || !playlists.length) return null
 
 	return (
 		<div>
@@ -162,14 +174,16 @@ function PlaylistSearch ({
 	)
 }
 
-function TrackSearch ({
+function TrackSearch({
 	input,
 	onSelect,
-	offline
+	offline,
+	hidden,
 }: {
 	input: RefObject<HTMLInputElement>
 	onSelect: (item: { type: "track", id: string }) => void
 	offline: boolean
+	hidden: boolean
 }) {
 	const { data: tracksRaw } = offline
 		? useCachedTrackList() // eslint-disable-line react-hooks/rules-of-hooks -- offline is a key of this component
@@ -182,7 +196,7 @@ function TrackSearch ({
 	})
 	const tracks = useDeferredValue(_tracks)
 
-	if (!tracks.length) return null
+	if (hidden || !tracks.length) return null
 
 	return (
 		<div>
@@ -196,7 +210,7 @@ function TrackSearch ({
 	)
 }
 
-function LatestSearches () {
+function LatestSearches() {
 	const { data: latestSearches = [] } = usePastSearchesQuery()
 
 	if (latestSearches.length === 0) return null
@@ -211,7 +225,7 @@ function LatestSearches () {
 	)
 }
 
-export default function Search ({
+export default function Search({
 	open,
 	z,
 }: {
@@ -225,6 +239,7 @@ export default function Search ({
 	const albumList = useRef<HTMLDivElement>(null)
 
 	const [showPast, setShowPast] = useState(true)
+	const keepWorkersHot = useRef(false)
 
 	// handle focus because it toggles the virtual keyboard
 	useEffect(() => {
@@ -321,6 +336,7 @@ export default function Search ({
 						const newShowPast = !input.current?.value
 						if (newShowPast === showPast) return
 						setShowPast(newShowPast)
+						keepWorkersHot.current = true
 					}}
 					defaultValue=""
 					inputMode="search"
@@ -347,7 +363,7 @@ export default function Search ({
 				{showPast && (
 					<LatestSearches />
 				)}
-				{!showPast && (
+				{keepWorkersHot.current && (
 					<>
 						<ArtistSearch
 							ref={artistList}
@@ -355,6 +371,7 @@ export default function Search ({
 							input={input}
 							offline={offline}
 							key={`Artist${offline}`}
+							hidden={showPast}
 						/>
 						<AlbumSearch
 							ref={albumList}
@@ -362,24 +379,28 @@ export default function Search ({
 							input={input}
 							offline={offline}
 							key={`Album${offline}`}
+							hidden={showPast}
 						/>
 						<GenreSearch
 							onSelect={onSelect}
 							input={input}
 							offline={offline}
 							key={`Genre${offline}`}
+							hidden={showPast}
 						/>
 						<PlaylistSearch
 							onSelect={onSelect}
 							input={input}
 							offline={offline}
 							key={`Playlist${offline}`}
+							hidden={showPast}
 						/>
 						<TrackSearch
 							onSelect={onSelect}
 							input={input}
 							offline={offline}
 							key={`Track${offline}`}
+							hidden={showPast}
 						/>
 					</>
 				)}
