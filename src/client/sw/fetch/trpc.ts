@@ -3,16 +3,26 @@ import { AllRoutesString, keyStringToArray } from "utils/trpc"
 import trpcRevalidation from "../messages/trpcRevalidation"
 import { CACHES } from "../utils/constants"
 
-function trpcUrlToCacheKeys (url: URL) {
+function trpcUrlToCacheKeys(url: URL) {
 	const [, , , parts] = url.pathname.split("/")
 	if (!parts) {
 		throw new Error(`function called on the wrong url, no trpc endpoints found @${url}`)
 	}
-	const endpoints = parts.split(",") as AllRoutesString[]
+
 	const inputString = url.searchParams.get("input")
 	const input = inputString
 		? JSON.parse(inputString) as { [key: number]: { json: any } }
 		: {}
+
+	if (!url.searchParams.has("batch")) {
+		return {
+			keys: [url],
+			endpoints: [parts as AllRoutesString],
+			input: { "0": input } as unknown as { [key: number]: { json: any } },
+		}
+	}
+
+	const endpoints = parts.split(",") as AllRoutesString[]
 	const keys = endpoints.map((endpoint, i) => {
 		const altUrl = new URL(`/api/trpc/${endpoint}`, url.origin)
 		if (input[i]) altUrl.searchParams.set("input", JSON.stringify(input[i]))
@@ -21,107 +31,88 @@ function trpcUrlToCacheKeys (url: URL) {
 	return { keys, endpoints, input }
 }
 
-type TextResponseLike = {
-	text (): string
+type BatchItem = {
+	endpoint: string
+	input: string
+	resolve: (response: Response) => void
 }
+let batchTimeout: ReturnType<typeof setTimeout> | null = null
+const batchPriorityList: BatchItem[] = []
 
-async function formatBatchResponses (
-	matches: Array<Promise<Response | undefined> | Response | undefined | TextResponseLike>,
-	endpoints: string[]
-): Promise<Response> {
-	const body = await Promise.all(matches.map(async (match, i) => {
-		const response = await match
-		if (response)
-			return response.text()
-		else
-			return JSON.stringify({
-				"id": null,
-				"error": {
-					"json": {
-						"message": "This is a fake TRPCError",
-						"code": -32600,
-						"data": {
-							"code": "BAD_REQUEST",
-							"httpStatus": 400,
-							"stack": "TRPCError: []",
-							"path": endpoints[i]
-						}
-					}
+async function processBatch() {
+	batchTimeout = null
+	let endpoints = ''
+	let input = '{'
+	let i = 0
+	for (; i < Math.min(batchPriorityList.length, 20); i++) {
+		const item = batchPriorityList[i]!
+		if (i !== 0) {
+			endpoints += ','
+			input += ','
+		}
+		endpoints += item.endpoint
+		input += '"' + i + '":' + item.input
+		if (input.length + endpoints.length > 2000) {
+			break
+		}
+	}
+	input += '}'
+	const url = new URL(`/api/trpc/${endpoints}`, self.location.origin)
+	url.searchParams.set("batch", "1")
+	url.searchParams.set("input", input)
+	const promise = fetch(url)
+	const solved = batchPriorityList.splice(0, i)
+	if (batchPriorityList.length) {
+		batchTimeout = setTimeout(processBatch, 10)
+	}
+	const response = await promise
+	if (response.status === 200 || response.status === 207) {
+		handleTrpcFetchResponse(response.clone(), url)
+		const json = await response.json()
+		for (let i = 0; i < solved.length; i++) {
+			const item = solved[i]!
+			item.resolve(new Response(JSON.stringify(json[i]), {
+				headers: {
+					"Content-Type": "application/json"
 				}
-			})
-	}))
-	return new Response(`[${body.join(",")}]`, {
-		headers: {
-			"Content-Type": "application/json"
+			}))
 		}
-	})
+	} else if (response.status > 200 && response.status < 300) {
+		console.warn("SW: unexpected 2xx response status", response)
+	}
 }
 
-async function trpcUrlToCacheValues (request: Request, url: URL, allowNetwork = false): Promise<Response> {
+function addToBatch(endpoint: string, input: string) {
+	let resolve: (response: Response) => void
+	const promise = new Promise<Response>((res) => resolve = res)
+	const item = { endpoint, input, resolve: resolve! }
+	batchPriorityList.push(item)
+	if (!batchTimeout) {
+		batchTimeout = setTimeout(processBatch, 10)
+	}
+	return promise
+}
+
+async function trpcUrlCacheOrBatch(url: URL): Promise<Response> {
 	const cache = await caches.open(CACHES.trpc)
-	const { keys, endpoints, input } = trpcUrlToCacheKeys(url)
-	if (!allowNetwork) {
-		const matches = keys.map(key => cache.match(key))
-		return formatBatchResponses(matches, endpoints)
+	const cachedResponse = await cache.match(url)
+
+	if (cachedResponse) {
+		setTimeout(() => {
+			const endpoint = url.pathname.split("/")[3]! as AllRoutesString
+			const input = url.searchParams.get("input")!
+			const params = JSON.parse(input).json
+			trpcRevalidation({ key: keyStringToArray(endpoint), params })
+		}, 1_000)
+		return cachedResponse
 	}
 
-	const cacheResponses: Array<Response | undefined | TextResponseLike> = await Promise.all(keys.map(key => cache.match(key)))
-	const fetchIndices = cacheResponses.reduce((array, response, i) => {
-		if (!response)
-			array.push(i)
-		return array
-	}, [] as number[])
-	if (fetchIndices.length) {
-		// some of the endpoints requested were missing from cache, make a single batched call to fetch them
-		const fetchEndpoints = fetchIndices.map((i) => endpoints[i]).join(",")
-		const fetchInput = fetchIndices.reduce((object, i, j) => {
-			object[j] = input[i]!
-			return object
-		}, {} as { [key: number]: { json: any } })
-		const fetchUrl = new URL(`/api/trpc/${fetchEndpoints}`, self.location.origin)
-		fetchUrl.searchParams.set("batch", "1")
-		fetchUrl.searchParams.set("input", JSON.stringify(fetchInput))
-		const fetchResponse = await fetch(fetchUrl)
-		if (fetchResponse.status === 200 || fetchResponse.status === 207) {
-			handleTrpcFetchResponse(fetchResponse.clone(), fetchUrl)
-			const fetchData = await fetchResponse.json()
-			fetchIndices.forEach((i, j) => cacheResponses[i] = { text: () => JSON.stringify(fetchData[j]) })
-		} else if (fetchResponse.status > 200 && fetchResponse.status < 300) {
-			console.warn("SW: unexpected 2xx response status", fetchResponse)
-		}
-		if (fetchIndices.length < endpoints.length) {
-			// fetch from server to refresh SW cache, some requested endpoints were missing from cache so they've already been fetched
-			Promise.resolve().then(async () => {
-				const rest = endpoints.reduce((acc, endpoint, i) => {
-					if (fetchIndices.includes(i)) return acc
-					acc.endpoints.push(endpoint)
-					acc.input[acc.endpoints.length - 1] = input[i]!
-					return acc
-				}, {
-					endpoints: [],
-					input: {},
-				} as {
-					endpoints: typeof endpoints,
-					input: { [key: number]: { json: any } }
-				})
-				setTimeout(() => {
-					rest.endpoints.forEach((endpoint, i) => {
-						trpcRevalidation({ key: keyStringToArray(endpoint), params: rest.input[i]!.json })
-					})
-				}, 1_000)
-			})
-		}
-	} else {
-		// fetch from server to refresh SW cache, no requested endpoint was missing from cache so request them all
-		setTimeout(() => {
-			fetchFromServer(request, url)
-		}, 1_000)
-	}
-	return formatBatchResponses(cacheResponses, endpoints)
+	const endpoint = url.pathname.split("/")[3]!
+	const input = url.searchParams.get("input")!
+	return addToBatch(endpoint, input)
 }
 
-
-function logTrpcError (error: {
+function logTrpcError(error: {
 	message: string,
 	code: number,
 	data: {
@@ -134,34 +125,35 @@ function logTrpcError (error: {
 	console.error(`${error.data.code} ${error.data.httpStatus} @ ${error.data.path} ${error.code}\n${error.data.stack}`)
 }
 
-export function handleTrpcFetchResponse (response: Response, url: URL) {
-	return caches.open(CACHES.trpc).then(async (cache) => {
-		const { keys } = trpcUrlToCacheKeys(url)
-		const data = await response.json()
-		const headers = new Headers()
-		const contentType = response.headers.get("Content-Type")
-		if (contentType) headers.set("Content-Type", contentType)
-		const date = response.headers.get("Date")
-		if (date) headers.set("Date", date)
-		await Promise.all(keys.map((key, i) => {
-			if ("result" in data[i]) {
-				return cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
-			} else if ("error" in data[i]) {
-				try { logTrpcError(data[i].error.json) } catch { }
-			} else {
-				console.error("SW: unknown trpc response format", data[i])
-			}
-		}))
-		return data
-	})
+export async function handleTrpcFetchResponse(response: Response, url: URL) {
+	const cache = await caches.open(CACHES.trpc)
+	const { keys } = trpcUrlToCacheKeys(url)
+	const json = await response.json()
+	const data = url.searchParams.has("batch")
+		? json
+		: [json]
+	const headers = new Headers()
+	const contentType = response.headers.get("Content-Type")
+	if (contentType) headers.set("Content-Type", contentType)
+	const date = response.headers.get("Date")
+	if (date) headers.set("Date", date)
+	await Promise.all(keys.map((key, i) => {
+		if ("result" in data[i]) {
+			return cache.put(key, new Response(JSON.stringify(data[i]), { headers }))
+		} else if ("error" in data[i]) {
+			try { logTrpcError(data[i].error.json) } catch { }
+		} else {
+			console.error("SW: unknown trpc response format", data[i])
+		}
+	}))
+	return json
 }
 
-function fetchFromServer (request: Request, url: URL) {
+function fetchFromServer(request: Request, url: URL) {
 	return fetch(request)
 		.then(response => {
 			if (response.status === 200 || response.status === 207) {
-				const cacheResponse = response.clone()
-				handleTrpcFetchResponse(cacheResponse, url)
+				handleTrpcFetchResponse(response.clone(), url)
 			} else if (response.status > 200 && response.status < 300) {
 				console.warn("SW: unexpected 2xx response status", response)
 			}
@@ -169,9 +161,9 @@ function fetchFromServer (request: Request, url: URL) {
 		})
 }
 
-export default function trpcFetch (event: FetchEvent, request: Request, url: URL) {
+export default function trpcFetch(event: FetchEvent, request: Request, url: URL) {
 	event.respondWith(
-		trpcUrlToCacheValues(request, url, true)
+		trpcUrlCacheOrBatch(url)
 			.catch(() => fetchFromServer(request, url))
 	)
 }
