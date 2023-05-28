@@ -21,7 +21,7 @@ export const loadingStatus = (globalThis.loadingStatus || {
 // @ts-expect-error -- see above
 globalThis.loadingStatus = loadingStatus
 
-function act () {
+function act() {
 	if (loadingStatus.promise) {
 		return
 	}
@@ -38,41 +38,65 @@ function act () {
 		listFilesFromDir(".meta")
 	])
 		.then(async ([trackFiles, imageFiles]) => {
+			const BATCH_SIZE = 10
 			total = trackFiles.length + imageFiles.length
-			for (const file of trackFiles) {
-				await createTrack(file)
-				done++
-			}
-			for (const file of imageFiles) {
-				let img: { id: string } | null = null
-				const path = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file)
-				try {
-					const match = path.match(/\/([a-z0-9]*)_[0-9]{1,4}x[0-9]{1,4}\./)
-					if (!match) {
-						img = await prisma.image.findUnique({
-							where: { path },
-							select: { id: true }
-						})
-						if (!img) throw new Error("unused")
-					} else {
-						const id = match[1]
-						img = await prisma.image.findUnique({
-							where: { id },
-							select: { id: true }
-						})
-						if (!img) throw new Error("derived image without parent")
-					}
-					const stats = await stat(file)
-					if (stats.size === 0) throw new Error("empty file")
-				} catch (e) {
-					if (img) {
-						await removeImageEntry(img.id)
-					} else {
-						await unlink(file)
-						log("event", "event", "fswatcher", `removed image ${file} because it was empty or unused`)
+			{
+				const promises: Promise<any>[] = []
+				for (let i = 0; i < trackFiles.length; i++) {
+					const file = trackFiles[i]!
+					promises.push(createTrack(file))
+					if (promises.length >= BATCH_SIZE) {
+						await Promise.all(promises)
+						done += BATCH_SIZE
+						promises.length = 0
 					}
 				}
-				done++
+				await Promise.all(promises)
+				done += promises.length
+			}
+			{
+				const promises: Promise<any>[] = []
+				for (let i = 0; i < imageFiles.length; i++) {
+					promises.push(new Promise<void>(async (resolve) => {
+						const file = imageFiles[i]!
+						let img: { id: string } | null = null
+						const path = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file)
+						try {
+							const match = path.match(/\/([a-z0-9]*)_[0-9]{1,4}x[0-9]{1,4}\./)
+							if (!match) {
+								img = await prisma.image.findUnique({
+									where: { path },
+									select: { id: true }
+								})
+								if (!img) throw new Error("unused")
+							} else {
+								const id = match[1]
+								img = await prisma.image.findUnique({
+									where: { id },
+									select: { id: true }
+								})
+								if (!img) throw new Error("derived image without parent")
+							}
+							const stats = await stat(file)
+							if (stats.size === 0) throw new Error("empty file")
+						} catch (e) {
+							if (img) {
+								await removeImageEntry(img.id)
+							} else {
+								await unlink(file)
+								log("event", "event", "fswatcher", `removed image ${file} because it was empty or unused`)
+							}
+						}
+						resolve()
+					}))
+					if (promises.length >= BATCH_SIZE) {
+						await Promise.all(promises)
+						done += BATCH_SIZE
+						promises.length = 0
+					}
+				}
+				await Promise.all(promises)
+				done += promises.length
 			}
 			return [new Set(trackFiles), new Set(imageFiles)] as const
 		})
@@ -158,7 +182,7 @@ function act () {
 		})
 }
 
-export default async function cover (req: NextApiRequest, res: NextApiResponse) {
+export default async function cover(req: NextApiRequest, res: NextApiResponse) {
 	if (loadingStatus.populated) {
 		return res.status(204).end()
 	}

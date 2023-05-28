@@ -1,23 +1,23 @@
-import { readdir, stat } from "node:fs/promises"
+import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 import { env } from "env/server.mjs"
 
-export default async function listFilesFromDir(dirPath = "", fileList: string[] = []): Promise<string[]> {
-	const dir = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dirPath)
-	const dirFiles = await readdir(dir)
-	for (const file of dirFiles) {
-		if (file.startsWith(".")) {
+export default async function listFilesFromDir(relativeDirPath = "", fileList: string[] = []): Promise<string[]> {
+	const absoluteDirPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, relativeDirPath)
+	const dirEntries = await readdir(absoluteDirPath, { withFileTypes: true })
+	for (const entry of dirEntries) {
+		if (entry.name.startsWith(".")) {
 			continue
 		}
-		const relativePath = join(dirPath, file)
-		const filePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, relativePath)
-		const stats = await stat(filePath)
-		if (stats.isDirectory()) {
-			await listFilesFromDir(relativePath, fileList)
-		} else if (stats.isFile()) {
-			fileList.push(filePath)
+		if (entry.isDirectory()) {
+			const path = join(relativeDirPath, entry.name)
+			await listFilesFromDir(path, fileList)
+		} else if (entry.isFile()) {
+			const path = join(absoluteDirPath, entry.name)
+			fileList.push(path)
 		} else {
-			console.warn(`Unknown file type: ${relativePath}`)
+			const path = join(relativeDirPath, entry.name)
+			console.warn(`Unknown file type: ${path}`)
 		}
 	}
 	return fileList
