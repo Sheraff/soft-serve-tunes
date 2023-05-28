@@ -43,9 +43,10 @@ async function processBatch() {
 	batchTimeout = null
 	let endpoints = ''
 	let input = '{'
-	let i = 0
-	for (; i < Math.min(batchPriorityList.length, 20); i++) {
-		const item = batchPriorityList[i]!
+	const items: BatchItem[] = []
+	for (let i = 0; i < Math.min(batchPriorityList.length, 20); i++) {
+		const item = batchPriorityList.pop()!
+		items.push(item)
 		if (i !== 0) {
 			endpoints += ','
 			input += ','
@@ -61,7 +62,6 @@ async function processBatch() {
 	url.searchParams.set("batch", "1")
 	url.searchParams.set("input", input)
 	const promise = fetch(url)
-	const solved = batchPriorityList.splice(0, i)
 	if (batchPriorityList.length) {
 		batchTimeout = setTimeout(processBatch, 10)
 	}
@@ -69,8 +69,8 @@ async function processBatch() {
 	if (response.status === 200 || response.status === 207) {
 		handleTrpcFetchResponse(response.clone(), url)
 		const json = await response.json()
-		for (let i = 0; i < solved.length; i++) {
-			const item = solved[i]!
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i]!
 			item.resolve(new Response(JSON.stringify(json[i]), {
 				headers: {
 					"Content-Type": "application/json"
