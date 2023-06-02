@@ -8,11 +8,11 @@ export default createNextApiHandler({
   router: appRouter,
   createContext: createContext,
   batching: {
-    enabled: true, // somehow disabling this breaks the populate request
+    enabled: true,
   },
   onError: env.NODE_ENV !== "production"
     ? ({ path, error }) => {
-        console.error(`❌ tRPC failed on ${path}: ${error}`)
-      }
+      console.error(`❌ tRPC failed on ${path}: ${error}`)
+    }
     : undefined,
 })
