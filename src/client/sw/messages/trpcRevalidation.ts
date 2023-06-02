@@ -5,14 +5,18 @@ import { deserialize, serialize } from "superjson"
 import { addToBatch } from "client/sw/trpc/batch"
 declare var self: ServiceWorkerGlobalScope // eslint-disable-line no-var
 
-export default function trpcRevalidation<
-	TRouteKey extends AllRoutes
->(
-	payload: { key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]] },
-	invalidate = true,
-) {
-	setTimeout(
-		() => addToBatch(payload.key.join("."), JSON.stringify(serialize(payload.params)), true)
+type BatchRevalidationItem<TRouteKey extends AllRoutes> = {
+	payload: { key: TRouteKey, params?: RouterInputs[TRouteKey[0]][TRouteKey[1]] }
+	invalidate: boolean
+}
+
+const batchRevalidation: Array<BatchRevalidationItem<AllRoutes>> = []
+let revalidationTimeout: ReturnType<typeof setTimeout> | null = null
+
+function processRevalidation() {
+	revalidationTimeout = null
+	batchRevalidation.forEach(({ payload, invalidate }) => {
+		addToBatch(payload.key.join("."), JSON.stringify(serialize(payload.params)), true)
 			.then(async (body) => {
 				const data = JSON.parse(body)
 				const clients = await self.clients.matchAll()
@@ -24,9 +28,32 @@ export default function trpcRevalidation<
 						client.postMessage({ type: "sw-trpc-invalidation", payload })
 					}
 				})
-			}),
-		1_000,
-	)
+			})
+	})
+	batchRevalidation.length = 0
+}
+
+
+function scheduleRevalidation<
+	TRouteKey extends AllRoutes
+>(
+	payload: BatchRevalidationItem<TRouteKey>["payload"],
+	invalidate: BatchRevalidationItem<TRouteKey>["invalidate"] = true,
+) {
+	batchRevalidation.push({ payload, invalidate })
+	if (revalidationTimeout) {
+		clearTimeout(revalidationTimeout)
+	}
+	revalidationTimeout = setTimeout(processRevalidation, 1_000)
+}
+
+export default function trpcRevalidation<
+	TRouteKey extends AllRoutes
+>(
+	payload: BatchRevalidationItem<TRouteKey>["payload"],
+	invalidate: BatchRevalidationItem<TRouteKey>["invalidate"] = true,
+) {
+	scheduleRevalidation(payload, invalidate)
 }
 
 workerSocketClient.add.subscribe({
