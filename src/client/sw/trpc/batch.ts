@@ -129,7 +129,16 @@ async function handleTrpcFetchResponse(body: string, item: BatchItem, origin: st
 
 		cache.put(altUrl, new Response(body, { headers }))
 	} else if (body.startsWith(`{"error":`)) {
-		try { logTrpcError(JSON.parse(body)) } catch { }
+		try {
+			const data = JSON.parse(body)
+			if (data?.error?.json?.data?.httpStatus === 404) {
+				const cache = await caches.open(CACHES.trpc)
+				const altUrl = new URL(`/api/trpc/${item.endpoint}`, origin)
+				if (item.input) altUrl.searchParams.set("input", item.input)
+				cache.delete(altUrl)
+			}
+			logTrpcError(data.error.json)
+		} catch { }
 	} else {
 		console.error("SW: unknown trpc response format", body)
 	}
