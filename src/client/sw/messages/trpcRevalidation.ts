@@ -18,6 +18,7 @@ function processRevalidation() {
 	batchRevalidation.forEach(({ payload, invalidate }) => {
 		addToBatch(payload.key.join("."), JSON.stringify(serialize(payload.params)), true)
 			.then(async (body) => {
+				if (!body.startsWith(`{"result":`)) return
 				const data = JSON.parse(body)
 				const clients = await self.clients.matchAll()
 				clients.forEach(client => {
