@@ -18,6 +18,7 @@ function processRevalidation() {
 	batchRevalidation.forEach(({ payload, invalidate }) => {
 		addToBatch(payload.key.join("."), JSON.stringify(serialize(payload.params)), true)
 			.then(async (body) => {
+				if (!body.startsWith(`{"result":`)) return
 				const data = JSON.parse(body)
 				const clients = await self.clients.matchAll()
 				clients.forEach(client => {
@@ -33,8 +34,7 @@ function processRevalidation() {
 	batchRevalidation.length = 0
 }
 
-
-function scheduleRevalidation<
+export default function trpcRevalidation<
 	TRouteKey extends AllRoutes
 >(
 	payload: BatchRevalidationItem<TRouteKey>["payload"],
@@ -45,15 +45,6 @@ function scheduleRevalidation<
 		clearTimeout(revalidationTimeout)
 	}
 	revalidationTimeout = setTimeout(processRevalidation, 1_000)
-}
-
-export default function trpcRevalidation<
-	TRouteKey extends AllRoutes
->(
-	payload: BatchRevalidationItem<TRouteKey>["payload"],
-	invalidate: BatchRevalidationItem<TRouteKey>["invalidate"] = true,
-) {
-	scheduleRevalidation(payload, invalidate)
 }
 
 workerSocketClient.add.subscribe({
