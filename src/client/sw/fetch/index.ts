@@ -19,9 +19,9 @@ export default function onFetch(event: FetchEvent) {
 		} else if (url.pathname.startsWith("/api/auth")) { // ignore requests related to auth
 			return
 		}
-		
+
 		if (url.pathname.startsWith("/api/trpc")) {
-			trpcFetch(event, request, url)
+			trpcFetch(event, url)
 		} else if (url.pathname.startsWith("/api/file")) {
 			mediaFetch(event, request)
 		} else {
