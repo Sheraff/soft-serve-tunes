@@ -120,19 +120,34 @@ freebox > box settings > ports >
 
 - make sure apache version is >= 2.4 (`apache2 -v`)
 - enable some apache modules
-```
-a2enmod proxy
-a2enmod proxy_http
-a2enmod proxy_wstunnel
-systemctl restart apache2
-```
+  ```sh
+  a2enmod proxy
+  a2enmod proxy_http
+  a2enmod proxy_wstunnel
+  systemctl restart apache2
+  ```
 
-### http2
-```
+### enable http2
+```sh
 cp /etc/apache2/mods-available/http2.load /etc/apache2/mods-enabled/http2.load
 cp /etc/apache2/mods-available/http2.conf /etc/apache2/mods-enabled/http2.conf
 systemctl restart apache2
 ```
+
+### remove apache headers / server signature
+- edit the security config file
+  ```sh
+  nano /etc/apache2/conf-enabled/security.conf
+  ```
+- Replace the 2 following settings:
+  ```conf
+  ServerTokens Prod # remove `Server` header w/ OS version and apache version
+  ServerSignature Off # hide information from server generated pages (e.g. Internal Server Error).
+  ```
+- restart apache
+  ```sh
+  systemctl restart apache2
+  ```
 
 ### process manager
 - install pm2 `npm install pm2@latest -g`
@@ -150,7 +165,7 @@ The raspberry pi comes with a power management utility on its wifi chip. This re
 connections that are very slow / timeout if the raspberry hasn't connected to the network in 
 a while. [This forum post helped.](https://forums.raspberrypi.com/viewtopic.php?t=231125)
 - observe the "Power Management" setting w/ `iwconfig`
-  ```
+  ```yaml
   wlan0
       Power Management:on
   ```
@@ -186,7 +201,7 @@ https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-
   sudo certbot renew --dry-run # make sure the new cert is included in the auto-renew rotation
   ```
 - enable apache proxy with new local host and newly generated certificates (in a .conf file inside /etc/apache2/sites-enabled)
-  ```
+  ```conf
   <VirtualHost *:443>
         ProxyPreserveHost On
         ProxyRequests Off
@@ -213,7 +228,7 @@ https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-
   </VirtualHost>
   ```
 - not necessary, but you might also want to force http connections to upgrade to https
-  ```
+  ```conf
   # in the *:80 VirtualHost
   RewriteCond %{SERVER_NAME} =local.my-domain.com
   RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
@@ -223,13 +238,13 @@ https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-
   systemctl restart apache2
   ```
 - add the local host to .env file
-  ```
+  ```env
   NEXT_PUBLIC_INTRANET_HOST=https://local.my-domain.com
   ```
 
 ## example .conf files
 ### /etc/apache2/sites-enabled/000-default.conf
-```
+```conf
 <VirtualHost *:80>
    ErrorLog ${APACHE_LOG_DIR}/error.log
    CustomLog ${APACHE_LOG_DIR}/access.log combined
@@ -246,7 +261,7 @@ https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-
 ```
 
 ### /etc/apache2/sites-enabled/000-default-le-ssl.conf (created by certbot)
-```
+```conf
 <IfModule mod_ssl.c>
    <VirtualHost *:443>
 
@@ -299,3 +314,4 @@ https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-
         Include /etc/letsencrypt/options-ssl-apache.conf
    </VirtualHost>
 </IfModule>
+```
