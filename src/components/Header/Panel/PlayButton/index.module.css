@@ -17,9 +17,9 @@
 	display: flex;
 	flex-direction: column-reverse;
 	align-items: center;
-	gap: 8px;
+	gap: 12px;
 	position: absolute;
-	bottom: calc(100% + 8px);
+	bottom: calc(100% + 16px);
 	left: 50%;
 	transform: translateX(-50%);
 	font-size: 14px;
@@ -51,6 +51,7 @@
 	border: 1px solid currentColor;
 	opacity: 0;
 	animation: 300ms blip calc(50ms + var(--delay)) ease-out backwards;
+	pointer-events: none;
 }
 
 @keyframes blip {
