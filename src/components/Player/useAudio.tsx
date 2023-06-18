@@ -3,7 +3,7 @@ import { trpc } from "utils/trpc"
 
 type TimeVector = [number, number, number]
 
-function secondsToTimeVector (seconds: number): TimeVector {
+function secondsToTimeVector(seconds: number): TimeVector {
 	const restSeconds = seconds % 60
 	const minutes = (seconds - restSeconds) / 60
 	const restMinutes = minutes % 60
@@ -16,7 +16,7 @@ function secondsToTimeVector (seconds: number): TimeVector {
 	return floatVector
 }
 
-function arrayToTimeDisplayString (a: number, b: number, c?: number): string {
+function arrayToTimeDisplayString(a: number, b: number, c?: number): string {
 	let string =
 		a.toString().padStart(2, "0")
 		+ ":"
@@ -30,7 +30,7 @@ function arrayToTimeDisplayString (a: number, b: number, c?: number): string {
 /**
  * WARN: this will mutate the input array
  */
-function pairOfTimeVectorsToPairOfDisplayStrings (vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
+function pairOfTimeVectorsToPairOfDisplayStrings(vectors: [TimeVector, TimeVector, TimeVector]): [string, string, string] {
 	if (vectors[0][0] === 0 && vectors[1][0] === 0) {
 		for (let i = 0; i < vectors.length; i++) {
 			vectors[i] = arrayToTimeDisplayString(vectors[i]![1], vectors[i]![2]) as unknown as TimeVector // this `as` is a lie
@@ -44,7 +44,7 @@ function pairOfTimeVectorsToPairOfDisplayStrings (vectors: [TimeVector, TimeVect
 	return vectors as unknown as [string, string, string]
 }
 
-export default function useAudio (audio: RefObject<HTMLAudioElement>) {
+export default function useAudio(audio: RefObject<HTMLAudioElement>) {
 	const [seconds, setSeconds] = useState(0) // current time
 	const [totalSeconds, setTotalSeconds] = useState(0) // total time of source
 	const [playing, setPlaying] = useState(false) // follows state of DOM node
@@ -129,7 +129,7 @@ export default function useAudio (audio: RefObject<HTMLAudioElement>) {
 			if (!Number.isNaN(duration) && (src === currentSrc)) {
 				_setTotalSeconds(duration)
 				navigator.mediaSession.setPositionState({
-					duration: element.duration,
+					duration: duration,
 					playbackRate: element.playbackRate,
 					position: element.currentTime,
 				})
