@@ -16,7 +16,7 @@ const defaultPlaylist: Playlist = {
 	order: [],
 }
 
-async function playlistQueryFn (): Promise<Playlist> {
+async function playlistQueryFn(): Promise<Playlist> {
 	const cache = queryClient.getQueryData<Playlist>(["playlist"])
 	if (cache) return cache
 	const [results, meta] = await Promise.all([
@@ -45,7 +45,7 @@ async function playlistQueryFn (): Promise<Playlist> {
 /**
  * @description reads the playlist from indexedDB into react-query cache
  */
-export function usePreloadPlaylist () {
+export function usePreloadPlaylist() {
 	useEffect(() => {
 		playlistQueryFn().then((playlist) => {
 			queryClient.setQueryData<Playlist>(["playlist"], playlist)
@@ -56,7 +56,7 @@ export function usePreloadPlaylist () {
 /**
  * @description `useQuery` wrapper for local playlist
  */
-export function usePlaylist<T = Playlist> ({
+export function usePlaylist<T = Playlist>({
 	select,
 	enabled = true,
 }: {
@@ -72,7 +72,7 @@ export function usePlaylist<T = Playlist> ({
 }
 
 
-function selectDetails ({ tracks, name, id }: Playlist) {
+function selectDetails({ tracks, name, id }: Playlist) {
 	if (!tracks || !tracks.length) return {}
 
 	const credits = extractPlaylistCredits(tracks)
@@ -90,7 +90,7 @@ function selectDetails ({ tracks, name, id }: Playlist) {
 /**
  * @description `usePlaylist` wrapper that uses `extractPlaylistCredits` in the select function
  */
-export function usePlaylistExtractedDetails () {
+export function usePlaylistExtractedDetails() {
 	const { data } = usePlaylist({ select: selectDetails })
 	return data || {}
 }
@@ -98,7 +98,7 @@ export function usePlaylistExtractedDetails () {
 /**
  * @description `usePlaylist` wrapper that returns only the current track
  */
-export function useCurrentTrack () {
+export function useCurrentTrack() {
 	const { data } = usePlaylist({ select: ({ tracks, current }) => tracks.find(({ id }) => id === current) })
 	return data
 }
@@ -106,15 +106,17 @@ export function useCurrentTrack () {
 /**
  * @description stateless function to obtain the *local* playlist
  */
-export function getPlaylist () {
+export function getPlaylist() {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	return playlist
 }
 
 /**
- * @description `usePlaylist` wrapper that returns the next track based on `order`, `shuffle`, `repeat` and `online`
+ * @description `usePlaylist` wrapper that returns the next track
+ * based on `order`, `shuffle`, `repeat` and `online`. Returns `undefined`
+ * if there is no next track (or if next track is same as current).
  */
-export function useNextTrack () {
+export function useNextTrack() {
 	const repeatType = repeat.useValue()
 	const online = useIsOnline()
 	const { data: { order = [], from } = {} } = usePlaylist({
@@ -147,7 +149,7 @@ export function useNextTrack () {
 /**
  * @description `trpc.track.miniature.useQuery` wrapper that fetches the current *local* playlist track
  */
-export function useCurrentTrackDetails () {
+export function useCurrentTrackDetails() {
 	const track = useCurrentTrack()
 
 	const { data } = trpc.track.miniature.useQuery({

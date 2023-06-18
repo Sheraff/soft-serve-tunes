@@ -15,20 +15,20 @@ Predicts whether a track contains no vocals. "Ooh" and "aah" sounds are treated 
 liveness
 Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
 
-loudness
-The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typically range between -60 and 0 db.
+speechiness
+Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
+
+valence
+A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
 
 mode
 Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
 
-speechiness
-Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
-
 tempo
 The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
 
-valence
-A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+loudness
+The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typically range between -60 and 0 db.
 
 
 chatGPT:
@@ -936,3 +936,138 @@ Danceability, Energy, Acousticness, Instrumentalness, Valence
 0,0,1,0,1 "Acoustic Live Lounge"
 1,0,1,1,1 "Upbeat Instrumental Acoustic Fusion"
 0,1,0,0,0 "Raw Live Energy"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------
+
+
+
+Danceability:
+0: "Laid-back Jams"
+1: "Infectious Beats" <- good
+
+Energy:
+0: "Soothing Melodies"
+1: "High-octane Anthems" <- good
+
+Acousticness:
+0: "Electrifying Sounds"
+1: "Unplugged Serenade" <- good
+
+Instrumentalness:
+0: "Vocal Showcase" <- bad
+0.5: "Harmonic Fusion" <- bad
+1: "Instrumental Odyssey" <- good
+
+Liveness:
+0: "Studio Masterpieces" <- bad
+1: "Live Experience"
+
+Valence:
+0: "Melancholic Moods" <- good
+1: "Uplifting Vibes"
+
+Speechiness:
+0: "Melodic Symphony" <- bad
+0.4: "Lyrically Versatile" <- bad
+0.8: "Spoken Word Journey" <- bad
+
+
+----
+
+
+Danceability 0, Energy 0:
+"Mellow Groove Haven"
+
+Danceability 0, Energy 1:
+"Chilled Dancefloor"
+
+Danceability 1, Energy 0:
+"Rhythmic Serenity"
+
+Danceability 1, Energy 1:
+"Energetic Party Anthems"
+
+Danceability 0, Acousticness 0:
+"Electric Chillout"
+
+Danceability 0, Acousticness 1:
+"Dreamy Acoustic Fusion"
+
+Danceability 1, Acousticness 0:
+"Rhythm-Fueled Melodies"
+
+Danceability 1, Acousticness 1:
+"Acoustic Dance Explosion"
+
+Danceability 0, Instrumentalness 0:
+"Chill Vocal Showcase"
+
+Danceability 0, Instrumentalness 0.5:
+"Rhythmic Instrumental Blend"
+
+Danceability 0, Instrumentalness 1:
+"Minimalist Instrumental Journey"
+
+Danceability 1, Instrumentalness 0:
+"Vocal-Packed Dance Delights"
+
+Danceability 1, Instrumentalness 0.5:
+"Eclectic Instrumental Mix"
+
+Danceability 1, Instrumentalness 1:
+"Dance-Infused Instrumental Bliss"
+
+Danceability 0, Liveness 0:
+"Studio-Calibrated Chill"
+
+Danceability 0, Liveness 1:
+"Live-Inspired Laid-back Beats"
+
+Danceability 1, Liveness 0:
+"Groove-Packed Studio Anthems"
+
+Danceability 1, Liveness 1:
+"Live Dance Extravaganza"
+
+Danceability 0, Valence 0:
+"Somber Reflections"
+
+Danceability 0, Valence 1:
+"Upbeat Chill Session"
+
+Danceability 1, Valence 0:
+"Euphoric Melancholy"
+
+Danceability 1, Valence 1:
+"Joyful Dance Celebration"
+
+Danceability 0, Speechiness 0:
+"Melodic Chillout Mix"
+
+Danceability 0, Speechiness 0.4:
+"Chilled Songs and Poetry"
+
+Danceability 0, Speechiness 0.8:
+"Prose-Infused Laid-back Beats"
+
+Danceability 1, Speechiness 0:
+"Catchy Dance Melodies"
+
+Danceability 1, Speechiness 0.4:
+"Lyrical Dance Rhythms"
+
+Danceability 1, Speechiness 0.8:
+"Spoken Word Dance Fiesta"

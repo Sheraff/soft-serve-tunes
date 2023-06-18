@@ -5,11 +5,12 @@ import shuffleArray from "utils/shuffleArray"
 import { modifyInIndexedDB } from "../utils"
 import { type Playlist, type PlaylistMeta } from "./types"
 import { queryClient } from "utils/trpc"
+import { autoplay } from "components/Player/Audio"
 
 /**
  * @description changes the current track in the *local* playlist
  */
-export async function setPlaylistCurrent (id: string) {
+export async function setPlaylistCurrent(id: string) {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	if (!playlist) {
 		throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")
@@ -27,7 +28,7 @@ export async function setPlaylistCurrent (id: string) {
 /**
  * @description changes the current track in the *local* playlist
  */
-export async function nextPlaylistIndex (audio: RefObject<HTMLAudioElement>) {
+export async function nextPlaylistIndex(audio: RefObject<HTMLAudioElement>) {
 	const repeatType = repeat.getValue()
 	if (repeatType === 2) {
 		if (audio.current) {
@@ -66,6 +67,7 @@ export async function nextPlaylistIndex (audio: RefObject<HTMLAudioElement>) {
 	})()
 
 	if (newIndex === null) {
+		autoplay.setState(false)
 		return false
 	}
 
@@ -92,7 +94,7 @@ export async function nextPlaylistIndex (audio: RefObject<HTMLAudioElement>) {
 /**
  * @description changes the current track in the *local* playlist
  */
-export async function prevPlaylistIndex () {
+export async function prevPlaylistIndex() {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	if (!playlist) {
 		throw new Error("trying to change \"playlist\" query, but query doesn't exist yet")

@@ -6,7 +6,7 @@ import { useCachedTrack } from "client/sw/useSWCached"
 import { trpc } from "utils/trpc"
 import { getCoverUrl } from "utils/getCoverUrl"
 
-export default memo(function NextTrack ({
+export default memo(function NextTrack({
 	audio,
 	id,
 }: {
@@ -22,7 +22,6 @@ export default memo(function NextTrack ({
 		if (!element) return
 		const controller = new AbortController()
 		element.addEventListener("ended", () => {
-			console.log("ended", nextItem)
 			if (nextItem) {
 				element.setAttribute("autoplay", "true")
 				element.src = `/api/file/${nextItem.id}`

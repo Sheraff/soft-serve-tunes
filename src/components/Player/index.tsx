@@ -29,7 +29,7 @@ export const shuffle = suspensePersistedState<boolean>("shuffle", false)
  */
 export const repeat = suspensePersistedState<0 | 1 | 2>("repeat", 0)
 
-function RightTimeSlot ({
+function RightTimeSlot({
 	displayRemainingTime,
 	displayTotalTime,
 }: {
@@ -54,7 +54,7 @@ function RightTimeSlot ({
 	)
 }
 
-function ShuffleButton () {
+function ShuffleButton() {
 	const isShuffle = shuffle.useValue()
 
 	const onClick = useCallback(() => {
@@ -72,7 +72,7 @@ function ShuffleButton () {
 	)
 }
 
-function RepeatButton () {
+function RepeatButton() {
 	const [repeatType, setRepeatType] = repeat.useState()
 
 	const cycleRepeatTypes = useCallback(() => {
@@ -92,7 +92,7 @@ function RepeatButton () {
 	)
 }
 
-export default memo(function Player () {
+export default memo(function Player() {
 	const audio = useRef<HTMLAudioElement>(null)
 	const { data: playlist } = usePlaylist()
 	const item = useCurrentTrack()
