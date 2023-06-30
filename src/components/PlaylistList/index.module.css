@@ -82,4 +82,5 @@
 .desc {
 	grid-area: desc;
 	line-height: 1.4;
+	text-wrap: balance;
 }
