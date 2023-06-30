@@ -20,7 +20,12 @@ type GenreListItem = {
 	name?: string
 }
 
-export function GenreItem ({
+function selectGenreWithArtists(genre: RouterOutputs["genre"]["miniature"]) {
+	const artists = genre.artists.filter(({ coverId }) => coverId).reverse()
+	return { ...genre, artists }
+}
+
+export function GenreItem({
 	genre,
 	onSelect,
 	onClick,
@@ -36,10 +41,7 @@ export function GenreItem ({
 	forceAvailable?: boolean
 }) {
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
-		select (data) {
-			if (!data?.artists) return data
-			return { ...data, artists: data.artists.filter(({ coverId }) => coverId).reverse() }
-		},
+		select: selectGenreWithArtists,
 	})
 
 	const item = useRef<HTMLButtonElement>(null)
@@ -121,7 +123,7 @@ export function GenreItem ({
 	)
 }
 
-export default function GenreList ({
+export default function GenreList({
 	genres,
 	onSelect,
 	scrollable,
@@ -202,7 +204,7 @@ export default function GenreList ({
 	)
 }
 
-function ResizingContainer ({
+function ResizingContainer({
 	children,
 	className,
 }: {
