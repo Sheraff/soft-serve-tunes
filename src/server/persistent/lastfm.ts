@@ -11,6 +11,7 @@ import { notArtistName } from "server/db/createTrack"
 import similarStrings from "utils/similarStrings"
 import { computeAlbumCover, computeArtistCover, computeTrackCover } from "server/db/computeCover"
 import { socketServer } from "utils/typedWs/server"
+import { zSafeDate } from "utils/zodSafeDate"
 
 const lastFmErrorSchema = z
 	.object({
@@ -79,7 +80,7 @@ const lastFmAlbumSchema = z
 			id: z.string().optional(),
 			mbid: z.string().optional(),
 			url: z.string(),
-			releasedate: z.string().optional().transform(Date),
+			releasedate: zSafeDate,
 			image: z.array(lastFmImageSchema),
 			listeners: z.string().transform(Number),
 			playcount: z.string().transform(Number),
@@ -192,7 +193,7 @@ class LastFM {
 		this.#queue = new Queue(LastFM.RATE_LIMIT, { wait: true })
 	}
 
-	async #processWaitlist () {
+	async #processWaitlist() {
 		if (this.#waitlist.length === 1) {
 			while (this.#waitlist.length) {
 				try {
@@ -207,27 +208,27 @@ class LastFM {
 		}
 	}
 
-	async correctArtist (artist: string) {
+	async correctArtist(artist: string) {
 		const promise = new Promise<string | false>(resolve => this.#waitlist.push(() => this.#correctArtist(artist).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async correctTrack (artist: string, track: string) {
+	async correctTrack(artist: string, track: string) {
 		const promise = new Promise<string>(resolve => this.#waitlist.push(() => this.#correctTrack(artist, track).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findTrack (id: string) {
+	async findTrack(id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findTrack(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findArtist (id: string) {
+	async findArtist(id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findArtist(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
 	}
-	async findAlbum (id: string) {
+	async findAlbum(id: string) {
 		const promise = new Promise<boolean>(resolve => this.#waitlist.push(() => this.#findAlbum(id).then(resolve)))
 		this.#processWaitlist()
 		return promise
@@ -237,7 +238,7 @@ class LastFM {
 	#pastResponses = new Map<string, any>()
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	#purgeStore () {
+	#purgeStore() {
 		if (!this.#purgeStoreTimeout) {
 			this.#purgeStoreTimeout = setTimeout(() => {
 				this.#purgeStoreTimeout = null
@@ -252,7 +253,7 @@ class LastFM {
 		}
 	}
 
-	async fetch<T extends KnownLastFmSchema> (url: URL | string, schema: T): Promise<z.infer<T>> {
+	async fetch<T extends KnownLastFmSchema>(url: URL | string, schema: T): Promise<z.infer<T>> {
 		const string = url.toString()
 		if (this.#pastResponses.has(string)) {
 			return this.#pastResponses.get(string)
@@ -281,7 +282,7 @@ class LastFM {
 		return json
 	}
 
-	async #correctArtist (artist: string) {
+	async #correctArtist(artist: string) {
 		const url = makeArtistCorrectionUrl(sanitizeString(artist))
 		try {
 			const lastfm = await this.fetch(url, lastFmCorrectionArtistSchema)
@@ -294,7 +295,7 @@ class LastFM {
 		return false
 	}
 
-	async #correctTrack (artist: string, track: string) {
+	async #correctTrack(artist: string, track: string) {
 		const url = makeTrackCorrectionUrl(sanitizeString(artist), sanitizeString(track))
 		try {
 			const lastfm = await this.fetch(url, lastFmCorrectionTrackSchema)
@@ -309,7 +310,7 @@ class LastFM {
 
 	#running = new Set<string>()
 
-	async #findTrack (id: string) {
+	async #findTrack(id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -469,7 +470,7 @@ class LastFM {
 		return true
 	}
 
-	async #searchTrackUrls (trackName: string, albumName: string, artistName: string) {
+	async #searchTrackUrls(trackName: string, albumName: string, artistName: string) {
 		const url = makeTrackSearchUrl({ track: trackName, album: albumName })
 		const lastfm = await this.fetch(url, lastFmTrackSearch)
 		const albumsFound = lastfm.results?.trackmatches?.track || []
@@ -491,7 +492,7 @@ class LastFM {
 		return urls
 	}
 
-	async #findArtist (id: string) {
+	async #findArtist(id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -636,7 +637,7 @@ class LastFM {
 		return true
 	}
 
-	async #findAlbum (id: string) {
+	async #findAlbum(id: string) {
 		if (this.#running.has(id)) {
 			return false
 		}
@@ -821,7 +822,7 @@ class LastFM {
 	}
 }
 
-function makeApiUrl () {
+function makeApiUrl() {
 	const url = new URL("/2.0", "http://ws.audioscrobbler.com")
 	url.searchParams.set("format", "json")
 	url.searchParams.set("api_key", env.LAST_FM_API_KEY)
@@ -829,14 +830,14 @@ function makeApiUrl () {
 	return url
 }
 
-function makeArtistCorrectionUrl (artist: string) {
+function makeArtistCorrectionUrl(artist: string) {
 	const url = makeApiUrl()
 	url.searchParams.set("method", "artist.getcorrection")
 	url.searchParams.set("artist", artist)
 	return url
 }
 
-function makeTrackCorrectionUrl (artist: string, track: string) {
+function makeTrackCorrectionUrl(artist: string, track: string) {
 	const url = makeApiUrl()
 	url.searchParams.set("method", "track.getcorrection")
 	url.searchParams.set("artist", artist)
@@ -844,7 +845,7 @@ function makeTrackCorrectionUrl (artist: string, track: string) {
 	return url
 }
 
-function makeTrackUrl (params: {
+function makeTrackUrl(params: {
 	artist: string,
 	track: string,
 } | {
@@ -861,7 +862,7 @@ function makeTrackUrl (params: {
 	return url
 }
 
-function makeTrackSearchUrl (params: {
+function makeTrackSearchUrl(params: {
 	track: string,
 	album: string,
 }) {
@@ -872,7 +873,7 @@ function makeTrackSearchUrl (params: {
 	return url
 }
 
-function makeAlbumUrl (params: {
+function makeAlbumUrl(params: {
 	artist: string,
 	album: string,
 } | {
@@ -889,7 +890,7 @@ function makeAlbumUrl (params: {
 	return url
 }
 
-function makeAlbumSearchUrl (params: {
+function makeAlbumSearchUrl(params: {
 	album: string,
 }) {
 	const url = makeApiUrl()
@@ -898,7 +899,7 @@ function makeAlbumSearchUrl (params: {
 	return url
 }
 
-function makeArtistUrl (params: {
+function makeArtistUrl(params: {
 	artist: string,
 } | {
 	mbid: string,
@@ -913,7 +914,7 @@ function makeArtistUrl (params: {
 	return url
 }
 
-async function findConnectingArtistForTrack (trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
+async function findConnectingArtistForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.artist?.url) {
 		return undefined
 	}
@@ -927,7 +928,7 @@ async function findConnectingArtistForTrack (trackData: Exclude<z.infer<typeof l
 	return artist.id
 }
 
-async function findConnectingAlbumForTrack (trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
+async function findConnectingAlbumForTrack(trackData: Exclude<z.infer<typeof lastFmTrackSchema>["track"], undefined>) {
 	if (!trackData.album?.url) {
 		return undefined
 	}
@@ -941,7 +942,7 @@ async function findConnectingAlbumForTrack (trackData: Exclude<z.infer<typeof la
 	return album.id
 }
 
-async function findConnectingTracksForAlbum (albumData: Exclude<z.infer<typeof lastFmAlbumSchema>["album"], undefined>) {
+async function findConnectingTracksForAlbum(albumData: Exclude<z.infer<typeof lastFmAlbumSchema>["album"], undefined>) {
 	const tracks = albumData.tracks?.track
 	if (!tracks || !Array.isArray(tracks) || !tracks.length) {
 		return []

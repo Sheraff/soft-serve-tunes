@@ -28,7 +28,7 @@ type FPcalcResult = {
 	duration: number
 }
 
-function execFPcalc (file: string, retry?: number): Promise<FPcalcResult> {
+function execFPcalc(file: string, retry?: number): Promise<FPcalcResult> {
 	return new Promise((resolve, reject) => {
 		const args = [file, "-json"]
 		if (retry) {
@@ -93,7 +93,7 @@ ERROR_UNKNOWN_APPLICATION = 17
 ERROR_FINGERPRINT_NOT_FOUND = 18
 */
 const acoustiIdLookupError = z.object({
-	status: z.enum(["error"]),
+	status: z.literal("error"),
 	error: z.object({
 		code: z.number(),
 		message: z.string(),
@@ -123,7 +123,7 @@ const acoustIdRecordingSchema = z.object({
 })
 
 const acoustiIdLookupSchema = z.object({
-	status: z.enum(["ok"]),
+	status: z.literal("ok"),
 	results: z.array(z.object({
 		score: z.number().min(0).max(1),
 		id: z.string(), // this is an acoustid id, not a musicbrainz id like the other ones
@@ -162,7 +162,7 @@ class AcoustId {
 		this.#musicBrainz = new MusicBrainz()
 	}
 
-	async identify (absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">, retry?: number): Promise<AugmentedResult | null> {
+	async identify(absolutePath: string, metadata: Pick<IAudioMetadata, "common" | "format">, retry?: number): Promise<AugmentedResult | null> {
 		log("info", "fetch", "acoustid", `${metadata.common.title} (${absolutePath})`)
 		const fingerprint = await this.#fingerprintFile(absolutePath, retry)
 		const data = await this.#identifyFingerprint(fingerprint)
@@ -177,11 +177,11 @@ class AcoustId {
 		return augmented
 	}
 
-	async #fingerprintFile (absolutePath: string, retry?: number) {
+	async #fingerprintFile(absolutePath: string, retry?: number) {
 		return execFPcalc(absolutePath, retry)
 	}
 
-	async #fetch (body: `?${string}`) {
+	async #fetch(body: `?${string}`) {
 		const stored = await prisma.acoustidStorage.findFirst({ where: { search: body } })
 		if (stored) {
 			try {
@@ -230,7 +230,7 @@ class AcoustId {
 		return parsed
 	}
 
-	async #identifyFingerprint (fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
+	async #identifyFingerprint(fpCalcResult: FPcalcResult): Promise<z.infer<typeof acoustiIdLookupSchema>> {
 		const searchParams = new URLSearchParams()
 		searchParams.append("client", env.ACOUST_ID_API_KEY)
 		searchParams.append("format", "json")
@@ -267,29 +267,29 @@ class AcoustId {
 		"undefined": 9,
 	}
 
-	#getTypeValue (type: string | undefined): number {
+	#getTypeValue(type: string | undefined): number {
 		if (!type) return AcoustId.TYPE_PRIORITY.undefined
 		if (this.#isTypeKey(type)) return AcoustId.TYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown TYPE_PRIORITY ${type}`)
 		return AcoustId.TYPE_PRIORITY.undefined
 	}
 
-	#isTypeKey (type: string): type is keyof typeof AcoustId.TYPE_PRIORITY {
+	#isTypeKey(type: string): type is keyof typeof AcoustId.TYPE_PRIORITY {
 		return AcoustId.TYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	#getSubTypeValue (type: string | undefined): number {
+	#getSubTypeValue(type: string | undefined): number {
 		if (!type) return AcoustId.SUBTYPE_PRIORITY.undefined
 		if (this.#isSubTypeKey(type)) return AcoustId.SUBTYPE_PRIORITY[type]
 		log("warn", "warn", "acoustid", `encountered an unknown SUBTYPE_PRIORITY ${type}`)
 		return AcoustId.SUBTYPE_PRIORITY.undefined
 	}
 
-	#isSubTypeKey (type: string): type is keyof typeof AcoustId.SUBTYPE_PRIORITY {
+	#isSubTypeKey(type: string): type is keyof typeof AcoustId.SUBTYPE_PRIORITY {
 		return AcoustId.SUBTYPE_PRIORITY.hasOwnProperty(type)
 	}
 
-	async #pick (results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, "common" | "format">) {
+	async #pick(results: z.infer<typeof acoustiIdLookupSchema>["results"], metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (results.length === 0) {
 			log("warn", "404", "acoustid", `No match obtained for ${metadata.common.title}`)
 			return null
@@ -483,7 +483,7 @@ class AcoustId {
 		return albums
 	}
 
-	async #musicBrainzComplete (result: Candidate): Promise<Candidate> {
+	async #musicBrainzComplete(result: Candidate): Promise<Candidate> {
 		const data = await this.#musicBrainz.fetch("recording", result.id)
 		if (!data) return result
 		result.title = data.title
@@ -519,7 +519,7 @@ class AcoustId {
 	}
 
 	// run all names through MusicBrainz to avoid getting ≠ aliases for the same entity
-	async #musicBrainzValidation (result: AugmentedResult): Promise<AugmentedResult> {
+	async #musicBrainzValidation(result: AugmentedResult): Promise<AugmentedResult> {
 		{
 			const data = await this.#musicBrainz.fetch("recording", result.id)
 			if (data) {
@@ -565,7 +565,7 @@ class AcoustId {
 	}
 
 	// handle cases where there is a single track whose main artist is not that of the rest of the album
-	async #reorderArtist (result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> } & { score: number }, metadata: Pick<IAudioMetadata, "common" | "format">) {
+	async #reorderArtist(result: Omit<z.infer<typeof acoustIdRecordingSchema>, "releasegroups"> & { album?: z.infer<typeof acoustIdReleasegroupSchema> } & { score: number }, metadata: Pick<IAudioMetadata, "common" | "format">) {
 		if (!result.artists || result.artists.length <= 1) {
 			return
 		}
