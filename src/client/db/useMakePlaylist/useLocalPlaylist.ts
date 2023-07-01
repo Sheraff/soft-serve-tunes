@@ -95,11 +95,15 @@ export function usePlaylistExtractedDetails() {
 	return data || {}
 }
 
+function selectCurrent({ tracks, current }: Playlist) {
+	return tracks.find(({ id }) => id === current)
+}
+
 /**
  * @description `usePlaylist` wrapper that returns only the current track
  */
 export function useCurrentTrack() {
-	const { data } = usePlaylist({ select: ({ tracks, current }) => tracks.find(({ id }) => id === current) })
+	const { data } = usePlaylist({ select: selectCurrent })
 	return data
 }
 
@@ -109,6 +113,11 @@ export function useCurrentTrack() {
 export function getPlaylist() {
 	const playlist = queryClient.getQueryData<Playlist>(["playlist"])
 	return playlist
+}
+
+function selectNextAndOrder({ current, order }: Playlist) {
+	const index = order.findIndex((id) => id === current)
+	return { order, from: index + 1 }
 }
 
 /**
@@ -121,7 +130,7 @@ export function useNextTrack() {
 	const online = useIsOnline()
 	const { data: { order = [], from } = {} } = usePlaylist({
 		enabled: !online,
-		select: ({ order, current }) => ({ order, from: order.findIndex((id) => id === current) + 1 }),
+		select: selectNextAndOrder,
 	})
 	const { data: offlineNext } = useNextCachedTrack({
 		enabled: !online,

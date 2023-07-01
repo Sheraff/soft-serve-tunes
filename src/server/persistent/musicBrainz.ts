@@ -3,6 +3,18 @@ import Queue from "utils/Queue"
 import { z } from "zod"
 import log from "utils/logger"
 
+const zSafeDate = z
+	.any()
+	.optional()
+	.transform((dateString) => {
+		if (!dateString || typeof dateString !== 'string') return undefined
+		const date = new Date(dateString)
+		if (!z.date().safeParse(date).success) {
+			return undefined
+		}
+		return date
+	})
+
 // https://musicbrainz.org/doc/MusicBrainz_API#inc.3D
 
 const musicBrainzErrorSchema = z.object({
@@ -25,7 +37,7 @@ const musicBrainzReleaseGroupSchema = z.object({
 	genres: z.array(musicBrainzGenreSchema),
 	releases: z.array(z.object({
 		["text-representation"]: textRepresentationSchema,
-		date: z.coerce.date().optional(),
+		date: zSafeDate,
 		title: z.string(),
 	})),
 })
@@ -64,7 +76,7 @@ const musicBrainzRecordingSchema = z.object({
 			"artist-credit": z.array(z.object({
 				artist: musicBrainzArtistSchema,
 			})),
-			"first-release-date": z.coerce.date().optional(),
+			"first-release-date": zSafeDate,
 		}),
 	})),
 	"artist-credit": z.array(z.object({
@@ -93,7 +105,7 @@ export default class MusicBrainz {
 	#pastRequests: string[] = []
 	#pastResponses: Map<string, unknown> = new Map()
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	async #makeRequest (url: string): Promise<unknown> {
+	async #makeRequest(url: string): Promise<unknown> {
 		const cached = this.#pastResponses.get(url)
 		if (cached) {
 			return cached
@@ -135,7 +147,7 @@ export default class MusicBrainz {
 		return json as unknown
 	}
 
-	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS> (type: T, id: string): Promise<undefined | z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
+	async fetch<T extends keyof typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS>(type: T, id: string): Promise<undefined | z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[T]>> {
 		const url = `https://musicbrainz.org/ws/2/${type}/${id}`
 		const params = new URLSearchParams()
 		if (type === "recording") {
@@ -153,16 +165,19 @@ export default class MusicBrainz {
 			MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[type],
 			musicBrainzErrorSchema,
 		])
-		const parsed = schema.parse(json)
-		if ("error" in parsed) {
+		const parsed = schema.safeParse(json)
+		if (!parsed.success) {
 			log("error", "500", "acoustid", `${url}: ${parsed.error}`)
-			throw new Error(`MusicBrainz error: ${parsed.error}`)
-		} else {
-			return parsed as z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[typeof type]>
+			throw new Error(`MusicBrainz zod error: ${parsed.error}`)
 		}
+		if ("error" in parsed.data) {
+			log("error", "500", "acoustid", `${url}: ${parsed.data.error}`)
+			throw new Error(`MusicBrainz error: ${parsed.data.error}`)
+		}
+		return parsed.data as z.infer<typeof MusicBrainz.MUSIC_BRAINZ_TYPED_SCHEMAS[typeof type]>
 	}
 
-	preferredArtistName (artist: z.infer<typeof musicBrainzArtistSchema>): string {
+	preferredArtistName(artist: z.infer<typeof musicBrainzArtistSchema>): string {
 		if (!artist.aliases) {
 			return artist.name
 		}
@@ -210,7 +225,7 @@ export default class MusicBrainz {
 		return artist.name
 	}
 
-	preferredTrackName (recording: z.infer<typeof musicBrainzRecordingSchema>): string {
+	preferredTrackName(recording: z.infer<typeof musicBrainzRecordingSchema>): string {
 		if (recording.releases.length === 0) {
 			return recording.title
 		}
@@ -240,7 +255,7 @@ export default class MusicBrainz {
 		return latinReleases[0]!.media[0]!.tracks[0]!.title
 	}
 
-	preferredAlbumName (releaseGroup: z.infer<typeof musicBrainzReleaseGroupSchema>): string {
+	preferredAlbumName(releaseGroup: z.infer<typeof musicBrainzReleaseGroupSchema>): string {
 		if (releaseGroup.releases.length === 0) {
 			return releaseGroup.title
 		}
@@ -265,7 +280,7 @@ export default class MusicBrainz {
 	}
 }
 
-function countLatinCharacters (str: string): number {
+function countLatinCharacters(str: string): number {
 	let count = 0
 	for (const char of str) {
 		if (char.match(/[a-z]/i)) {

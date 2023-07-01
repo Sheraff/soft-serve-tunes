@@ -11,7 +11,11 @@ import TracksByTraitSuggestion from "./ByTrait/TrackSuggestion"
 import styles from "./index.module.css"
 import TrackList from "components/TrackList"
 
-export default memo(function Suggestions () {
+function selectFirstFour<T>(arr: T[]) {
+	return arr.slice(0, 4)
+}
+
+export default memo(function Suggestions() {
 
 	const enabled = useIsHome()
 
@@ -25,9 +29,7 @@ export default memo(function Suggestions () {
 	const { data: playlists = [], isLoading: playlistLoading } = trpc.playlist.searchable.useQuery(undefined, {
 		enabled,
 		keepPreviousData: true,
-		select (playlists) {
-			return playlists.slice(0, 4)
-		}
+		select: selectFirstFour,
 	})
 
 	return (
