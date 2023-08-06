@@ -16,16 +16,16 @@ const audiodbArtistSchema = z.object({
 			idArtist: z.string().transform(Number),
 			strArtist: z.string(),
 			strArtistAlternate: z.string().nullable().optional(),
-			intFormedYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-			intBornYear: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
-			strBiographyEN: z.union([z.string().optional(), z.null()]),
-			strArtistThumb: z.union([z.string().optional(), z.null()]),
-			strArtistLogo: z.union([z.string().optional(), z.null()]),
-			strArtistCutout: z.union([z.string().optional(), z.null()]),
-			strArtistClearart: z.union([z.string().optional(), z.null()]),
-			strArtistWideThumb: z.union([z.string().optional(), z.null()]),
-			strArtistBanner: z.union([z.string().optional(), z.null()]),
+			intFormedYear: z.string().optional().nullable().transform(val => val ? parseInt(val) : undefined),
+			intBornYear: z.string().optional().nullable().transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.string().optional().nullable(),
+			strBiographyEN: z.string().optional().nullable(),
+			strArtistThumb: z.string().optional().nullable(),
+			strArtistLogo: z.string().optional().nullable(),
+			strArtistCutout: z.string().optional().nullable(),
+			strArtistClearart: z.string().optional().nullable(),
+			strArtistWideThumb: z.string().optional().nullable(),
+			strArtistBanner: z.string().optional().nullable(),
 		}))
 })
 
@@ -35,23 +35,23 @@ const audiodbAlbumSchema = z.object({
 			idAlbum: z.string().transform(Number),
 			idArtist: z.string().transform(Number),
 			strAlbum: z.string(),
-			intYearReleased: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
-			strDescriptionEN: z.union([z.string().optional(), z.null()]),
-			strAlbumThumb: z.union([z.string().optional(), z.null()]),
-			strAlbumThumbHQ: z.union([z.string().optional(), z.null()]),
-			strAlbumCDart: z.union([z.string().optional(), z.null()]),
-			strAllMusicID: z.union([z.string().optional(), z.null()]),
-			strBBCReviewID: z.union([z.string().optional(), z.null()]),
-			strRateYourMusicID: z.union([z.string().optional(), z.null()]),
-			strDiscogsID: z.union([z.string().optional(), z.null()]),
-			strWikidataID: z.union([z.string().optional(), z.null()]),
-			strWikipediaID: z.union([z.string().optional(), z.null()]),
-			strGeniusID: z.union([z.string().optional(), z.null()]),
-			strLyricWikiID: z.union([z.string().optional(), z.null()]),
-			strMusicMozID: z.union([z.string().optional(), z.null()]),
-			strItunesID: z.union([z.string().optional(), z.null()]),
-			strAmazonID: z.union([z.string().optional(), z.null()]),
+			intYearReleased: z.string().optional().nullable().transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.string().optional().nullable(),
+			strDescriptionEN: z.string().optional().nullable(),
+			strAlbumThumb: z.string().optional().nullable(),
+			strAlbumThumbHQ: z.string().optional().nullable(),
+			strAlbumCDart: z.string().optional().nullable(),
+			strAllMusicID: z.string().optional().nullable(),
+			strBBCReviewID: z.string().optional().nullable(),
+			strRateYourMusicID: z.string().optional().nullable(),
+			strDiscogsID: z.string().optional().nullable(),
+			strWikidataID: z.string().optional().nullable(),
+			strWikipediaID: z.string().optional().nullable(),
+			strGeniusID: z.string().optional().nullable(),
+			strLyricWikiID: z.string().optional().nullable(),
+			strMusicMozID: z.string().optional().nullable(),
+			strItunesID: z.string().optional().nullable(),
+			strAmazonID: z.string().optional().nullable(),
 		}))
 })
 
@@ -61,12 +61,12 @@ const audiodbTrackSchema = z.object({
 			idTrack: z.string().transform(Number),
 			idAlbum: z.string().transform(Number),
 			strTrack: z.string(),
-			intDuration: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-			strGenre: z.union([z.string().optional(), z.null()]),
-			strTrackThumb: z.union([z.string().optional(), z.null()]),
-			strMusicVid: z.union([z.string().optional(), z.null()]),
-			intTrackNumber: z.union([z.string().optional(), z.null()]).transform(val => val ? parseInt(val) : undefined),
-			strMusicBrainzID: z.union([z.string().optional(), z.null()]),
+			intDuration: z.string().optional().nullable().transform(val => val ? parseInt(val) : undefined),
+			strGenre: z.string().optional().nullable(),
+			strTrackThumb: z.string().optional().nullable(),
+			strMusicVid: z.string().optional().nullable(),
+			intTrackNumber: z.string().optional().nullable().transform(val => val ? parseInt(val) : undefined),
+			strMusicBrainzID: z.string().optional().nullable(),
 		}))
 })
 class AudioDb {
@@ -91,7 +91,7 @@ class AudioDb {
 		"searchtrack": audiodbTrackSchema, // ?s=artist&t=track
 	} as const
 
-	async #audiodbFetch (endpoint: keyof typeof AudioDb["ENDPOINT_SCHEMAS"], ...params: [string, string][]) {
+	async #audiodbFetch(endpoint: keyof typeof AudioDb["ENDPOINT_SCHEMAS"], ...params: [string, string][]) {
 		const url = new URL(`/api/v1/json/${env.AUDIO_DB_API_KEY}/${endpoint}.php`, "https://theaudiodb.com")
 		params.forEach(([key, value]) => {
 			url.searchParams.append(key, value)
@@ -108,7 +108,7 @@ class AudioDb {
 	}
 
 	#runningArtists = new Set<string>()
-	async fetchArtist (id: string) {
+	async fetchArtist(id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningArtists.has(id)) return
 		this.#runningArtists.add(id)
@@ -121,7 +121,7 @@ class AudioDb {
 		this.#runningArtists.delete(id)
 	}
 
-	async #fetchArtist (id: string) {
+	async #fetchArtist(id: string) {
 		const artist = await retryable(() => prisma.artist.findUnique({
 			where: { id },
 			select: {
@@ -231,7 +231,7 @@ class AudioDb {
 	}
 
 	#runningAlbums = new Set<string>()
-	async fetchAlbum (id: string) {
+	async fetchAlbum(id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningAlbums.has(id)) return
 		this.#runningAlbums.add(id)
@@ -244,7 +244,7 @@ class AudioDb {
 		this.#runningAlbums.delete(id)
 	}
 
-	async #fetchAlbum (id: string) {
+	async #fetchAlbum(id: string) {
 		const album = await retryable(() => prisma.album.findUnique({
 			where: { id },
 			select: {
@@ -341,7 +341,7 @@ class AudioDb {
 	}
 
 	#runningTracks = new Set<string>()
-	async fetchTrack (id: string) {
+	async fetchTrack(id: string) {
 		if (!this.#hasKey) return
 		if (this.#runningTracks.has(id)) return
 		this.#runningTracks.add(id)
@@ -354,7 +354,7 @@ class AudioDb {
 		this.#runningTracks.delete(id)
 	}
 
-	async #fetchTrack (id: string) {
+	async #fetchTrack(id: string) {
 		const track = await retryable(() => prisma.track.findUnique({
 			where: { id },
 			select: {
@@ -520,7 +520,7 @@ async function keysAndInputToImageIds<
 	Key extends AllKeys[keyof AllKeys] & string,
 	Input extends { [key in Key]?: string | number | null | undefined } & { [key in Exclude<string, Key>]: unknown },
 	Result extends { [key in keyof Pick<Input, Key>]: string }
-> (input: Input, keys: AllKeys): Promise<Result> {
+>(input: Input, keys: AllKeys): Promise<Result> {
 	const imageIds = await Promise.allSettled(keys.map(async (key) => {
 		const url = input[key] as string | undefined
 		if (url) {

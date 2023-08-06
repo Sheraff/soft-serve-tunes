@@ -2,18 +2,7 @@ import { env } from "env/server.mjs"
 import Queue from "utils/Queue"
 import { z } from "zod"
 import log from "utils/logger"
-
-const zSafeDate = z
-	.any()
-	.optional()
-	.transform((dateString) => {
-		if (!dateString || typeof dateString !== 'string') return undefined
-		const date = new Date(dateString)
-		if (!z.date().safeParse(date).success) {
-			return undefined
-		}
-		return date
-	})
+import { zSafeDate } from "utils/zodSafeDate"
 
 // https://musicbrainz.org/doc/MusicBrainz_API#inc.3D
 
@@ -58,7 +47,7 @@ const musicBrainzArtistSchema = z.object({
 const musicBrainzRecordingSchema = z.object({
 	id: z.string(),
 	title: z.string(),
-	length: z.union([z.number(), z.null()]),
+	length: z.number().nullable(),
 	releases: z.array(z.object({
 		media: z.array(z.object({
 			tracks: z.array(z.object({
@@ -71,7 +60,7 @@ const musicBrainzRecordingSchema = z.object({
 		"release-group": z.object({
 			id: z.string(),
 			title: z.string(),
-			"primary-type": z.union([z.string(), z.null()]),
+			"primary-type": z.string().nullable(),
 			"secondary-types": z.array(z.string()),
 			"artist-credit": z.array(z.object({
 				artist: musicBrainzArtistSchema,

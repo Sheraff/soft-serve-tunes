@@ -9,14 +9,14 @@ import { socketServer } from "utils/typedWs/server"
 import { prisma } from "server/db/client"
 import { TRPCError } from "@trpc/server"
 
-export const zTrackTraits = z.union([
-  z.literal("danceability"),
-  z.literal("energy"),
-  z.literal("speechiness"),
-  z.literal("acousticness"),
-  z.literal("instrumentalness"),
-  z.literal("liveness"),
-  z.literal("valence"),
+export const zTrackTraits = z.enum([
+  "danceability",
+  "energy",
+  "speechiness",
+  "acousticness",
+  "instrumentalness",
+  "liveness",
+  "valence",
 ])
 
 const searchable = publicProcedure.query(({ ctx }) => {
@@ -198,7 +198,7 @@ const like = protectedProcedure.input(z.object({
   return track
 })
 
-export async function getSpotifyTracksByMultiTraitsWithTarget (
+export async function getSpotifyTracksByMultiTraitsWithTarget(
   traits: {
     trait: z.infer<typeof zTrackTraits>,
     value: number | string
