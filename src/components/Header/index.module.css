@@ -44,7 +44,7 @@
 	position: absolute;
 	inset: 0;
 	height: 100vh;
-	background: linear-gradient(180deg, var(--palette-bg-gradient) -15%, var(--palette-bg-main) 40%);
+	background: linear-gradient(180deg in lab, var(--palette-bg-gradient) -5%, var(--palette-bg-main) 50%);
 }
 
 .button {

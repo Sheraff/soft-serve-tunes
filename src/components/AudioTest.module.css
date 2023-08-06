@@ -1,5 +1,5 @@
 .container {
-	background: linear-gradient(180deg, var(--palette-bg-gradient) -25%, var(--palette-bg-main) 60%);
+	background: linear-gradient(180deg in lab, var(--palette-bg-gradient) -5%, var(--palette-bg-main) 50%);
 	color: var(--palette-primary);
 	height: 100%;
 	display: grid;
