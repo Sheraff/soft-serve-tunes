@@ -37,7 +37,7 @@ export function PastSearchArtist ({
 	return (
 		<BasePastSearchItem
 			className={styles.artist}
-			coverId={entity?.cover?.id}
+			cover={entity?.cover}
 			onClick={onClick}
 			name={entity?.name}
 			id={id}

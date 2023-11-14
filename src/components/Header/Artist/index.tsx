@@ -146,7 +146,7 @@ export default forwardRef(function ArtistView ({
 			z={z}
 			rect={rect}
 			description={data?.audiodb?.strBiographyEN}
-			coverId={data?.cover?.id}
+			cover={data?.cover}
 			coverPalette={data?.cover?.palette}
 			infos={infos}
 			title={data?.name ?? name}
