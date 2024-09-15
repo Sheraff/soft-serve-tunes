@@ -453,3 +453,12 @@ class MyWatcher {
 export const fileWatcher = (globalThis.fileWatcher || new MyWatcher(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER)) as InstanceType<typeof MyWatcher>
 // @ts-expect-error -- see above
 globalThis.fileWatcher = fileWatcher
+
+process.addListener("uncaughtException", (error) => {
+	log("error", "error", "fswatcher", "uncaughtException")
+	console.error(error)
+})
+process.addListener("unhandledRejection", (error) => {
+	log("error", "error", "fswatcher", "unhandledRejection")
+	console.error(error)
+})
