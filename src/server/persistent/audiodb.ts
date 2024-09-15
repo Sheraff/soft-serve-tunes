@@ -102,8 +102,22 @@ class AudioDb {
 			if (response.status === 200 && response.headers.get("Content-Type") !== "application/json") {
 				return
 			}
-			const json = await response.json()
-			return json
+			try {
+				const json = await response.json()
+				return json
+			} catch (e) {
+				/**
+				 *   at async #fetchAlbum (/home/pi/soft-serve-tunes/.next/server/pages/api/trpc/[trpc].js:609:28)
+				 *   at async AudioDb.fetchAlbum (/home/pi/soft-serve-tunes/.next/server/pages/api/trpc/[trpc].js:564:13) {
+				 * [cause]: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+				 *     at JSON.parse (<anonymous>)
+				 *     at parseJSONFromBytes (node:internal/deps/undici/undici:6613:19)
+				 */
+				if (e instanceof Error && e.name === "SyntaxError" && e.message.startsWith("Unexpected token")) {
+					console.error(e)
+				}
+				throw e
+			}
 		})
 	}
 
