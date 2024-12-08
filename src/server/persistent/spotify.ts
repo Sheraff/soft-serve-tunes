@@ -77,7 +77,7 @@ const trackSchema = baseTrackSchema.extend({
 
 const notFoundSchema = z.object({
 	error: z.object({
-		message: z.string(),
+		message: z.string().optional(),
 		status: z.number(),
 	}),
 })
@@ -131,7 +131,7 @@ type SpotifyApiSuccessResponse<URL extends SpotifyApiUrl> =
 
 type SpotifyApiResponse<URL extends SpotifyApiUrl> = SpotifyApiSuccessResponse<URL> | typeof notFoundSchema["_type"]
 
-function getSchema (url: SpotifyApiUrl) {
+function getSchema(url: SpotifyApiUrl) {
 	switch (true) {
 		case url.startsWith("tracks/"): return trackSchema
 		case url.startsWith("audio-features/"): return audioFeaturesSchema
@@ -144,7 +144,7 @@ function getSchema (url: SpotifyApiUrl) {
 	}
 }
 
-function isListRequest (url: SpotifyApiUrl) {
+function isListRequest(url: SpotifyApiUrl) {
 	switch (true) {
 		case url.startsWith("tracks/"): return false
 		case url.startsWith("audio-features/"): return false
@@ -181,7 +181,7 @@ class Spotify {
 	}
 
 	#refreshing: Promise<void> | null = null
-	async #refreshToken (retries = 0, callback?: () => void) {
+	async #refreshToken(retries = 0, callback?: () => void) {
 		if (this.#accessToken) {
 			return
 		}
@@ -215,7 +215,7 @@ class Spotify {
 	#pastRequests: SpotifyApiUrl[] = []
 	#pastResponses: Map<SpotifyApiUrl, SpotifyApiSuccessResponse<SpotifyApiUrl>> = new Map()
 
-	async fetch<URL extends SpotifyApiUrl> (url: URL): Promise<SpotifyApiResponse<URL>> {
+	async fetch<URL extends SpotifyApiUrl>(url: URL): Promise<SpotifyApiResponse<URL>> {
 		const cached = this.#pastResponses.get(url) as (SpotifyApiSuccessResponse<URL> | undefined)
 		if (cached) {
 			return cached
@@ -253,12 +253,12 @@ class Spotify {
 	 * @description Spotify doesn't seem to like for *all* encodable chars to be encoded.
 	 * For example `+` (plus) shouldn't be encoded, and ` ` (space) encoded into a `'+'` doesn't always work
 	 */
-	sanitize (string: string): string {
+	sanitize(string: string): string {
 		return sanitizeString(string).replace(/&/g, "%26")
 	}
 
 	#purgeStoreTimeout: NodeJS.Timeout | null = null
-	#purgeStore () {
+	#purgeStore() {
 		if (!this.#purgeStoreTimeout) {
 			this.#purgeStoreTimeout = setTimeout(() => {
 				this.#purgeStoreTimeout = null
@@ -273,7 +273,7 @@ class Spotify {
 		}
 	}
 
-	#storeResponse<URL extends SpotifyApiUrl> (url: URL, response: SpotifyApiSuccessResponse<URL>) {
+	#storeResponse<URL extends SpotifyApiUrl>(url: URL, response: SpotifyApiSuccessResponse<URL>) {
 		this.#pastRequests.push(url)
 		this.#pastResponses.set(url, response)
 		if (this.#pastRequests.length > Spotify.STORAGE_LIMIT) {
@@ -284,7 +284,7 @@ class Spotify {
 	}
 
 	#running = new Set<string>()
-	async findTrack (trackDbId: string) {
+	async findTrack(trackDbId: string) {
 		if (this.#running.has(trackDbId)) {
 			return
 		}
