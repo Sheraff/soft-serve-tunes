@@ -35,7 +35,7 @@ export function PastSearchAlbum ({
 
 	return (
 		<BasePastSearchItem
-			coverId={entity?.cover?.id}
+			cover={entity?.cover}
 			onClick={onClick}
 			name={entity?.name}
 			id={id}

@@ -51,7 +51,7 @@ const miniature = publicProcedure.input(z.object({
       userData: { select: { favorite: true } },
       album: { select: { id: true, name: true } },
       artist: { select: { id: true, name: true } },
-      cover: { select: { id: true, palette: true } },
+      cover: { select: { id: true, palette: true, blur: true } },
       spotify: { select: { explicit: true } },
       file: { select: { container: true } },
       feats: { select: { id: true, name: true } },
