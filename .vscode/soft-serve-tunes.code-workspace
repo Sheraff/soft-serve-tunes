@@ -48,7 +48,7 @@
 		"typescript.tsdk": "node_modules/typescript/lib",
 		"typescript.enablePromptUseWorkspaceTsdk": true,
 		"editor.codeActionsOnSave": {
-			"source.fixAll.eslint": true,
+			"source.fixAll.eslint": "explicit"
 		},
 		"template-string-converter.convertOutermostQuotes": true,
 	},
