@@ -34,7 +34,7 @@ export function PastSearchPlaylist ({
 	return (
 		<BasePastSearchItem
 			className={styles.list}
-			coverId={entity?.albums?.find(a => a.coverId)?.coverId}
+			cover={entity?.albums?.find(a => a.cover)?.cover}
 			onClick={onClick}
 			name={entity?.name}
 			id={id}
