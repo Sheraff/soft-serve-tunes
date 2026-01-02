@@ -13,6 +13,8 @@ import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 import { unlink } from "fs/promises"
 import log from "utils/logger"
+import { join } from "path"
+import { env } from "env/server.mjs"
 
 // TODO: handle multi-artist album (both when linking and creating)
 // TODO: maybe now disconnected album isn't multi-artist anymore?
@@ -34,7 +36,7 @@ const trackInputSchema = z.object({
 
 type Input = z.infer<typeof trackInputSchema>
 
-async function getTrack (input: { id: string }) {
+async function getTrack(input: { id: string }) {
 	const track = await prisma.track.findUnique({
 		where: { id: input.id },
 		select: {
@@ -91,7 +93,7 @@ async function getTrack (input: { id: string }) {
 
 type Track = Awaited<ReturnType<typeof getTrack>>
 
-async function getCover (input: Input, track: Track) {
+async function getCover(input: Input, track: Track) {
 	if (input.coverId && track.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
@@ -107,7 +109,7 @@ async function getCover (input: Input, track: Track) {
 	}
 }
 
-async function getArtist (input: Input) {
+async function getArtist(input: Input) {
 	if (input.artist?.id) {
 		const artist = await prisma.artist.findUnique({
 			where: { id: input.artist.id },
@@ -130,7 +132,7 @@ async function getArtist (input: Input) {
 	}
 }
 
-async function getAlbum (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+async function getAlbum(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
 	if (input.album?.id) {
 		const album = await prisma.album.findUnique({
 			where: { id: input.album.id },
@@ -155,7 +157,7 @@ async function getAlbum (input: Input, track: Track, artist: Awaited<ReturnType<
 	}
 }
 
-async function getName (input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
+async function getName(input: Input, track: Track, artist: Awaited<ReturnType<typeof getArtist>>) {
 	if (!input.name) return
 	// const artistName = artist?.name ?? input.artist?.name ?? track.artist?.name
 	// if (artistName) {
@@ -165,7 +167,7 @@ async function getName (input: Input, track: Track, artist: Awaited<ReturnType<t
 	return input.name
 }
 
-async function checkNameConflict (
+async function checkNameConflict(
 	input: Input,
 	track: Track,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -190,7 +192,7 @@ async function checkNameConflict (
 	}
 }
 
-async function getFingerprinted (
+async function getFingerprinted(
 	input: Input,
 	track: Track,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -216,9 +218,10 @@ async function getFingerprinted (
 	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
 	let retry = 0
 	const retries = 10
+	const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, track.file.path)
 	while (!fingerprinted && retry < retries) {
 		try {
-			fingerprinted = await acoustId.identify(track.file.path, metadata, retry)
+			fingerprinted = await acoustId.identify(absolutePath, metadata, retry)
 			break
 		} catch (e) {
 			if (typeof e === "string") {
@@ -269,7 +272,8 @@ const modify = protectedProcedure.input(trackInputSchema).mutation(async ({ inpu
 	await checkNameConflict(input, track, name, linkArtist, linkAlbum)
 
 	// validate mbid (re-check acoustid w/ new data to see if we can obtain a new mbid)
-	const metadata = await parseFile(track.file.path, { duration: true })
+	const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, track.file.path)
+	const metadata = await parseFile(absolutePath, { duration: true })
 	const fingerprinted = await getFingerprinted(input, track, name, linkAlbum, linkArtist, metadata)
 
 	const data: Prisma.TrackUpdateArgs["data"] = {}
@@ -525,7 +529,8 @@ const deleteTrack = protectedProcedure.input(z.object({
 	id: z.string(),
 })).mutation(async ({ input }) => {
 	const track = await getTrack(input)
-	await unlink(track.file.path)
+	const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, track.file.path)
+	await unlink(absolutePath)
 })
 
 export const trackEditRouter = router({

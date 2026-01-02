@@ -3,6 +3,8 @@ import { prisma } from "server/db/client"
 import { router, protectedProcedure } from "server/trpc/trpc"
 import { TRPCError } from "@trpc/server"
 import { unlink } from "fs/promises"
+import { join } from "path"
+import { env } from "env/server.mjs"
 
 const deleteArtist = protectedProcedure.input(z.object({
 	id: z.string(),
@@ -33,7 +35,8 @@ const deleteArtist = protectedProcedure.input(z.object({
 			select: { file: { select: { path: true } } },
 		})
 		if (!trackData?.file) continue
-		await unlink(trackData.file.path)
+		const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, trackData.file.path)
+		await unlink(absolutePath)
 	}
 })
 

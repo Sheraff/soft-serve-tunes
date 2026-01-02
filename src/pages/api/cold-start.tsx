@@ -130,8 +130,9 @@ function act() {
 						})
 						cursor += chunkSize
 						for (const dbFile of dbFiles) {
-							if (!trackPaths.has(dbFile.path)) {
-								await fileWatcher.removeFileFromDb(dbFile.path)
+							const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, dbFile.path)
+							if (!trackPaths.has(absolutePath)) {
+								await fileWatcher.removeFileFromDb(absolutePath)
 							}
 						}
 					} while (dbFiles.length === chunkSize)
