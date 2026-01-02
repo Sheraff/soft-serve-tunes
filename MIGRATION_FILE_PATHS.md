@@ -39,9 +39,27 @@ The migration script:
 - Verifies the conversion was successful
 - Keeps the transaction open by default for safety
 
-### 4. Deploy Code Changes
+### 4. Update Inode Numbers (Optional)
 
-After successfully running the migration, deploy the updated code. The code changes include:
+If your files have been moved to a different filesystem or drive (which would change their inode numbers), run the inode migration:
+
+```bash
+# First, do a dry run to see what would change
+node prisma/migrations/update_file_inodes.js --dry-run
+
+# If everything looks good, run the actual migration
+node prisma/migrations/update_file_inodes.js
+```
+
+This step is **only necessary** if:
+- Files were moved to a different filesystem/drive
+- The filesystem was reformatted
+- Database was restored on a different system
+- You're experiencing inode-related duplicate detection issues
+
+### 5. Deploy Code Changes
+
+After successfully running the migration(s), deploy the updated code. The code changes include:
 
 - **Database writes**: All file paths are now stored as relative paths
 - **Database reads**: Paths are joined with `NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER` for filesystem operations
