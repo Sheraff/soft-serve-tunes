@@ -8,6 +8,8 @@ import { socketServer } from "utils/typedWs/server"
 import { fileWatcher } from "server/persistent/watcher"
 import { simplifiedName } from "utils/sanitizeString"
 import { unlink } from "fs/promises"
+import { join } from "path"
+import { env } from "env/server.mjs"
 
 const albumInputSchema = z.object({
 	id: z.string(),
@@ -21,7 +23,7 @@ const albumInputSchema = z.object({
 
 type Input = z.infer<typeof albumInputSchema>
 
-async function getAlbum (input: { id: string }) {
+async function getAlbum(input: { id: string }) {
 	const album = await prisma.album.findUnique({
 		where: { id: input.id },
 		select: {
@@ -46,7 +48,7 @@ async function getAlbum (input: { id: string }) {
 
 type Album = Awaited<ReturnType<typeof getAlbum>>
 
-async function getCover (input: Input, album: Album) {
+async function getCover(input: Input, album: Album) {
 	if (input.coverId && album.coverId !== input.coverId) {
 		const cover = await prisma.image.findUnique({
 			where: { id: input.coverId },
@@ -62,7 +64,7 @@ async function getCover (input: Input, album: Album) {
 	}
 }
 
-async function getArtist (input: Input) {
+async function getArtist(input: Input) {
 	if (!input.artist?.id && !input.artist?.name) return
 	if (input.artist?.id) {
 		const artist = await prisma.artist.findUnique({
@@ -88,12 +90,12 @@ async function getArtist (input: Input) {
 	return artist
 }
 
-async function getName (input: Input) {
+async function getName(input: Input) {
 	if (!input.name) return
 	return input.name
 }
 
-async function checkNameConflict (
+async function checkNameConflict(
 	input: Input,
 	album: Album,
 	name: Awaited<ReturnType<typeof getName>>,
@@ -233,7 +235,8 @@ const deleteAlbum = protectedProcedure.input(z.object({
 			select: { file: { select: { path: true } } },
 		})
 		if (!trackData?.file) continue
-		await unlink(trackData.file.path)
+		const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, trackData.file.path)
+		await unlink(absolutePath)
 	}
 })
 

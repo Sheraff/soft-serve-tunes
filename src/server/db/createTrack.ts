@@ -1,6 +1,6 @@
 import { access, stat, readdir } from "node:fs/promises"
 import { type Stats } from "node:fs"
-import { basename, extname, dirname, relative } from "node:path"
+import { basename, extname, dirname, relative, join } from "node:path"
 import { IAudioMetadata, ICommonTagsResult, parseFile, selectCover } from "music-metadata"
 import { writeImage } from "utils/writeImage"
 import type { Prisma, Track } from "@prisma/client"
@@ -23,12 +23,12 @@ type PrismaError = PrismaClientRustPanicError
 	| PrismaClientInitializationError
 	| PrismaClientUnknownRequestError
 
-export default async function createTrack (path: string, retries = 0): Promise<true | false | Track> {
+export default async function createTrack(path: string, retries = 0): Promise<true | false | Track> {
 	const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
 
-	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path }, select: { path: true, count: true } })
+	const acoustidRetry = await prisma.fileToCreate.findUnique({ where: { path: relativePath }, select: { path: true, count: true } })
 	if (acoustidRetry) {
-		await prisma.fileToCreate.delete(({ where: { path } }))
+		await prisma.fileToCreate.delete(({ where: { path: relativePath } }))
 	}
 
 	let stats: Stats
@@ -41,19 +41,19 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 
 	const existingFile = await prisma.file.findUnique({ where: { ino: stats.ino } })
 	if (existingFile) {
-		if (path === existingFile.path) {
+		if (relativePath === existingFile.path) {
 			return true
 		}
 		try {
-			await access(existingFile.path, constants.F_OK)
-			log("warn", "warn", "fswatcher", `trying to create a duplicate file, request ignored, keeping ${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path)}`)
+			await access(join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, existingFile.path), constants.F_OK)
+			log("warn", "warn", "fswatcher", `trying to create a duplicate file, request ignored, keeping ${existingFile.path}`)
 			return false // true or false? is this "success file exists" or "failure track wasn't created"?
 		} catch {
 			log("info", "info", "fswatcher", `track already exists but file was missing, linking ${relativePath}`)
 			await retryable(() =>
 				prisma.file.update({
 					where: { ino: stats.ino },
-					data: { path },
+					data: { path: relativePath },
 				})
 			)
 			log("event", "event", "fswatcher", `linked to existing track ${relativePath}`)
@@ -69,6 +69,27 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 	} catch {
 		log("error", "error", "fswatcher", `could not parse metadata out of ${relativePath}, probably not a music file`)
 		return false
+	}
+	const metadata = _metadata as IAudioMetadata
+
+	{
+		const copy = await prisma.file.findUnique({ where: { path: relativePath } })
+		if (copy) {
+			// we should make sure this is the same file based on: size, container
+			const isSameFile = copy.size === stats.size
+				&& copy.container === (metadata.format.container ?? "*")
+			if (isSameFile) {
+				log("info", "info", "fswatcher", `found existing file with same path, same size, same container, but different ino for ${relativePath}, updating ino to ${stats.ino}`)
+				await retryable(() =>
+					prisma.file.update({
+						where: { path: relativePath },
+						data: { ino: stats.ino },
+					})
+				)
+				log("event", "event", "fswatcher", `updated ino for existing file ${relativePath}`)
+				return true
+			}
+		}
 	}
 	// get info from context if missing from _metadata
 	// if (!relativePath.includes('__soft-served')) {
@@ -119,7 +140,6 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 	// 		}
 	// 	}
 	// }
-	const metadata = _metadata as IAudioMetadata
 
 	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
 	if (!acoustidRetry || acoustidRetry.count < 10) {
@@ -237,7 +257,7 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 				mbid: fingerprinted?.id,
 				file: {
 					create: {
-						path: path,
+						path: relativePath,
 						size: stats.size,
 						ino: stats.ino,
 						container: metadata.format.container ?? "*",
@@ -387,10 +407,11 @@ export default async function createTrack (path: string, retries = 0): Promise<t
 }
 
 let retryTimeout: NodeJS.Timeout | null = null
-export async function tryAgainLater (path?: string, count = -1) {
+export async function tryAgainLater(path?: string, count = -1) {
 	if (retryTimeout) clearTimeout(retryTimeout)
 	if (path) {
-		await retryable(() => prisma.fileToCreate.create({ data: { path, count: count + 1 } }))
+		const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
+		await retryable(() => prisma.fileToCreate.create({ data: { path: relativePath, count: count + 1 } }))
 	}
 	const howManyLeft = await prisma.fileToCreate.count()
 	if (howManyLeft) {
@@ -399,13 +420,14 @@ export async function tryAgainLater (path?: string, count = -1) {
 			const items = await prisma.fileToCreate.findMany()
 			for (const item of items) {
 				log("info", "wait", "fswatcher", `retrying (#${item.count}) to create file ${item.path}`)
-				await createTrack(item.path)
+				const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, item.path)
+				await createTrack(absolutePath)
 			}
 		}, 180_000)
 	}
 }
 
-export function isVariousArtists (name: string) {
+export function isVariousArtists(name: string) {
 	return [
 		"variousartists",
 		"various",
@@ -414,7 +436,7 @@ export function isVariousArtists (name: string) {
 	].includes(simplifiedName(name))
 }
 
-export function notArtistName (name: string) {
+export function notArtistName(name: string) {
 	return [
 		"",
 		"variousartists",
@@ -426,7 +448,7 @@ export function notArtistName (name: string) {
 	].includes(simplifiedName(name))
 }
 
-async function getArtist (common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
+async function getArtist(common: ICommonTagsResult): Promise<[string | undefined, boolean]> {
 	const isVarious = common.albumartist
 		? isVariousArtists(common.albumartist)
 		: false
@@ -442,7 +464,7 @@ async function getArtist (common: ICommonTagsResult): Promise<[string | undefine
 	return [undefined, isVarious]
 }
 
-async function linkAlbum (id: string, create: Prisma.AlbumCreateArgs["data"], isMultiArtistAlbum: boolean) {
+async function linkAlbum(id: string, create: Prisma.AlbumCreateArgs["data"], isMultiArtistAlbum: boolean) {
 	if (isMultiArtistAlbum) {
 		const existingAlbum = await retryable(() => prisma.album.findFirst({
 			where: {
