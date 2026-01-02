@@ -70,6 +70,27 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 		log("error", "error", "fswatcher", `could not parse metadata out of ${relativePath}, probably not a music file`)
 		return false
 	}
+	const metadata = _metadata as IAudioMetadata
+
+	{
+		const copy = await prisma.file.findUnique({ where: { path: relativePath } })
+		if (copy) {
+			// we should make sure this is the same file based on: size, container
+			const isSameFile = copy.size === stats.size
+				&& copy.container === (metadata.format.container ?? "*")
+			if (isSameFile) {
+				log("info", "info", "fswatcher", `found existing file with same path, same size, same container, but different ino for ${relativePath}, updating ino to ${stats.ino}`)
+				await retryable(() =>
+					prisma.file.update({
+						where: { path: relativePath },
+						data: { ino: stats.ino },
+					})
+				)
+				log("event", "event", "fswatcher", `updated ino for existing file ${relativePath}`)
+				return true
+			}
+		}
+	}
 	// get info from context if missing from _metadata
 	// if (!relativePath.includes('__soft-served')) {
 	// 	const [metaArtist, metaAlbumIsMultiArtist] = await getArtist(_metadata.common)
@@ -119,7 +140,6 @@ export default async function createTrack(path: string, retries = 0): Promise<tr
 	// 		}
 	// 	}
 	// }
-	const metadata = _metadata as IAudioMetadata
 
 	let fingerprinted: Awaited<ReturnType<typeof acoustId.identify>> | null = null
 	if (!acoustidRetry || acoustidRetry.count < 10) {
