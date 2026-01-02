@@ -184,7 +184,7 @@ class MyWatcher {
 				where: { ino: dbIno },
 				data: { path: addedRelative },
 			})
-			log("event", "event", "fswatcher", `file move ${added} (from ${dirname(relative(dirname(added), removed))})`)
+			log("event", "event", "fswatcher", `file move ${addedRelative} (from ${removed})`)
 		} else if (removed) {
 			await this.removeFileFromDb(removed)
 		} else if (added) {
@@ -195,8 +195,7 @@ class MyWatcher {
 		}
 	}
 
-	async removeFileFromDb(path: string) {
-		const relativePath = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, path)
+	async removeFileFromDb(relativePath: string) {
 		const file = await retryable(() => prisma.file.delete({
 			where: { path: relativePath },
 			select: { trackId: true, id: true },
@@ -204,12 +203,12 @@ class MyWatcher {
 		if (file?.trackId) {
 			const deletedTrack = await this.removeTrackFromDb(file.trackId)
 			if (deletedTrack) {
-				log("event", "event", "fswatcher", `file removed from ${path}, with associated track ${deletedTrack.name}`)
+				log("event", "event", "fswatcher", `file removed from ${relativePath}, with associated track ${deletedTrack.name}`)
 			} else {
-				log("error", "error", "fswatcher", `file removed from ${path}, but associated track missing id#${file.trackId}`)
+				log("error", "error", "fswatcher", `file removed from ${relativePath}, but associated track missing id#${file.trackId}`)
 			}
 		} else {
-			log("error", "error", "fswatcher", `database File entry not found for ${path} when trying to remove it`)
+			log("error", "error", "fswatcher", `database File entry not found for ${relativePath} when trying to remove it`)
 		}
 	}
 
