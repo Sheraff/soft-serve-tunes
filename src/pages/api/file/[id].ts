@@ -5,10 +5,10 @@ import { prisma } from "server/db/client"
 import log from "utils/logger"
 import { readFile } from "node:fs/promises"
 import { env } from "env/server.mjs"
-import { relative } from "node:path"
+import { join } from "node:path"
 import { getLocalNetworkAuth } from "server/common/local-auth"
 
-export default async function file (req: NextApiRequest, res: NextApiResponse) {
+export default async function file(req: NextApiRequest, res: NextApiResponse) {
   const isLocal = getLocalNetworkAuth(req)
   if (!isLocal && !(await getServerAuthSession({ req, res }))) {
     return res.status(401).json({ error: "authentication required" })
@@ -45,7 +45,7 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   const partials = byteOffsetFromRangeString(range)
   const start = Number(partials[0])
   if (isNaN(start)) {
-    log("error", "416", `File request for range is out of bounds (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
+    log("error", "416", `File request for range is out of bounds (${file.path})`)
     return res.status(416).json({ error: "Invalid range" })
   }
   if (isLocal && start === 0) {
@@ -66,24 +66,25 @@ export default async function file (req: NextApiRequest, res: NextApiResponse) {
   })
 
   if (range === undefined) {
-    log("info", "206", `File request for range responded with available range (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
+    log("info", "206", `File request for range responded with available range (${file.path})`)
     return res.end()
   }
 
-  log("info", "206", `File request for range is streaming (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
-  const readStream = createReadStream(file.path, { start, end, highWaterMark: 512 * 1024 })
+  log("info", "206", `File request for range is streaming (${file.path})`)
+  const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)
+  const readStream = createReadStream(absolutePath, { start, end, highWaterMark: 512 * 1024 })
   readStream.pipe(res)
 }
 
 
-function byteOffsetFromRangeString (range?: string) {
+function byteOffsetFromRangeString(range?: string) {
   if (range === undefined) {
     return [0]
   }
   return range.replace(/bytes=/, "").split("-")
 }
 
-async function respondWithFullFile (
+async function respondWithFullFile(
   res: NextApiResponse,
   file: {
     path: string
@@ -91,14 +92,15 @@ async function respondWithFullFile (
     container: string
   }
 ) {
-  const buffer = await readFile(file.path)
+  const absolutePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)
+  const buffer = await readFile(absolutePath)
   res.writeHead(200, {
     "Content-Type": `audio/${file.container}`,
     "Content-Length": file.size,
     "Cache-Control": "public, max-age=31536000",
   })
   res.write(buffer)
-  log("info", "200", `File request was sent in full (${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, file.path)})`)
+  log("info", "200", `File request was sent in full (${file.path})`)
   return res.end()
 }
 

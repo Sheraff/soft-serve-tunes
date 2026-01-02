@@ -16,7 +16,7 @@ import { socketServer } from "utils/typedWs/server"
 import { getServerAuthSession } from "server/common/get-server-auth-session"
 import { getLocalNetworkAuth } from "server/common/local-auth"
 
-export default async function upload (req: NextApiRequest, res: NextApiResponse) {
+export default async function upload(req: NextApiRequest, res: NextApiResponse) {
 	const isLocal = getLocalNetworkAuth(req)
 	if (!isLocal && !(await getServerAuthSession({ req, res }))) {
 		return res.status(401).json({ error: "authentication required" })
@@ -123,8 +123,9 @@ export default async function upload (req: NextApiRequest, res: NextApiResponse)
 			if (success) {
 				continue
 			}
+			const proposedRelative = relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, proposed)
 			const existing = await prisma.file.findUnique({
-				where: { path: proposed },
+				where: { path: proposedRelative },
 				select: {
 					track: {
 						select: {
@@ -168,7 +169,7 @@ export const config = {
 	}
 }
 
-async function moveTempFile (origin: string, destination: string) {
+async function moveTempFile(origin: string, destination: string) {
 	try {
 		await stat(destination)
 		log("warn", "retry", "fswatcher", `"${relative(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, destination)}" already exists`)
@@ -181,7 +182,7 @@ async function moveTempFile (origin: string, destination: string) {
 	return true
 }
 
-function directoryFromMetadata (metadata: IAudioMetadata) {
+function directoryFromMetadata(metadata: IAudioMetadata) {
 	const { artist, album, albumartist } = metadata.common
 	if (album && albumartist) {
 		const isMultiArtistAlbum = isVariousArtists(albumartist)
@@ -197,18 +198,18 @@ function directoryFromMetadata (metadata: IAudioMetadata) {
 	}
 }
 
-function directoryFromOriginal (original: string) {
+function directoryFromOriginal(original: string) {
 	return dirname(original)
 }
 
-function directoryFromRandom () {
+function directoryFromRandom() {
 	const stablePrefix = Number([...Math.round(Date.now() / 10_000).toString()].reverse().join("")).toString(36)
 	const variableSuffix = Math.round(Math.random() * 36_000_000).toString(36)
 	const string = `${stablePrefix}${variableSuffix}` as (string & { 0: string, 1: string, 2: string })
 	return join("__soft-served", string[0], string[1], string[2], string)
 }
 
-function getFileName (metadata: IAudioMetadata, original: string) {
+function getFileName(metadata: IAudioMetadata, original: string) {
 	const { title, track: { no } } = metadata.common
 	if (title && typeof no === "number") {
 		const sanitizedTitle = sanitize(title)
@@ -222,7 +223,7 @@ function getFileName (metadata: IAudioMetadata, original: string) {
 	return basename(original)
 }
 
-function dumbExtensionGuessing (metadata: IAudioMetadata, original: string) {
+function dumbExtensionGuessing(metadata: IAudioMetadata, original: string) {
 	const { codec, container } = metadata.format
 	switch (true) {
 		case codec?.includes("MPEG-4"):
@@ -243,7 +244,7 @@ function dumbExtensionGuessing (metadata: IAudioMetadata, original: string) {
 	return withoutDot
 }
 
-function getProgress (i: number, indexes: number[], of: number[]) {
+function getProgress(i: number, indexes: number[], of: number[]) {
 	const start = indexes[i] ?? 0
 	const total = of[i] || 1
 	return start / total
