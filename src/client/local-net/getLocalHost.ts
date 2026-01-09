@@ -11,7 +11,12 @@ export async function getLocalHost(skipDelayCheck?: boolean) {
 	lastLocalHostCheck = now
 
 	try {
-		const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, { method: "HEAD" })
+		const localResponse = await fetch(`${env.NEXT_PUBLIC_INTRANET_HOST}/api/local/ping`, {
+			method: "HEAD",
+			headers: {
+				"Content-Type": "application/json" // Forces preflight
+			}
+		})
 		if (!localResponse.ok) {
 			return
 		}
