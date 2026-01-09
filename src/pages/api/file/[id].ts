@@ -18,6 +18,7 @@ export default async function file(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "OPTIONS") {
     if (isLocal) {
       res.setHeader("Access-Control-Allow-Private-Network", "true")
+      res.setHeader("Access-Control-Allow-Credentials", "true")
     }
     return res.status(200).end()
   }
