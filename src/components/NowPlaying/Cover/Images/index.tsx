@@ -1,7 +1,7 @@
 import classNames from "classnames"
 import { type RouterOutputs, trpc } from "utils/trpc"
 import styles from "./index.module.css"
-import { getCoverUrl } from "utils/getCoverUrl"
+import Image from "atoms/Image"
 
 type AlbumMiniature = Exclude<RouterOutputs["album"]["miniature"], null>
 
@@ -26,11 +26,11 @@ export default function CoverImages ({
 	return (
 		<div className={classNames(styles.main, className, styles[`count-${albumData.length}` as keyof typeof styles])}>
 			{albumData.map((album) => (
-				<img
+				<Image
 					key={album.id}
 					className={styles.img}
-					src={getCoverUrl(album.cover?.id, albumData.length > 4 ? "half" : "full")}
-					alt=""
+					cover={album.cover}
+					size={albumData.length > 4 ? "half" : "full"}
 				/>
 			))}
 		</div>

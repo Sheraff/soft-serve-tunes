@@ -6,11 +6,11 @@ import useLongPress from "components/AlbumList/useLongPress"
 import CheckboxOnIcon from "icons/check_box_on.svg"
 import CheckboxOffIcon from "icons/check_box_off.svg"
 import OfflineIcon from "icons/wifi_off.svg"
-import { getCoverUrl } from "utils/getCoverUrl"
+import Image from "atoms/Image"
 
 export function BasePastSearchItem ({
 	className,
-	coverId,
+	cover,
 	onClick,
 	children,
 	name,
@@ -19,7 +19,10 @@ export function BasePastSearchItem ({
 	available,
 }: {
 	className?: string
-	coverId?: string | null
+	cover?: {
+		id: string
+		blur?: string | null | undefined
+	} | undefined | null
 	onClick: () => void
 	children: ReactNode
 	name?: string
@@ -27,8 +30,6 @@ export function BasePastSearchItem ({
 	id: string
 	available?: boolean
 }) {
-	const src = getCoverUrl(coverId, "mini")
-
 	const item = useRef<HTMLButtonElement>(null)
 	const [_edit, setEdit] = editOverlay.useState()
 	const onLong = () => {
@@ -40,6 +41,7 @@ export function BasePastSearchItem ({
 	const edit = useDeferredValue(_edit)
 	const selection = edit.selection.length > 0
 	const selected = selection && edit.selection.some((item) => item.id === id)
+	const hasImage = Boolean(cover?.id)
 
 	return (
 		<button
@@ -49,7 +51,7 @@ export function BasePastSearchItem ({
 				styles.main,
 				className,
 				{
-					[styles.empty]: !src,
+					[styles.empty]: !hasImage,
 					[styles.selection]: selection,
 				}
 			)}
@@ -70,11 +72,11 @@ export function BasePastSearchItem ({
 			{selection && selected && (
 				<CheckboxOnIcon className={styles.selected} />
 			)}
-			{src && (
-				<img
+			{hasImage && (
+				<Image
+					cover={cover}
+					size="mini"
 					className={styles.img}
-					src={src}
-					alt=""
 				/>
 			)}
 			<div className={styles.content}>

@@ -62,6 +62,7 @@ const miniature = publicProcedure.input(z.object({
         select: {
           id: true,
           palette: true,
+          blur: true,
         }
       }
     }
@@ -130,6 +131,7 @@ const get = publicProcedure.input(z.object({
         select: {
           id: true,
           palette: true,
+          blur: true,
         }
       },
       lastfm: {

@@ -17,7 +17,8 @@ const miniature = publicProcedure.input(z.object({
     throw new TRPCError({ code: "NOT_FOUND", message: `Genre not found by id ${input.id}` })
   const artists = await ctx.prisma.$queryRaw`
     SELECT
-      artists."coverId" as "coverId",
+      covers.id as "coverId",
+      covers.blur as "coverBlur",
       COUNT(*)::int as "tracksCount"
     FROM (
       WITH RECURSIVE sub_rec_genre AS(
@@ -45,22 +46,29 @@ const miniature = publicProcedure.input(z.object({
     ) as track_list
     LEFT JOIN public."Artist" as artists
       ON track_list.id = artists.id
+    INNER JOIN public."Image" as covers
+      ON artists."coverId" = covers.id
     GROUP BY
-      artists."coverId"
+      covers.id,
+      covers.blur
     ORDER BY
       "tracksCount" DESC
     ;
   ` as {
     coverId: string | null
+    coverBlur: string | null
     tracksCount: number
   }[]
 
   const count = artists.reduce((acc, artist) => acc + artist.tracksCount, 0)
-  const firstArtistsWithCover: { coverId: string }[] = []
+  const firstArtistsWithCover: {
+    id: string
+    blur: string | null | undefined
+  }[] = []
   for (let i = 0; i < artists.length; i++) {
     const artist = artists[i]!
     if (artist.coverId) {
-      firstArtistsWithCover.push({ coverId: artist.coverId })
+      firstArtistsWithCover.push({ id: artist.coverId, blur: artist.coverBlur })
       if (firstArtistsWithCover.length === 3) break
     }
   }
@@ -77,39 +85,43 @@ const miniature = publicProcedure.input(z.object({
 /**
  * Returns first children genres (first sub-genre of each branch to have a track)
  */
-function getSubGenres (id: string) {
+function getSubGenres (id: string, limit: number = 12) {
   return prisma.$queryRaw`
     WITH RECURSIVE with_track AS (
-      SELECT DISTINCT ON(g.id)
+      SELECT
         g.id,
-        g.name
+        g.name,
+        COUNT(*)::int as count
       FROM public."Genre" g
       INNER JOIN public."_GenreToTrack" lg ON lg."A" = g.id
+      GROUP BY g.id, g.name
     ),
     subgenres AS (
-      SELECT id, name, ARRAY[id] as path, FALSE as has_track
+      SELECT id, name, ARRAY[id] as path, 0 as track_count
       FROM public."Genre"
       WHERE id = ${id}
       UNION ALL
-      SELECT g.id, g.name, path || g.id, EXISTS (
-          SELECT 1
+      SELECT g.id, g.name, path || g.id, (
+          SELECT wt.count
           FROM with_track wt
           WHERE wt.id = g.id
         )
       FROM subgenres AS parent
       INNER JOIN public."_LinkedGenre" lg ON lg."A" = parent.id
       INNER JOIN public."Genre" g ON g.id = lg."B"
-      WHERE NOT parent.has_track AND NOT g.id = ANY(parent.path)
+      WHERE (parent.track_count = 0 OR parent.track_count IS NULL) AND NOT g.id = ANY(parent.path)
     )
-    SELECT DISTINCT ON(sg.id)
-      sg.id,
-      sg.name
+    SELECT *
     FROM subgenres sg
-    WHERE sg.has_track
+    WHERE sg.track_count > 0
+    ORDER BY sg.track_count DESC
+    LIMIT ${limit}
     ;
   ` as Promise<{
     id: string
     name: string
+    path: string[]
+    track_count: number
   }[]>
 }
 
@@ -247,7 +259,12 @@ const get = publicProcedure.input(z.object({
     supGenres,
     tracks,
   ] = await Promise.all([
-    getSubGenres(input.id),
+    getSubGenres(input.id).then(
+      (genres) => genres.map(genre => ({
+        id: genre.id,
+        name: genre.name,
+      }))
+    ),
     getSupGenres(input.id),
     getGenreTracks(input.id).then(
       (tracks) => tracks.map((track) => ({

@@ -15,6 +15,7 @@ export async function writeImage (buffer: Buffer, extension = "jpg", url?: strin
 	const imagePath = join(".meta", hash[0], hash[1], hash[2], fileName)
 	const existingImage = await retryable(() => prisma.image.findUnique({ where: { id: hash } }))
 	let palette = existingImage?.palette as undefined | Exclude<Prisma.JsonValue, null>
+	let blur = existingImage?.blur as undefined | Exclude<string, null>
 	if (!existingImage) {
 		const fullPath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, imagePath)
 		const dir = dirname(fullPath)
@@ -29,7 +30,7 @@ export async function writeImage (buffer: Buffer, extension = "jpg", url?: strin
 			})
 		})
 		try {
-			palette = await extractPalette(buffer)
+			[blur, palette] = await extractPalette(buffer)
 			if (!palette) {
 				console.warn("Could not extract palette", extension, url)
 			}
@@ -42,12 +43,24 @@ export async function writeImage (buffer: Buffer, extension = "jpg", url?: strin
 		path: imagePath,
 		exists: Boolean(existingImage),
 		palette,
+		blur,
 	}
 }
 
 export async function fetchAndWriteImage (url: string, retries = 0): Promise<
-	(Awaited<ReturnType<typeof writeImage>> & { mimetype: string })
-	| { mimetype: "", hash: "", path: "", palette: undefined, exists: undefined }
+	| (
+		Awaited<ReturnType<typeof writeImage>> & {
+			mimetype: string
+		}
+	)
+	| {
+		mimetype: ""
+		hash: ""
+		path: ""
+		palette: undefined
+		blur: undefined
+		exists: undefined
+	}
 > {
 	if (url) {
 		let step = 0
@@ -82,36 +95,52 @@ export async function fetchAndWriteImage (url: string, retries = 0): Promise<
 		hash: "",
 		path: "",
 		palette: undefined,
+		blur: undefined,
 		exists: undefined,
 	}
 }
 
 export async function extractPalette (buffer: Buffer) {
 	const image = sharp(buffer)
-	const metadata = await image.metadata()
+	return Promise.all([
+		image
+			.clone()
+			.resize(10, 10, {
+				fit: "cover",
+				fastShrinkOnLoad: true,
+			})
+			.blur(3)
+			.toBuffer({ resolveWithObject: true })
+			.then(({ data, info }) =>
+				`data:image/${info.format};base64,${data.toString('base64')}`
+			),
+		image
+			.metadata()
+			.then((metadata) => {
+				// crop edges
+				const start = metadata.width && metadata.height
+					? image.extract({
+						top: Math.round(metadata.height * 0.05),
+						left: Math.round(metadata.width * 0.05),
+						width: Math.round(metadata.width * 0.9),
+						height: Math.round(metadata.height * 0.9),
+					})
+					: image
 
-	// crop edges
-	const start = metadata.width && metadata.height
-		? image.extract({
-			top: Math.round(metadata.height * 0.05),
-			left: Math.round(metadata.width * 0.05),
-			width: Math.round(metadata.width * 0.9),
-			height: Math.round(metadata.height * 0.9),
-		})
-		: image
-
-	return start
-		.resize(300, 300, {
-			fit: "cover",
-			fastShrinkOnLoad: true,
-			kernel: sharp.kernel.nearest
-		})
-		.raw({ depth: "uchar" })
-		.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
-			if (info.channels !== 3 && info.channels !== 4) {
-				return undefined
-			}
-			const array = Uint8ClampedArray.from(data)
-			return extractPaletteFromUint8(array, info.channels)
-		})
+				return start
+					.resize(300, 300, {
+						fit: "cover",
+						fastShrinkOnLoad: true,
+						kernel: sharp.kernel.nearest
+					})
+					.raw({ depth: "uchar" })
+					.toBuffer({ resolveWithObject: true }).then(({ data, info }) => {
+						if (info.channels !== 3 && info.channels !== 4) {
+							return undefined
+						}
+						const array = Uint8ClampedArray.from(data)
+						return extractPaletteFromUint8(array, info.channels)
+					})
+			})
+	])
 }

@@ -760,7 +760,7 @@ class Spotify {
 				if (!image) {
 					break albumFill
 				}
-				const { hash, path, mimetype, palette } = await fetchAndWriteImage(image.url)
+				const { hash, path, mimetype, palette, blur } = await fetchAndWriteImage(image.url)
 				if (hash && path && palette) {
 					const albumId = albumObject.id
 					await retryable(async () => {
@@ -779,6 +779,7 @@ class Spotify {
 											path,
 											mimetype,
 											palette,
+											blur,
 											origin: image.url,
 										}
 									}
@@ -809,7 +810,7 @@ class Spotify {
 				}
 				const image = artistData.images?.sort((a, b) => b.height - a.height)[0]
 				if (image) {
-					const { hash, path, mimetype, palette } = await fetchAndWriteImage(image.url)
+					const { hash, path, mimetype, palette, blur } = await fetchAndWriteImage(image.url)
 					if (hash && path && palette) {
 						const artistId = artistObject.id
 						const popularity = artistData.popularity
@@ -829,6 +830,7 @@ class Spotify {
 												path,
 												mimetype,
 												palette,
+												blur,
 												origin: image.url,
 											}
 										}

@@ -11,18 +11,18 @@ import useLongPress from "components/AlbumList/useLongPress"
 import { editOverlay, editOverlaySetter } from "components/AppContext/editOverlay"
 import classNames from "classnames"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { getCoverUrl } from "utils/getCoverUrl"
 import useIsOnline from "utils/typedWs/useIsOnline"
 import { useCachedGenre } from "client/sw/useSWCached"
+import Image from "atoms/Image"
 
 type GenreListItem = {
 	id: string
 	name?: string
 }
 
-function selectGenreWithArtists(genre: RouterOutputs["genre"]["miniature"]) {
-	const artists = genre.artists.filter(({ coverId }) => coverId).reverse()
-	return { ...genre, artists }
+function selectGenreReverseArtists(genre: RouterOutputs["genre"]["miniature"]) {
+	if (!genre?.artists) return genre
+	return { ...genre, artists: genre.artists.slice().reverse() }
 }
 
 export function GenreItem({
@@ -41,7 +41,7 @@ export function GenreItem({
 	forceAvailable?: boolean
 }) {
 	const { data } = trpc.genre.miniature.useQuery({ id: genre.id }, {
-		select: selectGenreWithArtists,
+		select: selectGenreReverseArtists,
 	})
 
 	const item = useRef<HTMLButtonElement>(null)
@@ -92,12 +92,12 @@ export function GenreItem({
 			)}
 			{data?.artists && data.artists.length > 0 && (
 				<div className={styles.artists} style={{ "--extra": data.artists.length - 1 } as CSSProperties}>
-					{data.artists.map(({ coverId }) => (
-						<img
-							key={coverId}
+					{data.artists.map((cover) => (
+						<Image
+							key={cover.id}
 							className={styles.cover}
-							alt=""
-							src={getCoverUrl(coverId, "mini")}
+							cover={cover}
+							size="mini"
 						/>
 					))}
 				</div>
