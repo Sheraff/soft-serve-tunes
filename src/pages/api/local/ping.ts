@@ -14,5 +14,6 @@ export default async function local (req: NextApiRequest, res: NextApiResponse) 
 		return
 	}
 	res.setHeader("Access-Control-Allow-Private-Network", "true")
+	res.setHeader("Access-Control-Allow-Credentials", "true")
 	res.status(204).end()
 }
