@@ -100,6 +100,7 @@ class AudioDb {
 		return retryable(async () => {
 			const response = await this.#queue.push(() => fetch(url))
 			if (response.status === 200 && response.headers.get("Content-Type") !== "application/json") {
+				await response.body?.cancel()
 				return
 			}
 			try {
@@ -538,7 +539,7 @@ async function keysAndInputToImageIds<
 	const imageIds = await Promise.allSettled(keys.map(async (key) => {
 		const url = input[key] as string | undefined
 		if (url) {
-			const { hash, path, mimetype, palette } = await fetchAndWriteImage(url)
+			const { hash, path, mimetype, palette, blur } = await fetchAndWriteImage(url)
 			if (hash) {
 				const { id } = await prisma.image.upsert({
 					where: { id: hash },
@@ -548,6 +549,7 @@ async function keysAndInputToImageIds<
 						path,
 						mimetype,
 						palette,
+						blur,
 						origin: url,
 					}
 				})

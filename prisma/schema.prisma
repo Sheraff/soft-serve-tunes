@@ -99,6 +99,7 @@ model Image {
   origin                 String?
   mimetype               String
   palette                Json?
+  blur                   String?
   track                  Track[]         @relation(name: "metaImage")
   trackCover             Track[]         @relation(name: "cover")
   artistCover            Artist[]        @relation

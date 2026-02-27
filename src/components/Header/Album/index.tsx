@@ -132,7 +132,7 @@ export default forwardRef(function AlbumView ({
 			z={z}
 			rect={rect}
 			description={data?.audiodb?.strDescriptionEN}
-			coverId={data?.cover?.id}
+			cover={data?.cover}
 			coverPalette={data?.cover?.palette}
 			infos={infos}
 			title={data?.name ?? name}

@@ -10,14 +10,14 @@ async function redoImagePalette (image: { id: string, path: string }) {
 	const originalFilePath = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, image.path)
 	try {
 		const buffer = await readFile(originalFilePath)
-		const palette = await extractPalette(buffer)
+		const [blur, palette] = await extractPalette(buffer)
 		if (!palette) {
 			console.log("could not extract from image ", image.id, image.path)
 			return
 		}
 		await prisma.image.update({
 			where: { id: image.id },
-			data: { palette }
+			data: { palette, blur }
 		})
 	} catch (e) {
 		console.error(e)

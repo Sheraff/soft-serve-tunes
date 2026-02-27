@@ -30,7 +30,12 @@ async function getResolve (id: string) {
                 select: {
                   id: true,
                   name: true,
-                  coverId: true
+                  cover: {
+                    select: {
+                      id: true,
+                      blur: true,
+                    }
+                  }
                 }
               },
             }

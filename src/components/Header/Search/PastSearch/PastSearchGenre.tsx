@@ -41,7 +41,7 @@ export function PastSearchGenre ({
 			name={entity?.name}
 			id={id}
 			type="genre"
-			coverId={entity?.artists?.[0]?.coverId}
+			cover={entity?.artists?.[0]}
 			available={available}
 		>
 			{info.join(" · ")}

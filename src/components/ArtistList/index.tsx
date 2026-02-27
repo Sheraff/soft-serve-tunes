@@ -12,6 +12,7 @@ import useIsOnline from "utils/typedWs/useIsOnline"
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 import { getCoverUrl } from "utils/getCoverUrl"
 import pluralize from "utils/pluralize"
+import Image from "atoms/Image"
 
 type ArtistListItem = {
 	id: string
@@ -85,9 +86,9 @@ function ArtistItem ({
 			{!isEmpty && (
 				<div className={styles.img}>
 					{src && (
-						<img
-							src={src}
-							alt=""
+						<Image
+							cover={data?.cover}
+							size="third"
 						/>
 					)}
 				</div>
