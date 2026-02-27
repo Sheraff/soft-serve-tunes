@@ -107,6 +107,7 @@ export default class MusicBrainz {
 			})
 		}))
 		if (response.status !== 200) {
+			await response.body?.cancel()
 			if (response.status === 404) {
 				return undefined
 			}

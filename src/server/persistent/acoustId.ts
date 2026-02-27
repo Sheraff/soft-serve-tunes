@@ -195,6 +195,7 @@ class AcoustId {
 		}
 		const data = await this.#queue.push(() => fetch(`https://api.acoustid.org/v2/lookup${body}`))
 		if (data.status !== 200) {
+			await data.body?.cancel()
 			if (data.status === 429) {
 				// Too many requests, back-off for a second
 				this.#queue.delay(1_000)
