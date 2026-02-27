@@ -100,6 +100,7 @@ class AudioDb {
 		return retryable(async () => {
 			const response = await this.#queue.push(() => fetch(url))
 			if (response.status === 200 && response.headers.get("Content-Type") !== "application/json") {
+				await response.body?.cancel()
 				return
 			}
 			try {
