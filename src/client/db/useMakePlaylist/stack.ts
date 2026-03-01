@@ -15,9 +15,9 @@ const playNextStack: string[] = []
  * track will be added to the "play next" stack, meaning that
  * even if the playlist is shuffled, the track will be played next
  * (or after the rest of the stack if it's not empty).
- * 
+ *
  * If the track is already in the playlist, this function will do nothing.
- * 
+ *
  * If the playlist doesn't exist, it will be created with the track as first and current.
  */
 export function useAddNextToPlaylist () {
