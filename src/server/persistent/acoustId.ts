@@ -21,7 +21,7 @@ import { prisma } from "server/db/client"
 
 const modulePath = dirname(new URL(import.meta.url).pathname)
 const origin = process.cwd()
-const fpcalc = join(relative(origin, modulePath), "bin", "fpcalc", `fpcalc-${process.platform}`)
+const fpcalc = join(relative(origin, modulePath), "bin", "fpcalc", `fpcalc-${process.platform}-${process.arch}`)
 
 type FPcalcResult = {
 	fingerprint: string
