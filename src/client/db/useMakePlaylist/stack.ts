@@ -17,7 +17,7 @@ const playNextStack: string[] = []
  * (or after the rest of the stack if it's not empty).
  * 
  * If the track is already in the playlist, this function will do nothing.
- * 
+ *
  * If the playlist doesn't exist, it will be created with the track as first and current.
  */
 export function useAddNextToPlaylist () {
