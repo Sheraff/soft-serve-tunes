@@ -30,8 +30,12 @@ export default async function upload(req: NextApiRequest, res: NextApiResponse) 
 		return res.status(200).end()
 	}
 
+	const uploadDir = join(env.NEXT_PUBLIC_MUSIC_LIBRARY_FOLDER, ".soft-serve-tunes-uploads")
+	await mkdir(uploadDir, { recursive: true })
+
 	const form = new formidable.IncomingForm({
 		multiples: true,
+		uploadDir,
 	})
 	const [fields, files] = await new Promise<[Fields, Files] | []>((resolve) => {
 		form.parse(req, async function (err, fields, files) {
